@@ -30,7 +30,7 @@ Our community has built some amazing projects:
 - **Todo List** - Task manager with local storage
 - **Quiz Game** - Interactive quiz with multiple categories
 - **Digital Clock** - Real-time clock with customizable themes
-
+- **Note Text** - Used for notes something just like a study notes.
 *[View all projects →](https://yadavakhileshh.github.io/OpenPlayground/)*
 
 ## Quick Start
