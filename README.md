@@ -34,9 +34,13 @@ We focus on the fundamentals to ensure everyone can participate:
 4. **Register:** Add your project's metadata to the main `index.html` to showcase it.
 5. **Launch:** Submit a PR and see your project live on the global site!
 
----
-
-## 🤝 Contributing to ECWOC'26
+- **Calculator** - Clean, functional calculator with keyboard support
+- **Tic Tac Toe** - Classic game with smooth animations
+- **Todo List** - Task manager with local storage
+- **Quiz Game** - Interactive quiz with multiple categories
+- **Digital Clock** - Real-time clock with customizable themes
+- **Note Text** - Used for notes something just like a study notes.
+*[View all projects →](https://yadavakhileshh.github.io/OpenPlayground/)*
 
 We are officially part of **ECWOC 2026**! We welcome students and first-time contributors with open arms.
 
