@@ -883,6 +883,121 @@
         color: var(--primary-color);
         font-size: 1.5rem;
     }
+
+    /* Floating Chatbot Button */
+.chatbot-btn {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 26px;
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  z-index: 1000;
+}
+
+/* Chatbot Container */
+.chatbot-container {
+  position: fixed;
+  bottom: 90px;
+  right: 25px;
+  width: 320px;
+  background: #0b1220;
+  border-radius: 14px;
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  z-index: 1000;
+}
+
+/* Header */
+.chatbot-header {
+  background: #111827;
+  padding: 12px;
+  color: #60a5fa;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Messages */
+.chatbot-messages {
+  padding: 12px;
+  height: 280px;
+  overflow-y: auto;
+}
+
+.bot-msg, .user-msg {
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  max-width: 85%;
+  font-size: 14px;
+}
+
+.bot-msg {
+  background: #1f2933;
+  color: #e5e7eb;
+}
+
+.user-msg {
+  background: #3b82f6;
+  color: white;
+  margin-left: auto;
+  text-align: right;
+}
+
+/* Input */
+.chatbot-input {
+  display: flex;
+  padding: 10px;
+  background: #111827;
+}
+
+.chatbot-input input {
+  flex: 1;
+  padding: 8px;
+  background: #1f2933;
+  border: none;
+  outline: none;
+  color: white;
+  border-radius: 6px;
+}
+
+.chatbot-input button {
+  margin-left: 6px;
+  padding: 8px 12px;
+  background: #3b82f6;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Light Theme Support */
+body.light .chatbot-container {
+  background: #ffffff;
+}
+
+body.light .chatbot-header {
+  background: #f1f5f9;
+  color: #2563eb;
+}
+
+body.light .bot-msg {
+  background: #e5e7eb;
+  color: #111;
+}
+
 </style>
 </head>
 
@@ -2499,7 +2614,99 @@
     document.documentElement.style.transition = 'background-color 0.3s ease, color 0.3s ease';
 </script>
 
-    <script src="./js/app.js"></script>
+
+    <!-- Floating Chatbot -->
+<div class="chatbot-btn" onclick="toggleChatbot()">🤖</div>
+
+<div class="chatbot-container" id="chatbot">
+  <div class="chatbot-header">
+    OpenPlayground AI
+    <span onclick="toggleChatbot()">✖</span>
+  </div>
+
+  <div class="chatbot-messages" id="chatMessages">
+    <div class="bot-msg">
+      Hi 👋 I’m OpenPlayground AI. How can I help you?
+    </div>
+  </div>
+
+  <div class="chatbot-input">
+    <input type="text" id="chatInput" placeholder="Ask something..." />
+    <button onclick="sendChat()">Send</button>
+  </div>
+</div>
+<script>
+    const chatbot = document.getElementById("chatbot");
+const chatMessages = document.getElementById("chatMessages");
+const chatInput = document.getElementById("chatInput");
+
+function toggleChatbot() {
+  chatbot.style.display =
+    chatbot.style.display === "flex" ? "none" : "flex";
+}
+
+function sendChat() {
+  const msg = chatInput.value.trim();
+  if (!msg) return;
+
+  addChatMessage(msg, "user");
+  chatInput.value = "";
+
+  setTimeout(() => {
+    botReply(msg);
+  }, 600);
+}
+
+function addChatMessage(text, sender) {
+  const div = document.createElement("div");
+  div.className = sender === "user" ? "user-msg" : "bot-msg";
+  div.textContent = text;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function botReply(input) {
+  input = input.toLowerCase();
+  let reply = "I'm still learning 🤖. Try asking about projects or contribution.";
+
+  if (input.includes("project")) {
+    reply = "OpenPlayground hosts frontend projects like games, tools, and UI components.";
+  } 
+  else if (input.includes("contribute")) {
+    reply = "You can contribute by submitting projects or improving existing ones via GitHub 🚀";
+  }
+  else if (input.includes("github")) {
+    reply = "Visit our GitHub repo to explore and contribute to OpenPlayground.";
+  }
+  else if (input.includes("idea")) {
+    reply = "Try building games, AI tools, productivity apps, or creative UI projects!";
+  }
+  else if (input.includes("hello") || input.includes("hi")) {
+    reply = "Hello 👋 Welcome to OpenPlayground!";
+  }
+
+  typeBot(reply);
+}
+
+function typeBot(text) {
+  const div = document.createElement("div");
+  div.className = "bot-msg";
+  chatMessages.appendChild(div);
+
+  let i = 0;
+  const typing = setInterval(() => {
+    div.textContent += text.charAt(i);
+    i++;
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    if (i === text.length) clearInterval(typing);
+  }, 20);
+}
+
+chatInput.addEventListener("keypress", e => {
+  if (e.key === "Enter") sendChat();
+});
+
+</script>
 </body>
 
 </html>
