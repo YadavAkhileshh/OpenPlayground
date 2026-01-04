@@ -1,78 +1,85 @@
-console.log("Script Loaded!");
+const todoInput = document.getElementById('todoInput');
+const addBtn = document.getElementById('addBtn');
+const todoList = document.getElementById('todoList');
+const dueDateInput = document.getElementById('dueDateInput');
+const priorityInput = document.getElementById('priorityInput');
+const progressBar = document.getElementById('progressBar');
+const progressText = document.getElementById('progressText');
+const openAddModal = document.getElementById('openAddModal');
+const closeModal = document.getElementById('closeModal');
+const addModal = document.getElementById('addModal');
 
-window.saveTasks = function () {
-    let tasks = [];
-    document.querySelectorAll(".task").forEach(task => {
-        tasks.push({
-            id: task.id,
-            title: task.querySelector("strong").textContent,
-            description: task.querySelector("p").textContent,
-            dueDate: task.querySelector(".due-date").textContent,
-            column: task.closest(".column").id
-        });
-    });
+openAddModal.addEventListener('click', () => {
+    addModal.classList.remove('hidden');
+});
 
-    console.log("Saving tasks:", tasks);
-    localStorage.setItem("kanbanTasks", JSON.stringify(tasks));
-};
-
-console.log("Script Loaded!");
-
-function allowDrop(event) {
-    event.preventDefault();
-}
-
-function drag(event) {
-    event.dataTransfer.setData("text", event.target.id);
-}
-
-function drop(event) {
-    event.preventDefault();
-    let data = event.dataTransfer.getData("text");
-    let task = document.getElementById(data);
-    event.target.appendChild(task);
-    applyTaskColor(task, event.target.closest(".column").id);
-    saveTasks();
-    checkDueDates();
-    updateLeaderboard();
-    updateProgress();
-}
-
-function addTask(columnId) {
-    let title = prompt("Enter task title:");
-    let description = prompt("Enter task description:");
-    
-    let dueDate = prompt("Set due date (YYYY-MM-DD):");
-    let assignedTo = prompt("Assign task to:");
-    
-    if (title) {
-        let taskId = "task-" + Math.random().toString(36).substr(2, 9);
-        let task = document.createElement("div");
-        
-        task.innerHTML = `<strong>${title}</strong>
-            <p>${description}</p>
-            <p>Due: <span class="due-date">${dueDate || "N/A"}</span></p>
-            <label>Assigned to: 
-                <select class="assigned-to" onchange="updateLeaderboard()">
-                    <option value="Worker 1">Worker 1</option>
-                    <option value="Worker 2">Worker 2</option>
-                    <option value="Worker 3">Worker 3</option>
-                </select>
-            </label>
-            <button onclick="addComment('${taskId}')">💬</button>
-            <button onclick="editTask(this)">✏️</button>
-            <button onclick="deleteTask(this)">❌</button>
-            <div class="comments" id="comments-${taskId}"></div>`;
-        task.setAttribute("draggable", true);
-        task.setAttribute("id", taskId);
-        task.ondragstart = drag;
-        document.getElementById(columnId).querySelector(".task-list").appendChild(task);
-        applyTaskColor(task, columnId);
-        saveTasks();
-        updateProgress();
-        checkDueDates();
-        updateLeaderboard();
+closeModal.addEventListener('click', () => {
+    addModal.classList.add('hidden');
+});
+addModal.addEventListener('click', (e) => {
+    if (e.target === addModal) {
+        addModal.classList.add('hidden');
     }
+});
+
+
+let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
+function saveTodos() {
+    localStorage.setItem('todos', JSON.stringify(todos));
+}
+
+function renderTodos() {
+    todoList.innerHTML = '';
+    todos.forEach((todo, index) => {
+        const li = document.createElement('li');
+        const priority = todo.priority || 'low';
+        li.className = `todo-item ${todo.completed ? 'completed' : ''} ${priority}`;
+        li.innerHTML = `
+                <div>
+                    <span class="todo-text">${todo.text}</span>
+                    ${todo.dueDate ? `<small>Due: ${todo.dueDate}</small>` : ''}
+                </div>
+                <div class="todo-actions">
+                    <button class="complete-btn" onclick="toggleComplete(${index})">
+                        <i class="ri-check-line"></i>
+                    </button>
+                    <button class="delete-btn" onclick="deleteTodo(${index})">
+                        <i class="ri-delete-bin-line"></i>
+                    </button>
+                </div>
+        `;
+
+
+        todoList.appendChild(li);
+
+    });
+    updateProgress();
+
+}
+
+function addTodo() {
+    const text = todoInput.value.trim();
+    const dueDate = dueDateInput.value;
+    const priority = priorityInput.value;
+
+    if (text) {
+        todos.push({
+            text,
+            completed: false,
+            dueDate,
+            priority
+        });
+
+        todoInput.value = '';
+        dueDateInput.value = '';
+        priorityInput.value = 'low';
+
+        saveTodos();
+        renderTodos();
+    }
+    addModal.classList.add('hidden');
+
 }
 function editTask(button, taskId) {
     let task = button.parentElement;
@@ -92,127 +99,29 @@ function addComment(taskId) {
         document.getElementById("comments-" + taskId).appendChild(commentDiv);
         saveTasks();
 
-    }
-}
-function deleteTask(button) {
-    if (confirm("Are you sure you want to delete this task?")) {
-        button.parentElement.remove();
-        saveTasks();
-        updateProgress();
-        updateLeaderboard();
-        saveTasks();
-    }
+
+function toggleComplete(index) {
+    todos[index].completed = !todos[index].completed;
+    saveTodos();
+    renderTodos();
+
 }
 
-window.saveTasks = function () {
-    let tasks = [];
-    document.querySelectorAll(".task").forEach(task => {
-        let comments = [];
-        task.querySelectorAll(".comments p").forEach(comment => comments.push(comment.textContent));
+function deleteTodo(index) {
+    todos.splice(index, 1);
+    saveTodos();
+    renderTodos();
 
-        tasks.push({
-            id: task.id,
-            title: task.querySelector("strong").textContent,
-            description: task.querySelector("p").textContent,
-            dueDate: task.querySelector(".due-date").textContent,
-            assignedTo: task.querySelector(".assigned-to") ? task.querySelector(".assigned-to").value : "",
-            column: task.closest(".column") ? task.closest(".column").id : "",
-            comments: comments
-        });
-    });
-
-    console.log("Saving tasks:", tasks); // ✅ Debugging
-    localStorage.setItem("kanbanTasks", JSON.stringify(tasks));
-};
-
-
-function loadTasks() {
-    let tasks = JSON.parse(localStorage.getItem("kanbanTasks")) || [];
-    console.log("Loaded tasks:", tasks); // ✅ Debugging
-
-    tasks.forEach(taskData => {
-        let task = document.createElement("div");
-        task.className = "task";
-        task.innerHTML = `<strong>${taskData.title}</strong>
-            <p>${taskData.description}</p>
-            <p>Due: <span class="due-date">${taskData.dueDate}</span></p>
-            <label>Assigned to: 
-                <select class="assigned-to" onchange="saveTasks()">
-                    <option value="Worker 1" ${taskData.assignedTo === "Worker 1" ? "selected" : ""}>Worker 1</option>
-                    <option value="Worker 2" ${taskData.assignedTo === "Worker 2" ? "selected" : ""}>Worker 2</option>
-                    <option value="Worker 3" ${taskData.assignedTo === "Worker 3" ? "selected" : ""}>Worker 3</option>
-                </select>
-            </label>
-            <button onclick="deleteTask(this)">❌</button>
-            <div class="comments" id="comments-${taskData.id}"></div>`;
-
-        task.setAttribute("draggable", true);
-        task.setAttribute("id", taskData.id);
-        task.ondragstart = drag;
-
-        let column = document.getElementById(taskData.column);
-        if (column) {
-            column.querySelector(".task-list").appendChild(task);
-        } else {
-            console.warn(`Column ${taskData.column} not found!`);
-        }
-
-        taskData.comments.forEach(comment => {
-            let commentDiv = document.createElement("p");
-            commentDiv.textContent = comment;
-            document.getElementById("comments-" + taskData.id).appendChild(commentDiv);
-        });
-    });
 }
 
 
+renderTodos();
 
-function toggleTheme() {
-    document.body.classList.toggle("dark-theme");
-    let theme = document.body.classList.contains("dark-theme") ? "dark" : "light";
-    localStorage.setItem("theme", theme);
-    document.getElementById("theme-toggle").textContent = theme === "dark" ? "☀️" : "🌙";
-}
-function exportTasks() {
-    let tasks = localStorage.getItem("kanbanTasks");
-    let blob = new Blob([tasks], { type: "application/json" });
-    let a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "kanban_tasks.json";
-    a.click();
-}
-
-function importTasks() {
-    let input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/json";
-    input.onchange = function(event) {
-        let file = event.target.files[0];
-        let reader = new FileReader();
-        reader.onload = function() {
-            localStorage.setItem("kanbanTasks", reader.result);
-            location.reload();
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-}
 function updateProgress() {
-    let totalTasks = document.querySelectorAll(".task").length;
-    let completedTasks = document.querySelectorAll("#done .task").length;
-    let progressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-    document.getElementById("progress-bar").style.width = progressPercentage + "%";
-    document.getElementById("progress-bar").textContent = Math.round(progressPercentage) + "%";
+    const completed = todos.filter(t => t.completed).length;
+    const total = todos.length;
+    const percent = total ? Math.round((completed / total) * 100) : 0;
+
+    progressBar.style.width = percent + '%';
+    progressText.textContent = `${completed} / ${total} tasks completed`;
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    console.log("Page loaded. Loading tasks...");
-    loadTasks();
-    updateProgress();
-    updateLeaderboard();
-    if (localStorage.getItem("theme") === "dark") {
-        document.body.classList.add("dark-theme");
-        document.getElementById("theme-toggle").textContent = "🌙";
-    }
-});
