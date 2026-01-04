@@ -883,6 +883,24 @@
         color: var(--primary-color);
         font-size: 1.5rem;
     }
+    /* Dropdown text color */
+.sort-box select {
+    color: var(--text-primary);   /* text color */
+    background: transparent;
+}
+
+/* Dropdown option text color */
+.sort-box select option {
+    color: #111827;               /* light mode option text */
+    background: #ffffff;
+}
+
+/* Dark mode dropdown options */
+[data-theme="dark"] .sort-box select option {
+    color: #f1f5f9;
+    background: #1e293b;
+}
+
 </style>
 </head>
 
@@ -1898,6 +1916,42 @@
         <p class="section-subtitle">Thanks to everyone who has contributed to this project!</p>
     </div>
 
+    <!-- Contributor Controls -->
+<div class="controls-wrapper" style="margin-bottom:2rem; display:flex; gap:1rem; flex-wrap:wrap; justify-content:center">
+
+    <!-- Search -->
+    <div class="search-box">
+        <i class="ri-search-line"></i>
+        <input type="text" id="contributor-search" placeholder="Search contributors...">
+    </div>
+
+    <!-- Role Filter -->
+    <div class="sort-box">
+        <select id="role-filter">
+            <option value="all">All Roles</option>
+            <option value="maintainer">Maintainer</option>
+            <option value="developer">Developer</option>
+            <option value="contributor">Contributor</option>
+        </select>
+    </div>
+
+    <!-- Sort -->
+    <div class="sort-box">
+        <select id="contributor-sort">
+            <option value="default">Sort</option>
+            <option value="az">A → Z</option>
+            <option value="za">Z → A</option>
+            <option value="newest">Newest</option>
+        </select>
+    </div>
+
+    <!-- Reset -->
+    <button id="reset-contributor-filters" class="view-all-btn">
+        Reset Filters
+    </button>
+</div>
+
+
     <div class="contributors-grid" id="contributors-grid">
         <!-- Loading skeletons will be shown here initially -->
         <div class="loading-skeleton">
@@ -2068,6 +2122,39 @@
         `;
     }
 
+
+function getRole(contributor) {
+    if (contributor.permissions?.admin) return "maintainer";
+    if (contributor.contributions >= 20) return "developer";
+    return "contributor";
+}
+
+function createContributorCard(contributor) {
+    const role = getRole(contributor);
+
+    return `
+        <div class="contributor-card"
+             data-role="${role}"
+             data-name="${contributor.login.toLowerCase()}"
+             data-date="${contributor.id}">
+             
+            <img src="${contributor.avatar_url}" class="contributor-avatar" loading="lazy">
+
+            <h4 class="contributor-name">${contributor.login}</h4>
+            <p class="contributor-username">${role}</p>
+
+            <div class="contributor-contributions">
+                <i class="ri-git-commit-line"></i>
+                ${contributor.contributions}
+            </div>
+
+            <a href="${contributor.html_url}" target="_blank" class="contributor-link">
+                <i class="ri-github-fill"></i> Profile
+            </a>
+        </div>
+    `;
+}
+
     // Display contributors in the grid
     function displayContributors(contributors) {
         // Remove loading skeletons
@@ -2147,7 +2234,65 @@
 
     // Initialize contributors when the page loads
     window.addEventListener('load', initContributors);
+    const searchInput = document.getElementById("contributor-search");
+const roleFilter = document.getElementById("role-filter");
+const sortSelect = document.getElementById("contributor-sort");
+const resetBtn = document.getElementById("reset-contributor-filters");
+
+function applyContributorFilters() {
+    const search = searchInput.value.toLowerCase();
+    const role = roleFilter.value;
+    const sort = sortSelect.value;
+
+    let cards = Array.from(document.querySelectorAll(".contributor-card"));
+
+    // SEARCH + ROLE FILTER
+    cards.forEach(card => {
+        const name = card.dataset.name;
+        const cardRole = card.dataset.role;
+
+        const matchesSearch = name.includes(search);
+        const matchesRole = role === "all" || role === cardRole;
+
+        card.style.display = (matchesSearch && matchesRole) ? "flex" : "none";
+    });
+
+    // SORT
+    let visibleCards = cards.filter(c => c.style.display !== "none");
+
+    if (sort === "az") {
+        visibleCards.sort((a, b) =>
+            a.dataset.name.localeCompare(b.dataset.name)
+        );
+    } else if (sort === "za") {
+        visibleCards.sort((a, b) =>
+            b.dataset.name.localeCompare(a.dataset.name)
+        );
+    } else if (sort === "newest") {
+        visibleCards.sort((a, b) =>
+            b.dataset.date - a.dataset.date
+        );
+    }
+
+    visibleCards.forEach(card => contributorsGrid.appendChild(card));
+}
+
+// EVENTS
+searchInput.addEventListener("input", applyContributorFilters);
+roleFilter.addEventListener("change", applyContributorFilters);
+sortSelect.addEventListener("change", applyContributorFilters);
+
+// RESET
+resetBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    roleFilter.value = "all";
+    sortSelect.value = "default";
+    applyContributorFilters();
+});
+
 </script> 
+
+
 
 <script>
     // Force scroll to top when page loads
