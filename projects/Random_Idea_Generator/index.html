@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Idea Generator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #4a6fa5;
+            --secondary: #166088;
+            --accent: #ff7e5f;
+            --light: #f8f9fa;
+            --dark: #333;
+            --gray: #6c757d;
+            --shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            padding: 2.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        h1 {
+            color: var(--secondary);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .subtitle {
+            color: var(--gray);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .idea-display {
+            background-color: var(--light);
+            border-radius: 15px;
+            padding: 2.5rem 2rem;
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .idea-text {
+            font-size: 1.8rem;
+            text-align: center;
+            color: var(--secondary);
+            font-weight: 600;
+            line-height: 1.5;
+            padding: 0 1rem;
+            transition: var(--transition);
+            opacity: 1;
+        }
+
+        .fade-out {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        .fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .idea-category {
+            display: inline-block;
+            background-color: var(--accent);
+            color: white;
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .generate-btn {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 1.2rem 2.5rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            box-shadow: 0 4px 15px rgba(74, 111, 165, 0.3);
+            transition: var(--transition);
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(74, 111, 165, 0.4);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .generate-btn i {
+            font-size: 1.4rem;
+        }
+
+        .history-section {
+            width: 100%;
+            background-color: var(--light);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .history-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .history-title h3 {
+            color: var(--secondary);
+            font-size: 1.3rem;
+        }
+
+        .clear-history {
+            background: none;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 0.4rem 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .clear-history:hover {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .history-item {
+            padding: 0.8rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            color: var(--dark);
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .history-item:hover {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding-left: 1.2rem;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .footer {
+            margin-top: 2rem;
+            text-align: center;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .idea-count {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .idea-icon {
+            position: absolute;
+            font-size: 5rem;
+            opacity: 0.05;
+            color: var(--primary);
+            z-index: 0;
+        }
+
+        .icon-1 {
+            top: 20px;
+            left: 20px;
+        }
+
+        .icon-2 {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        /* Animation for new idea */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 0.5s ease;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .idea-text {
+                font-size: 1.5rem;
+            }
+            
+            .generate-btn {
+                padding: 1rem 2rem;
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .idea-text {
+                font-size: 1.3rem;
+            }
+            
+            .idea-display {
+                padding: 2rem 1rem;
+                min-height: 240px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="idea-icon icon-1">
+            <i class="fas fa-lightbulb"></i>
+        </div>
+        <div class="idea-icon icon-2">
+            <i class="fas fa-brain"></i>
+        </div>
+        
+        <div class="idea-count" id="ideaCount">0</div>
+        
+        <header>
+            <h1>Random Idea Generator</h1>
+            <p class="subtitle">Need creative inspiration? Click the button to generate random ideas for projects, stories, art, and more. Save your favorites to revisit later!</p>
+        </header>
+        
+        <main>
+            <div class="idea-display">
+                <div class="idea-text" id="ideaText">Click the button below to generate your first creative idea!</div>
+                <div class="idea-category" id="ideaCategory">Ready</div>
+            </div>
+            
+            <div class="controls">
+                <button class="generate-btn" id="generateBtn">
+                    <i class="fas fa-magic"></i>
+                    Generate New Idea
+                </button>
+            </div>
+            
+            <div class="history-section">
+                <div class="history-title">
+                    <h3>Idea History</h3>
+                    <button class="clear-history" id="clearHistory">Clear History</button>
+                </div>
+                <div class="history-list" id="historyList">
+                    <!-- History items will be added here dynamically -->
+                    <div class="history-item">No ideas generated yet. Click the button above to start!</div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="footer">
+        <p>Random Idea Generator &copy; 2023 | A creative tool to spark inspiration</p>
+    </div>
+
+    <script>
+        // Idea database with categories
+        const ideas = {
+            writing: [
+                "Write a short story from the perspective of a forgotten childhood toy",
+                "Create a poem about the changing seasons using only metaphors",
+                "Develop a character who discovers they can hear people's thoughts but only when they lie",
+                "Write a dialogue between two strangers stuck in an elevator during a power outage",
+                "Craft a story about a world where memories can be bought and sold"
+            ],
+            art: [
+                "Paint a landscape using only three colors and their shades",
+                "Create a collage from recycled materials that represents your city",
+                "Draw a self-portrait without looking at the paper or lifting your pen",
+                "Design a poster for a movie that doesn't exist yet",
+                "Sculpt something using only materials found in nature"
+            ],
+            technology: [
+                "Build an app that helps people track their daily water intake with fun reminders",
+                "Create a website that generates random writing prompts with visual inspiration",
+                "Design a smart home device that helps reduce food waste",
+                "Develop a browser extension that simplifies online research for students",
+                "Build a simple game that teaches basic programming concepts"
+            ],
+            business: [
+                "Start a subscription service for locally sourced, zero-waste household products",
+                "Create an online platform connecting retired professionals with mentorship opportunities",
+                "Develop a mobile app that helps small businesses manage customer loyalty programs",
+                "Launch a service that offers personalized learning paths for skill development",
+                "Start a business that turns food waste from restaurants into compost for community gardens"
+            ],
+            life: [
+                "Learn a new language by watching one foreign film per week with subtitles",
+                "Start a 30-day challenge to try a new recipe from a different country each day",
+                "Create a monthly 'skill swap' with friends where each person teaches something they're good at",
+                "Organize a community cleanup event in your local park or neighborhood",
+                "Start a gratitude journal where you document three positive things each day"
+            ]
+        };
+
+        // DOM elements
+        const ideaText = document.getElementById('ideaText');
+        const ideaCategory = document.getElementById('ideaCategory');
+        const generateBtn = document.getElementById('generateBtn');
+        const historyList = document.getElementById('historyList');
+        const clearHistory = document.getElementById('clearHistory');
+        const ideaCount = document.getElementById('ideaCount');
+        
+        // State variables
+        let currentIdea = '';
+        let currentCategory = '';
+        let history = JSON.parse(localStorage.getItem('ideaHistory')) || [];
+        let generatedCount = parseInt(localStorage.getItem('generatedCount')) || 0;
+        
+        // Update the counter display
+        updateCounter();
+        
+        // Load history from localStorage
+        loadHistory();
+        
+        // Generate a random idea
+        function generateIdea() {
+            // Get all categories
+            const categories = Object.keys(ideas);
+            
+            // Pick a random category
+            const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+            
+            // Pick a random idea from that category
+            const categoryIdeas = ideas[randomCategory];
+            const randomIdea = categoryIdeas[Math.floor(Math.random() * categoryIdeas.length)];
+            
+            // Store current idea and category
+            currentIdea = randomIdea;
+            currentCategory = randomCategory;
+            
+            // Add fade out animation
+            ideaText.classList.add('fade-out');
+            ideaCategory.classList.add('fade-out');
+            
+            // After fade out, update text and fade in
+            setTimeout(() => {
+                // Update the display
+                ideaText.textContent = currentIdea;
+                ideaCategory.textContent = randomCategory.charAt(0).toUpperCase() + randomCategory.slice(1);
+                
+                // Add fade in animation
+                ideaText.classList.remove('fade-out');
+                ideaCategory.classList.remove('fade-out');
+                ideaText.classList.add('fade-in');
+                ideaCategory.classList.add('fade-in');
+                
+                // Add pulse animation to the container
+                document.querySelector('.idea-display').classList.add('pulse');
+                
+                // Remove animation class after animation completes
+                setTimeout(() => {
+                    ideaText.classList.remove('fade-in');
+                    ideaCategory.classList.remove('fade-in');
+                    document.querySelector('.idea-display').classList.remove('pulse');
+                }, 500);
+                
+                // Add to history
+                addToHistory(currentIdea, randomCategory);
+                
+                // Update counter
+                generatedCount++;
+                updateCounter();
+                localStorage.setItem('generatedCount', generatedCount);
+            }, 300);
+        }
+        
+        // Add idea to history
+        function addToHistory(idea, category) {
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const historyItem = {
+                idea: idea,
+                category: category,
+                time: timestamp
+            };
+            
+            // Add to beginning of history array
+            history.unshift(historyItem);
+            
+            // Keep only last 10 items
+            if (history.length > 10) {
+                history = history.slice(0, 10);
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('ideaHistory', JSON.stringify(history));
+            
+            // Update history display
+            loadHistory();
+        }
+        
+        // Load history from localStorage
+        function loadHistory() {
+            // Clear current history list
+            historyList.innerHTML = '';
+            
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="history-item">No ideas generated yet. Click the button above to start!</div>';
+                return;
+            }
+            
+            // Add each history item to the list
+            history.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `
+                    <strong>${item.category.charAt(0).toUpperCase() + item.category.slice(1)}</strong>: ${item.idea}
+                    <div style="color: var(--gray); font-size: 0.8rem; margin-top: 0.3rem;">${item.time}</div>
+                `;
+                historyList.appendChild(historyItem);
+            });
+        }
+        
+        // Update the counter display
+        function updateCounter() {
+            ideaCount.textContent = generatedCount;
+        }
+        
+        // Clear history
+        function clearHistoryList() {
+            if (confirm("Are you sure you want to clear your idea history?")) {
+                history = [];
+                localStorage.setItem('ideaHistory', JSON.stringify(history));
+                loadHistory();
+            }
+        }
+        
+        // Event listeners
+        generateBtn.addEventListener('click', generateIdea);
+        clearHistory.addEventListener('click', clearHistoryList);
+        
+        // Add keyboard shortcut (Spacebar to generate new idea)
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !e.target.matches('button, input, textarea')) {
+                e.preventDefault();
+                generateIdea();
+            }
+        });
+        
+        // Add a welcome idea after page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                // Display a random welcome idea
+                const categories = Object.keys(ideas);
+                const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+                const categoryIdeas = ideas[randomCategory];
+                const randomIdea = categoryIdeas[Math.floor(Math.random() * categoryIdeas.length)];
+                
+                ideaText.textContent = randomIdea;
+                ideaCategory.textContent = randomCategory.charAt(0).toUpperCase() + randomCategory.slice(1);
+            }, 500);
+        });
+    </script>
+</body>
+</html>

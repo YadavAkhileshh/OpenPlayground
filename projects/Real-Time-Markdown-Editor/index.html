@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Markdown Editor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <button class="toggle-sidebar" id="toggleSidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+            <i class="fas fa-markdown"></i>
+            <h1>Real-Time Markdown Editor</h1>
+        </div>
+        
+        <div class="header-controls">
+            <button class="btn btn-primary" id="newFileBtn">
+                <i class="fas fa-file-circle-plus"></i> New File
+            </button>
+            <button class="btn btn-secondary" id="exportBtn">
+                <i class="fas fa-download"></i> Export
+            </button>
+            <button class="btn btn-secondary" id="themeToggle">
+                <i class="fas fa-moon"></i> Theme
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-folder-open"></i> Documents</h3>
+                <span class="file-count" id="fileCount">0 files</span>
+            </div>
+            
+            <div class="search-box">
+                <input type="text" id="fileSearch" placeholder="Search documents...">
+                <i class="fas fa-search"></i>
+            </div>
+            
+            <ul class="file-list" id="fileList">
+                <!-- Files will be dynamically added here -->
+            </ul>
+            
+            <div class="sidebar-footer">
+                <button class="btn btn-primary" id="addFileBtn" style="width: 100%;">
+                    <i class="fas fa-plus"></i> Add New File
+                </button>
+            </div>
+        </div>
+
+        <!-- Editor & Preview Container -->
+        <div class="editor-preview-container">
+            <!-- Editor Section -->
+            <div class="editor-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-edit"></i> Editor</h2>
+                    <div class="word-count">
+                        <span id="wordCount">0 words</span>
+                        <span id="charCount" class="char-count">0 chars</span>
+                    </div>
+                </div>
+                
+                <div class="toolbar">
+                    <button class="toolbar-btn" data-action="heading1" title="Heading 1">
+                        <i class="fas fa-heading"></i> H1
+                    </button>
+                    <button class="toolbar-btn" data-action="heading2" title="Heading 2">
+                        <i class="fas fa-heading"></i> H2
+                    </button>
+                    <button class="toolbar-btn" data-action="bold" title="Bold">
+                        <i class="fas fa-bold"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="italic" title="Italic">
+                        <i class="fas fa-italic"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="link" title="Insert Link">
+                        <i class="fas fa-link"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="image" title="Insert Image">
+                        <i class="fas fa-image"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="code" title="Code Block">
+                        <i class="fas fa-code"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="list" title="Bulleted List">
+                        <i class="fas fa-list-ul"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="numberedList" title="Numbered List">
+                        <i class="fas fa-list-ol"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="quote" title="Blockquote">
+                        <i class="fas fa-quote-right"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="table" title="Insert Table">
+                        <i class="fas fa-table"></i>
+                    </button>
+                    <button class="toolbar-btn" data-action="hr" title="Horizontal Rule">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+                
+                <textarea 
+                    id="markdownInput" 
+                    class="markdown-input" 
+                    placeholder="# Welcome to Markdown Editor
+
+Start writing your Markdown here...
+
+## Quick Tips:
+- Use # for headings
+- Use ** for **bold** text
+- Use * for *italic* text
+- Use - for lists
+- Use \` for inline code
+- Use \`\`\` for code blocks
+
+Happy writing! 🚀"
+                ></textarea>
+                
+                <div class="status-bar">
+                    <div class="status-item">
+                        <i class="fas fa-clock"></i>
+                        <span id="lastSaved">Never saved</span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-code"></i>
+                        <span>Markdown</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div class="preview-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-eye"></i> Preview</h2>
+                    <div class="preview-controls">
+                        <button class="btn btn-secondary" id="togglePreview">
+                            <i class="fas fa-expand"></i> Fullscreen
+                        </button>
+                        <button class="btn btn-secondary" id="refreshPreview">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="previewContent" class="preview-content">
+                    <!-- Preview will be rendered here -->
+                    <div class="empty-preview">
+                        <i class="fas fa-file-alt"></i>
+                        <h3>Nothing to preview yet</h3>
+                        <p>Start writing in the editor to see the live preview here.</p>
+                    </div>
+                </div>
+                
+                <div class="status-bar">
+                    <div class="status-item">
+                        <i class="fas fa-history"></i>
+                        <span id="previewTime">Last update: --:--</span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-file-code"></i>
+                        <span>HTML Preview</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <p>Real-Time Markdown Editor &copy; <span id="currentYear"></span> | Made with HTML, CSS & JavaScript</p>
+            <div class="footer-links">
+                <a href="#" id="helpBtn"><i class="fas fa-question-circle"></i> Help</a>
+                <a href="#" id="aboutBtn"><i class="fas fa-info-circle"></i> About</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- New File Modal -->
+    <div class="modal-overlay hidden" id="newFileModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-circle-plus"></i> Create New Document</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="fileName">Document Name</label>
+                    <input type="text" id="fileName" placeholder="e.g., My Notes" value="Untitled Document">
+                </div>
+                <div class="form-group">
+                    <label for="fileTemplate">Template</label>
+                    <select id="fileTemplate">
+                        <option value="blank">Blank Document</option>
+                        <option value="notes">Meeting Notes</option>
+                        <option value="blog">Blog Post</option>
+                        <option value="readme">README Template</option>
+                        <option value="cheatsheet">Markdown Cheatsheet</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelNewFile">Cancel</button>
+                <button class="btn btn-primary" id="createNewFile">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal-overlay hidden" id="exportModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-download"></i> Export Document</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Choose export format:</p>
+                <div class="export-options">
+                    <label class="export-option">
+                        <input type="radio" name="exportFormat" value="markdown" checked>
+                        <div class="option-content">
+                            <i class="fas fa-file-code"></i>
+                            <div>
+                                <strong>Markdown (.md)</strong>
+                                <small>Export as plain Markdown file</small>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="export-option">
+                        <input type="radio" name="exportFormat" value="html">
+                        <div class="option-content">
+                            <i class="fas fa-file-code"></i>
+                            <div>
+                                <strong>HTML (.html)</strong>
+                                <small>Export as standalone HTML file</small>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="export-option">
+                        <input type="radio" name="exportFormat" value="pdf">
+                        <div class="option-content">
+                            <i class="fas fa-file-pdf"></i>
+                            <div>
+                                <strong>PDF (.pdf)</strong>
+                                <small>Export as printable PDF</small>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label for="exportFileName">File Name</label>
+                    <input type="text" id="exportFileName" placeholder="e.g., My Document">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelExport">Cancel</button>
+                <button class="btn btn-primary" id="confirmExport">Export</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div class="modal-overlay hidden" id="aboutModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-info-circle"></i> About Markdown Editor</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="about-content">
+                    <div class="app-logo">
+                        <i class="fas fa-markdown"></i>
+                    </div>
+                    <h4>Real-Time Markdown Editor</h4>
+                    <p>Version 1.0.0</p>
+                    <p>A feature-rich Markdown editor built with HTML, CSS, and JavaScript.</p>
+                    
+                    <div class="feature-list">
+                        <h5>Features:</h5>
+                        <ul>
+                            <li><i class="fas fa-check"></i> Real-time preview</li>
+                            <li><i class="fas fa-check"></i> Syntax highlighting</li>
+                            <li><i class="fas fa-check"></i> File management</li>
+                            <li><i class="fas fa-check"></i> Export to multiple formats</li>
+                            <li><i class="fas fa-check"></i> Dark/light themes</li>
+                            <li><i class="fas fa-check"></i> Auto-save</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="credits">
+                        <h5>Credits:</h5>
+                        <p>Built with:</p>
+                        <ul>
+                            <li><a href="https://marked.js.org/" target="_blank">marked.js</a> - Markdown parsing</li>
+                            <li><a href="https://highlightjs.org/" target="_blank">highlight.js</a> - Syntax highlighting</li>
+                            <li><a href="https://fontawesome.com/" target="_blank">Font Awesome</a> - Icons</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="closeAbout">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay hidden" id="helpModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-question-circle"></i> Markdown Guide</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="help-content">
+                    <div class="help-section">
+                        <h4>Basic Formatting</h4>
+                        <table class="help-table">
+                            <tr>
+                                <th>Element</th>
+                                <th>Markdown</th>
+                                <th>Result</th>
+                            </tr>
+                            <tr>
+                                <td>Heading 1</td>
+                                <td><code># Text</code></td>
+                                <td><h1 style="margin:0;font-size:1.2em;">Text</h1></td>
+                            </tr>
+                            <tr>
+                                <td>Heading 2</td>
+                                <td><code>## Text</code></td>
+                                <td><h2 style="margin:0;font-size:1.1em;">Text</h2></td>
+                            </tr>
+                            <tr>
+                                <td>Bold</td>
+                                <td><code>**text**</code></td>
+                                <td><strong>text</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Italic</td>
+                                <td><code>*text*</code></td>
+                                <td><em>text</em></td>
+                            </tr>
+                            <tr>
+                                <td>Link</td>
+                                <td><code>[title](url)</code></td>
+                                <td><a href="#">title</a></td>
+                            </tr>
+                            <tr>
+                                <td>Image</td>
+                                <td><code>![alt](url)</code></td>
+                                <td><em>Image</em></td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h4>Keyboard Shortcuts</h4>
+                        <ul class="shortcuts-list">
+                            <li><kbd>Ctrl/Cmd</kbd> + <kbd>S</kbd> - Save document</li>
+                            <li><kbd>Ctrl/Cmd</kbd> + <kbd>B</kbd> - Bold text</li>
+                            <li><kbd>Ctrl/Cmd</kbd> + <kbd>I</kbd> - Italic text</li>
+                            <li><kbd>Ctrl/Cmd</kbd> + <kbd>K</kbd> - Insert link</li>
+                            <li><kbd>Ctrl/Cmd</kbd> + <kbd>E</kbd> - Toggle preview</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="closeHelp">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

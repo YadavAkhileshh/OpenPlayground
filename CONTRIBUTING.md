@@ -117,38 +117,44 @@ projects/your-project-name/
    - Ensure all files are properly organized
 
 2. **Update the main website**
-   - Add your project card to `index.html`
-   - Use the following template:
-   ```html
-   <a href="./projects/your-project-name/index.html" class="card">
-       <div class="card-cover your-project-cover">
-           <i class="ri-your-icon-name"></i>
-       </div>
-       <div class="card-content">
-           <h3 class="card-heading">Your Project Name</h3>
-           <p class="card-description">Brief description of your project</p>
-           <div class="card-tech">
-               <span>HTML</span>
-               <span>CSS</span>
-               <span>JavaScript</span>
-           </div>
-       </div>
-   </a>
+   - Open `projects.json` in the root directory.
+   - Add a new object to the array with your project details using this template:
+
+   ```bash
+   
+   {
+      "title": "Your Project Name",
+      "category": "utility",
+      "description": "Brief description of your project.",
+      "tech": ["HTML", "CSS", "JS"],
+      "link": "./projects/your-project-name/index.html",
+      "icon": "ri-your-icon-name",
+      "coverClass": "your-project-cover"
+   }
+     
    ```
+
+   **Note:** _Valid categories include `utility`, `game`, `puzzle`, `productivity`, etc._
 
 3. **Add CSS for your project card**
-   - Add a unique gradient for your project in `css/style.css`:
-   ```css
-   .your-project-cover {
-       background: linear-gradient(135deg, #color1 0%, #color2 100%);
-   }
+
+   - If you used a `coverClass` (e.g., `your-project-cover`) in step 2, add the styling in `css/style.css` :
+
+   ```copy
+         .your-project-cover {
+         background: linear-gradient(135deg, #color1 0%, #color2 100%);
+         color: white; /* Optional: adjust text color if needed */
+         }
    ```
+   - Alternatively, you can use `"coverStyle"` in `projects.json` for inline styles instead of a class.
+   
 
 4. **Test your changes**
-   - Open `index.html` in your browser
-   - Verify your project card appears correctly
+   - Open index.html in your browser
+   - Verify your project card appears correctly in the list
    - Click on your card to ensure it opens your project
    - Test your project functionality
+   
 
 5. **Commit your changes**
    ```bash
