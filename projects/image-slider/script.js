@@ -21,4 +21,8 @@ document.getElementById("prev").onclick = () =>
 document.getElementById("next").onclick = () =>
   showImage((idx + 1) % images.length);
 
+dots.forEach((dot, i) => {
+  dot.addEventListener("click", () => showImage(i));
+});
+
 showImage(idx);
