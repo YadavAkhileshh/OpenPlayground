@@ -113,7 +113,7 @@ if (navToggle && navLinks) {
 // ===============================
 
 // Number of project cards displayed per page
-const itemsPerPage = 9;
+// const itemsPerPage = 9;
 // Tracks the current page number for pagination
 let currentPage = 1;
 // Stores the currently selected project category filter
@@ -278,10 +278,11 @@ function renderProjects() {
     }
 
     // Calculate pagination values and slice project list accordingly
-    const totalItems = filteredProjects.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const start = (currentPage - 1) * itemsPerPage;
-    const paginatedItems = filteredProjects.slice(start, start + itemsPerPage);
+    // const totalItems = filteredProjects.length;
+    // const totalPages = Math.ceil(totalItems / itemsPerPage);
+    // const start = (currentPage - 1) * itemsPerPage;
+    // const paginatedItems = filteredProjects.slice(start, start + itemsPerPage);
+    const paginatedItems = filteredProjects;
 
     // Display empty state message if no projects match the criteria
     projectsContainer.innerHTML = "";
@@ -294,7 +295,7 @@ function renderProjects() {
                 <p>Try adjusting your search or filter criteria</p>
             </div>
         `;
-        renderPagination(0);
+        // renderPagination(0);
         return;
     }
 
@@ -345,7 +346,7 @@ function renderProjects() {
     });
 
     // Render pagination controls and handle page navigation
-    renderPagination(totalPages);
+    // renderPagination(totalPages);
 }
 
 // Capitalize the first letter of a given string
@@ -358,108 +359,108 @@ function capitalize(str) {
 // Pagination
 // ===============================
 
-function renderPagination(totalPages) {
-    if (!paginationContainer) return;
+// function renderPagination(totalPages) {
+//     if (!paginationContainer) return;
 
-    paginationContainer.innerHTML = "";
-    if (totalPages <= 1) return;
+//     paginationContainer.innerHTML = "";
+//     if (totalPages <= 1) return;
 
-    const createBtn = (label, disabled, onClick, isActive = false) => {
-        const btn = document.createElement("button");
-        btn.className = `pagination-btn${isActive ? " active" : ""}`;
-        btn.innerHTML = label;
-        btn.disabled = disabled;
-        btn.onclick = onClick;
-        return btn;
-    };
+//     const createBtn = (label, disabled, onClick, isActive = false) => {
+//         const btn = document.createElement("button");
+//         btn.className = `pagination-btn${isActive ? " active" : ""}`;
+//         btn.innerHTML = label;
+//         btn.disabled = disabled;
+//         btn.onclick = onClick;
+//         return btn;
+//     };
 
-    // Create previous page navigation button
-    paginationContainer.appendChild(
-        createBtn('<i class="ri-arrow-left-s-line"></i>', currentPage === 1, () => {
-            currentPage--;
-            renderProjects();
-            scrollToProjects();
-        })
-    );
+//     // Create previous page navigation button
+//     paginationContainer.appendChild(
+//         createBtn('<i class="ri-arrow-left-s-line"></i>', currentPage === 1, () => {
+//             currentPage--;
+//             renderProjects();
+//             scrollToProjects();
+//         })
+//     );
 
-    // Page numbers (with ellipsis for many pages)
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+//     // Page numbers (with ellipsis for many pages)
+//     const maxVisible = 5;
+//     let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+//     let endPage = Math.min(totalPages, startPage + maxVisible - 1);
 
-    if (endPage - startPage + 1 < maxVisible) {
-        startPage = Math.max(1, endPage - maxVisible + 1);
-    }
+//     if (endPage - startPage + 1 < maxVisible) {
+//         startPage = Math.max(1, endPage - maxVisible + 1);
+//     }
 
-    if (startPage > 1) {
-        paginationContainer.appendChild(
-            createBtn("1", false, () => {
-                currentPage = 1;
-                renderProjects();
-                scrollToProjects();
-            })
-        );
-        if (startPage > 2) {
-            const ellipsis = document.createElement("span");
-            ellipsis.className = "pagination-btn";
-            ellipsis.textContent = "...";
-            ellipsis.style.cursor = "default";
-            paginationContainer.appendChild(ellipsis);
-        }
-    }
+//     if (startPage > 1) {
+//         paginationContainer.appendChild(
+//             createBtn("1", false, () => {
+//                 currentPage = 1;
+//                 renderProjects();
+//                 scrollToProjects();
+//             })
+//         );
+//         if (startPage > 2) {
+//             const ellipsis = document.createElement("span");
+//             ellipsis.className = "pagination-btn";
+//             ellipsis.textContent = "...";
+//             ellipsis.style.cursor = "default";
+//             paginationContainer.appendChild(ellipsis);
+//         }
+//     }
 
-    for (let i = startPage; i <= endPage; i++) {
-        paginationContainer.appendChild(
-            createBtn(
-                i,
-                false,
-                () => {
-                    currentPage = i;
-                    renderProjects();
-                    scrollToProjects();
-                },
-                i === currentPage
-            )
-        );
-    }
+//     for (let i = startPage; i <= endPage; i++) {
+//         paginationContainer.appendChild(
+//             createBtn(
+//                 i,
+//                 false,
+//                 () => {
+//                     currentPage = i;
+//                     renderProjects();
+//                     scrollToProjects();
+//                 },
+//                 i === currentPage
+//             )
+//         );
+//     }
 
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            const ellipsis = document.createElement("span");
-            ellipsis.className = "pagination-btn";
-            ellipsis.textContent = "...";
-            ellipsis.style.cursor = "default";
-            paginationContainer.appendChild(ellipsis);
-        }
-        paginationContainer.appendChild(
-            createBtn(totalPages, false, () => {
-                currentPage = totalPages;
-                renderProjects();
-                scrollToProjects();
-            })
-        );
-    }
+//     if (endPage < totalPages) {
+//         if (endPage < totalPages - 1) {
+//             const ellipsis = document.createElement("span");
+//             ellipsis.className = "pagination-btn";
+//             ellipsis.textContent = "...";
+//             ellipsis.style.cursor = "default";
+//             paginationContainer.appendChild(ellipsis);
+//         }
+//         paginationContainer.appendChild(
+//             createBtn(totalPages, false, () => {
+//                 currentPage = totalPages;
+//                 renderProjects();
+//                 scrollToProjects();
+//             })
+//         );
+//     }
 
-    // Create next page navigation button
-    paginationContainer.appendChild(
-        createBtn(
-            '<i class="ri-arrow-right-s-line"></i>',
-            currentPage === totalPages,
-            () => {
-                currentPage++;
-                renderProjects();
-                scrollToProjects();
-            }
-        )
-    );
-}
+//     // Create next page navigation button
+//     paginationContainer.appendChild(
+//         createBtn(
+//             '<i class="ri-arrow-right-s-line"></i>',
+//             currentPage === totalPages,
+//             () => {
+//                 currentPage++;
+//                 renderProjects();
+//                 scrollToProjects();
+//             }
+//         )
+//     );
+// }
 
-function scrollToProjects() {
-    const projectsSection = document.getElementById("projects");
-    if (projectsSection) {
-        projectsSection.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-}
+// function scrollToProjects() {
+//     const projectsSection = document.getElementById("projects");
+//     if (projectsSection) {
+//         projectsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+//     }
+// }
 
 // ===============================
 // Init
