@@ -51,7 +51,7 @@ Our amazing community has built some incredible projects:
 ## 🚀 Quick Start Guide
 
 ### 👀 For Visitors
-Simply visit our [live website](https://yadavakhileshh.github.io/OpenPlayground/) and start exploring! Click on any project card to interact with it directly.
+Simply visit our [live website](https://open-playground-seven.vercel.app/) and start exploring! Click on any project card to interact with it directly.
 
 ### 👨‍💻 For Contributors
 Ready to add your project? Follow these steps:
