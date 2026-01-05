@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Typing Duel Game</title>
+
+  <style>
+/*  GLOBAL */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #020617, #020617);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/*  GAME BOX  */
+.game-box {
+  background: #1e293b;
+  padding: 24px;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 360px;   /* responsive */
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+/*  TITLE  */
+.game-box h1 {
+  font-size: clamp(1.4rem, 4vw, 1.8rem);
+  margin-bottom: 12px;
+}
+
+/*  WORD DISPLAY  */
+#word {
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  margin: 16px 0;
+  min-height: 32px;
+  letter-spacing: 1px;
+}
+
+/* INPUT  */
+input {
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: none;
+  outline: none;
+  margin-bottom: 12px;
+}
+
+/* - STATS  */
+.game-box p {
+  margin: 6px 0;
+  font-size: 0.95rem;
+}
+
+/*  SELECT  */
+select {
+  width: 100%;
+  padding: 10px;
+  margin: 12px 0;
+  border-radius: 6px;
+  border: none;
+  font-size: 1rem;
+}
+
+    /* BUTTON  */
+    button {
+        width: 100%;
+        padding: 12px;
+        font-size: 1rem;
+        font-weight: bold;
+        border: none;
+        border-radius: 8px;
+        background: #38bdf8;
+        color: #020617;
+        cursor: pointer;
+        transition: transform 0.1s ease, background 0.2s ease;
+    }
+
+    button:hover {
+        background: #0ea5e9;
+    }
+
+        button:active {
+        transform: scale(0.97);
+    }
+
+    /*  MOBILE OPTIMIZATION  */
+    @media (max-width: 480px) {
+    .game-box {
+        padding: 20px;
+    }
+
+    button {
+        padding: 14px;
+    }
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="game-box">
+    <h1>⚔️ Typing Duel</h1>
+
+    <p id="word">Press Start</p>
+
+    <input
+      type="text"
+      id="input"
+      placeholder="Start typing..."
+      disabled
+    />
+
+    <p>Time Left: <span id="time">5</span>s</p>
+    <p>Score: <span id="score">0</span></p>
+
+    <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+    </select>
+
+
+    <button id="startBtn">Start Game</button>
+  </div>
+
+  <script>
+    /*  CONSTANTS  */
+    const GAME_TIME = 5;
+    const FALLBACK_WORDS = [
+      "speed",
+      "javascript",
+      "typing",
+      "developer",
+      "challenge",
+      "keyboard"
+    ];
+    const DIFFICULTY_SETTINGS = {
+        easy: { time: 6, minLen: 3, maxLen: 5 },
+        medium: { time: 5, minLen: 1, maxLen: 20 },
+        hard: { time: 4, minLen: 8, maxLen: 20 }
+    };
+
+
+    /* STATE */
+    let score = 0;
+    let timeLeft = GAME_TIME;
+    let timer = null;
+    let currentWord = "";
+    let totalWords = 0;
+    let difficulty = "medium";
+    const difficultyEl = document.getElementById("difficulty");
+    difficultyEl.addEventListener("change", (e) => {
+        difficulty = e.target.value;
+    });
+
+    /* DOM ELEMENTS*/
+    const wordEl = document.getElementById("word");
+    const inputEl = document.getElementById("input");
+    const timeEl = document.getElementById("time");
+    const scoreEl = document.getElementById("score");
+    const startBtn = document.getElementById("startBtn");
+
+    /*GAME LOGIC */
+
+    async function getRandomWord() {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 2000);
+
+    try {
+        const res = await fetch(
+        "https://random-word-api.herokuapp.com/word",
+        { signal: controller.signal }
+        );
+        const data = await res.json();
+        return data[0];
+    } catch {
+        return FALLBACK_WORDS[
+        Math.floor(Math.random() * FALLBACK_WORDS.length)
+        ];
+    }
+    }
+
+
+
+    let nextCachedWord = null;
+
+    async function preloadWord() {
+        nextCachedWord = await getRandomWord();
+    }
+
+    async function setNextWord() {
+        if (!nextCachedWord) {
+            currentWord = await getRandomWord();
+        } else {
+            currentWord = nextCachedWord;
+        }
+        wordEl.textContent = currentWord;
+        preloadWord(); // preload next
+    }
+
+
+
+    async function startGame() {
+        resetGame();
+        setTimeByDifficulty();
+
+        inputEl.disabled = true;
+        wordEl.textContent = "Loading...";
+
+        await setNextWord();   // ⏳ wait for word
+
+        inputEl.disabled = false;
+        inputEl.focus();
+
+        timer = setInterval(updateTimer, 1000);
+    }
+
+
+    function resetGame() {
+      clearInterval(timer);
+      score = 0;
+      totalWords = 0;
+      timeLeft = GAME_TIME;
+      scoreEl.textContent = score;
+      timeEl.textContent = timeLeft;
+      inputEl.value = "";
+      inputEl.style.border = "";
+    }
+
+    function setTimeByDifficulty() {
+        timeLeft = DIFFICULTY_SETTINGS[difficulty].time;
+        timeEl.textContent = timeLeft;
+    }
+
+
+    function updateTimer() {
+      timeLeft--;
+      timeEl.textContent = timeLeft;
+
+      if (timeLeft === 0) {
+        endGame();
+      }
+    }
+
+    function endGame() {
+      clearInterval(timer);
+      inputEl.disabled = true;
+      const wpm = totalWords * 12;
+      alert(`Game Over!\nScore: ${score}\nWPM: ${wpm}`);
+    }
+
+    /* ------------------ EVENTS ------------------ */
+
+    inputEl.addEventListener("input", () => {
+      const typed = inputEl.value;
+
+      // Live feedback
+      if (currentWord.startsWith(typed)) {
+        inputEl.style.border = "2px solid #22c55e";
+      } else {
+        inputEl.style.border = "2px solid #ef4444";
+      }
+
+      // Word completed
+      if (typed === currentWord) {
+        score++;
+        totalWords++;
+        scoreEl.textContent = score;
+        inputEl.value = "";
+
+        setTimeByDifficulty(); // ✅ STEP 5 CALLED HERE
+        setNextWord();
+    }
+    });
+
+    startBtn.addEventListener("click", startGame);
+  </script>
+</body>
+</html>
