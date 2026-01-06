@@ -3,6 +3,7 @@ const indicator = document.getElementById("strength-indicator");
 const strengthText = document.getElementById("strength-text");
 const toggle = document.getElementById("toggle");
 const suggestionsBox = document.getElementById("suggestions");
+const generateBtn = document.getElementById("generate-btn");
 
 const rules = {
   length: document.getElementById("length"),
@@ -81,3 +82,50 @@ passwordInput.addEventListener("input", () => {
       ? "Suggestions:<br>• " + suggestions.join("<br>• ")
       : "Great! Your password is strong 🔐";
 });
+
+function generateStrongPassword(length = 12) {
+  const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const lower = "abcdefghijklmnopqrstuvwxyz";
+  const numbers = "0123456789";
+  const special = "!@#$%^&*()_+[]{}<>?/";
+
+  // Ensure at least one character from each category
+  let password =
+    upper[Math.floor(Math.random() * upper.length)] +
+    lower[Math.floor(Math.random() * lower.length)] +
+    numbers[Math.floor(Math.random() * numbers.length)] +
+    special[Math.floor(Math.random() * special.length)];
+
+  const allChars = upper + lower + numbers + special;
+
+  for (let i = password.length; i < length; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+
+  // Shuffle password to avoid predictable order
+  return password
+    .split("")
+    .sort(() => Math.random() - 0.5)
+    .join("");
+}
+
+generateBtn.addEventListener("click", () => {
+  const newPassword = generateStrongPassword();
+  passwordInput.value = newPassword;
+
+  // Trigger input event so strength checker updates
+  passwordInput.dispatchEvent(new Event("input"));
+});
+
+generateBtn.addEventListener("click", () => {
+  const newPassword = generateStrongPassword();
+  passwordInput.value = newPassword;
+
+  // Trigger strength check
+  passwordInput.dispatchEvent(new Event("input"));
+
+  // Glow feedback
+  generateBtn.classList.add("glow");
+  setTimeout(() => generateBtn.classList.remove("glow"), 800);
+});
+
