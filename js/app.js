@@ -6,6 +6,20 @@
 // project rendering, filtering, sorting, pagination, and contributor display.
 
 // ===============================
+// Architecture: ProjectVisibilityEngine Integration
+// ===============================
+// We're introducing a centralized visibility engine to handle project filtering logic.
+// Phase 1: Migrate SEARCH functionality to use the engine.
+// Phase 2 (future): Migrate category filtering, sorting, and pagination.
+// Benefits:
+// - Separation of concerns: logic vs. DOM manipulation
+// - Reusability: engine can be used across multiple views
+// - Testability: pure functions easier to unit test
+// - Scalability: complex filters (multi-select, tags, dates) become manageable
+
+import { ProjectVisibilityEngine } from "./core/projectVisibilityEngine.js";
+
+// ===============================
 // Theme Toggle
 // ===============================
 
@@ -18,25 +32,6 @@ const html = document.documentElement;
 const savedTheme = localStorage.getItem("theme") || "light";
 html.setAttribute("data-theme", savedTheme);
 updateThemeIcon(savedTheme);
-
-// Updates the project count displayed on category filter buttons
-function updateCategoryCounts() {
-    const counts = {};
-
-    allCards.forEach(card => {
-        const cat = card.dataset.category;
-        counts[cat] = (counts[cat] || 0) + 1;
-    });
-
-    filterBtns.forEach(btn => {
-        const cat = btn.dataset.filter;
-        if (cat === "all") {
-            btn.innerText = `All (${allCards.length})`;
-        } else {
-            btn.innerText = `${cat.charAt(0).toUpperCase() + cat.slice(1)} (${counts[cat] || 0})`;
-        }
-    });
-}
 
 // Toggle between light and dark theme when the user clicks the theme button
 toggleBtn.addEventListener("click", () => {
@@ -123,11 +118,18 @@ let currentSort = "default";
 // Holds all project data fetched from the projects.json file
 let allProjectsData = [];
 
+// ===============================
+// Architecture: ProjectVisibilityEngine Instance
+// ===============================
+// This engine will progressively replace inline filtering logic.
+// Currently handles: search query matching
+// Future: category filters, sorting, advanced filters
+let visibilityEngine = null;
+
 const searchInput = document.getElementById("project-search");
 const sortSelect = document.getElementById("project-sort");
 const filterBtns = document.querySelectorAll(".filter-btn");
-const surpriseBtn = document.getElementById("surprise-btn"); // New Button
-
+const surpriseBtn = document.getElementById("surprise-btn");
 const clearBtn = document.getElementById("clear-filters");
 
 // Reset all filters, search input, and pagination when clear button is clicked
@@ -141,15 +143,38 @@ if (clearBtn) {
         filterBtns.forEach(b => b.classList.remove("active"));
         document.querySelector('[data-filter="all"]').classList.add("active");
 
+        // Architecture: Clear search query in engine
+        if (visibilityEngine) {
+            visibilityEngine.setSearchQuery("");
+        }
+
         renderProjects();
     });
 }
-
 
 const projectsContainer = document.querySelector(".projects-container");
 const paginationContainer = document.getElementById("pagination-controls");
 
 const allCards = Array.from(document.querySelectorAll(".card"));
+
+// Updates the project count displayed on category filter buttons
+function updateCategoryCounts() {
+    const counts = {};
+
+    allCards.forEach(card => {
+        const cat = card.dataset.category;
+        counts[cat] = (counts[cat] || 0) + 1;
+    });
+
+    filterBtns.forEach(btn => {
+        const cat = btn.dataset.filter;
+        if (cat === "all") {
+            btn.innerText = `All (${allCards.length})`;
+        } else {
+            btn.innerText = `${cat.charAt(0).toUpperCase() + cat.slice(1)} (${counts[cat] || 0})`;
+        }
+    });
+}
 
 // ===============================
 // Add GitHub link button to cards
@@ -187,6 +212,20 @@ async function fetchProjects() {
             projectCount.textContent = `${data.length}+`;
         }
 
+        // ===============================
+        // Architecture: Initialize ProjectVisibilityEngine
+        // ===============================
+        // Extract metadata from project data to initialize the engine
+        // This creates a clean separation between data model and presentation
+        const projectMetadata = data.map(project => ({
+            id: project.title, // Using title as unique identifier
+            title: project.title,
+            category: project.category,
+            description: project.description || ""
+        }));
+
+        visibilityEngine = new ProjectVisibilityEngine(projectMetadata);
+
         renderProjects();
     } catch (error) {
         // Display a fallback message if project data fails to load
@@ -202,9 +241,18 @@ async function fetchProjects() {
     }
 }
 
+// ===============================
 // Event Listeners
+// ===============================
+
 if (searchInput) {
+    // Architecture: Search input now updates the visibility engine
+    // The engine computes which projects should be visible
+    // renderProjects() will read this state and update the DOM accordingly
     searchInput.addEventListener("input", () => {
+        if (visibilityEngine) {
+            visibilityEngine.setSearchQuery(searchInput.value);
+        }
         currentPage = 1;
         renderProjects();
     });
@@ -247,17 +295,26 @@ function renderProjects() {
 
     let filteredProjects = [...allProjectsData];
 
-    // Filter projects based on search input (title or description)
-    const searchText = searchInput?.value.toLowerCase() || "";
-    if (searchText) {
-        filteredProjects = filteredProjects.filter(
-            (project) =>
-                project.title.toLowerCase().includes(searchText) ||
-                project.description.toLowerCase().includes(searchText)
+    // ===============================
+    // Architecture: Use ProjectVisibilityEngine for Search Filtering
+    // ===============================
+    // Instead of inline search logic, we delegate to the engine
+    // The engine returns IDs of visible projects based on search query
+    // We then filter our data array to match these IDs
+    // This enables:
+    // 1. Complex search algorithms without cluttering this function
+    // 2. Easy A/B testing of different search strategies
+    // 3. Consistent search behavior across multiple UI components
+    if (visibilityEngine) {
+        const visibleProjectIds = visibilityEngine.getVisibleProjects();
+        const visibleIdSet = new Set(visibleProjectIds);
+        filteredProjects = filteredProjects.filter(project => 
+            visibleIdSet.has(project.title)
         );
     }
 
     // Filter projects based on selected category
+    // Note: This will be migrated to the engine in Phase 2
     if (currentCategory !== "all") {
         filteredProjects = filteredProjects.filter(
             (project) => project.category === currentCategory
@@ -265,6 +322,7 @@ function renderProjects() {
     }
 
     // Sort projects according to the selected sorting option
+    // Note: This will be migrated to the engine in Phase 2
     switch (currentSort) {
         case "az":
             filteredProjects.sort((a, b) => a.title.localeCompare(b.title));
@@ -466,7 +524,6 @@ function scrollToProjects() {
 // ===============================
 
 updateCategoryCounts();
-renderProjects();
 
 console.log(
     "%cWant to contribute? https://github.com/YadavAkhileshh/OpenPlayground",
@@ -594,7 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('visible');
-                observer.unobserve(entry.target); // Run once
+                observer.unobserve(entry.target);
             }
         });
     }, { threshold: 0.1 });
@@ -603,4 +660,3 @@ document.addEventListener('DOMContentLoaded', () => {
         observer.observe(el);
     });
 });
-

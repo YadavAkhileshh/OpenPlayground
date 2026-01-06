@@ -56,7 +56,7 @@
   function addMessage(text, sender) {
     if (!messages) return;
     const msg = document.createElement("div");
-    msg.className = sender === "user" ? "user-msg" : "bot-msg";
+    msg.className = sender === "user" ? "user-message" : "bot-message";
     msg.innerText = text;
     messages.appendChild(msg);
     messages.scrollTop = messages.scrollHeight;
@@ -92,7 +92,7 @@
     if (!messages) return;
 
     const div = document.createElement("div");
-    div.className = "bot-msg";
+    div.className = "bot-message";
     messages.appendChild(div);
 
     let i = 0;
