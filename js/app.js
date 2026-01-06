@@ -308,7 +308,7 @@ function renderProjects() {
     if (visibilityEngine) {
         const visibleProjectIds = visibilityEngine.getVisibleProjects();
         const visibleIdSet = new Set(visibleProjectIds);
-        filteredProjects = filteredProjects.filter(project => 
+        filteredProjects = filteredProjects.filter(project =>
             visibleIdSet.has(project.title)
         );
     }
@@ -660,3 +660,11 @@ document.addEventListener('DOMContentLoaded', () => {
         observer.observe(el);
     });
 });
+
+
+// ===============================
+// Welcome Toast Logic
+// ===============================
+
+// Check if DOM is already ready (Module init)
+console.log("App Module Loaded");
