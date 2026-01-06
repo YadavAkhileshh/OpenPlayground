@@ -7,6 +7,8 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![Contributors](https://img.shields.io/github/contributors/YadavAkhileshh/OpenPlayground)](https://github.com/YadavAkhileshh/OpenPlayground/graphs/contributors)
 [![Stars](https://img.shields.io/github/stars/YadavAkhileshh/OpenPlayground?style=social)](https://github.com/YadavAkhileshh/OpenPlayground/stargazers)
+![Profile Views](https://komarev.com/ghpvc/?username=YadavAkhileshh&label=Visitors&color=blue&style=flat)
+
 
 **🌐 [View Live Website](https://open-playground-seven.vercel.app/) | 📖 [Contributing Guide](CONTRIBUTING.md) | 💬 [Discussions](https://github.com/YadavAkhileshh/OpenPlayground/discussions)**
 
@@ -35,13 +37,13 @@ Our amazing community has built some incredible projects:
 
 | Project | Description | Tech Stack | Live Demo |
 |---------|-------------|------------|-----------|
-| 🧮 **Calculator** | Clean, functional calculator with keyboard support | HTML, CSS, JS | [Try it →](https://yadavakhileshh.github.io/OpenPlayground/projects/calculator/) |
-| 🎯 **Tic Tac Toe** | Classic strategy game with smooth animations | HTML, CSS, JS | [Play →](https://yadavakhileshh.github.io/OpenPlayground/projects/tic-tac-toe/) |
-| ✅ **Todo List** | Task manager with local storage persistence | HTML, CSS, JS | [Organize →](https://yadavakhileshh.github.io/OpenPlayground/projects/todo-list/) |
-| 🧠 **Quiz Game** | Interactive quiz with multiple categories | HTML, CSS, JS | [Test yourself →](https://yadavAkhileshh.github.io/OpenPlayground/projects/quiz-game/) |
-| 🕐 **Digital Clock** | Real-time clock with customizable themes | HTML, CSS, JS | [Check time →](https://yadavAkhileshh.github.io/OpenPlayground/projects/digital-clock/) |
-| 📱 **QR Code Generator** | Simple and interactive QR Code Generator | HTML, CSS, JS | [Generate →](https://yadavAkhileshh.github.io/OpenPlayground/projects/qr-generator/) |
-| 📅 **Monthly Calendar** | Event management with local storage | HTML, CSS, JS | [Plan →](https://yadavAkhileshh.github.io/OpenPlayground/projects/monthly-calendar/) |
+| 🧮 **Calculator** | Clean, functional calculator with keyboard support | HTML, CSS, JS | [Try it →](https://open-playground-seven.vercel.app/projects/calculator/index.html) |
+| 🎯 **Tic Tac Toe** | Classic strategy game with smooth animations | HTML, CSS, JS | [Play →](https://open-playground-seven.vercel.app/projects/tic-tac-toe/index.html) |
+| ✅ **Todo List** | Task manager with local storage persistence | HTML, CSS, JS | [Organize →](https://open-playground-seven.vercel.app/projects/todo-list/index.html) |
+| 🧠 **Quiz Game** | Interactive quiz with multiple categories | HTML, CSS, JS | [Test yourself →](https://open-playground-seven.vercel.app/projects/quiz-game/index.html) |
+| 🕐 **Digital Clock** | Real-time clock with customizable themes | HTML, CSS, JS | [Check time →](https://open-playground-seven.vercel.app/projects/digital-clock/index.html) |
+| 📱 **QR Code Generator** | Simple and interactive QR Code Generator | HTML, CSS, JS | [Generate →](https://open-playground-seven.vercel.app/projects/qr-code-generator/index.html) |
+| 📅 **Monthly Calendar** | Event management with local storage | HTML, CSS, JS | [Plan →](https://open-playground-seven.vercel.app/projects/monthly-calendar/index.html) |
 
 **🌐 [Explore All Projects →](https://github.com/YadavAkhileshh/OpenPlayground/tree/main/projects)**
 
