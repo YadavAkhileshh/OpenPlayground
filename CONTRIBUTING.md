@@ -147,7 +147,7 @@ We welcome several types of contributions:
 
 ```
 projects/your-project-name/
-├── index.html          # Main HTML file
+├── index.html          # Main HTML file (MUST be directly in project folder)
 ├── style.css           # CSS styles
 ├── script.js           # JavaScript code
 ├── README.md           # Project documentation (optional)
@@ -155,6 +155,8 @@ projects/your-project-name/
     ├── image1.jpg
     └── icon.svg
 ```
+
+**Important:** Place `index.html` directly in your project folder (e.g., `projects/your-project-name/index.html`). Do not create subfolders unless necessary (e.g., for full-stack projects with separate frontend/backend). The link in `projects.json` should point to `./projects/your-project-name/index.html`.
 
 ## Submission Process
 
@@ -186,7 +188,14 @@ projects/your-project-name/
    
    **Icon Names:** Browse [RemixIcon](https://remixicon.com/) and use the full class name (e.g., `ri-calculator-line`)
 
-3. **Add CSS for your project card**
+3. **Validate your submission**
+   - Run the validation script to ensure your project link is correct:
+     ```bash
+     node validate-links.js
+     ```
+   - If there are broken links, fix the folder structure or link in `projects.json`
+
+4. **Add CSS for your project card**
 
    - If you used a `coverClass` (e.g., `your-project-cover`) in step 2, add the styling in `css/style.css` :
 
