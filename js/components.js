@@ -263,76 +263,76 @@ class ComponentLoader {
         }
     }
 
-    initializeChatbot() {
-        // Initialize chatbot functionality
-        const chatbotBtn = document.querySelector('.chatbot-btn');
-        const chatbot = document.getElementById('chatbot');
-        const chatInput = document.getElementById('chatInput');
-        const chatMessages = document.getElementById('chatMessages');
+    // initializeChatbot() {
+    //     // Initialize chatbot functionality
+    //     const chatbotBtn = document.querySelector('.chatbot-btn');
+    //     const chatbot = document.getElementById('chatbot');
+    //     const chatInput = document.getElementById('chatInput');
+    //     const chatMessages = document.getElementById('chatMessages');
+        
+    //     if (chatbotBtn && chatbot) {
+    //         // Toggle chatbot
+    //         window.toggleChatbot = () => {
+    //             const isVisible = chatbot.style.display === 'flex';
+    //             chatbot.style.display = isVisible ? 'none' : 'flex';
+    //         };
+            
+    //         // Send message
+    //         window.sendChat = () => {
+    //             if (!chatInput || !chatMessages) return;
+                
+    //             const message = chatInput.value.trim();
+    //             if (!message) return;
+                
+    //             // Add user message
+    //             const userMsg = document.createElement('div');
+    //             userMsg.className = 'user-msg';
+    //             userMsg.textContent = message;
+    //             chatMessages.appendChild(userMsg);
+                
+    //             chatInput.value = '';
+    //             chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+    //             // Bot response
+    //             setTimeout(() => {
+    //                 const botMsg = document.createElement('div');
+    //                 botMsg.className = 'bot-msg';
+    //                 botMsg.textContent = this.getBotResponse(message);
+    //                 chatMessages.appendChild(botMsg);
+    //                 chatMessages.scrollTop = chatMessages.scrollHeight;
+    //             }, 500);
+    //         };
+            
+    //         // Enter key support
+    //         if (chatInput) {
+    //             chatInput.addEventListener('keypress', (e) => {
+    //                 if (e.key === 'Enter') {
+    //                     window.sendChat();
+    //                 }
+    //             });
+    //         }
+    //     }
+    // }
 
-        if (chatbotBtn && chatbot) {
-            // Toggle chatbot
-            window.toggleChatbot = () => {
-                const isVisible = chatbot.style.display === 'flex';
-                chatbot.style.display = isVisible ? 'none' : 'flex';
-            };
-
-            // Send message
-            window.sendChat = () => {
-                if (!chatInput || !chatMessages) return;
-
-                const message = chatInput.value.trim();
-                if (!message) return;
-
-                // Add user message
-                const userMsg = document.createElement('div');
-                userMsg.className = 'user-msg';
-                userMsg.textContent = message;
-                chatMessages.appendChild(userMsg);
-
-                chatInput.value = '';
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-
-                // Bot response
-                setTimeout(() => {
-                    const botMsg = document.createElement('div');
-                    botMsg.className = 'bot-msg';
-                    botMsg.textContent = this.getBotResponse(message);
-                    chatMessages.appendChild(botMsg);
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                }, 500);
-            };
-
-            // Enter key support
-            if (chatInput) {
-                chatInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        window.sendChat();
-                    }
-                });
-            }
-        }
-    }
-
-    getBotResponse(message) {
-        const msg = message.toLowerCase();
-
-        if (msg.includes('project')) {
-            return '📁 You can explore projects in the Projects section. Use filters to find specific types!';
-        } else if (msg.includes('contribute')) {
-            return '🤝 Check out the Contribute section for step-by-step instructions on how to add your projects.';
-        } else if (msg.includes('github')) {
-            return '🐙 Visit our GitHub repository to explore the code, open issues, or submit PRs!';
-        } else if (msg.includes('hello') || msg.includes('hi')) {
-            return '👋 Hello! I\'m the OpenPlayground AI. How can I help you today?';
-        } else if (msg.includes('theme')) {
-            return '🎨 You can toggle between dark and light themes using the toggle in the navigation bar!';
-        } else if (msg.includes('help')) {
-            return '🆘 I can help you with: projects, contributing, GitHub, theme, and searching. Just ask!';
-        } else {
-            return 'I\'m not sure about that 🤔. Try asking about projects, contributing, or GitHub!';
-        }
-    }
+    // getBotResponse(message) {
+    //     const msg = message.toLowerCase();
+        
+    //     if (msg.includes('project')) {
+    //         return '📁 You can explore projects in the Projects section. Use filters to find specific types!';
+    //     } else if (msg.includes('contribute')) {
+    //         return '🤝 Check out the Contribute section for step-by-step instructions on how to add your projects.';
+    //     } else if (msg.includes('github')) {
+    //         return '🐙 Visit our GitHub repository to explore the code, open issues, or submit PRs!';
+    //     } else if (msg.includes('hello') || msg.includes('hi')) {
+    //         return '👋 Hello! I\'m the OpenPlayground AI. How can I help you today?';
+    //     } else if (msg.includes('theme')) {
+    //         return '🎨 You can toggle between dark and light themes using the toggle in the navigation bar!';
+    //     } else if (msg.includes('help')) {
+    //         return '🆘 I can help you with: projects, contributing, GitHub, theme, and searching. Just ask!';
+    //     } else {
+    //         return 'I\'m not sure about that 🤔. Try asking about projects, contributing, or GitHub!';
+    //     }
+    // }
 
     initializeSmoothScrolling() {
         // Smooth scroll for anchor links

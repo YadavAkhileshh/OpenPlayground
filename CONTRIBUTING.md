@@ -19,6 +19,36 @@ OpenPlayground uses a **component-based architecture**. This means:
 
 **PRs that violate this rule will be rejected.**
 
+### 📸 MANDATORY: Add Screenshots of Your Changes
+
+- ✅ **ALWAYS** include screenshots showing your changes in the PR
+- ✅ Show before/after screenshots if you're fixing a bug
+- ✅ Show the UI working on both desktop and mobile if applicable
+- ❌ PRs without screenshots may be rejected or delayed
+
+### 🚫 DO NOT Modify Unrelated Files
+
+- ✅ Only modify files that are directly related to your contribution
+- ❌ **STRICTLY PROHIBITED:** Changing any file that is not part of your feature/fix
+- ❌ Do not "clean up" or "format" other files
+- ❌ Do not add random changes to existing code
+
+**PRs with unnecessary file changes will be rejected.**
+
+### 🤖 FOR LLM/AI USERS - IMPORTANT WARNING
+
+If you are using AI tools (ChatGPT, Copilot, Claude, etc.) to generate code:
+
+- ⚠️ **ALWAYS review the generated code before committing**
+- ⚠️ **CHECK that no unrelated files were modified**
+- ⚠️ **VERIFY the changes make sense and don't break existing functionality**
+- ⚠️ **TEST your changes locally before pushing**
+- ⚠️ **Run `git diff` to see exactly what files changed**
+
+**Tip:** Use `git status` and `git diff` before every commit to ensure only intended files are modified.
+
+**PRs with AI-generated errors or unnecessary changes will be rejected.**
+
 ## Table of Contents
 
 - [Critical Rules](#critical-rules---read-first)
@@ -117,7 +147,7 @@ We welcome several types of contributions:
 
 ```
 projects/your-project-name/
-├── index.html          # Main HTML file
+├── index.html          # Main HTML file (MUST be directly in project folder)
 ├── style.css           # CSS styles
 ├── script.js           # JavaScript code
 ├── README.md           # Project documentation (optional)
@@ -125,6 +155,8 @@ projects/your-project-name/
     ├── image1.jpg
     └── icon.svg
 ```
+
+**Important:** Place `index.html` directly in your project folder (e.g., `projects/your-project-name/index.html`). Do not create subfolders unless necessary (e.g., for full-stack projects with separate frontend/backend). The link in `projects.json` should point to `./projects/your-project-name/index.html`.
 
 ## Submission Process
 
@@ -156,7 +188,14 @@ projects/your-project-name/
    
    **Icon Names:** Browse [RemixIcon](https://remixicon.com/) and use the full class name (e.g., `ri-calculator-line`)
 
-3. **Add CSS for your project card**
+3. **Validate your submission**
+   - Run the validation script to ensure your project link is correct:
+     ```bash
+     node validate-links.js
+     ```
+   - If there are broken links, fix the folder structure or link in `projects.json`
+
+4. **Add CSS for your project card**
 
    - If you used a `coverClass` (e.g., `your-project-cover`) in step 2, add the styling in `css/style.css` :
 
@@ -226,6 +265,9 @@ Add screenshots of your project
 - [ ] I have added my project to `projects.json` (NOT `index.html`!)
 - [ ] I have NOT modified `index.html` directly
 - [ ] My `projects.json` entry is valid JSON
+- [ ] **I have included screenshots of my changes**
+- [ ] **I have NOT modified any unrelated files**
+- [ ] **If using AI/LLM tools, I have reviewed all generated code**
 ```
 
 ## Code Review Process
