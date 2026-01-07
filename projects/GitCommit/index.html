@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commit Genius | AI Git Commit Message Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #238636;
+            --primary-dark: #2ea043;
+            --secondary: #8957e5;
+            --dark-bg: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .typewriter {
+            overflow: hidden;
+            border-right: 3px solid var(--primary);
+            white-space: nowrap;
+            animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+        }
+
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: var(--primary) }
+        }
+
+        .commit-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+        }
+
+        .commit-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(35, 134, 54, 0.2);
+        }
+
+        .glow-effect {
+            position: relative;
+        }
+
+        .glow-effect::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--primary));
+            border-radius: inherit;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .glow-effect:hover::after {
+            opacity: 0.6;
+        }
+
+        .syntax-highlight {
+            background: linear-gradient(90deg, rgba(35, 134, 54, 0.1) 0%, rgba(137, 87, 229, 0.1) 100%);
+            border-left: 4px solid var(--primary);
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tag:hover {
+            transform: scale(1.05);
+        }
+
+        .tag-feat { background: rgba(35, 134, 54, 0.2); color: #3fb950; border: 1px solid rgba(63, 185, 80, 0.3); }
+        .tag-fix { background: rgba(248, 81, 73, 0.2); color: #f85149; border: 1px solid rgba(248, 81, 73, 0.3); }
+        .tag-docs { background: rgba(56, 139, 253, 0.2); color: #388bfd; border: 1px solid rgba(56, 139, 253, 0.3); }
+        .tag-refactor { background: rgba(130, 80, 223, 0.2); color: #8250df; border: 1px solid rgba(130, 80, 223, 0.3); }
+        .tag-test { background: rgba(182, 106, 47, 0.2); color: #b66a2f; border: 1px solid rgba(182, 106, 47, 0.3); }
+        .tag-chore { background: rgba(110, 118, 129, 0.2); color: #8b949e; border: 1px solid rgba(110, 118, 129, 0.3); }
+
+        .prompt-bubble {
+            background: rgba(22, 27, 34, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            position: relative;
+        }
+
+        .prompt-bubble::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 24px;
+            width: 16px;
+            height: 16px;
+            background: inherit;
+            border-top: 1px solid var(--border-color);
+            border-left: 1px solid var(--border-color);
+            transform: rotate(45deg);
+        }
+
+        .ai-thinking {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-thinking span {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .ai-thinking span:nth-child(1) { animation-delay: -0.32s; }
+        .ai-thinking span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        .copy-success {
+            animation: copyFlash 0.5s ease-in-out;
+        }
+
+        @keyframes copyFlash {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: rgba(35, 134, 54, 0.3); }
+        }
+
+        .history-item {
+            transition: all 0.2s;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+
+        .history-item:hover {
+            background: rgba(35, 134, 54, 0.1);
+            border-left-color: var(--primary);
+        }
+
+        .mode-indicator {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-indicator::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s;
+        }
+
+        .mode-indicator.active::before {
+            left: 100%;
+        }
+
+        .emoji-picker {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            position: absolute;
+            z-index: 100;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            display: none;
+        }
+
+        .emoji-picker.show {
+            display: grid;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .emoji-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .emoji-option:hover {
+            background: rgba(35, 134, 54, 0.2);
+            transform: scale(1.1);
+        }
+
+        .commit-type-btn {
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .commit-type-btn.active {
+            border-color: var(--primary);
+            background: rgba(35, 134, 54, 0.2);
+            transform: scale(1.05);
+        }
+
+        .tutorial-step {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-out;
+        }
+
+        .tutorial-step.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .stats-ring {
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .stats-ring circle {
+            transition: stroke-dashoffset 1s ease-in-out;
+        }
+
+        .terminal-effect {
+            background: rgba(13, 17, 23, 0.95);
+            border: 1px solid var(--border-color);
+            font-family: 'Fira Code', monospace;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .terminal-effect::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 32px;
+            background: linear-gradient(to bottom, rgba(22, 27, 34, 0.9), transparent);
+            z-index: 1;
+        }
+
+        .cursor-blink {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <nav class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-code-branch text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-green-400 to-purple-400 bg-clip-text text-transparent">CommitGenius</h1>
+                        <p class="text-xs text-gray-400">AI-Powered Commit Messages</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="themeToggle" class="p-2 rounded-lg hover:bg-gray-800 transition-colors">
+                        <i class="fas fa-moon text-gray-400"></i>
+                    </button>
+                    <button id="tutorialBtn" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors">
+                        <i class="fas fa-graduation-cap mr-2"></i>Tutorial
+                    </button>
+                    <button id="exportBtn" class="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 rounded-lg text-sm font-medium transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export History
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Input & Controls -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold mb-2">Generate Perfect Commit Messages</h2>
+                    <p class="text-gray-400">AI-powered suggestions based on your code changes</p>
+                </div>
+
+                <!-- Input Section -->
+                <div class="commit-card rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-semibold flex items-center">
+                            <i class="fas fa-code mr-3 text-green-400"></i>Describe Your Changes
+                        </h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-400">Language:</span>
+                            <select id="languageSelect" class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1 text-sm">
+                                <option value="any">Any Language</option>
+                                <option value="javascript">JavaScript/TypeScript</option>
+                                <option value="python">Python</option>
+                                <option value="java">Java</option>
+                                <option value="cpp">C/C++</option>
+                                <option value="php">PHP</option>
+                                <option value="ruby">Ruby</option>
+                                <option value="go">Go</option>
+                                <option value="rust">Rust</option>
+                                <option value="swift">Swift</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Diff Input -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-file-code mr-2"></i>Paste Your Code Changes (Optional)
+                        </label>
+                        <div class="relative">
+                            <textarea 
+                                id="diffInput" 
+                                rows="8" 
+                                class="w-full bg-gray-900 border border-gray-700 rounded-xl p-4 font-mono text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                placeholder="Paste your git diff here, or describe what you changed..."
+                            ></textarea>
+                            <div class="absolute bottom-3 right-3 flex space-x-2">
+                                <button id="clearDiffBtn" class="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors" title="Clear">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <button id="exampleBtn" class="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors" title="Load Example">
+                                    <i class="fas fa-lightbulb"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description Input -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-comment-dots mr-2"></i>Describe Changes in Plain English
+                        </label>
+                        <div class="prompt-bubble p-4">
+                            <textarea 
+                                id="descriptionInput" 
+                                rows="3" 
+                                class="w-full bg-transparent border-none resize-none focus:ring-0 focus:outline-none placeholder-gray-500"
+                                placeholder="Example: Fixed login bug where users couldn't reset password, added validation for email format..."
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Commit Type Selection -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-300 mb-3">
+                            <i class="fas fa-tag mr-2"></i>Commit Type
+                        </label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                            <button data-type="feat" class="commit-type-btn tag-feat py-3 rounded-lg text-center hover:scale-105 transition-all">
+                                <div class="text-lg mb-1">✨</div>
+                                <div class="font-medium">feat</div>
+                                <div class="text-xs text-gray-400">New feature</div>
+                            </button>
+                            <button data-type="fix" class="commit-type-btn tag-fix py-3 rounded-lg text-center hover:scale-105 transition-all">
+                                <div class="text-lg mb-1">🐛</div>
+                                <div class="font-medium">fix</div>
+                                <div class="text-xs text-gray-400">Bug fix</div>
+                            </button>
+                            <button data-type="docs" class="commit-type-btn tag-docs py-3 rounded-lg text-center hover:scale-105 transition-all">
+                                <div class="text-lg mb-1">📚</div>
+                                <div class="font-medium">docs</div>
+                                <div class="text-xs text-gray-400">Documentation</div>
+                            </button>
+                            <button data-type="refactor" class="commit-type-btn tag-refactor py-3 rounded-lg text-center hover:scale-105 transition-all">
+                                <div class="text-lg mb-1">♻️</div>
+                                <div class="font-medium">refactor</div>
+                                <div class="text-xs text-gray-400">Code refactor</div>
+                            </button>
+                            <button data-type="test" class="commit-type-btn tag-test py-3 rounded-lg text-center hover:scale-105 transition-all">
+                                <div class="text-lg mb-1">✅</div>
+                                <div class="font-medium">test</div>
+                                <div class="text-xs text-gray-400">Tests</div>
+                            </button>
+                            <button data-type="chore" class="commit-type-btn tag-chore py-3 rounded-lg text-center hover:scale-105 transition-all">
+                                <div class="text-lg mb-1">🔧</div>
+                                <div class="font-medium">chore</div>
+                                <div class="text-xs text-gray-400">Maintenance</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options -->
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="text-sm font-medium text-gray-300">
+                                <i class="fas fa-sliders-h mr-2"></i>Advanced Options
+                            </label>
+                            <button id="toggleAdvanced" class="text-sm text-green-400 hover:text-green-300 transition-colors">
+                                <i class="fas fa-chevron-down mr-1"></i>Show
+                            </button>
+                        </div>
+                        <div id="advancedOptions" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Emoji Style</label>
+                                <select id="emojiStyle" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
+                                    <option value="github">GitHub Style</option>
+                                    <option value="gitmoji">GitMoji Style</option>
+                                    <option value="none">No Emoji</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Format Style</label>
+                                <select id="formatStyle" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
+                                    <option value="conventional">Conventional Commits</option>
+                                    <option value="simple">Simple</option>
+                                    <option value="detailed">Detailed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Max Length</label>
+                                <div class="flex items-center space-x-3">
+                                    <input type="range" id="maxLength" min="50" max="200" value="100" class="w-full">
+                                    <span id="maxLengthValue" class="text-sm font-mono">100</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">Tone</label>
+                                <select id="toneSelect" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm">
+                                    <option value="neutral">Neutral</option>
+                                    <option value="formal">Formal</option>
+                                    <option value="casual">Casual</option>
+                                    <option value="humorous">Humorous</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center space-x-4">
+                            <button id="emojiPickerBtn" class="p-3 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors" title="Add Emoji">
+                                <i class="fas fa-smile text-yellow-400"></i>
+                            </button>
+                            <div class="relative">
+                                <div id="emojiPicker" class="emoji-picker"></div>
+                            </div>
+                            <div class="text-sm text-gray-400">
+                                <i class="fas fa-lightbulb mr-1"></i>
+                                <span id="suggestionCount">0 suggestions available</span>
+                            </div>
+                        </div>
+                        <button id="generateBtn" class="px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 rounded-xl font-semibold text-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center min-w-[200px]">
+                            <i class="fas fa-magic mr-3"></i>
+                            <span>Generate Commit</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="commit-card rounded-2xl p-6 hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-semibold flex items-center">
+                            <i class="fas fa-star mr-3 text-yellow-400"></i>Generated Commit Messages
+                        </h3>
+                        <div class="flex items-center space-x-2">
+                            <button id="regenerateBtn" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors">
+                                <i class="fas fa-redo mr-2"></i>Regenerate
+                            </button>
+                            <button id="saveAllBtn" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm transition-colors">
+                                <i class="fas fa-save mr-2"></i>Save All
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- AI Thinking -->
+                    <div id="aiThinking" class="hidden mb-6">
+                        <div class="prompt-bubble p-6">
+                            <div class="ai-thinking justify-center mb-4">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                            <p class="text-center text-gray-300" id="aiStatus">Analyzing your code changes...</p>
+                            <div class="mt-4 w-full bg-gray-800 rounded-full h-2">
+                                <div id="aiProgress" class="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Generated Messages -->
+                    <div id="generatedMessages" class="space-y-4">
+                        <!-- Messages will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Tutorial Overlay -->
+                <div id="tutorialOverlay" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+                    <div class="bg-gray-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div class="p-8">
+                            <div class="flex items-center justify-between mb-8">
+                                <h3 class="text-2xl font-bold">How to Use CommitGenius</h3>
+                                <button id="closeTutorial" class="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                            <div class="tutorial-step active" data-step="1">
+                                <div class="flex items-start space-x-4 mb-8">
+                                    <div class="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="font-bold">1</span>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xl font-semibold mb-2">Describe Your Changes</h4>
+                                        <p class="text-gray-400 mb-4">Paste your git diff or describe what you changed in plain English. The more detail you provide, the better the results.</p>
+                                        <div class="bg-gray-800 rounded-lg p-4 font-mono text-sm">
+                                            // Example: Fixed null pointer exception in user profile loading
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tutorial-step" data-step="2">
+                                <div class="flex items-start space-x-4 mb-8">
+                                    <div class="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="font-bold">2</span>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xl font-semibold mb-2">Select Commit Type</h4>
+                                        <p class="text-gray-400 mb-4">Choose the appropriate commit type based on Conventional Commits specification.</p>
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <div class="tag-feat p-3 rounded-lg">
+                                                <div class="font-medium">feat</div>
+                                                <div class="text-xs text-gray-400">New features</div>
+                                            </div>
+                                            <div class="tag-fix p-3 rounded-lg">
+                                                <div class="font-medium">fix</div>
+                                                <div class="text-xs text-gray-400">Bug fixes</div>
+                                            </div>
+                                            <div class="tag-docs p-3 rounded-lg">
+                                                <div class="font-medium">docs</div>
+                                                <div class="text-xs text-gray-400">Documentation</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tutorial-step" data-step="3">
+                                <div class="flex items-start space-x-4 mb-8">
+                                    <div class="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span class="font-bold">3</span>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xl font-semibold mb-2">Generate & Refine</h4>
+                                        <p class="text-gray-400 mb-4">Generate multiple commit message options, copy your favorite, or regenerate for more variations.</p>
+                                        <div class="bg-gray-800 rounded-lg p-4">
+                                            <div class="font-mono text-sm mb-2">✨ feat(auth): add password reset functionality</div>
+                                            <div class="flex space-x-2">
+                                                <button class="px-3 py-1 bg-green-600 rounded text-sm">Copy</button>
+                                                <button class="px-3 py-1 bg-gray-700 rounded text-sm">Edit</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center pt-6 border-t border-gray-800">
+                                <button id="prevStep" class="px-6 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
+                                    <i class="fas fa-arrow-left mr-2"></i>Previous
+                                </button>
+                                <div class="flex space-x-2">
+                                    <div class="w-2 h-2 bg-green-600 rounded-full"></div>
+                                    <div class="w-2 h-2 bg-gray-700 rounded-full"></div>
+                                    <div class="w-2 h-2 bg-gray-700 rounded-full"></div>
+                                </div>
+                                <button id="nextStep" class="px-6 py-2 bg-green-600 hover:bg-green-500 rounded-lg transition-colors">
+                                    Next <i class="fas fa-arrow-right ml-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - History & Stats -->
+            <div class="space-y-8">
+                <!-- Statistics -->
+                <div class="commit-card rounded-2xl p-6">
+                    <h3 class="text-xl font-semibold mb-6 flex items-center">
+                        <i class="fas fa-chart-line mr-3 text-blue-400"></i>Your Stats
+                    </h3>
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-gray-900 rounded-xl p-4 text-center">
+                            <div class="text-3xl font-bold text-green-400 mb-1" id="totalCommits">0</div>
+                            <div class="text-sm text-gray-400">Total Generated</div>
+                        </div>
+                        <div class="bg-gray-900 rounded-xl p-4 text-center">
+                            <div class="text-3xl font-bold text-blue-400 mb-1" id="savedCommits">0</div>
+                            <div class="text-sm text-gray-400">Saved</div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-400">Most Used Types</span>
+                                <span class="font-medium" id="topType">-</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-2">
+                                <div id="typeBar" class="bg-green-500 h-2 rounded-full" style="width: 50%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-400">Avg. Length</span>
+                                <span class="font-medium" id="avgLength">-</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-2">
+                                <div id="lengthBar" class="bg-blue-500 h-2 rounded-full" style="width: 60%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div class="commit-card rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-xl font-semibold flex items-center">
+                            <i class="fas fa-history mr-3 text-purple-400"></i>Recent History
+                        </h3>
+                        <button id="clearHistory" class="text-sm text-gray-400 hover:text-white transition-colors">
+                            <i class="fas fa-trash mr-1"></i>Clear
+                        </button>
+                    </div>
+                    <div id="historyList" class="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                        <!-- History items will be inserted here -->
+                        <div class="text-center py-8 text-gray-500" id="emptyHistory">
+                            <i class="fas fa-history text-3xl mb-3"></i>
+                            <p>No history yet</p>
+                            <p class="text-sm mt-1">Generated commits will appear here</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Templates -->
+                <div class="commit-card rounded-2xl p-6">
+                    <h3 class="text-xl font-semibold mb-6 flex items-center">
+                        <i class="fas fa-bolt mr-3 text-yellow-400"></i>Quick Templates
+                    </h3>
+                    <div class="space-y-3">
+                        <button class="template-btn w-full text-left p-3 bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors text-sm" data-template="bugfix">
+                            <div class="font-medium mb-1">🐛 Bug Fix</div>
+                            <div class="text-gray-400 text-xs">Fixed issue where...</div>
+                        </button>
+                        <button class="template-btn w-full text-left p-3 bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors text-sm" data-template="feature">
+                            <div class="font-medium mb-1">✨ New Feature</div>
+                            <div class="text-gray-400 text-xs">Added ability to...</div>
+                        </button>
+                        <button class="template-btn w-full text-left p-3 bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors text-sm" data-template="refactor">
+                            <div class="font-medium mb-1">♻️ Code Refactor</div>
+                            <div class="text-gray-400 text-xs">Improved performance of...</div>
+                        </button>
+                        <button class="template-btn w-full text-left p-3 bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors text-sm" data-template="docs">
+                            <div class="font-medium mb-1">📚 Documentation</div>
+                            <div class="text-gray-400 text-xs">Updated README with...</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Copy Command -->
+                <div class="commit-card rounded-2xl p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <i class="fas fa-terminal mr-3 text-gray-400"></i>Quick Copy
+                    </h3>
+                    <div class="terminal-effect rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-xs text-gray-400">git commit -m</div>
+                            <button id="copyCmdBtn" class="text-xs text-green-400 hover:text-green-300 transition-colors">
+                                <i class="fas fa-copy mr-1"></i>Copy
+                            </button>
+                        </div>
+                        <div id="copyCommand" class="font-mono text-sm text-gray-300 whitespace-nowrap overflow-x-auto py-2">
+                            <span class="text-green-400">git commit -m</span> <span class="text-yellow-200">""</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 mt-12 py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row items-center justify-between">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-code-branch text-white"></i>
+                        </div>
+                        <span class="font-bold">CommitGenius</span>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-2">AI-powered commit messages for better development workflow</p>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fab fa-github"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <button id="feedbackBtn" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors">
+                        <i class="fas fa-comment mr-2"></i>Feedback
+                    </button>
+                </div>
+            </div>
+            <div class="text-center text-gray-500 text-sm mt-8 pt-6 border-t border-gray-800">
+                <p>100% client-side processing • No data sent to servers • Uses browser's localStorage</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Success Toast -->
+    <div id="successToast" class="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl transform translate-y-full transition-transform duration-300 z-50 flex items-center space-x-3 max-w-sm">
+        <i class="fas fa-check-circle text-xl"></i>
+        <div>
+            <div class="font-medium" id="toastTitle">Copied to clipboard!</div>
+            <div class="text-sm text-green-100" id="toastMessage">Commit message copied successfully</div>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+        <div class="bg-gray-900 rounded-2xl max-w-md w-full p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold">Send Feedback</h3>
+                <button id="closeFeedback" class="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">How can we improve?</label>
+                    <textarea id="feedbackInput" rows="4" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" placeholder="Your suggestions..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Email (optional)</label>
+                    <input type="email" id="feedbackEmail" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all" placeholder="you@example.com">
+                </div>
+                <button id="submitFeedback" class="w-full py-3 bg-green-600 hover:bg-green-500 rounded-lg font-medium transition-colors">
+                    Send Feedback
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emoji Data -->
+    <script>
+        const emojiData = [
+            { emoji: "✨", code: ":sparkles:", description: "Introducing new features" },
+            { emoji: "🐛", code: ":bug:", description: "Fixing a bug" },
+            { emoji: "📚", code: ":books:", description: "Writing documentation" },
+            { emoji: "♻️", code: ":recycle:", description: "Refactoring code" },
+            { emoji: "✅", code: ":white_check_mark:", description: "Adding tests" },
+            { emoji: "🔧", code: ":wrench:", description: "Tooling or maintenance" },
+            { emoji: "⚡", code: ":zap:", description: "Improving performance" },
+            { emoji: "🔥", code: ":fire:", description: "Removing code/files" },
+            { emoji: "🚀", code: ":rocket:", description: "Deploying stuff" },
+            { emoji: "🎨", code: ":art:", description: "Improving structure/format" },
+            { emoji: "🚧", code: ":construction:", description: "Work in progress" },
+            { emoji: "💄", code: ":lipstick:", description: "Updating UI/style" },
+            { emoji: "🎉", code: ":tada:", description: "Initial commit" },
+            { emoji: "🔒", code: ":lock:", description: "Fixing security issues" },
+            { emoji: "🍎", code: ":apple:", description: "Fixing macOS" },
+            { emoji: "🐧", code: ":penguin:", description: "Fixing Linux" },
+            { emoji: "🏁", code: ":checkered_flag:", description: "Fixing Windows" },
+            { emoji: "🔖", code: ":bookmark:", description: "Releasing / Version tags" },
+            { emoji: "🚨", code: ":rotating_light:", description: "Removing linter warnings" },
+            { emoji: "💚", code: ":green_heart:", description: "Fixing CI Build" },
+            { emoji: "⬇️", code: ":arrow_down:", description: "Downgrading dependencies" },
+            { emoji: "⬆️", code: ":arrow_up:", description: "Upgrading dependencies" },
+            { emoji: "📌", code: ":pushpin:", description: "Pinning dependencies" },
+            { emoji: "👷", code: ":construction_worker:", description: "Adding CI build system" },
+            { emoji: "💡", code: ":bulb:", description: "Documenting source code" },
+            { emoji: "🍻", code: ":beers:", description: "Writing code drunkenly" },
+            { emoji: "💬", code: ":speech_balloon:", description: "Updating text and literals" },
+            { emoji: "🗃️", code: ":card_file_box:", description: "Performing database changes" },
+            { emoji: "🔊", code: ":loud_sound:", description: "Adding logs" },
+            { emoji: "🔇", code: ":mute:", description: "Removing logs" },
+            { emoji: "👽️", code: ":alien:", description: "Updating code due to API changes" },
+            { emoji: "🚚", code: ":truck:", description: "Moving or renaming files" },
+            { emoji: "📄", code: ":page_facing_up:", description: "Adding or updating license" },
+            { emoji: "💩", code: ":poop:", description: "Writing bad code" },
+            { emoji: "🙈", code: ":see_no_evil:", description: "Adding or updating a .gitignore" },
+            { emoji: "🚸", code: ":children_crossing:", description: "Improving user experience" },
+            { emoji: "🏗️", code: ":building_construction:", description: "Making architectural changes" },
+            { emoji: "📱", code: ":iphone:", description: "Working on responsive design" },
+            { emoji: "🤡", code: ":clown_face:", description: "Mocking things" },
+            { emoji: "🥚", code: ":egg:", description: "Adding an easter egg" },
+            { emoji: "🙏", code: ":pray:", description: "Thanks" }
+        ];
+
+        // Commit type configurations
+        const commitTypes = {
+            feat: {
+                emoji: "✨",
+                description: "A new feature",
+                color: "green",
+                examples: [
+                    "Add user authentication system",
+                    "Implement dark mode toggle",
+                    "Create new API endpoint for users"
+                ]
+            },
+            fix: {
+                emoji: "🐛",
+                description: "A bug fix",
+                color: "red",
+                examples: [
+                    "Fix login button not working on mobile",
+                    "Resolve memory leak in data processing",
+                    "Correct typo in error message"
+                ]
+            },
+            docs: {
+                emoji: "📚",
+                description: "Documentation only changes",
+                color: "blue",
+                examples: [
+                    "Update README with installation instructions",
+                    "Add JSDoc comments to functions",
+                    "Write API documentation"
+                ]
+            },
+            refactor: {
+                emoji: "♻️",
+                description: "Code change that neither fixes a bug nor adds a feature",
+                color: "purple",
+                examples: [
+                    "Restructure component architecture",
+                    "Optimize database queries",
+                    "Improve code readability"
+                ]
+            },
+            test: {
+                emoji: "✅",
+                description: "Adding missing tests or correcting existing tests",
+                color: "orange",
+                examples: [
+                    "Add unit tests for utility functions",
+                    "Fix flaky integration test",
+                    "Increase test coverage for authentication"
+                ]
+            },
+            chore: {
+                emoji: "🔧",
+                description: "Changes to the build process or auxiliary tools",
+                color: "gray",
+                examples: [
+                    "Update dependencies to latest versions",
+                    "Configure ESLint rules",
+                    "Set up CI/CD pipeline"
+                ]
+            }
+        };
+
+        // AI Patterns for generating commit messages
+        const aiPatterns = {
+            conventional: [
+                "{type}({scope}): {description}",
+                "{type}: {description}",
+                "{emoji} {type}({scope}): {description}"
+            ],
+            simple: [
+                "{description}",
+                "{emoji} {description}",
+                "{type}: {description}"
+            ],
+            detailed: [
+                "{type}({scope}): {description}\n\n{body}\n\n{footer}",
+                "{emoji} {type}({scope}): {description}\n\n{body}"
+            ]
+        };
+
+        // Scopes for different languages
+        const languageScopes = {
+            javascript: ["auth", "api", "ui", "utils", "config", "db", "test", "docs"],
+            python: ["api", "models", "views", "utils", "tests", "docs", "config", "cli"],
+            java: ["controller", "service", "repository", "model", "config", "test", "util"],
+            any: ["core", "api", "ui", "auth", "db", "test", "docs", "config", "utils"]
+        };
+
+        // Sample diffs for examples
+        const sampleDiffs = {
+            bugfix: `diff --git a/src/auth.js b/src/auth.js
+index abc123..def456 100644
+--- a/src/auth.js
++++ b/src/auth.js
+@@ -15,7 +15,7 @@ function login(email, password) {
+     const user = await db.findUser(email);
+     
+     if (!user) {
+-        return { error: "User not found" };
++        throw new Error("Invalid credentials");
+     }
+     
+     const isValid = await bcrypt.compare(password, user.password);`,
+            
+            feature: `diff --git a/src/components/Button.js b/src/components/Button.js
+new file mode 100644
+index 0000000..abc123
+--- /dev/null
++++ b/src/components/Button.js
+@@ -0,0 +1,25 @@
++import React from 'react';
++import PropTypes from 'prop-types';
++import './Button.css';
++
++const Button = ({ variant = 'primary', children, onClick, disabled }) => {
++    return (
++        <button 
++            className={\`btn btn-\${variant}\`}
++            onClick={onClick}
++            disabled={disabled}
++        >
++            {children}
++        </button>
++    );
++};`,
+            
+            refactor: `diff --git a/src/utils/helpers.js b/src/utils/helpers.js
+index abc123..def456 100644
+--- a/src/utils/helpers.js
++++ b/src/utils/helpers.js
+@@ -1,15 +1,20 @@
+-// Old implementation
+-function formatDate(date) {
+-    const d = new Date(date);
+-    return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
+-}
++// New implementation using date-fns
++import { format } from 'date-fns';
+ 
++/**
++ * Format a date to readable string
++ * @param {Date|string} date - The date to format
++ * @param {string} formatStr - Optional format string
++ * @returns {string} Formatted date
++ */
++function formatDate(date, formatStr = 'dd/MM/yyyy') {
++    return format(new Date(date), formatStr);
++}`
+        };
+    </script>
+
+    <script>
+        // Main Application
+        class CommitGenius {
+            constructor() {
+                this.state = {
+                    selectedType: 'feat',
+                    selectedScope: '',
+                    history: [],
+                    settings: {
+                        emojiStyle: 'github',
+                        formatStyle: 'conventional',
+                        maxLength: 100,
+                        tone: 'neutral',
+                        language: 'any'
+                    },
+                    currentMessages: [],
+                    stats: {
+                        totalGenerated: 0,
+                        saved: 0,
+                        typeCounts: {},
+                        avgLength: 0
+                    }
+                };
+
+                this.init();
+            }
+
+            init() {
+                this.loadFromStorage();
+                this.setupEventListeners();
+                this.renderEmojiPicker();
+                this.updateStatsDisplay();
+                this.renderHistory();
+                this.setupTutorial();
+            }
+
+            loadFromStorage() {
+                const saved = localStorage.getItem('commitGeniusData');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    this.state.history = data.history || [];
+                    this.state.stats = data.stats || this.state.stats;
+                    this.state.settings = { ...this.state.settings, ...data.settings };
+                    
+                    // Update UI with saved settings
+                    document.getElementById('emojiStyle').value = this.state.settings.emojiStyle;
+                    document.getElementById('formatStyle').value = this.state.settings.formatStyle;
+                    document.getElementById('maxLength').value = this.state.settings.maxLength;
+                    document.getElementById('maxLengthValue').textContent = this.state.settings.maxLength;
+                    document.getElementById('toneSelect').value = this.state.settings.tone;
+                    document.getElementById('languageSelect').value = this.state.settings.language;
+                    
+                    // Select the active commit type
+                    document.querySelectorAll('.commit-type-btn').forEach(btn => {
+                        if (btn.dataset.type === this.state.selectedType) {
+                            btn.classList.add('active');
+                        }
+                    });
+                }
+            }
+
+            saveToStorage() {
+                const data = {
+                    history: this.state.history,
+                    stats: this.state.stats,
+                    settings: this.state.settings
+                };
+                localStorage.setItem('commitGeniusData', JSON.stringify(data));
+            }
+
+            setupEventListeners() {
+                // Commit type selection
+                document.querySelectorAll('.commit-type-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.commit-type-btn').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.state.selectedType = e.currentTarget.dataset.type;
+                    });
+                });
+
+                // Generate button
+                document.getElementById('generateBtn').addEventListener('click', () => this.generateCommit());
+
+                // Clear diff
+                document.getElementById('clearDiffBtn').addEventListener('click', () => {
+                    document.getElementById('diffInput').value = '';
+                });
+
+                // Load example
+                document.getElementById('exampleBtn').addEventListener('click', () => {
+                    const types = Object.keys(sampleDiffs);
+                    const randomType = types[Math.floor(Math.random() * types.length)];
+                    document.getElementById('diffInput').value = sampleDiffs[randomType];
+                    
+                    // Also update description with example
+                    const typeConfig = commitTypes[this.state.selectedType];
+                    if (typeConfig && typeConfig.examples) {
+                        const randomExample = typeConfig.examples[Math.floor(Math.random() * typeConfig.examples.length)];
+                        document.getElementById('descriptionInput').value = randomExample;
+                    }
+                });
+
+                // Settings
+                document.getElementById('emojiStyle').addEventListener('change', (e) => {
+                    this.state.settings.emojiStyle = e.target.value;
+                    this.saveToStorage();
+                });
+
+                document.getElementById('formatStyle').addEventListener('change', (e) => {
+                    this.state.settings.formatStyle = e.target.value;
+                    this.saveToStorage();
+                });
+
+                document.getElementById('maxLength').addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    document.getElementById('maxLengthValue').textContent = value;
+                    this.state.settings.maxLength = parseInt(value);
+                    this.saveToStorage();
+                });
+
+                document.getElementById('toneSelect').addEventListener('change', (e) => {
+                    this.state.settings.tone = e.target.value;
+                    this.saveToStorage();
+                });
+
+                document.getElementById('languageSelect').addEventListener('change', (e) => {
+                    this.state.settings.language = e.target.value;
+                    this.saveToStorage();
+                });
+
+                // Advanced options toggle
+                document.getElementById('toggleAdvanced').addEventListener('click', () => {
+                    const options = document.getElementById('advancedOptions');
+                    const icon = document.querySelector('#toggleAdvanced i');
+                    if (options.classList.contains('hidden')) {
+                        options.classList.remove('hidden');
+                        icon.className = 'fas fa-chevron-up mr-1';
+                        document.getElementById('toggleAdvanced').innerHTML = '<i class="fas fa-chevron-up mr-1"></i>Hide';
+                    } else {
+                        options.classList.add('hidden');
+                        icon.className = 'fas fa-chevron-down mr-1';
+                        document.getElementById('toggleAdvanced').innerHTML = '<i class="fas fa-chevron-down mr-1"></i>Show';
+                    }
+                });
+
+                // Emoji picker
+                document.getElementById('emojiPickerBtn').addEventListener('click', (e) => {
+                    const picker = document.getElementById('emojiPicker');
+                    picker.classList.toggle('show');
+                    e.stopPropagation();
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('#emojiPicker') && !e.target.closest('#emojiPickerBtn')) {
+                        document.getElementById('emojiPicker').classList.remove('show');
+                    }
+                });
+
+                // Template buttons
+                document.querySelectorAll('.template-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const template = e.currentTarget.dataset.template;
+                        this.loadTemplate(template);
+                    });
+                });
+
+                // Regenerate
+                document.getElementById('regenerateBtn').addEventListener('click', () => {
+                    if (this.state.currentMessages.length > 0) {
+                        this.generateCommit(true);
+                    }
+                });
+
+                // Save all
+                document.getElementById('saveAllBtn').addEventListener('click', () => {
+                    this.state.currentMessages.forEach(msg => this.saveToHistory(msg));
+                    this.showToast('Saved!', 'All messages saved to history');
+                });
+
+                // Clear history
+                document.getElementById('clearHistory').addEventListener('click', () => {
+                    if (confirm('Clear all history? This cannot be undone.')) {
+                        this.state.history = [];
+                        this.state.stats.saved = 0;
+                        this.saveToStorage();
+                        this.renderHistory();
+                        this.updateStatsDisplay();
+                    }
+                });
+
+                // Copy command
+                document.getElementById('copyCmdBtn').addEventListener('click', () => {
+                    const command = document.getElementById('copyCommand').textContent;
+                    navigator.clipboard.writeText(command);
+                    this.showToast('Copied!', 'Git command copied to clipboard');
+                });
+
+                // Theme toggle
+                document.getElementById('themeToggle').addEventListener('click', () => {
+                    const icon = document.querySelector('#themeToggle i');
+                    if (icon.classList.contains('fa-moon')) {
+                        icon.className = 'fas fa-sun text-yellow-400';
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        icon.className = 'fas fa-moon text-gray-400';
+                        document.documentElement.classList.remove('dark');
+                    }
+                });
+
+                // Export
+                document.getElementById('exportBtn').addEventListener('click', () => {
+                    this.exportHistory();
+                });
+
+                // Feedback
+                document.getElementById('feedbackBtn').addEventListener('click', () => {
+                    document.getElementById('feedbackModal').classList.remove('hidden');
+                });
+
+                document.getElementById('closeFeedback').addEventListener('click', () => {
+                    document.getElementById('feedbackModal').classList.add('hidden');
+                });
+
+                document.getElementById('submitFeedback').addEventListener('click', () => {
+                    const feedback = document.getElementById('feedbackInput').value;
+                    const email = document.getElementById('feedbackEmail').value;
+                    
+                    if (feedback.trim()) {
+                        console.log('Feedback:', { feedback, email, timestamp: new Date().toISOString() });
+                        this.showToast('Thank you!', 'Feedback submitted successfully');
+                        document.getElementById('feedbackModal').classList.add('hidden');
+                        document.getElementById('feedbackInput').value = '';
+                        document.getElementById('feedbackEmail').value = '';
+                    }
+                });
+            }
+
+            setupTutorial() {
+                let currentStep = 1;
+                const totalSteps = 3;
+                const steps = document.querySelectorAll('.tutorial-step');
+                
+                document.getElementById('tutorialBtn').addEventListener('click', () => {
+                    document.getElementById('tutorialOverlay').classList.remove('hidden');
+                    currentStep = 1;
+                    this.updateTutorialSteps();
+                });
+                
+                document.getElementById('closeTutorial').addEventListener('click', () => {
+                    document.getElementById('tutorialOverlay').classList.add('hidden');
+                });
+                
+                document.getElementById('nextStep').addEventListener('click', () => {
+                    if (currentStep < totalSteps) {
+                        currentStep++;
+                        this.updateTutorialSteps();
+                    } else {
+                        document.getElementById('tutorialOverlay').classList.add('hidden');
+                    }
+                });
+                
+                document.getElementById('prevStep').addEventListener('click', () => {
+                    if (currentStep > 1) {
+                        currentStep--;
+                        this.updateTutorialSteps();
+                    }
+                });
+                
+                this.updateTutorialSteps = () => {
+                    steps.forEach(step => {
+                        step.classList.remove('active');
+                        if (parseInt(step.dataset.step) === currentStep) {
+                            step.classList.add('active');
+                        }
+                    });
+                    
+                    // Update dots
+                    const dots = document.querySelectorAll('#tutorialOverlay .w-2');
+                    dots.forEach((dot, index) => {
+                        if (index < currentStep) {
+                            dot.classList.remove('bg-gray-700');
+                            dot.classList.add('bg-green-600');
+                        } else {
+                            dot.classList.remove('bg-green-600');
+                            dot.classList.add('bg-gray-700');
+                        }
+                    });
+                    
+                    // Update button text
+                    const nextBtn = document.getElementById('nextStep');
+                    if (currentStep === totalSteps) {
+                        nextBtn.innerHTML = 'Finish <i class="fas fa-check ml-2"></i>';
+                    } else {
+                        nextBtn.innerHTML = 'Next <i class="fas fa-arrow-right ml-2"></i>';
+                    }
+                };
+            }
+
+            renderEmojiPicker() {
+                const picker = document.getElementById('emojiPicker');
+                emojiData.forEach(emoji => {
+                    const div = document.createElement('div');
+                    div.className = 'emoji-option';
+                    div.innerHTML = emoji.emoji;
+                    div.title = `${emoji.code} - ${emoji.description}`;
+                    div.addEventListener('click', () => {
+                        const input = document.getElementById('descriptionInput');
+                        input.value += ` ${emoji.emoji} `;
+                        input.focus();
+                        picker.classList.remove('show');
+                    });
+                    picker.appendChild(div);
+                });
+            }
+
+            async generateCommit(isRegenerate = false) {
+                const diff = document.getElementById('diffInput').value.trim();
+                const description = document.getElementById('descriptionInput').value.trim();
+                
+                if (!description && !diff) {
+                    this.showToast('Oops!', 'Please describe your changes or paste a diff');
+                    return;
+                }
+
+                // Show results section
+                document.getElementById('resultsSection').classList.remove('hidden');
+                
+                // Show AI thinking animation
+                const aiThinking = document.getElementById('aiThinking');
+                const aiProgress = document.getElementById('aiProgress');
+                const aiStatus = document.getElementById('aiStatus');
+                aiThinking.classList.remove('hidden');
+                
+                // Simulate AI thinking with progress
+                const statuses = [
+                    "Analyzing your code changes...",
+                    "Understanding the context...",
+                    "Generating commit message options...",
+                    "Applying best practices...",
+                    "Finalizing suggestions..."
+                ];
+                
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 20;
+                    aiProgress.style.width = `${progress}%`;
+                    
+                    if (progress <= 100) {
+                        const statusIndex = Math.floor(progress / 20) - 1;
+                        if (statusIndex >= 0 && statusIndex < statuses.length) {
+                            aiStatus.textContent = statuses[statusIndex];
+                        }
+                    }
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            aiThinking.classList.add('hidden');
+                            this.generateAndDisplayMessages(diff, description, isRegenerate);
+                        }, 500);
+                    }
+                }, 300);
+            }
+
+            generateAndDisplayMessages(diff, description, isRegenerate) {
+                const messages = [];
+                const typeConfig = commitTypes[this.state.selectedType];
+                const language = this.state.settings.language;
+                const scopeOptions = languageScopes[language] || languageScopes.any;
+                const selectedScope = scopeOptions[Math.floor(Math.random() * scopeOptions.length)];
+                
+                // Generate 3 different messages
+                for (let i = 0; i < 3; i++) {
+                    const message = this.generateSingleMessage(diff, description, typeConfig, selectedScope, i);
+                    messages.push({
+                        id: Date.now() + i,
+                        text: message,
+                        type: this.state.selectedType,
+                        scope: selectedScope,
+                        emoji: typeConfig.emoji,
+                        language: language,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+                
+                this.state.currentMessages = messages;
+                this.renderGeneratedMessages(messages);
+                
+                // Update stats
+                this.state.stats.totalGenerated += messages.length;
+                this.state.stats.typeCounts[this.state.selectedType] = 
+                    (this.state.stats.typeCounts[this.state.selectedType] || 0) + messages.length;
+                this.updateStatsDisplay();
+                this.saveToStorage();
+                
+                // Update copy command with first message
+                this.updateCopyCommand(messages[0].text);
+                
+                // Show success message
+                if (!isRegenerate) {
+                    this.showToast('Success!', `Generated ${messages.length} commit messages`);
+                }
+            }
+
+            generateSingleMessage(diff, description, typeConfig, scope, variation) {
+                const patterns = aiPatterns[this.state.settings.formatStyle];
+                const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+                
+                // Extract keywords from diff and description
+                const keywords = this.extractKeywords(diff + ' ' + description);
+                
+                // Generate description based on tone
+                let generatedDescription = this.generateDescription(description, keywords, variation);
+                
+                // Clean up description
+                generatedDescription = generatedDescription.trim();
+                generatedDescription = generatedDescription.charAt(0).toUpperCase() + generatedDescription.slice(1);
+                
+                // Truncate if too long
+                if (generatedDescription.length > this.state.settings.maxLength) {
+                    generatedDescription = generatedDescription.substring(0, this.state.settings.maxLength - 3) + '...';
+                }
+                
+                // Build the message
+                let message = pattern
+                    .replace('{type}', this.state.selectedType)
+                    .replace('{scope}', scope)
+                    .replace('{description}', generatedDescription)
+                    .replace('{emoji}', this.state.settings.emojiStyle !== 'none' ? typeConfig.emoji + ' ' : '')
+                    .replace('{body}', this.generateBody(diff, keywords))
+                    .replace('{footer}', this.generateFooter(keywords));
+                
+                // Clean up any leftover placeholders
+                message = message.replace(/\{.*?\}/g, '').trim();
+                
+                return message;
+            }
+
+            extractKeywords(text) {
+                const commonWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by']);
+                const words = text.toLowerCase()
+                    .replace(/[^\w\s]/g, ' ')
+                    .split(/\s+/)
+                    .filter(word => word.length > 2 && !commonWords.has(word));
+                
+                // Get unique keywords with frequency
+                const frequency = {};
+                words.forEach(word => {
+                    frequency[word] = (frequency[word] || 0) + 1;
+                });
+                
+                // Sort by frequency and return top 5
+                return Object.entries(frequency)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5)
+                    .map(([word]) => word);
+            }
+
+            generateDescription(baseDescription, keywords, variation) {
+                if (baseDescription) {
+                    // If we have a base description, enhance it based on variation
+                    const enhancements = [
+                        `Improved ${keywords[0] || 'implementation'}`,
+                        `Fixed issue with ${keywords[0] || 'component'}`,
+                        `Added ${keywords[0] || 'feature'}`,
+                        `Updated ${keywords[0] || 'code'}`,
+                        `Refactored ${keywords[0] || 'logic'}`
+                    ];
+                    
+                    if (variation > 0) {
+                        return `${enhancements[variation % enhancements.length]}: ${baseDescription}`;
+                    }
+                    return baseDescription;
+                }
+                
+                // Generate from keywords
+                const actions = {
+                    feat: ['Add', 'Implement', 'Introduce', 'Create', 'Enable'],
+                    fix: ['Fix', 'Resolve', 'Correct', 'Repair', 'Handle'],
+                    docs: ['Document', 'Update', 'Add', 'Improve', 'Clarify'],
+                    refactor: ['Refactor', 'Optimize', 'Simplify', 'Restructure', 'Clean up'],
+                    test: ['Test', 'Add tests for', 'Increase coverage for', 'Fix tests for'],
+                    chore: ['Update', 'Configure', 'Setup', 'Bump', 'Clean']
+                };
+                
+                const action = actions[this.state.selectedType] || actions.feat;
+                const randomAction = action[Math.floor(Math.random() * action.length)];
+                
+                if (keywords.length > 0) {
+                    return `${randomAction} ${keywords[0]} ${keywords[1] ? `and ${keywords[1]}` : ''}`.trim();
+                }
+                
+                // Fallback descriptions
+                const fallbacks = {
+                    feat: 'new feature implementation',
+                    fix: 'bug fix and improvements',
+                    docs: 'documentation updates',
+                    refactor: 'code refactoring and optimization',
+                    test: 'test coverage improvements',
+                    chore: 'maintenance and configuration updates'
+                };
+                
+                return `${randomAction} ${fallbacks[this.state.selectedType]}`;
+            }
+
+            generateBody(diff, keywords) {
+                if (!diff) return '';
+                
+                // Simple body generation from diff
+                const lines = diff.split('\n').slice(0, 3);
+                const changes = lines.filter(line => line.startsWith('+') || line.startsWith('-'));
+                
+                if (changes.length === 0) return '';
+                
+                return `Changes include:\n- ${changes.slice(0, 3).join('\n- ')}`;
+            }
+
+            generateFooter(keywords) {
+                const footers = [
+                    `Closes #${Math.floor(Math.random() * 100) + 1}`,
+                    `Related to ${keywords[0] || 'feature'}`,
+                    `BREAKING CHANGE: ${keywords[0] ? `Updated ${keywords[0]} API` : 'API changes'}`,
+                    `See also: ${keywords.slice(0, 2).join(', ')}`
+                ];
+                
+                return Math.random() > 0.7 ? footers[Math.floor(Math.random() * footers.length)] : '';
+            }
+
+            renderGeneratedMessages(messages) {
+                const container = document.getElementById('generatedMessages');
+                container.innerHTML = '';
+                
+                messages.forEach((msg, index) => {
+                    const messageElement = this.createMessageElement(msg, index);
+                    container.appendChild(messageElement);
+                });
+                
+                // Update suggestion count
+                document.getElementById('suggestionCount').textContent = 
+                    `${messages.length} suggestions generated`;
+            }
+
+            createMessageElement(msg, index) {
+                const div = document.createElement('div');
+                div.className = 'commit-card rounded-xl p-5 hover:scale-[1.02] transition-transform';
+                div.innerHTML = `
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">${msg.emoji}</span>
+                            <div>
+                                <span class="tag tag-${msg.type} px-3 py-1 rounded-full text-xs font-medium">
+                                    ${msg.type}
+                                </span>
+                                ${msg.scope ? `<span class="ml-2 text-xs text-gray-400">${msg.scope}</span>` : ''}
+                            </div>
+                            <span class="text-xs text-gray-500">${this.formatTimeAgo(msg.timestamp)}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="copy-btn p-2 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-lg transition-colors" data-id="${msg.id}">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button class="edit-btn p-2 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-lg transition-colors" data-id="${msg.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="save-btn p-2 text-gray-400 hover:text-yellow-400 hover:bg-gray-800 rounded-lg transition-colors" data-id="${msg.id}">
+                                <i class="fas fa-star"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="font-mono text-sm bg-gray-900 rounded-lg p-4 whitespace-pre-wrap border-l-4 border-${commitTypes[msg.type].color}-500 syntax-highlight">
+                        ${msg.text}
+                    </div>
+                    <div class="flex items-center justify-between mt-3">
+                        <div class="text-xs text-gray-500">
+                            <i class="fas fa-code mr-1"></i>${msg.language}
+                            <span class="mx-2">•</span>
+                            <i class="fas fa-ruler mr-1"></i>${msg.text.length} chars
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="use-btn px-3 py-1 bg-green-600 hover:bg-green-500 rounded text-xs font-medium transition-colors" data-id="${msg.id}">
+                                Use This
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Add event listeners
+                const copyBtn = div.querySelector('.copy-btn');
+                const editBtn = div.querySelector('.edit-btn');
+                const saveBtn = div.querySelector('.save-btn');
+                const useBtn = div.querySelector('.use-btn');
+                
+                copyBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(msg.text);
+                    copyBtn.classList.add('copy-success');
+                    setTimeout(() => copyBtn.classList.remove('copy-success'), 500);
+                    this.showToast('Copied!', 'Commit message copied to clipboard');
+                });
+                
+                editBtn.addEventListener('click', () => {
+                    this.editMessage(msg);
+                });
+                
+                saveBtn.addEventListener('click', () => {
+                    this.saveToHistory(msg);
+                    saveBtn.innerHTML = '<i class="fas fa-check text-green-400"></i>';
+                    setTimeout(() => {
+                        saveBtn.innerHTML = '<i class="fas fa-star"></i>';
+                    }, 2000);
+                });
+                
+                useBtn.addEventListener('click', () => {
+                    this.updateCopyCommand(msg.text);
+                    this.showToast('Selected!', 'Updated git command with this message');
+                });
+                
+                return div;
+            }
+
+            editMessage(msg) {
+                const newText = prompt('Edit commit message:', msg.text);
+                if (newText && newText.trim() !== msg.text) {
+                    msg.text = newText.trim();
+                    this.renderGeneratedMessages(this.state.currentMessages);
+                    this.updateCopyCommand(msg.text);
+                    this.showToast('Updated!', 'Commit message edited successfully');
+                }
+            }
+
+            saveToHistory(msg) {
+                const historyItem = {
+                    ...msg,
+                    id: Date.now(),
+                    savedAt: new Date().toISOString(),
+                    isSaved: true
+                };
+                
+                this.state.history.unshift(historyItem);
+                this.state.stats.saved++;
+                
+                // Keep only last 50 items
+                if (this.state.history.length > 50) {
+                    this.state.history = this.state.history.slice(0, 50);
+                }
+                
+                this.saveToStorage();
+                this.renderHistory();
+                this.updateStatsDisplay();
+                
+                this.showToast('Saved!', 'Added to your history');
+            }
+
+            renderHistory() {
+                const container = document.getElementById('historyList');
+                const emptyHistory = document.getElementById('emptyHistory');
+                
+                if (this.state.history.length === 0) {
+                    container.innerHTML = '';
+                    container.appendChild(emptyHistory);
+                    return;
+                }
+                
+                container.innerHTML = '';
+                
+                this.state.history.slice(0, 10).forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'history-item p-3 rounded-lg bg-gray-900/50';
+                    div.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3 truncate">
+                                <span class="text-lg">${item.emoji}</span>
+                                <div class="truncate">
+                                    <div class="font-medium text-sm truncate">${item.text.split('\n')[0]}</div>
+                                    <div class="text-xs text-gray-500">
+                                        ${item.type} • ${this.formatTimeAgo(item.savedAt)}
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="copy-history-btn p-1 text-gray-400 hover:text-white" data-text="${this.escapeHtml(item.text)}">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    `;
+                    
+                    const copyBtn = div.querySelector('.copy-history-btn');
+                    copyBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(item.text);
+                        this.showToast('Copied!', 'Message copied from history');
+                    });
+                    
+                    div.addEventListener('click', () => {
+                        document.getElementById('descriptionInput').value = item.text.split('\n')[0];
+                        this.state.selectedType = item.type;
+                        document.querySelectorAll('.commit-type-btn').forEach(btn => {
+                            btn.classList.toggle('active', btn.dataset.type === item.type);
+                        });
+                        this.showToast('Loaded!', 'Message loaded for editing');
+                    });
+                    
+                    container.appendChild(div);
+                });
+            }
+
+            updateStatsDisplay() {
+                document.getElementById('totalCommits').textContent = this.state.stats.totalGenerated;
+                document.getElementById('savedCommits').textContent = this.state.stats.saved;
+                
+                // Calculate average length
+                if (this.state.history.length > 0) {
+                    const totalLength = this.state.history.reduce((sum, item) => sum + item.text.length, 0);
+                    const avgLength = Math.round(totalLength / this.state.history.length);
+                    document.getElementById('avgLength').textContent = `${avgLength} chars`;
+                    document.getElementById('lengthBar').style.width = `${Math.min(avgLength / 2, 100)}%`;
+                }
+                
+                // Find most used type
+                if (Object.keys(this.state.stats.typeCounts).length > 0) {
+                    const topType = Object.entries(this.state.stats.typeCounts)
+                        .sort((a, b) => b[1] - a[1])[0];
+                    if (topType) {
+                        document.getElementById('topType').textContent = topType[0];
+                        const percentage = (topType[1] / this.state.stats.totalGenerated) * 100;
+                        document.getElementById('typeBar').style.width = `${percentage}%`;
+                    }
+                }
+            }
+
+            updateCopyCommand(message) {
+                const escapedMessage = this.escapeForCommand(message);
+                const command = `git commit -m "${escapedMessage}"`;
+                document.getElementById('copyCommand').innerHTML = 
+                    `<span class="text-green-400">git commit -m</span> <span class="text-yellow-200">"${this.escapeHtml(message)}"</span>`;
+                
+                // Store for copy functionality
+                document.getElementById('copyCommand').dataset.command = command;
+            }
+
+            loadTemplate(template) {
+                const templates = {
+                    bugfix: {
+                        description: "Fixed issue where users couldn't reset passwords due to email validation bug",
+                        type: "fix"
+                    },
+                    feature: {
+                        description: "Added dark mode toggle with system preference detection",
+                        type: "feat"
+                    },
+                    refactor: {
+                        description: "Optimized database queries to reduce response time by 40%",
+                        type: "refactor"
+                    },
+                    docs: {
+                        description: "Updated API documentation with examples and error codes",
+                        type: "docs"
+                    }
+                };
+                
+                const tmpl = templates[template];
+                if (tmpl) {
+                    document.getElementById('descriptionInput').value = tmpl.description;
+                    this.state.selectedType = tmpl.type;
+                    
+                    // Update UI
+                    document.querySelectorAll('.commit-type-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.type === tmpl.type);
+                    });
+                    
+                    this.showToast('Template loaded!', 'Fill in the details and generate');
+                }
+            }
+
+            exportHistory() {
+                const data = {
+                    exportedAt: new Date().toISOString(),
+                    totalItems: this.state.history.length,
+                    history: this.state.history
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `commit-history-${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                this.showToast('Exported!', 'History downloaded as JSON');
+            }
+
+            showToast(title, message) {
+                const toast = document.getElementById('successToast');
+                document.getElementById('toastTitle').textContent = title;
+                document.getElementById('toastMessage').textContent = message;
+                
+                toast.classList.remove('translate-y-full');
+                toast.classList.add('translate-y-0');
+                
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-0');
+                    toast.classList.add('translate-y-full');
+                }, 3000);
+            }
+
+            formatTimeAgo(timestamp) {
+                const now = new Date();
+                const past = new Date(timestamp);
+                const diffMs = now - past;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+                
+                if (diffMins < 1) return 'just now';
+                if (diffMins < 60) return `${diffMins}m ago`;
+                if (diffHours < 24) return `${diffHours}h ago`;
+                if (diffDays < 7) return `${diffDays}d ago`;
+                return past.toLocaleDateString();
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            escapeForCommand(text) {
+                return text.replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = new CommitGenius();
+        });
+    </script>
+</body>
+</html>
