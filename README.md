@@ -8,7 +8,7 @@
 [![Contributors](https://img.shields.io/github/contributors/YadavAkhileshh/OpenPlayground)](https://github.com/YadavAkhileshh/OpenPlayground/graphs/contributors)
 [![Stars](https://img.shields.io/github/stars/YadavAkhileshh/OpenPlayground?style=social)](https://github.com/YadavAkhileshh/OpenPlayground/stargazers)
 
-**🌐 [View Live Website](https://yadavakhileshh.github.io/OpenPlayground/) | 📖 [Contributing Guide](CONTRIBUTING.md) | 💬 [Discussions](https://github.com/YadavAkhileshh/OpenPlayground/discussions)**
+**🌐 [View Live Website](https://open-playground-seven.vercel.app/) | 📖 [Contributing Guide](CONTRIBUTING.md) | 💬 [Discussions](https://github.com/YadavAkhileshh/OpenPlayground/discussions)**
 
 
 
@@ -43,7 +43,7 @@ Our amazing community has built some incredible projects:
 | 📱 **QR Code Generator** | Simple and interactive QR Code Generator | HTML, CSS, JS | [Generate →](https://yadavAkhileshh.github.io/OpenPlayground/projects/qr-generator/) |
 | 📅 **Monthly Calendar** | Event management with local storage | HTML, CSS, JS | [Plan →](https://yadavAkhileshh.github.io/OpenPlayground/projects/monthly-calendar/) |
 
-**🌐 [Explore All Projects →](https://yadavAkhileshh.github.io/OpenPlayground/)**
+**🌐 [Explore All Projects →](https://github.com/YadavAkhileshh/OpenPlayground/tree/main/projects)**
 
 <!--line-->
 <img src="https://www.animatedimages.org/data/media/562/animated-line-image-0184.gif" width="1920" />
@@ -51,7 +51,7 @@ Our amazing community has built some incredible projects:
 ## 🚀 Quick Start Guide
 
 ### 👀 For Visitors
-Simply visit our [live website](https://yadavakhileshh.github.io/OpenPlayground/) and start exploring! Click on any project card to interact with it directly.
+Simply visit our [live website](https://open-playground-seven.vercel.app/) and start exploring! Click on any project card to interact with it directly.
 
 ### 👨‍💻 For Contributors
 Ready to add your project? Follow these steps:

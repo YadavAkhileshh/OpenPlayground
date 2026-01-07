@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⏰ Procrastination Cost Calculator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 50%, #c2e9fb 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .bubbles {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      overflow: hidden;
+      top: 0;
+      left: 0;
+    }
+
+    .bubble {
+      position: absolute;
+      bottom: -100px;
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      opacity: 0.4;
+      animation: rise 10s infinite ease-in;
+    }
+
+    .bubble:nth-child(1) { width: 40px; height: 40px; left: 10%; animation-duration: 8s; }
+    .bubble:nth-child(2) { width: 20px; height: 20px; left: 20%; animation-duration: 5s; animation-delay: 1s; }
+    .bubble:nth-child(3) { width: 50px; height: 50px; left: 35%; animation-duration: 7s; animation-delay: 2s; }
+    .bubble:nth-child(4) { width: 80px; height: 80px; left: 50%; animation-duration: 11s; animation-delay: 0s; }
+    .bubble:nth-child(5) { width: 35px; height: 35px; left: 55%; animation-duration: 6s; animation-delay: 1s; }
+    .bubble:nth-child(6) { width: 45px; height: 45px; left: 65%; animation-duration: 8s; animation-delay: 3s; }
+    .bubble:nth-child(7) { width: 90px; height: 90px; left: 70%; animation-duration: 12s; animation-delay: 2s; }
+    .bubble:nth-child(8) { width: 25px; height: 25px; left: 80%; animation-duration: 6s; animation-delay: 2s; }
+    .bubble:nth-child(9) { width: 15px; height: 15px; left: 90%; animation-duration: 5s; animation-delay: 1s; }
+
+    @keyframes rise {
+      0% {
+        bottom: -100px;
+        transform: translateX(0);
+      }
+      50% {
+        transform: translateX(100px);
+      }
+      100% {
+        bottom: 1080px;
+        transform: translateX(-200px);
+      }
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(30px);
+      padding: 25px 30px;
+      width: 100%;
+      max-width: 550px;
+      border-radius: 25px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      position: relative;
+      z-index: 1;
+      animation: slideIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(100px) scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .emoji-container {
+      font-size: 3em;
+      animation: float 3s ease-in-out infinite;
+      display: inline-block;
+      filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.1));
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(-5deg); }
+      50% { transform: translateY(-15px) rotate(5deg); }
+    }
+
+    h1 {
+      background: linear-gradient(135deg, #a8b5e0 0%, #c5a8d4 50%, #f5b8d8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: 1.8em;
+      font-weight: 900;
+      margin: 10px 0 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .tagline {
+      color: #7a7a7a;
+      font-size: 0.95em;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .warning-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #ffc7e6 0%, #ffb5b5 100%);
+      color: #c75487;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.75em;
+      font-weight: 700;
+      box-shadow: 0 3px 15px rgba(255, 181, 181, 0.3);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .input-section {
+      display: grid;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .input-card {
+      background: linear-gradient(135deg, #fff 0%, #fef9fb 100%);
+      padding: 15px;
+      border-radius: 18px;
+      border: 2px solid #f0e6f0;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .input-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+      transition: left 0.5s;
+    }
+
+    .input-card:hover::before {
+      left: 100%;
+    }
+
+    .input-card:focus-within {
+      border-color: #c5a8d4;
+      box-shadow: 0 0 0 4px rgba(197, 168, 212, 0.15);
+      transform: translateY(-3px);
+    }
+
+    .input-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      color: #555;
+      margin-bottom: 10px;
+      font-size: 0.9em;
+    }
+
+    .label-emoji {
+      font-size: 1.3em;
+      animation: wiggle 1s ease-in-out infinite;
+    }
+
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-10deg); }
+      75% { transform: rotate(10deg); }
+    }
+
+    .input-wrapper {
+      display: flex;
+      align-items: center;
+      background: white;
+      border-radius: 12px;
+      padding: 4px;
+      border: 2px solid #f0e6f0;
+      transition: all 0.3s ease;
+    }
+
+    .input-wrapper:focus-within {
+      border-color: #c5a8d4;
+    }
+
+    .prefix {
+      padding: 0 12px;
+      font-size: 1.2em;
+      font-weight: 800;
+      color: #a8d5a8;
+    }
+
+    input {
+      flex: 1;
+      padding: 12px 10px;
+      border: none;
+      background: transparent;
+      font-size: 1em;
+      font-weight: 700;
+      color: #555;
+      outline: none;
+    }
+
+    input::placeholder {
+      color: #ccc;
+      font-weight: 400;
+    }
+
+    .suffix {
+      padding: 0 12px;
+      color: #aaa;
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+
+    .calculate-btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #c5a8d4 0%, #f5b8d8 100%);
+      color: white;
+      border: none;
+      border-radius: 15px;
+      font-size: 1.05em;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      box-shadow: 0 8px 25px rgba(197, 168, 212, 0.35);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .calculate-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .calculate-btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .calculate-btn:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 12px 35px rgba(197, 168, 212, 0.5);
+    }
+
+    .calculate-btn:active {
+      transform: translateY(-2px) scale(0.98);
+    }
+
+    .btn-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .btn-emoji {
+      font-size: 1.3em;
+      animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .results {
+      animation: zoomIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .results.hidden {
+      display: none;
+    }
+
+    @keyframes zoomIn {
+      from {
+        opacity: 0;
+        transform: scale(0.5) rotate(-10deg);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+      }
+    }
+
+    .shock-banner {
+      background: linear-gradient(135deg, #ffc7e6 0%, #ffd6a5 100%);
+      padding: 20px;
+      border-radius: 20px;
+      text-align: center;
+      margin-bottom: 25px;
+      box-shadow: 0 10px 30px rgba(255, 199, 230, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .shock-banner::before {
+      content: '⚠️';
+      position: absolute;
+      font-size: 15em;
+      opacity: 0.1;
+      top: -50px;
+      right: -50px;
+      animation: rotate 10s linear infinite;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .shock-emoji {
+      font-size: 3.5em;
+      display: block;
+      animation: shake 0.5s infinite;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px) rotate(-5deg); }
+      75% { transform: translateX(8px) rotate(5deg); }
+    }
+
+    .shock-title {
+      color: #c75487;
+      font-size: 1.6em;
+      font-weight: 900;
+      margin-top: 12px;
+      text-shadow: 1px 1px 4px rgba(255, 255, 255, 0.5);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #dff1f7 0%, #fde6f4 100%);
+      padding: 20px 15px;
+      border-radius: 18px;
+      text-align: center;
+      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      position: relative;
+      overflow: hidden;
+      border: 2px solid transparent;
+    }
+
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transform: rotate(45deg);
+      animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px) scale(1.03) rotate(1deg);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
+      border-color: #c5a8d4;
+    }
+
+    .stat-card.mega {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, #ffd6a5 0%, #ffe5b4 100%);
+      border: 2px solid #ffb5b5;
+    }
+
+    .stat-icon {
+      font-size: 2em;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .stat-label {
+      color: #777;
+      font-size: 0.8em;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      color: #555;
+      font-size: 1.6em;
+      font-weight: 900;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-value.mega-value {
+      font-size: 2.2em;
+      background: linear-gradient(135deg, #c5a8d4, #f5b8d8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .money-section {
+      background: linear-gradient(135deg, #ffc7e6 0%, #ffd6a5 100%);
+      padding: 25px;
+      border-radius: 20px;
+      margin: 25px 0;
+      box-shadow: 0 12px 40px rgba(255, 199, 230, 0.3);
+      animation: slideUp 0.6s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .money-section.hidden {
+      display: none;
+    }
+
+    .money-title {
+      text-align: center;
+      color: #c75487;
+      font-size: 1.4em;
+      font-weight: 900;
+      margin-bottom: 20px;
+      text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.5);
+    }
+
+    .money-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+    }
+
+    .money-card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 18px 15px;
+      border-radius: 15px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .money-card:hover {
+      transform: translateY(-5px) scale(1.03);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .money-card.highlight {
+      background: linear-gradient(135deg, #fff 0%, #ffe5e5 100%);
+      border: 2px solid #ffb5b5;
+    }
+
+    .money-label {
+      color: #888;
+      font-size: 0.8em;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .money-value {
+      color: #e8959c;
+      font-size: 1.5em;
+      font-weight: 900;
+    }
+
+    .money-value.big {
+      font-size: 1.9em;
+    }
+
+    .comparison-section {
+      background: linear-gradient(135deg, #e0e6fa 0%, #d8e8f7 100%);
+      padding: 25px;
+      border-radius: 20px;
+      margin: 25px 0;
+      box-shadow: 0 10px 35px rgba(224, 230, 250, 0.4);
+    }
+
+    .comparison-title {
+      text-align: center;
+      color: #6b7ba8;
+      font-size: 1.4em;
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+
+    .comparison-list {
+      display: grid;
+      gap: 15px;
+    }
+
+    .comparison-item {
+      background: white;
+      padding: 15px 20px;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      transition: all 0.3s ease;
+      animation: slideRight 0.5s ease-out;
+      animation-fill-mode: backwards;
+    }
+
+    .comparison-item:nth-child(1) { animation-delay: 0.1s; }
+    .comparison-item:nth-child(2) { animation-delay: 0.2s; }
+    .comparison-item:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes slideRight {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .comparison-item:hover {
+      transform: translateX(10px) scale(1.02);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .comparison-emoji {
+      font-size: 2em;
+    }
+
+    .comparison-text {
+      flex: 1;
+      color: #555;
+      font-weight: 700;
+      font-size: 0.95em;
+    }
+
+    .motivation-card {
+      background: linear-gradient(135deg, #c5a8d4 0%, #d5b8e0 100%);
+      padding: 30px;
+      border-radius: 20px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      margin-top: 25px;
+      box-shadow: 0 12px 40px rgba(197, 168, 212, 0.35);
+    }
+
+    .motivation-card::before {
+      content: '✨';
+      position: absolute;
+      font-size: 8em;
+      opacity: 0.08;
+      top: -20px;
+      left: -20px;
+      animation: twinkle 2s infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.05; }
+      50% { opacity: 0.12; }
+    }
+
+    .quote-emoji {
+      font-size: 2.5em;
+      margin-bottom: 15px;
+      display: block;
+    }
+
+    .motivation-text {
+      color: white;
+      font-size: 1.15em;
+      line-height: 1.6;
+      font-weight: 700;
+      margin-bottom: 15px;
+      position: relative;
+      z-index: 1;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .motivation-author {
+      color: rgba(255, 255, 255, 0.95);
+      font-style: italic;
+      font-size: 1em;
+      font-weight: 600;
+    }
+
+    .reset-btn {
+      width: 100%;
+      margin-top: 25px;
+      padding: 16px;
+      background: linear-gradient(135deg, #ffc7e6, #ffd6e5);
+      color: #c75487;
+      border: none;
+      border-radius: 15px;
+      font-size: 1.05em;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(255, 199, 230, 0.4);
+    }
+
+    .reset-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(255, 199, 230, 0.6);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 1.5em;
+      }
+
+      .emoji-container {
+        font-size: 2.5em;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-card.mega {
+        grid-column: 1;
+      }
+
+      .money-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bubbles">
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <div class="emoji-container">⏰</div>
+      <h1>Procrastination Calculator</h1>
+      <p class="tagline">Discover what procrastination is really costing you!</p>
+      <span class="warning-badge">⚡ Reality Check Time!</span>
+    </div>
+
+    <div class="input-section">
+      <div class="input-card">
+        <div class="input-label">
+          <span class="label-emoji">😴</span>
+          <span>Hours wasted per day on procrastination</span>
+        </div>
+        <div class="input-wrapper">
+          <input type="number" id="hoursWasted" placeholder="3" min="0" max="24" step="0.5">
+          <span class="suffix">hours/day</span>
+        </div>
+      </div>
+
+      <div class="input-card">
+        <div class="input-label">
+          <span class="label-emoji">💰</span>
+          <span>Your hourly rate (optional for money calculation)</span>
+        </div>
+        <div class="input-wrapper">
+          <span class="prefix">$</span>
+          <input type="number" id="hourlyRate" placeholder="25" min="0" step="1">
+          <span class="suffix">per hour</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="calculate-btn" onclick="calculateCost()">
+      <span class="btn-content">
+        <span>Calculate My Reality</span>
+        <span class="btn-emoji">📊</span>
+      </span>
+    </button>
+
+    <div id="results" class="results hidden">
+      <div class="shock-banner">
+        <span class="shock-emoji">😱</span>
+        <h2 class="shock-title">Your Procrastination Reality Check!</h2>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-icon">⏱️</span>
+          <div class="stat-label">Daily Loss</div>
+          <div class="stat-value" id="dailyTime">-</div>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-icon">📅</span>
+          <div class="stat-label">Weekly Loss</div>
+          <div class="stat-value" id="weeklyTime">-</div>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-icon">🗓️</span>
+          <div class="stat-label">Monthly Loss</div>
+          <div class="stat-value" id="monthlyTime">-</div>
+        </div>
+
+        <div class="stat-card mega">
+          <span class="stat-icon">📆</span>
+          <div class="stat-label">Yearly Loss</div>
+          <div class="stat-value mega-value" id="yearlyTime">-</div>
+        </div>
+      </div>
+
+      <div id="moneySection" class="money-section hidden">
+        <h3 class="money-title">💸 Money Lost to Procrastination</h3>
+        <div class="money-grid">
+          <div class="money-card">
+            <div class="money-label">Weekly</div>
+            <div class="money-value" id="weeklyMoney">$0</div>
+          </div>
+          <div class="money-card">
+            <div class="money-label">Monthly</div>
+            <div class="money-value" id="monthlyMoney">$0</div>
+          </div>
+          <div class="money-card highlight">
+            <div class="money-label">Yearly</div>
+            <div class="money-value big" id="yearlyMoney">$0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="comparison-section">
+        <h3 class="comparison-title">⚡ You Could Have Instead...</h3>
+        <div id="comparisons" class="comparison-list"></div>
+      </div>
+
+      <div class="motivation-card">
+        <span class="quote-emoji">💭</span>
+        <p id="motivationalMessage" class="motivation-text"></p>
+        <div class="motivation-author">- Your Future Self</div>
+      </div>
+
+      <button class="reset-btn" onclick="resetCalculator()">
+        🔄 Calculate Again
+      </button>
+    </div>
+  </div>
+
+  <script>
+    function calculateCost() {
+      const hoursWasted = parseFloat(document.getElementById('hoursWasted').value);
+      const hourlyRate = parseFloat(document.getElementById('hourlyRate').value);
+      
+      if (!hoursWasted || hoursWasted <= 0) {
+        alert('⚠️ Please enter valid hours wasted per day!');
+        return;
+      }
+      
+      if (hoursWasted > 24) {
+        alert('😅 There are only 24 hours in a day! Try a smaller number.');
+        return;
+      }
+      
+      const dailyHours = hoursWasted;
+      const weeklyHours = hoursWasted * 7;
+      const monthlyHours = hoursWasted * 30;
+      const yearlyHours = hoursWasted * 365;
+      const yearlyDays = (yearlyHours / 24).toFixed(1);
+      
+      document.getElementById('dailyTime').textContent = `${dailyHours} hrs`;
+      document.getElementById('weeklyTime').textContent = `${weeklyHours} hrs`;
+      document.getElementById('monthlyTime').textContent = `${monthlyHours} hrs`;
+      document.getElementById('yearlyTime').textContent = `${yearlyDays} days`;
+      
+      const moneySection = document.getElementById('moneySection');
+      if (hourlyRate && hourlyRate > 0) {
+        moneySection.classList.remove('hidden');
+        
+        const weeklyMoney = (hoursWasted * 7 * hourlyRate).toFixed(2);
+        const monthlyMoney = (hoursWasted * 30 * hourlyRate).toFixed(2);
+        const yearlyMoney = (hoursWasted * 365 * hourlyRate).toFixed(2);
+        
+        document.getElementById('weeklyMoney').textContent = `$${formatNumber(weeklyMoney)}`;
+        document.getElementById('monthlyMoney').textContent = `$${formatNumber(monthlyMoney)}`;
+        document.getElementById('yearlyMoney').textContent = `$${formatNumber(yearlyMoney)}`;
+      } else {
+        moneySection.classList.add('hidden');
+      }
+      
+      generateComparisons(yearlyHours);
+      const message = getMotivationalMessage(hoursWasted, yearlyHours);
+      document.getElementById('motivationalMessage').textContent = message;
+      
+      document.getElementById('results').classList.remove('hidden');
+      setTimeout(() => {
+        document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+
+    function formatNumber(num) {
+      return parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function generateComparisons(yearlyHours) {
+      const comparisons = [
+        { emoji: '📚', text: `Reading ${Math.floor(yearlyHours / 2)} books (avg 2 hours per book)` },
+        { emoji: '🏃', text: `Running ${Math.floor(yearlyHours * 5)} miles (12 min/mile pace)` },
+        { emoji: '🎓', text: `Completing ${Math.floor(yearlyHours / 100)} online courses` },
+        { emoji: '💪', text: `${Math.floor(yearlyHours / 1)} gym workouts` },
+        { emoji: '🧘', text: `${Math.floor(yearlyHours * 60)} minutes of meditation` },
+        { emoji: '🎨', text: `Mastering a new skill for ${Math.floor(yearlyHours)} hours` },
+        { emoji: '🌍', text: `Learning ${Math.floor(yearlyHours / 200)} new languages` },
+        { emoji: '💼', text: `Building ${Math.floor(yearlyHours / 150)} side projects` }
+      ];
+      
+      const selected = [];
+      const usedIndices = new Set();
+      
+      while (selected.length < 3 && selected.length < comparisons.length) {
+        const randomIndex = Math.floor(Math.random() * comparisons.length);
+        if (!usedIndices.has(randomIndex)) {
+          selected.push(comparisons[randomIndex]);
+          usedIndices.add(randomIndex);
+        }
+      }
+      
+      const comparisonsDiv = document.getElementById('comparisons');
+      comparisonsDiv.innerHTML = '';
+      
+      selected.forEach(comp => {
+        const div = document.createElement('div');
+        div.className = 'comparison-item';
+        div.innerHTML = `
+          <span class="comparison-emoji">${comp.emoji}</span>
+          <span class="comparison-text">${comp.text}</span>
+        `;
+        comparisonsDiv.appendChild(div);
+      });
+    }
+
+    function getMotivationalMessage(hoursWasted, yearlyHours) {
+      const messages = [
+        `Imagine what you could achieve with ${yearlyHours.toFixed(0)} extra hours this year! Time to take action! 💪`,
+        `Every hour counts! You're losing precious time that could transform your life. Start today! 🚀`,
+        `That's ${(yearlyHours / 24).toFixed(0)} full days! But here's the good news: tomorrow is a fresh start. Make it count! ✨`,
+        `Stop watching life pass by! Those hours could build the future you dream about. Time to wake up! ⏰`,
+        `Procrastination is the thief of time. Don't let it steal another day from your potential! 🔥`,
+        `Your future self is watching. Make them proud by taking action NOW! 🌟`,
+        `Time you enjoyed wasting isn't wasted... but THIS much? Let's be honest, you could do better! 😉`,
+        `The best time to start was yesterday. The second best time is NOW! Let's go! 🎯`
+      ];
+      
+      if (hoursWasted < 2) {
+        return `Not too bad! But even ${yearlyHours.toFixed(0)} hours per year compounds. Small changes = big results! 🌱`;
+      } else if (hoursWasted < 4) {
+        return messages[Math.floor(Math.random() * messages.length)];
+      } else {
+        return `WHOA! ${(yearlyHours / 24).toFixed(0)} days per year is HUGE! But transformation starts with awareness. You've got this! 🔥💪`;
+      }
+    }
+
+    function resetCalculator() {
+      document.getElementById('hoursWasted').value = '';
+      document.getElementById('hourlyRate').value = '';
+      document.getElementById('results').classList.add('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const inputs = document.querySelectorAll('input');
+      inputs.forEach(input => {
+        input.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            calculateCost();
+          }
+        });
+      });
+    });
+  </script>
