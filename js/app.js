@@ -376,7 +376,15 @@ function renderProjects() {
         // Tech stack
         const techStackHtml = project.tech.map((t) => `<span>${t}</span>`).join("");
 
+        // Check if project is bookmarked
+        const isBookmarked = window.bookmarksManager && window.bookmarksManager.isBookmarked(project.title);
+        const bookmarkClass = isBookmarked ? 'bookmarked' : '';
+        const bookmarkIcon = isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
+
         card.innerHTML = `
+            <button class="bookmark-btn ${bookmarkClass}" data-project-title="${escapeHtml(project.title)}" aria-label="${isBookmarked ? 'Remove bookmark' : 'Add bookmark'}">
+                <i class="${bookmarkIcon}"></i>
+            </button>
             <div ${coverAttr}><i class="${project.icon}"></i></div>
             <div class="card-content">
                 <div class="card-header-flex">
@@ -389,6 +397,14 @@ function renderProjects() {
                 <div class="card-tech">${techStackHtml}</div>
             </div>
         `;
+
+        // Add bookmark button click handler
+        const bookmarkBtn = card.querySelector('.bookmark-btn');
+        bookmarkBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleBookmarkClick(bookmarkBtn, project);
+        });
 
         // Stagger animation
         card.style.opacity = "0";
@@ -410,6 +426,58 @@ function renderProjects() {
 function capitalize(str) {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// Handle bookmark button click
+function handleBookmarkClick(btn, project) {
+    if (!window.bookmarksManager) return;
+    
+    const isNowBookmarked = window.bookmarksManager.toggleBookmark(project);
+    const icon = btn.querySelector('i');
+    
+    // Update button state
+    btn.classList.toggle('bookmarked', isNowBookmarked);
+    icon.className = isNowBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
+    btn.setAttribute('aria-label', isNowBookmarked ? 'Remove bookmark' : 'Add bookmark');
+    
+    // Add animation
+    btn.classList.add('animate');
+    setTimeout(() => btn.classList.remove('animate'), 300);
+    
+    // Show toast notification
+    showBookmarkToast(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
+}
+
+// Show toast notification
+function showBookmarkToast(message) {
+    // Remove existing toast
+    const existingToast = document.querySelector('.bookmark-toast');
+    if (existingToast) existingToast.remove();
+    
+    // Create toast
+    const toast = document.createElement('div');
+    toast.className = 'bookmark-toast';
+    toast.innerHTML = `
+        <i class="ri-bookmark-fill"></i>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    
+    // Show toast
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // Hide and remove toast
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
 }
 
 // ===============================
