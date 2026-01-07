@@ -1,7 +1,9 @@
 class Calculator {
-    constructor(previousOperandElement, currentOperandElement) {
+    constructor(previousOperandElement, currentOperandElement, historyListElement) {
         this.previousOperandElement = previousOperandElement;
         this.currentOperandElement = currentOperandElement;
+        this.historyListElement = historyListElement;
+        this.history = [];
         this.clear();
     }
 
@@ -71,10 +73,32 @@ class Calculator {
                 return;
         }
 
+        const historyEntry = `${prev} ${this.operation} ${current} = ${computation}`;
+        this.addToHistory(historyEntry);
+
         this.currentOperand = computation.toString();
         this.operation = undefined;
         this.previousOperand = '';
         this.updateDisplay();
+    }
+
+    addToHistory(entry) {
+        this.history.unshift(entry);
+
+        if (this.history.length > 5) {
+            this.history.pop();
+        }
+
+        this.renderHistory();
+    }
+
+    renderHistory() {
+        this.historyListElement.innerHTML = '';
+        this.history.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            this.historyListElement.appendChild(li);
+        });
     }
 
     updateDisplay() {
@@ -85,8 +109,13 @@ class Calculator {
 
 const previousOperandElement = document.getElementById('previousOperand');
 const currentOperandElement = document.getElementById('currentOperand');
+const historyListElement = document.getElementById('historyList');
 
-const calculator = new Calculator(previousOperandElement, currentOperandElement);
+const calculator = new Calculator(
+    previousOperandElement,
+    currentOperandElement,
+    historyListElement
+);
 
 // Keyboard support
 document.addEventListener('keydown', (e) => {
