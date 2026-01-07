@@ -2,8 +2,26 @@
 
 Thank you for your interest in contributing to OpenPlayground! This document provides guidelines and instructions for contributing to this project.
 
+## ⚠️ CRITICAL RULES - READ FIRST
+
+### ❌ DO NOT MODIFY `index.html` DIRECTLY!
+
+OpenPlayground uses a **component-based architecture**. This means:
+
+- ✅ **DO:** Add your project to `projects.json`
+- ❌ **DO NOT:** Add project cards directly to `index.html`
+- ❌ **DO NOT:** Add inline HTML/CSS to `index.html`
+- ❌ **DO NOT:** Modify the component placeholders in `index.html`
+
+**Why?** `index.html` is only 44 lines long and should stay that way. It dynamically loads:
+- Components from `components/` folder (header, footer, etc.)
+- Projects from `projects.json` file
+
+**PRs that violate this rule will be rejected.**
+
 ## Table of Contents
 
+- [Critical Rules](#critical-rules---read-first)
 - [Getting Started](#getting-started)
 - [How to Contribute](#how-to-contribute)
 - [Project Guidelines](#project-guidelines)
@@ -64,10 +82,11 @@ We welcome several types of contributions:
    - `script.js` - JavaScript functionality
    - `README.md` - Project documentation (optional but recommended)
 
-3. **Update the main website**
-   - Add your project card to `index.html`
-   - Follow the existing card structure
-   - Choose an appropriate icon from RemixIcon
+3. **Update projects.json**
+   - ❌ **DO NOT** add your project to `index.html`
+   - ✅ **DO** add your project to `projects.json` (see Submission Process section)
+   - Choose an appropriate icon from [RemixIcon](https://remixicon.com/)
+   - Select the correct category for your project
 
 ## Project Guidelines
 
@@ -116,25 +135,26 @@ projects/your-project-name/
    - Test thoroughly on different devices and browsers
    - Ensure all files are properly organized
 
-2. **Update the main website**
-   - Open `projects.json` in the root directory.
-   - Add a new object to the array with your project details using this template:
+2. **⚠️ CRITICAL: Add to projects.json (NOT index.html!)**
+   - Open `projects.json` in the root directory
+   - ❌ **DO NOT TOUCH `index.html`** - it auto-generates from `projects.json`
+   - Add a new object to the array with your project details:
 
-   ```bash
-   
+   ```json
    {
       "title": "Your Project Name",
       "category": "utility",
-      "description": "Brief description of your project.",
+      "description": "Brief description of your project (max 100 chars).",
       "tech": ["HTML", "CSS", "JS"],
       "link": "./projects/your-project-name/index.html",
       "icon": "ri-your-icon-name",
       "coverClass": "your-project-cover"
    }
-     
    ```
 
-   **Note:** _Valid categories include `utility`, `game`, `puzzle`, `productivity`, etc._
+   **Note:** Valid categories include `utility`, `game`, `puzzle`, `productivity`, etc.
+   
+   **Icon Names:** Browse [RemixIcon](https://remixicon.com/) and use the full class name (e.g., `ri-calculator-line`)
 
 3. **Add CSS for your project card**
 
@@ -150,10 +170,12 @@ projects/your-project-name/
    
 
 4. **Test your changes**
-   - Open index.html in your browser
-   - Verify your project card appears correctly in the list
-   - Click on your card to ensure it opens your project
-   - Test your project functionality
+   - Open `index.html` in a browser (or use a local server)
+   - Your project card should appear automatically in the projects section
+   - Verify the card displays correctly (icon, title, description, category)
+   - Click your card to ensure it opens your project
+   - Test your project functionality thoroughly
+   - Check browser console for any errors
    
 
 5. **Commit your changes**
@@ -201,7 +223,9 @@ Add screenshots of your project
 - [ ] I have tested my changes thoroughly
 - [ ] I have added appropriate comments to my code
 - [ ] My project is responsive and accessible
-- [ ] I have updated the main website with my project card
+- [ ] I have added my project to `projects.json` (NOT `index.html`!)
+- [ ] I have NOT modified `index.html` directly
+- [ ] My `projects.json` entry is valid JSON
 ```
 
 ## Code Review Process

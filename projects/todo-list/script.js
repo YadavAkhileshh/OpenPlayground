@@ -1,218 +1,257 @@
-console.log("Script Loaded!");
+/* =========================
+   THEME (DARK MODE)
+========================= */
 
-window.saveTasks = function () {
-    let tasks = [];
-    document.querySelectorAll(".task").forEach(task => {
-        tasks.push({
-            id: task.id,
-            title: task.querySelector("strong").textContent,
-            description: task.querySelector("p").textContent,
-            dueDate: task.querySelector(".due-date").textContent,
-            column: task.closest(".column").id
-        });
-    });
+const themeToggle = document.getElementById("themeToggle");
 
-    console.log("Saving tasks:", tasks);
-    localStorage.setItem("kanbanTasks", JSON.stringify(tasks));
-};
+document.addEventListener("DOMContentLoaded", () => {
+  // Load theme
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark-theme");
+    themeToggle.textContent = "☀️ Light Mode";
+  } else {
+    themeToggle.textContent = "🌙 Dark Mode";
+  }
 
-console.log("Script Loaded!");
+  loadTasks();
+  updateProgress();
+  updateLeaderboard();
+});
 
-function allowDrop(event) {
-    event.preventDefault();
+themeToggle.addEventListener("click", () => {
+  document.body.classList.toggle("dark-theme");
+  const isDark = document.body.classList.contains("dark-theme");
+
+  localStorage.setItem("theme", isDark ? "dark" : "light");
+  themeToggle.textContent = isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
+});
+
+/* =========================
+   DRAG & DROP
+========================= */
+
+function allowDrop(e) {
+  e.preventDefault();
 }
 
-function drag(event) {
-    event.dataTransfer.setData("text", event.target.id);
+function drag(e) {
+  e.dataTransfer.setData("text", e.target.id);
 }
 
-function drop(event) {
-    event.preventDefault();
-    let data = event.dataTransfer.getData("text");
-    let task = document.getElementById(data);
-    event.target.appendChild(task);
-    applyTaskColor(task, event.target.closest(".column").id);
+function drop(e) {
+  e.preventDefault();
+  const id = e.dataTransfer.getData("text");
+  const task = document.getElementById(id);
+  const column = e.target.closest(".column");
+
+  if (column && task) {
+    column.querySelector(".task-list").appendChild(task);
+    applyTaskColor(task, column.id);
     saveTasks();
-    checkDueDates();
-    updateLeaderboard();
     updateProgress();
+    updateLeaderboard();
+    checkDueDates();
+  }
 }
+
+/* =========================
+   TASK CRUD
+========================= */
 
 function addTask(columnId) {
-    let title = prompt("Enter task title:");
-    let description = prompt("Enter task description:");
-    
-    let dueDate = prompt("Set due date (YYYY-MM-DD):");
-    let assignedTo = prompt("Assign task to:");
-    
-    if (title) {
-        let taskId = "task-" + Math.random().toString(36).substr(2, 9);
-        let task = document.createElement("div");
-        
-        task.innerHTML = `<strong>${title}</strong>
-            <p>${description}</p>
-            <p>Due: <span class="due-date">${dueDate || "N/A"}</span></p>
-            <label>Assigned to: 
-                <select class="assigned-to" onchange="updateLeaderboard()">
-                    <option value="Worker 1">Worker 1</option>
-                    <option value="Worker 2">Worker 2</option>
-                    <option value="Worker 3">Worker 3</option>
-                </select>
-            </label>
-            <button onclick="addComment('${taskId}')">💬</button>
-            <button onclick="editTask(this)">✏️</button>
-            <button onclick="deleteTask(this)">❌</button>
-            <div class="comments" id="comments-${taskId}"></div>`;
-        task.setAttribute("draggable", true);
-        task.setAttribute("id", taskId);
-        task.ondragstart = drag;
-        document.getElementById(columnId).querySelector(".task-list").appendChild(task);
-        applyTaskColor(task, columnId);
-        saveTasks();
-        updateProgress();
-        checkDueDates();
-        updateLeaderboard();
-    }
+  const title = prompt("Enter task title:");
+  if (!title) return;
+
+  const description = prompt("Enter task description:") || "";
+  const dueDate = prompt("Set due date (YYYY-MM-DD):") || "N/A";
+
+  const taskId = "task-" + Math.random().toString(36).slice(2, 9);
+  const task = document.createElement("div");
+
+  task.className = "task";
+  task.id = taskId;
+  task.draggable = true;
+  task.ondragstart = drag;
+
+  task.innerHTML = `
+    <strong>${title}</strong>
+    <p>${description}</p>
+    <p>Due: <span class="due-date">${dueDate}</span></p>
+
+    <label>Assigned to:
+      <select class="assigned-to" onchange="updateLeaderboard(); saveTasks();">
+        <option value="Worker 1">Worker 1</option>
+        <option value="Worker 2">Worker 2</option>
+        <option value="Worker 3">Worker 3</option>
+      </select>
+    </label>
+
+    <button onclick="addComment('${taskId}')">💬</button>
+    <button onclick="editTask(this)">✏️</button>
+    <button onclick="deleteTask(this)">❌</button>
+
+    <div class="comments" id="comments-${taskId}"></div>
+  `;
+
+  document
+    .getElementById(columnId)
+    .querySelector(".task-list")
+    .appendChild(task);
+
+  applyTaskColor(task, columnId);
+  saveTasks();
+  updateProgress();
+  updateLeaderboard();
+  checkDueDates();
 }
-function editTask(button, taskId) {
-    let task = button.parentElement;
-    let newTitle = prompt("Edit task title:", task.querySelector("strong").textContent);
-    let newDescription = prompt("Edit task description:", task.querySelector("p").textContent);
-    let newDueDate = prompt("Edit due date (YYYY-MM-DD):", task.querySelector(".due-date").textContent);
-    if (newTitle) task.querySelector("strong").textContent = newTitle;
-    if (newDescription) task.querySelector("p").textContent = newDescription;
-    if (newDueDate) task.querySelector(".due-date").textContent = newDueDate;
+
+function editTask(btn) {
+  const task = btn.parentElement;
+
+  const titleEl = task.querySelector("strong");
+  const descEl = task.querySelector("p");
+  const dueEl = task.querySelector(".due-date");
+
+  const newTitle = prompt("Edit title:", titleEl.textContent);
+  const newDesc = prompt("Edit description:", descEl.textContent);
+  const newDue = prompt("Edit due date:", dueEl.textContent);
+
+  if (newTitle) titleEl.textContent = newTitle;
+  if (newDesc) descEl.textContent = newDesc;
+  if (newDue) dueEl.textContent = newDue;
+
+  saveTasks();
+}
+
+function deleteTask(btn) {
+  if (confirm("Delete this task?")) {
+    btn.parentElement.remove();
     saveTasks();
+    updateProgress();
+    updateLeaderboard();
+  }
 }
+
 function addComment(taskId) {
-    let comment = prompt("Enter your comment:");
-    if (comment) {
-        let commentDiv = document.createElement("p");
-        commentDiv.textContent = comment;
-        document.getElementById("comments-" + taskId).appendChild(commentDiv);
-        saveTasks();
+  const text = prompt("Enter comment:");
+  if (!text) return;
 
-    }
-}
-function deleteTask(button) {
-    if (confirm("Are you sure you want to delete this task?")) {
-        button.parentElement.remove();
-        saveTasks();
-        updateProgress();
-        updateLeaderboard();
-        saveTasks();
-    }
+  const p = document.createElement("p");
+  p.textContent = text;
+  document.getElementById(`comments-${taskId}`).appendChild(p);
+
+  saveTasks();
 }
 
-window.saveTasks = function () {
-    let tasks = [];
-    document.querySelectorAll(".task").forEach(task => {
-        let comments = [];
-        task.querySelectorAll(".comments p").forEach(comment => comments.push(comment.textContent));
+/* =========================
+   SAVE & LOAD
+========================= */
 
-        tasks.push({
-            id: task.id,
-            title: task.querySelector("strong").textContent,
-            description: task.querySelector("p").textContent,
-            dueDate: task.querySelector(".due-date").textContent,
-            assignedTo: task.querySelector(".assigned-to") ? task.querySelector(".assigned-to").value : "",
-            column: task.closest(".column") ? task.closest(".column").id : "",
-            comments: comments
-        });
+function saveTasks() {
+  const tasks = [];
+
+  document.querySelectorAll(".task").forEach(task => {
+    const comments = [];
+    task.querySelectorAll(".comments p").forEach(c => comments.push(c.textContent));
+
+    tasks.push({
+      id: task.id,
+      title: task.querySelector("strong").textContent,
+      description: task.querySelector("p").textContent,
+      dueDate: task.querySelector(".due-date").textContent,
+      assignedTo: task.querySelector(".assigned-to")?.value || "",
+      column: task.closest(".column")?.id || "",
+      comments
     });
+  });
 
-    console.log("Saving tasks:", tasks); // ✅ Debugging
-    localStorage.setItem("kanbanTasks", JSON.stringify(tasks));
-};
-
+  localStorage.setItem("kanbanTasks", JSON.stringify(tasks));
+}
 
 function loadTasks() {
-    let tasks = JSON.parse(localStorage.getItem("kanbanTasks")) || [];
-    console.log("Loaded tasks:", tasks); // ✅ Debugging
+  const tasks = JSON.parse(localStorage.getItem("kanbanTasks")) || [];
 
-    tasks.forEach(taskData => {
-        let task = document.createElement("div");
-        task.className = "task";
-        task.innerHTML = `<strong>${taskData.title}</strong>
-            <p>${taskData.description}</p>
-            <p>Due: <span class="due-date">${taskData.dueDate}</span></p>
-            <label>Assigned to: 
-                <select class="assigned-to" onchange="saveTasks()">
-                    <option value="Worker 1" ${taskData.assignedTo === "Worker 1" ? "selected" : ""}>Worker 1</option>
-                    <option value="Worker 2" ${taskData.assignedTo === "Worker 2" ? "selected" : ""}>Worker 2</option>
-                    <option value="Worker 3" ${taskData.assignedTo === "Worker 3" ? "selected" : ""}>Worker 3</option>
-                </select>
-            </label>
-            <button onclick="deleteTask(this)">❌</button>
-            <div class="comments" id="comments-${taskData.id}"></div>`;
+  tasks.forEach(t => {
+    const task = document.createElement("div");
+    task.className = "task";
+    task.id = t.id;
+    task.draggable = true;
+    task.ondragstart = drag;
 
-        task.setAttribute("draggable", true);
-        task.setAttribute("id", taskData.id);
-        task.ondragstart = drag;
+    task.innerHTML = `
+      <strong>${t.title}</strong>
+      <p>${t.description}</p>
+      <p>Due: <span class="due-date">${t.dueDate}</span></p>
 
-        let column = document.getElementById(taskData.column);
-        if (column) {
-            column.querySelector(".task-list").appendChild(task);
-        } else {
-            console.warn(`Column ${taskData.column} not found!`);
-        }
+      <label>Assigned to:
+        <select class="assigned-to" onchange="saveTasks(); updateLeaderboard();">
+          <option value="Worker 1" ${t.assignedTo === "Worker 1" ? "selected" : ""}>Worker 1</option>
+          <option value="Worker 2" ${t.assignedTo === "Worker 2" ? "selected" : ""}>Worker 2</option>
+          <option value="Worker 3" ${t.assignedTo === "Worker 3" ? "selected" : ""}>Worker 3</option>
+        </select>
+      </label>
 
-        taskData.comments.forEach(comment => {
-            let commentDiv = document.createElement("p");
-            commentDiv.textContent = comment;
-            document.getElementById("comments-" + taskData.id).appendChild(commentDiv);
-        });
+      <button onclick="addComment('${t.id}')">💬</button>
+      <button onclick="editTask(this)">✏️</button>
+      <button onclick="deleteTask(this)">❌</button>
+
+      <div class="comments" id="comments-${t.id}"></div>
+    `;
+
+    document.getElementById(t.column)?.querySelector(".task-list")?.appendChild(task);
+
+    t.comments.forEach(c => {
+      const p = document.createElement("p");
+      p.textContent = c;
+      document.getElementById(`comments-${t.id}`).appendChild(p);
     });
+  });
 }
 
+/* =========================
+   PROGRESS
+========================= */
 
+function updateProgress() {
+  const total = document.querySelectorAll(".task").length;
+  const done = document.querySelectorAll("#done .task").length;
+  const percent = total ? Math.round((done / total) * 100) : 0;
 
-function toggleTheme() {
-    document.body.classList.toggle("dark-theme");
-    let theme = document.body.classList.contains("dark-theme") ? "dark" : "light";
-    localStorage.setItem("theme", theme);
-    document.getElementById("theme-toggle").textContent = theme === "dark" ? "☀️" : "🌙";
+  const bar = document.getElementById("progress-bar");
+  if (bar) {
+    bar.style.width = percent + "%";
+    bar.textContent = percent + "%";
+  }
 }
+
+/* =========================
+   EXPORT / IMPORT
+========================= */
+
 function exportTasks() {
-    let tasks = localStorage.getItem("kanbanTasks");
-    let blob = new Blob([tasks], { type: "application/json" });
-    let a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "kanban_tasks.json";
-    a.click();
+  const data = localStorage.getItem("kanbanTasks");
+  const blob = new Blob([data], { type: "application/json" });
+  const a = document.createElement("a");
+
+  a.href = URL.createObjectURL(blob);
+  a.download = "kanban_tasks.json";
+  a.click();
 }
 
 function importTasks() {
-    let input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/json";
-    input.onchange = function(event) {
-        let file = event.target.files[0];
-        let reader = new FileReader();
-        reader.onload = function() {
-            localStorage.setItem("kanbanTasks", reader.result);
-            location.reload();
-        };
-        reader.readAsText(file);
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "application/json";
+
+  input.onchange = e => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      localStorage.setItem("kanbanTasks", reader.result);
+      location.reload();
     };
-    input.click();
-}
-function updateProgress() {
-    let totalTasks = document.querySelectorAll(".task").length;
-    let completedTasks = document.querySelectorAll("#done .task").length;
-    let progressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-    document.getElementById("progress-bar").style.width = progressPercentage + "%";
-    document.getElementById("progress-bar").textContent = Math.round(progressPercentage) + "%";
-}
+    reader.readAsText(e.target.files[0]);
+  };
 
-document.addEventListener("DOMContentLoaded", () => {
-
-    console.log("Page loaded. Loading tasks...");
-    loadTasks();
-    updateProgress();
-    updateLeaderboard();
-    if (localStorage.getItem("theme") === "dark") {
-        document.body.classList.add("dark-theme");
-        document.getElementById("theme-toggle").textContent = "🌙";
-    }
-});
+  input.click();
+}

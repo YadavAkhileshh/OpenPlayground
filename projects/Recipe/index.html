@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌙 Smart Recipe Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --bg:#fdf6ec;--card:#fff;--text:#333;--primary:#ff7043;--shadow:0 20px 40px rgba(0,0,0,.1)
+}
+body.dark{
+  --bg:#121212;--card:#1f1f1f;--text:#f5f5f5;--primary:#ffab91
+}
+body{margin:0;font-family:Poppins;background:var(--bg);color:var(--text);transition:.3s}
+header{display:flex;justify-content:space-between;align-items:center;padding:25px}
+button{border:none;border-radius:20px;padding:10px 16px;cursor:pointer;background:var(--primary);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:25px;padding:25px}
+.card{background:var(--card);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;transition:.3s}
+.card:hover{transform:translateY(-6px)}
+.card img{width:100%;height:160px;object-fit:cover}
+.card .info{padding:15px}
+.modal{position:fixed;inset:0;display:none;background:rgba(0,0,0,.6);align-items:center;justify-content:center}
+.modal-content{background:var(--card);padding:25px;border-radius:20px;width:90%;max-width:650px;max-height:85vh;overflow:auto}
+input,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid #ccc;margin:6px 0}
+.timer{font-size:1.2rem;margin:10px 0}
+.favorite{font-size:1.3rem;cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+<h1>🍲 Smart Recipe Book</h1>
+<div>
+<button onclick="toggleTheme()">🌙 Toggle</button>
+<button onclick="openAdd()">➕ Add</button>
+</div>
+</header>
+
+<div class="grid" id="recipes"></div>
+
+<div class="modal" id="modal"></div>
+
+<script>
+const { jsPDF } = window.jspdf;
+let recipes = JSON.parse(localStorage.getItem('recipes')) || [
+ {id:1,title:'Veg Biryani',img:'https://images.unsplash.com/photo-1600628422019-8a0b8e7c7d5d',ingredients:['Rice','Vegetables','Spices'],steps:['Cook rice','Prepare masala','Mix & steam'],time:900},
+ {id:2,title:'Margherita Pizza',img:'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3',ingredients:['Flour','Cheese','Tomato Sauce'],steps:['Prepare dough','Add toppings','Bake'],time:800},
+ {id:3,title:'Pancakes',img:'https://images.unsplash.com/photo-1587732019718-4a4e7f5b6a2d',ingredients:['Flour','Milk','Eggs'],steps:['Make batter','Cook on pan','Serve hot'],time:400},
+ {id:4,title:'Caesar Salad',img:'https://images.unsplash.com/photo-1568605114967-8130f3a36994',ingredients:['Lettuce','Croutons','Dressing'],steps:['Chop','Mix','Serve'],time:300},
+ {id:5,title:'Chocolate Brownies',img:'https://images.unsplash.com/photo-1599785209707-a456fc1337bb',ingredients:['Cocoa','Butter','Sugar','Flour'],steps:['Mix ingredients','Bake','Cool & slice'],time:700},
+ {id:6,title:'Masala Dosa',img:'https://images.unsplash.com/photo-1626776876729-bab4360a7b19',ingredients:['Rice batter','Potato','Spices'],steps:['Prepare filling','Spread batter','Cook & fold'],time:600}
+];
+let favs = JSON.parse(localStorage.getItem('favs')) || [];
+
+function save(){localStorage.setItem('recipes',JSON.stringify(recipes));localStorage.setItem('favs',JSON.stringify(favs));}
+
+function toggleTheme(){document.body.classList.toggle('dark')}
+
+function render(){
+ const el=document.getElementById('recipes');el.innerHTML='';
+ recipes.forEach(r=>{
+  const fav=favs.includes(r.id)?'❤️':'🤍';
+  el.innerHTML+=`<div class="card"><img src="${r.img}"><div class="info"><h3>${r.title} <span class="favorite" onclick="favToggle(${r.id})">${fav}</span></h3><button onclick="openRecipe(${r.id})">View</button></div></div>`
+ })
+}
+
+function favToggle(id){favs.includes(id)?favs=favs.filter(f=>f!==id):favs.push(id);save();render()}
+
+function openRecipe(id){
+ const r=recipes.find(x=>x.id===id);
+ let t=r.time;
+ document.getElementById('modal').style.display='flex';
+ document.getElementById('modal').innerHTML=`<div class="modal-content"><button onclick="closeModal()">✖</button><h2>${r.title}</h2><p><b>Ingredients</b></p><ul>${r.ingredients.map(i=>`<li>${i}</li>`).join('')}</ul><p><b>Steps</b></p><ol>${r.steps.map(s=>`<li>${s}</li>`).join('')}</ol><div class="timer" id="timer">${t}s</div><button onclick="startTimer(${t})">🔥 Start Timer</button><button onclick="exportPDF(${id})">📄 Export PDF</button><button onclick="aiSuggest()">🧠 AI Suggest</button></div>`
+}
+
+function startTimer(sec){
+ let t=sec;const el=document.getElementById('timer');
+ const i=setInterval(()=>{t--;el.textContent=t+'s';if(t<=0){clearInterval(i);alert('⏰ Time Up!')}},1000)
+}
+
+function exportPDF(id){
+ const r=recipes.find(x=>x.id===id);const pdf=new jsPDF();
+ pdf.text(r.title,10,10);pdf.text('Ingredients:',10,20);
+ r.ingredients.forEach((i,n)=>pdf.text('- '+i,10,30+n*8));
+ pdf.save(r.title+'.pdf');
+}
+
+function aiSuggest(){alert('🧠 AI Suggestion: Try adding herbs & olive oil for better flavor!')}
+
+function openAdd(){
+ document.getElementById('modal').style.display='flex';
+ document.getElementById('modal').innerHTML=`<div class="modal-content"><button onclick="closeModal()">✖</button><h2>Add Recipe</h2><input id="t" placeholder="Title"><input id="i" placeholder="Image URL"><textarea id="ing" placeholder="Ingredients comma separated"></textarea><textarea id="st" placeholder="Steps comma separated"></textarea><button onclick="addRecipe()">Save</button></div>`
+}
+
+function addRecipe(){
+ recipes.push({id:Date.now(),title:t.value,img:i.value,ingredients:ing.value.split(','),steps:st.value.split(','),time:600});save();closeModal();render();}
+function closeModal(){document.getElementById('modal').style.display='none'}
+render();
+</script>
+</body>
+</html>
