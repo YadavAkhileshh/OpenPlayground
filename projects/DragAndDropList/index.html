@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive List Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1><i class="fas fa-tasks"></i> Task Board Manager</h1>
+                    <p class="subtitle">Organize, prioritize, and track your tasks with drag & drop</p>
+                </div>
+                <div class="header-right">
+                    <div class="header-stats">
+                        <div class="stat-badge">
+                            <span class="stat-value" id="totalTasks">0</span>
+                            <span class="stat-label">Total Tasks</span>
+                        </div>
+                        <div class="stat-badge">
+                            <span class="stat-value" id="completedTasks">0</span>
+                            <span class="stat-label">Completed</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <nav class="app-nav">
+            <div class="nav-left">
+                <button id="addItemBtn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> New Task
+                </button>
+                <button id="resetBtn" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i> Reset Board
+                </button>
+                <button id="bulkCompleteBtn" class="btn btn-success">
+                    <i class="fas fa-check-double"></i> Complete All
+                </button>
+            </div>
+            <div class="nav-right">
+                <div class="view-toggle">
+                    <button class="view-btn active" data-view="board">
+                        <i class="fas fa-th-large"></i> Board View
+                    </button>
+                    <button class="view-btn" data-view="list">
+                        <i class="fas fa-list"></i> List View
+                    </button>
+                </div>
+                <div class="filter-options">
+                    <select id="filterSelect">
+                        <option value="all">All Tasks</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="high">High Priority</option>
+                        <option value="today">Due Today</option>
+                    </select>
+                </div>
+            </div>
+        </nav>
+
+        <main class="app-main">
+            <!-- Board View -->
+            <div class="board-view active" id="boardView">
+                <div class="board-columns">
+                    <!-- Pending Column -->
+                    <div class="board-column" data-status="pending">
+                        <div class="column-header">
+                            <h3><i class="fas fa-clock"></i> Pending</h3>
+                            <span class="column-count" id="pendingCount">0</span>
+                        </div>
+                        <div class="column-content" id="pendingColumn">
+                            <!-- Pending tasks will be added here -->
+                        </div>
+                        <div class="column-footer">
+                            <button class="add-to-column" data-column="pending">
+                                <i class="fas fa-plus"></i> Add Task
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- In Progress Column -->
+                    <div class="board-column" data-status="in-progress">
+                        <div class="column-header">
+                            <h3><i class="fas fa-spinner"></i> In Progress</h3>
+                            <span class="column-count" id="progressCount">0</span>
+                        </div>
+                        <div class="column-content" id="progressColumn">
+                            <!-- In Progress tasks will be added here -->
+                        </div>
+                        <div class="column-footer">
+                            <button class="add-to-column" data-column="in-progress">
+                                <i class="fas fa-plus"></i> Add Task
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Review Column -->
+                    <div class="board-column" data-status="review">
+                        <div class="column-header">
+                            <h3><i class="fas fa-search"></i> Review</h3>
+                            <span class="column-count" id="reviewCount">0</span>
+                        </div>
+                        <div class="column-content" id="reviewColumn">
+                            <!-- Review tasks will be added here -->
+                        </div>
+                        <div class="column-footer">
+                            <button class="add-to-column" data-column="review">
+                                <i class="fas fa-plus"></i> Add Task
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Completed Column -->
+                    <div class="board-column" data-status="completed">
+                        <div class="column-header">
+                            <h3><i class="fas fa-check-circle"></i> Completed</h3>
+                            <span class="column-count" id="completedCount">0</span>
+                        </div>
+                        <div class="column-content" id="completedColumn">
+                            <!-- Completed tasks will be added here -->
+                        </div>
+                        <div class="column-footer">
+                            <button class="add-to-column" data-column="completed">
+                                <i class="fas fa-plus"></i> Add Task
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List View -->
+            <div class="list-view" id="listView">
+                <div class="list-controls">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Search tasks...">
+                    </div>
+                    <div class="sort-options">
+                        <select id="sortSelect">
+                            <option value="priority">Sort by Priority</option>
+                            <option value="date">Sort by Date</option>
+                            <option value="title">Sort by Title</option>
+                            <option value="status">Sort by Status</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="list-container">
+                    <div class="list-header">
+                        <div class="list-header-cell">Task</div>
+                        <div class="list-header-cell">Priority</div>
+                        <div class="list-header-cell">Status</div>
+                        <div class="list-header-cell">Due Date</div>
+                        <div class="list-header-cell">Actions</div>
+                    </div>
+                    <div class="list-items" id="listItems">
+                        <!-- List items will be added here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState">
+                <div class="empty-icon">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+                <h3>Your board is empty</h3>
+                <p>Add your first task to get started with organizing your work</p>
+                <button id="addFirstItemBtn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create First Task
+                </button>
+            </div>
+        </main>
+
+        <aside class="app-sidebar">
+            <div class="sidebar-section">
+                <h3><i class="fas fa-chart-pie"></i> Task Analytics</h3>
+                <div class="analytics-grid">
+                    <div class="analytics-item">
+                        <div class="analytics-value" id="highPriorityCount">0</div>
+                        <div class="analytics-label">High Priority</div>
+                    </div>
+                    <div class="analytics-item">
+                        <div class="analytics-value" id="overdueCount">0</div>
+                        <div class="analytics-label">Overdue</div>
+                    </div>
+                    <div class="analytics-item">
+                        <div class="analytics-value" id="todayCount">0</div>
+                        <div class="analytics-label">Due Today</div>
+                    </div>
+                    <div class="analytics-item">
+                        <div class="analytics-value" id="progressPercentage">0%</div>
+                        <div class="analytics-label">Completion</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3><i class="fas fa-filter"></i> Quick Filters</h3>
+                <div class="filter-chips">
+                    <button class="filter-chip" data-filter="high">
+                        <i class="fas fa-flag"></i> High Priority
+                    </button>
+                    <button class="filter-chip" data-filter="today">
+                        <i class="fas fa-calendar-day"></i> Due Today
+                    </button>
+                    <button class="filter-chip" data-filter="overdue">
+                        <i class="fas fa-exclamation-circle"></i> Overdue
+                    </button>
+                    <button class="filter-chip active" data-filter="all">
+                        <i class="fas fa-layer-group"></i> All Tasks
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3><i class="fas fa-history"></i> Recent Activity</h3>
+                <div class="activity-feed" id="activityFeed">
+                    <!-- Activity items will be added here -->
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3><i class="fas fa-lightbulb"></i> Productivity Tips</h3>
+                <div class="tips-container">
+                    <div class="tip">
+                        <i class="fas fa-rocket"></i>
+                        <p>Limit tasks to 3 per column for better focus</p>
+                    </div>
+                    <div class="tip">
+                        <i class="fas fa-calendar-alt"></i>
+                        <p>Review overdue tasks first thing each morning</p>
+                    </div>
+                    <div class="tip">
+                        <i class="fas fa-bullseye"></i>
+                        <p>Assign realistic due dates to stay on track</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <footer class="app-footer">
+            <div class="footer-content">
+                <div class="footer-left">
+                    <p>Task Board Manager &copy; <span id="currentYear"></span> • Drag tasks between columns to update status</p>
+                </div>
+                <div class="footer-right">
+                    <div class="footer-actions">
+                        <button id="exportBtn" class="btn btn-text">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <button id="importBtn" class="btn btn-text">
+                            <i class="fas fa-upload"></i> Import
+                        </button>
+                        <button id="settingsBtn" class="btn btn-text">
+                            <i class="fas fa-cog"></i> Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div id="addItemModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus-circle"></i> Create New Task</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="itemTitle">Task Title *</label>
+                        <input type="text" id="itemTitle" placeholder="Enter task title" autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label for="itemDescription">Description</label>
+                        <textarea id="itemDescription" placeholder="Add task details..." rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskStatus">Status</label>
+                        <select id="taskStatus">
+                            <option value="pending">Pending</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="review">Review</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskPriority">Priority</label>
+                        <div class="priority-buttons">
+                            <button class="priority-btn low" data-priority="low">
+                                <i class="fas fa-flag"></i> Low
+                            </button>
+                            <button class="priority-btn medium active" data-priority="medium">
+                                <i class="fas fa-flag"></i> Medium
+                            </button>
+                            <button class="priority-btn high" data-priority="high">
+                                <i class="fas fa-flag"></i> High
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="dueDate">Due Date</label>
+                        <input type="date" id="dueDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="taskLabels">Labels</label>
+                        <div class="label-selector">
+                            <span class="label-option" data-label="work">Work</span>
+                            <span class="label-option" data-label="personal">Personal</span>
+                            <span class="label-option" data-label="urgent">Urgent</span>
+                            <span class="label-option" data-label="bug">Bug</span>
+                            <span class="label-option" data-label="feature">Feature</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="cancelAddBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="confirmAddBtn" class="btn btn-primary">Create Task</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-cog"></i> Settings</h3>
+                <button class="close-settings">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-group">
+                    <h4>Board Settings</h4>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="autoSave" checked> Auto-save changes
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="showAnimations" checked> Enable animations
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="confirmDeletion"> Confirm before deletion
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <h4>Data Management</h4>
+                    <div class="setting-item">
+                        <button id="clearDataBtn" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Clear All Data
+                        </button>
+                    </div>
+                    <div class="setting-item">
+                        <button id="backupDataBtn" class="btn btn-secondary">
+                            <i class="fas fa-save"></i> Backup Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
