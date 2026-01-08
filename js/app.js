@@ -48,7 +48,11 @@ toggleBtn.addEventListener("click", () => {
     const newTheme =
         html.getAttribute("data-theme") === "light" ? "dark" : "light";
 
+
     html.setAttribute("data-theme", newTheme);
+
+  html.setAttribute("data-theme", newTheme);
+
     localStorage.setItem("theme", newTheme);
     updateThemeIcon(newTheme);
     toggleBtn.classList.add("shake");
@@ -130,10 +134,18 @@ if(navToggle && navLinks){
 // PROJECTS SEARCH, FILTER, SORT, PAGINATION
 // ===============================
 
+
 const searchInput = document.getElementById("project-search");
 const sortSelect = document.getElementById("project-sort");
 const filterBtns = document.querySelectorAll(".filter-btn");
 
+
+
+  const searchInput = document.getElementById("project-search");
+const sortSelect = document.getElementById("project-sort");
+const filterBtns = document.querySelectorAll(".filter-btn");
+
+  
 
 // Number of project cards displayed per page
 const itemsPerPage = 9;
@@ -179,6 +191,7 @@ if (clearBtn) {
         renderProjects();
     });
 }
+
 
 const projectsContainer = document.querySelector(".projects-container");
 const paginationContainer = document.getElementById("pagination-controls");
@@ -551,6 +564,10 @@ function renderPagination(totalPages){
 
 
 
+
+function capitalize(str){ return str.charAt(0).toUpperCase() + str.slice(1); }
+
+
 // ===============================
 // Init
 // ===============================
@@ -561,6 +578,17 @@ console.log(
     "%cWant to contribute? https://github.com/YadavAkhileshh/OpenPlayground",
     "color:#8b5cf6;font-size:14px"
 );
+
+// Event listeners
+searchInput?.addEventListener("input", ()=>{ currentPage=1; renderProjects(); });
+sortSelect?.addEventListener("change", ()=>{ currentSort=sortSelect.value; currentPage=1; renderProjects(); });
+filterBtns.forEach(btn=>btn.addEventListener("click", ()=>{
+    filterBtns.forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    currentCategory=btn.dataset.filter;
+    currentPage=1;
+    renderProjects();
+}));
 
 // Event listeners
 searchInput?.addEventListener("input", ()=>{ currentPage=1; renderProjects(); });

@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Body Language Analyzer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --calm-color: #4a9cff;
+            --rushed-color: #ff6b6b;
+            --hesitant-color: #ffc145;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f1f5f9;
+            --border-color: #334155;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, var(--calm-color), var(--rushed-color), var(--hesitant-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: auto;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #e2e8f0;
+        }
+        
+        .card-title i {
+            font-size: 1.6rem;
+        }
+        
+        /* Live Indicator Card */
+        .live-indicator {
+            grid-column: span 4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .indicator-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            position: relative;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 40px rgba(74, 156, 255, 0.2);
+        }
+        
+        .indicator-label {
+            font-size: 1.8rem;
+            font-weight: 600;
+            z-index: 2;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .intensity-bars {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+        }
+        
+        .intensity-bar {
+            width: 20px;
+            height: 60px;
+            background-color: var(--border-color);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .intensity-bar::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: linear-gradient(to top, var(--calm-color), var(--rushed-color));
+            border-radius: 10px;
+            transition: height 0.5s ease;
+        }
+        
+        /* Patterns Card */
+        .patterns {
+            grid-column: span 8;
+        }
+        
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .pattern-item {
+            background-color: rgba(30, 41, 59, 0.7);
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid var(--calm-color);
+        }
+        
+        .pattern-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-top: 10px;
+            color: var(--calm-color);
+        }
+        
+        .pattern-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        /* Graph Card */
+        .graph {
+            grid-column: span 8;
+        }
+        
+        .graph-container {
+            height: 300px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .motion-trail {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Analysis Card */
+        .analysis {
+            grid-column: span 4;
+        }
+        
+        .behavior-tag {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            background-color: var(--calm-color);
+        }
+        
+        .behavior-tag.rushed {
+            background-color: var(--rushed-color);
+        }
+        
+        .behavior-tag.hesitant {
+            background-color: var(--hesitant-color);
+        }
+        
+        .insight-text {
+            margin-top: 20px;
+            line-height: 1.6;
+            color: #cbd5e1;
+        }
+        
+        /* Summary Card */
+        .summary {
+            grid-column: span 12;
+            display: none;
+        }
+        
+        .summary.active {
+            display: block;
+            animation: fadeIn 0.8s ease;
+        }
+        
+        .summary-title {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-align: center;
+            color: var(--calm-color);
+        }
+        
+        .summary-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+        
+        .summary-chart {
+            flex: 1;
+            min-width: 300px;
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .chart-bar {
+            width: 60px;
+            background: linear-gradient(to top, var(--calm-color), var(--rushed-color), var(--hesitant-color));
+            border-radius: 8px 8px 0 0;
+            position: relative;
+            transition: height 1s ease;
+        }
+        
+        .chart-label {
+            position: absolute;
+            bottom: -25px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .summary-text {
+            flex: 2;
+            min-width: 300px;
+            padding: 20px;
+            background-color: rgba(30, 41, 59, 0.7);
+            border-radius: 12px;
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            padding: 12px 28px;
+            border-radius: 50px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background-color: var(--calm-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #3a8cff;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(74, 156, 255, 0.3);
+        }
+        
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--calm-color);
+            color: var(--calm-color);
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .live-indicator, .analysis {
+                grid-column: span 6;
+            }
+            
+            .patterns, .graph {
+                grid-column: span 12;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                grid-column: span 1 !important;
+            }
+            
+            .pattern-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Digital Body Language Analyzer</h1>
+            <p class="subtitle">This tool observes how you interact with the interface—rather than what you interact with—to infer interaction styles such as calm, rushed, or hesitant. All analysis happens locally in your browser; no personal data is collected.</p>
+        </header>
+        
+        <main class="dashboard">
+            <!-- Live Indicator Card -->
+            <div class="card live-indicator">
+                <h2 class="card-title"><i class="fas fa-heartbeat"></i> Live Interaction Intensity</h2>
+                <div class="indicator-circle" id="indicatorCircle">
+                    <div class="indicator-label" id="indicatorLabel">Calm</div>
+                </div>
+                <div class="intensity-bars">
+                    <div class="intensity-bar" id="bar1"></div>
+                    <div class="intensity-bar" id="bar2"></div>
+                    <div class="intensity-bar" id="bar3"></div>
+                    <div class="intensity-bar" id="bar4"></div>
+                    <div class="intensity-bar" id="bar5"></div>
+                </div>
+            </div>
+            
+            <!-- Patterns Card -->
+            <div class="card patterns">
+                <h2 class="card-title"><i class="fas fa-chart-line"></i> Interaction Patterns</h2>
+                <div class="pattern-grid">
+                    <div class="pattern-item">
+                        <div>Mouse Speed</div>
+                        <div class="pattern-value" id="mouseSpeed">0.0</div>
+                        <div class="pattern-label">pixels/second</div>
+                    </div>
+                    <div class="pattern-item">
+                        <div>Click Frequency</div>
+                        <div class="pattern-value" id="clickFreq">0.0</div>
+                        <div class="pattern-label">clicks/minute</div>
+                    </div>
+                    <div class="pattern-item">
+                        <div>Scroll Hesitation</div>
+                        <div class="pattern-value" id="scrollHesitation">0.0</div>
+                        <div class="pattern-label">seconds/pause</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Graph Card -->
+            <div class="card graph">
+                <h2 class="card-title"><i class="fas fa-wave-square"></i> Motion Trails</h2>
+                <div class="graph-container">
+                    <canvas class="motion-trail" id="motionTrail"></canvas>
+                </div>
+            </div>
+            
+            <!-- Analysis Card -->
+            <div class="card analysis">
+                <h2 class="card-title"><i class="fas fa-brain"></i> Behavior Analysis</h2>
+                <div id="behaviorTags">
+                    <span class="behavior-tag calm">Calm</span>
+                    <span class="behavior-tag rushed">Rushed</span>
+                    <span class="behavior-tag hesitant">Hesitant</span>
+                </div>
+                <div class="insight-text" id="insightText">
+                    Your interaction style appears balanced. You're moving at a steady pace with thoughtful pauses between actions.
+                </div>
+            </div>
+            
+            <!-- Summary Card (hidden initially) -->
+            <div class="card summary" id="summaryCard">
+                <h2 class="summary-title">Session Summary</h2>
+                <div class="summary-content">
+                    <div class="summary-chart">
+                        <div class="chart-bar" id="calmBar" style="height: 70%;">
+                            <div class="chart-label">Calm</div>
+                        </div>
+                        <div class="chart-bar" id="rushedBar" style="height: 30%;">
+                            <div class="chart-label">Rushed</div>
+                        </div>
+                        <div class="chart-bar" id="hesitantBar" style="height: 50%;">
+                            <div class="chart-label">Hesitant</div>
+                        </div>
+                    </div>
+                    <div class="summary-text" id="summaryText">
+                        <p>Your session analysis shows a predominantly calm interaction style with moments of hesitation when exploring new content. You tend to move at a steady pace, with occasional bursts of rapid activity when navigating familiar areas.</p>
+                        <p style="margin-top: 15px;">This pattern suggests a methodical approach to digital interfaces, balancing efficiency with careful consideration.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <div class="controls">
+            <button class="btn btn-primary" id="endSessionBtn">
+                <i class="fas fa-flag-checkered"></i> End Session & Show Summary
+            </button>
+            <button class="btn btn-secondary" id="resetBtn">
+                <i class="fas fa-redo"></i> Reset Session
+            </button>
+        </div>
+        
+        <footer>
+            <p>Digital Body Language Analyzer | No personal data is collected or stored | All analysis happens locally in your browser</p>
+            <p style="margin-top: 5px;">Mouse movement, click timing, and scroll behavior are analyzed to infer interaction styles.</p>
+        </footer>
+    </div>
+
+    <script>
+        // State variables
+        let sessionActive = true;
+        let mouseMovements = [];
+        let clicks = [];
+        let scrollEvents = [];
+        let interactionData = {
+            mouseSpeed: 0,
+            clickFrequency: 0,
+            scrollHesitation: 0,
+            behaviorStyle: 'calm',
+            calmScore: 70,
+            rushedScore: 30,
+            hesitantScore: 50
+        };
+        
+        // DOM Elements
+        const indicatorCircle = document.getElementById('indicatorCircle');
+        const indicatorLabel = document.getElementById('indicatorLabel');
+        const mouseSpeedEl = document.getElementById('mouseSpeed');
+        const clickFreqEl = document.getElementById('clickFreq');
+        const scrollHesitationEl = document.getElementById('scrollHesitation');
+        const behaviorTags = document.getElementById('behaviorTags');
+        const insightText = document.getElementById('insightText');
+        const summaryCard = document.getElementById('summaryCard');
+        const calmBar = document.getElementById('calmBar');
+        const rushedBar = document.getElementById('rushedBar');
+        const hesitantBar = document.getElementById('hesitantBar');
+        const summaryText = document.getElementById('summaryText');
+        const endSessionBtn = document.getElementById('endSessionBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const intensityBars = [
+            document.getElementById('bar1'),
+            document.getElementById('bar2'),
+            document.getElementById('bar3'),
+            document.getElementById('bar4'),
+            document.getElementById('bar5')
+        ];
+        
+        // Canvas for motion trails
+        const canvas = document.getElementById('motionTrail');
+        const ctx = canvas.getContext('2d');
+        let trails = [];
+        
+        // Initialize canvas
+        function initCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            
+            // Draw initial grid
+            drawGrid();
+        }
+        
+        // Draw background grid
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw subtle grid
+            ctx.strokeStyle = 'rgba(100, 116, 139, 0.1)';
+            ctx.lineWidth = 1;
+            
+            // Vertical lines
+            for (let x = 0; x <= canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            // Horizontal lines
+            for (let y = 0; y <= canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+        
+        // Add a motion trail
+        function addTrail(x, y, speed) {
+            const now = Date.now();
+            const color = getColorForSpeed(speed);
+            
+            trails.push({
+                x, y, 
+                color,
+                size: Math.min(10, speed / 20 + 3),
+                createdAt: now,
+                lifespan: 1000 // 1 second
+            });
+            
+            // Keep only recent trails
+            trails = trails.filter(trail => now - trail.createdAt < trail.lifespan);
+            
+            drawTrails();
+        }
+        
+        // Draw all trails
+        function drawTrails() {
+            drawGrid();
+            
+            const now = Date.now();
+            
+            trails.forEach(trail => {
+                const age = now - trail.createdAt;
+                const opacity = 1 - (age / trail.lifespan);
+                
+                ctx.beginPath();
+                ctx.arc(trail.x, trail.y, trail.size, 0, Math.PI * 2);
+                ctx.fillStyle = trail.color.replace(')', `, ${opacity})`).replace('rgb', 'rgba');
+                ctx.fill();
+            });
+        }
+        
+        // Get color based on speed
+        function getColorForSpeed(speed) {
+            if (speed < 5) return 'rgb(255, 193, 69)'; // Hesitant
+            if (speed < 15) return 'rgb(74, 156, 255)'; // Calm
+            return 'rgb(255, 107, 107)'; // Rushed
+        }
+        
+        // Calculate mouse speed and smoothness
+        function calculateMouseSpeed(x, y, time) {
+            if (mouseMovements.length === 0) {
+                mouseMovements.push({x, y, time});
+                return 0;
+            }
+            
+            const lastMovement = mouseMovements[mouseMovements.length - 1];
+            const distance = Math.sqrt(Math.pow(x - lastMovement.x, 2) + Math.pow(y - lastMovement.y, 2));
+            const timeDiff = time - lastMovement.time;
+            const speed = timeDiff > 0 ? distance / (timeDiff / 1000) : 0;
+            
+            mouseMovements.push({x, y, time});
+            
+            // Keep only last 50 movements
+            if (mouseMovements.length > 50) {
+                mouseMovements.shift();
+            }
+            
+            return speed;
+        }
+        
+        // Track mouse movement
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let lastMouseTime = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!sessionActive) return;
+            
+            const currentTime = Date.now();
+            const speed = calculateMouseSpeed(e.clientX, e.clientY, currentTime);
+            
+            // Update mouse speed in interaction data
+            interactionData.mouseSpeed = speed;
+            
+            // Add trail if enough time has passed
+            if (currentTime - lastMouseTime > 50) {
+                addTrail(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top, speed);
+                lastMouseTime = currentTime;
+            }
+            
+            updateUI();
+        });
+        
+        // Track clicks
+        document.addEventListener('click', () => {
+            if (!sessionActive) return;
+            
+            const currentTime = Date.now();
+            clicks.push(currentTime);
+            
+            // Keep only clicks from last minute
+            const oneMinuteAgo = currentTime - 60000;
+            clicks = clicks.filter(clickTime => clickTime > oneMinuteAgo);
+            
+            // Calculate click frequency (clicks per minute)
+            if (clicks.length > 1) {
+                const timeSpan = (clicks[clicks.length - 1] - clicks[0]) / 1000; // in seconds
+                interactionData.clickFrequency = clicks.length / (timeSpan / 60);
+            }
+            
+            updateUI();
+        });
+        
+        // Track scroll
+        let lastScrollTime = 0;
+        let scrollPauses = [];
+        
+        document.addEventListener('scroll', () => {
+            if (!sessionActive) return;
+            
+            const currentTime = Date.now();
+            scrollEvents.push(currentTime);
+            
+            // Calculate time since last scroll
+            if (lastScrollTime > 0) {
+                const pauseDuration = currentTime - lastScrollTime;
+                
+                // Only count pauses longer than 100ms
+                if (pauseDuration > 100) {
+                    scrollPauses.push(pauseDuration);
+                    
+                    // Keep only last 20 pauses
+                    if (scrollPauses.length > 20) {
+                        scrollPauses.shift();
+                    }
+                    
+                    // Calculate average scroll hesitation
+                    if (scrollPauses.length > 0) {
+                        const sum = scrollPauses.reduce((a, b) => a + b, 0);
+                        interactionData.scrollHesitation = (sum / scrollPauses.length) / 1000; // Convert to seconds
+                    }
+                }
+            }
+            
+            lastScrollTime = currentTime;
+            updateUI();
+        });
+        
+        // Update UI based on interaction data
+        function updateUI() {
+            // Update numeric values
+            mouseSpeedEl.textContent = interactionData.mouseSpeed.toFixed(1);
+            clickFreqEl.textContent = interactionData.clickFrequency.toFixed(1);
+            scrollHesitationEl.textContent = interactionData.scrollHesitation.toFixed(1);
+            
+            // Determine behavior style
+            let style = 'calm';
+            let calm = 0, rushed = 0, hesitant = 0;
+            
+            // Calculate scores based on interaction data
+            if (interactionData.mouseSpeed > 20) rushed += 40;
+            else if (interactionData.mouseSpeed < 5) hesitant += 30;
+            else calm += 35;
+            
+            if (interactionData.clickFrequency > 20) rushed += 30;
+            else if (interactionData.clickFrequency < 5) hesitant += 25;
+            else calm += 30;
+            
+            if (interactionData.scrollHesitation > 2) hesitant += 45;
+            else if (interactionData.scrollHesitation < 0.5) rushed += 30;
+            else calm += 35;
+            
+            // Determine dominant style
+            if (rushed > calm && rushed > hesitant) style = 'rushed';
+            else if (hesitant > calm && hesitant > rushed) style = 'hesitant';
+            else style = 'calm';
+            
+            interactionData.behaviorStyle = style;
+            
+            // Update indicator circle
+            let color, label;
+            switch(style) {
+                case 'calm':
+                    color = 'var(--calm-color)';
+                    label = 'Calm';
+                    break;
+                case 'rushed':
+                    color = 'var(--rushed-color)';
+                    label = 'Rushed';
+                    break;
+                case 'hesitant':
+                    color = 'var(--hesitant-color)';
+                    label = 'Hesitant';
+                    break;
+            }
+            
+            indicatorCircle.style.background = `radial-gradient(circle at 30% 30%, ${color}40, ${color}10)`;
+            indicatorCircle.style.boxShadow = `0 0 40px ${color}40`;
+            indicatorLabel.textContent = label;
+            
+            // Update intensity bars
+            const intensity = Math.min(1, interactionData.mouseSpeed / 30);
+            intensityBars.forEach((bar, index) => {
+                const delay = index * 0.1;
+                const height = Math.max(10, intensity * 100 * (0.8 - index * 0.1));
+                setTimeout(() => {
+                    bar.style.height = '60px';
+                    bar.querySelector('::after').style.height = `${height}%`;
+                }, delay * 1000);
+            });
+            
+            // Update behavior tags
+            behaviorTags.innerHTML = '';
+            const tags = ['calm', 'rushed', 'hesitant'];
+            tags.forEach(tag => {
+                const span = document.createElement('span');
+                span.className = `behavior-tag ${tag}`;
+                span.textContent = tag.charAt(0).toUpperCase() + tag.slice(1);
+                
+                // Highlight the active tag
+                if (tag === style) {
+                    span.classList.add('pulse');
+                }
+                
+                behaviorTags.appendChild(span);
+            });
+            
+            // Update insight text
+            let insight = '';
+            if (style === 'calm') {
+                insight = 'Your interaction style appears balanced. You\'re moving at a steady pace with thoughtful pauses between actions.';
+            } else if (style === 'rushed') {
+                insight = 'You\'re interacting quickly with rapid movements and frequent clicks. This may indicate urgency or efficiency.';
+            } else {
+                insight = 'You\'re taking time between actions with careful consideration. This suggests a deliberate, thoughtful approach.';
+            }
+            
+            insightText.textContent = insight;
+            
+            // Update scores for summary
+            interactionData.calmScore = Math.min(100, Math.max(10, calm));
+            interactionData.rushedScore = Math.min(100, Math.max(10, rushed));
+            interactionData.hesitantScore = Math.min(100, Math.max(10, hesitant));
+        }
+        
+        // End session and show summary
+        endSessionBtn.addEventListener('click', () => {
+            sessionActive = false;
+            summaryCard.classList.add('active');
+            
+            // Update summary chart bars
+            calmBar.style.height = `${interactionData.calmScore}%`;
+            rushedBar.style.height = `${interactionData.rushedScore}%`;
+            hesitantBar.style.height = `${interactionData.hesitantScore}%`;
+            
+            // Update summary text based on analysis
+            let summary = '';
+            const maxScore = Math.max(
+                interactionData.calmScore, 
+                interactionData.rushedScore, 
+                interactionData.hesitantScore
+            );
+            
+            if (maxScore === interactionData.calmScore) {
+                summary = 'Your session analysis shows a predominantly calm interaction style. You maintain a steady pace, balancing efficiency with consideration. This pattern suggests comfort with digital interfaces and a methodical approach to navigation.';
+            } else if (maxScore === interactionData.rushedScore) {
+                summary = 'Your interaction pattern shows a rushed approach with rapid movements and frequent actions. This could indicate urgency, familiarity with the interface, or a preference for efficiency over deliberation.';
+            } else {
+                summary = 'Your session reveals a hesitant interaction style, with careful consideration between actions. This suggests a thoughtful, deliberate approach to digital interfaces, possibly indicating exploration or caution with new content.';
+            }
+            
+            summaryText.innerHTML = `<p>${summary}</p><p style="margin-top: 15px;">Remember: This analysis reflects how you interact, not what you interact with. No personal data has been collected or stored.</p>`;
+            
+            // Change button text
+            endSessionBtn.innerHTML = '<i class="fas fa-check"></i> Session Complete';
+            endSessionBtn.disabled = true;
+        });
+        
+        // Reset session
+        resetBtn.addEventListener('click', () => {
+            sessionActive = true;
+            
+            // Reset data
+            mouseMovements = [];
+            clicks = [];
+            scrollEvents = [];
+            scrollPauses = [];
+            trails = [];
+            
+            interactionData = {
+                mouseSpeed: 0,
+                clickFrequency: 0,
+                scrollHesitation: 0,
+                behaviorStyle: 'calm',
+                calmScore: 70,
+                rushedScore: 30,
+                hesitantScore: 50
+            };
+            
+            // Reset UI
+            summaryCard.classList.remove('active');
+            endSessionBtn.innerHTML = '<i class="fas fa-flag-checkered"></i> End Session & Show Summary';
+            endSessionBtn.disabled = false;
+            
+            // Reset canvas
+            drawGrid();
+            
+            updateUI();
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            initCanvas();
+            drawTrails();
+        });
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            initCanvas();
+            updateUI();
+            
+            // Simulate some initial activity for demo purposes
+            setTimeout(() => {
+                if (sessionActive) {
+                    interactionData.mouseSpeed = 12.5;
+                    interactionData.clickFrequency = 8.2;
+                    interactionData.scrollHesitation = 1.4;
+                    updateUI();
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
