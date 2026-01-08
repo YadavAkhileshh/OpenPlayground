@@ -2,7 +2,7 @@
 // Component Loader for OpenPlayground
 // Dynamically loads HTML components
 // ===============================
-
+ 
 class ComponentLoader {
     constructor() {
         this.components = {
