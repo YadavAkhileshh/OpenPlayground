@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Signal Timing Demo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #f1f1f1;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff5e62, #ff9966);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #b0b0d0;
+            max-width: 800px;
+            margin: 0 auto 15px;
+            line-height: 1.5;
+        }
+
+        .demo-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .signal-container {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .controls-container {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .traffic-light {
+            width: 200px;
+            height: 500px;
+            background-color: #2a2a3a;
+            border-radius: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 
+                inset 0 0 20px rgba(0, 0, 0, 0.5),
+                0 10px 30px rgba(0, 0, 0, 0.7);
+        }
+
+        .light {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: #111;
+            position: relative;
+            box-shadow: 
+                inset 0 0 20px rgba(0, 0, 0, 0.8),
+                0 0 10px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .light::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), transparent 70%);
+        }
+
+        .light.active {
+            box-shadow: 
+                inset 0 0 20px rgba(255, 255, 255, 0.2),
+                0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        .red-light.active {
+            background-color: #ff5e62;
+            box-shadow: 
+                inset 0 0 20px rgba(255, 255, 255, 0.3),
+                0 0 40px rgba(255, 94, 98, 0.7);
+        }
+
+        .yellow-light.active {
+            background-color: #ffcc00;
+            box-shadow: 
+                inset 0 0 20px rgba(255, 255, 255, 0.3),
+                0 0 40px rgba(255, 204, 0, 0.7);
+        }
+
+        .green-light.active {
+            background-color: #00cc66;
+            box-shadow: 
+                inset 0 0 20px rgba(255, 255, 255, 0.3),
+                0 0 40px rgba(0, 204, 102, 0.7);
+        }
+
+        .phase-display {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .phase-title {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .phase-description {
+            color: #b0b0d0;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .countdown {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #ffcc00;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+            margin: 10px 0;
+        }
+
+        .signal-sequence {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .sequence-step {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            background-color: #333;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .sequence-step.active {
+            transform: scale(1.1);
+            color: white;
+        }
+
+        .sequence-step.red {
+            border: 3px solid #ff5e62;
+        }
+
+        .sequence-step.yellow {
+            border: 3px solid #ffcc00;
+        }
+
+        .sequence-step.green {
+            border: 3px solid #00cc66;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-group {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #ff9966;
+        }
+
+        .timer-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .timer-control {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .timer-control label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #b0b0d0;
+        }
+
+        .timer-control input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .button-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #ff5e62, #ff9966);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .traffic-flow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .car {
+            font-size: 2.5rem;
+            transition: all 0.5s ease;
+            opacity: 0.7;
+        }
+
+        .car.moving {
+            opacity: 1;
+            transform: translateX(20px);
+        }
+
+        .info-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .info-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 5px solid;
+        }
+
+        .info-card.red {
+            border-left-color: #ff5e62;
+        }
+
+        .info-card.yellow {
+            border-left-color: #ffcc00;
+        }
+
+        .info-card.green {
+            border-left-color: #00cc66;
+        }
+
+        .info-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #b0b0d0;
+            font-size: 0.9rem;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .demo-container {
+                flex-direction: column;
+            }
+            
+            .traffic-light {
+                width: 180px;
+                height: 450px;
+            }
+            
+            .light {
+                width: 100px;
+                height: 100px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Traffic Signal Timing Demo</h1>
+            <p class="subtitle">Visualize how traffic signals change over time and understand how timing intervals affect traffic flow. This demo shows the complete signal sequence (red → yellow → green) with configurable timing controls.</p>
+        </header>
+
+        <div class="demo-container">
+            <div class="signal-container">
+                <div class="traffic-light">
+                    <div class="light red-light active" id="red-light"></div>
+                    <div class="light yellow-light" id="yellow-light"></div>
+                    <div class="light green-light" id="green-light"></div>
+                </div>
+
+                <div class="phase-display">
+                    <div class="phase-title" id="phase-title">STOP - RED LIGHT</div>
+                    <p class="phase-description" id="phase-description">Traffic must stop. No vehicles can proceed through the intersection.</p>
+                    
+                    <div class="countdown" id="countdown">10</div>
+                    <p>Seconds until next phase</p>
+                </div>
+
+                <div class="signal-sequence">
+                    <div class="sequence-step red active">R</div>
+                    <div class="sequence-step green">G</div>
+                    <div class="sequence-step yellow">Y</div>
+                </div>
+
+                <div class="traffic-flow">
+                    <div class="car" id="car1">🚗</div>
+                    <div class="car" id="car2">🚙</div>
+                    <div class="car" id="car3">🚕</div>
+                </div>
+            </div>
+
+            <div class="controls-container">
+                <h2>Signal Controls</h2>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <h3><i class="fas fa-sliders-h"></i> Timing Controls</h3>
+                        <p>Adjust the duration (in seconds) for each signal phase:</p>
+                        
+                        <div class="timer-controls">
+                            <div class="timer-control">
+                                <label for="red-time">Red Light Duration:</label>
+                                <input type="number" id="red-time" min="3" max="30" value="10">
+                            </div>
+                            <div class="timer-control">
+                                <label for="green-time">Green Light Duration:</label>
+                                <input type="number" id="green-time" min="3" max="30" value="15">
+                            </div>
+                            <div class="timer-control">
+                                <label for="yellow-time">Yellow Light Duration:</label>
+                                <input type="number" id="yellow-time" min="2" max="10" value="3">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <h3><i class="fas fa-play-circle"></i> Demo Controls</h3>
+                        <div class="button-controls">
+                            <button class="btn btn-primary" id="start-btn">
+                                <i class="fas fa-play"></i> Start Demo
+                            </button>
+                            <button class="btn btn-secondary" id="pause-btn" disabled>
+                                <i class="fas fa-pause"></i> Pause
+                            </button>
+                            <button class="btn btn-secondary" id="reset-btn">
+                                <i class="fas fa-redo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <h3><i class="fas fa-tachometer-alt"></i> Current Status</h3>
+                        <p>Cycle: <span id="cycle-count">0</span> completed</p>
+                        <p>Current Phase Duration: <span id="current-phase-duration">10</span> seconds</p>
+                        <p>Next Phase: <span id="next-phase">Green Light</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h2>How Traffic Signal Timing Works</h2>
+            <div class="info-grid">
+                <div class="info-card red">
+                    <h3><i class="fas fa-traffic-light"></i> Red Light Phase</h3>
+                    <p>The red light signals vehicles to stop. This phase prevents cross-traffic from entering the intersection, allowing safe passage for pedestrians and perpendicular traffic flow.</p>
+                </div>
+                <div class="info-card yellow">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Yellow Light Phase</h3>
+                    <p>The yellow light warns drivers that the signal is about to turn red. It provides a transition period for vehicles to safely clear the intersection before cross-traffic begins moving.</p>
+                </div>
+                <div class="info-card green">
+                    <h3><i class="fas fa-car"></i> Green Light Phase</h3>
+                    <p>The green light allows vehicles to proceed through the intersection. The duration of this phase is typically based on traffic volume, intersection size, and pedestrian needs.</p>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Traffic Signal Timing Demo | Created for educational purposes | Demonstrates signal sequencing and timing intervals</p>
+            <p>Use the controls to adjust timing and observe how signal changes affect traffic flow simulation.</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const redLight = document.getElementById('red-light');
+        const yellowLight = document.getElementById('yellow-light');
+        const greenLight = document.getElementById('green-light');
+        const phaseTitle = document.getElementById('phase-title');
+        const phaseDescription = document.getElementById('phase-description');
+        const countdownElement = document.getElementById('countdown');
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const redTimeInput = document.getElementById('red-time');
+        const greenTimeInput = document.getElementById('green-time');
+        const yellowTimeInput = document.getElementById('yellow-time');
+        const cycleCountElement = document.getElementById('cycle-count');
+        const currentPhaseDurationElement = document.getElementById('current-phase-duration');
+        const nextPhaseElement = document.getElementById('next-phase');
+        const sequenceSteps = document.querySelectorAll('.sequence-step');
+        const cars = document.querySelectorAll('.car');
+
+        // State variables
+        let currentPhase = 'red'; // red, yellow, green
+        let timeLeft = 10;
+        let isRunning = false;
+        let timerInterval = null;
+        let cycleCount = 0;
+        let redDuration = 10;
+        let greenDuration = 15;
+        let yellowDuration = 3;
+
+        // Initialize the demo
+        function initDemo() {
+            updatePhaseInfo();
+            updateLights();
+            updateSequenceDisplay();
+            updateTrafficFlow();
+            updateControls();
+        }
+
+        // Update traffic light visualization
+        function updateLights() {
+            // Reset all lights
+            redLight.classList.remove('active');
+            yellowLight.classList.remove('active');
+            greenLight.classList.remove('active');
+            
+            // Activate current light
+            if (currentPhase === 'red') {
+                redLight.classList.add('active');
+            } else if (currentPhase === 'yellow') {
+                yellowLight.classList.add('active');
+            } else if (currentPhase === 'green') {
+                greenLight.classList.add('active');
+            }
+        }
+
+        // Update phase information display
+        function updatePhaseInfo() {
+            if (currentPhase === 'red') {
+                phaseTitle.textContent = 'STOP - RED LIGHT';
+                phaseDescription.textContent = 'Traffic must stop. No vehicles can proceed through the intersection.';
+                timeLeft = redDuration;
+                nextPhaseElement.textContent = 'Green Light';
+            } else if (currentPhase === 'yellow') {
+                phaseTitle.textContent = 'CAUTION - YELLOW LIGHT';
+                phaseDescription.textContent = 'Prepare to stop. Clear the intersection if it\'s safe to do so.';
+                timeLeft = yellowDuration;
+                nextPhaseElement.textContent = 'Red Light';
+            } else if (currentPhase === 'green') {
+                phaseTitle.textContent = 'GO - GREEN LIGHT';
+                phaseDescription.textContent = 'Traffic may proceed through the intersection.';
+                timeLeft = greenDuration;
+                nextPhaseElement.textContent = 'Yellow Light';
+            }
+            
+            countdownElement.textContent = timeLeft;
+            currentPhaseDurationElement.textContent = timeLeft;
+        }
+
+        // Update the signal sequence display
+        function updateSequenceDisplay() {
+            sequenceSteps.forEach(step => {
+                step.classList.remove('active');
+            });
+            
+            if (currentPhase === 'red') {
+                sequenceSteps[0].classList.add('active');
+            } else if (currentPhase === 'green') {
+                sequenceSteps[1].classList.add('active');
+            } else if (currentPhase === 'yellow') {
+                sequenceSteps[2].classList.add('active');
+            }
+        }
+
+        // Update the traffic flow visualization
+        function updateTrafficFlow() {
+            cars.forEach(car => {
+                car.classList.remove('moving');
+            });
+            
+            // Cars move on green light
+            if (currentPhase === 'green') {
+                // Animate cars with different delays
+                setTimeout(() => cars[0].classList.add('moving'), 300);
+                setTimeout(() => cars[1].classList.add('moving'), 800);
+                setTimeout(() => cars[2].classList.add('moving'), 1300);
+            }
+            
+            // On yellow light, some cars might still be moving
+            if (currentPhase === 'yellow') {
+                cars[0].classList.add('moving');
+                cars[1].classList.remove('moving');
+                cars[2].classList.remove('moving');
+            }
+            
+            // On red light, no cars move
+            if (currentPhase === 'red') {
+                cars.forEach(car => car.classList.remove('moving'));
+            }
+        }
+
+        // Update control states
+        function updateControls() {
+            if (isRunning) {
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Running...';
+            } else {
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Start Demo';
+            }
+            
+            // Update timing values from inputs
+            redDuration = parseInt(redTimeInput.value) || 10;
+            greenDuration = parseInt(greenTimeInput.value) || 15;
+            yellowDuration = parseInt(yellowTimeInput.value) || 3;
+            
+            // If we're in the middle of a phase, update the time left
+            if (currentPhase === 'red') timeLeft = redDuration;
+            else if (currentPhase === 'green') timeLeft = greenDuration;
+            else if (currentPhase === 'yellow') timeLeft = yellowDuration;
+            
+            countdownElement.textContent = timeLeft;
+        }
+
+        // Move to the next phase
+        function nextPhase() {
+            if (currentPhase === 'red') {
+                currentPhase = 'green';
+            } else if (currentPhase === 'green') {
+                currentPhase = 'yellow';
+            } else if (currentPhase === 'yellow') {
+                currentPhase = 'red';
+                cycleCount++;
+                cycleCountElement.textContent = cycleCount;
+            }
+            
+            updatePhaseInfo();
+            updateLights();
+            updateSequenceDisplay();
+            updateTrafficFlow();
+        }
+
+        // Start the demo
+        function startDemo() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            updateControls();
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                countdownElement.textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    nextPhase();
+                }
+            }, 1000);
+        }
+
+        // Pause the demo
+        function pauseDemo() {
+            if (!isRunning) return;
+            
+            isRunning = false;
+            clearInterval(timerInterval);
+            updateControls();
+        }
+
+        // Reset the demo
+        function resetDemo() {
+            pauseDemo();
+            currentPhase = 'red';
+            timeLeft = redDuration;
+            cycleCount = 0;
+            cycleCountElement.textContent = cycleCount;
+            initDemo();
+        }
+
+        // Event Listeners
+        startBtn.addEventListener('click', startDemo);
+        pauseBtn.addEventListener('click', pauseDemo);
+        resetBtn.addEventListener('click', resetDemo);
+
+        // Update timing when inputs change
+        redTimeInput.addEventListener('change', updateControls);
+        greenTimeInput.addEventListener('change', updateControls);
+        yellowTimeInput.addEventListener('change', updateControls);
+
+        // Initialize the demo
+        initDemo();
+
+        // Add educational tooltip functionality
+        document.querySelectorAll('.info-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const phase = this.classList.contains('red') ? 'red' : 
+                             this.classList.contains('yellow') ? 'yellow' : 'green';
+                
+                // Switch to that phase for educational purposes
+                if (!isRunning) {
+                    currentPhase = phase;
+                    initDemo();
+                    
+                    // Highlight the phase briefly
+                    const originalBg = card.style.backgroundColor;
+                    card.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                    setTimeout(() => {
+                        card.style.backgroundColor = originalBg;
+                    }, 500);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
