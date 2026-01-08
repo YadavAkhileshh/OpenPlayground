@@ -1,4 +1,4 @@
-let h3 = document.querySelector("h3");
+let h3 = document.querySelector("#status");
 let btns = document.querySelectorAll(".btn")
 
 let btnList = ["red", "yellow", "blue", "green"];
@@ -9,14 +9,15 @@ let userSeq = [];
 start = false;
 let level = 0;
 
-document.addEventListener("keydown", (event) => {
-    if (event.code == "Space") {
-        if (start == false)
-            console.log("game started !")
+let startBtn = document.querySelector("#startBtn");
+
+startBtn.addEventListener("click", () => {
+    if (!start) {
         start = true;
         levelUp();
     }
-})
+});
+
 
 function levelUp() {
     userSeq = [];
@@ -49,6 +50,8 @@ function userFlash(btns) {
 function btnPress() {
     let btn = this;
     userFlash(btn);
+
+    if (!start) return;
 
     let userColor = btn.getAttribute("id");
     userSeq.push(userColor);
