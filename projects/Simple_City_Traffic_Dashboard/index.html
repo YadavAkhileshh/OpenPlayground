@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple City Traffic Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --low-congestion: #10b981;
+            --medium-congestion: #f59e0b;
+            --high-congestion: #ef4444;
+            --off-peak: #3b82f6;
+            --card-bg: #ffffff;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #64748b;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .dashboard-overview {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .overview-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .overview-text h2 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .current-time {
+            font-size: 1.2rem;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 50px;
+        }
+
+        .traffic-zones {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .zone-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-top: 4px solid;
+        }
+
+        .zone-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .zone-header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .zone-name {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .congestion-level {
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+        }
+
+        .low {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--low-congestion);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .medium {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: var(--medium-congestion);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .high {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: var(--high-congestion);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .zone-content {
+            padding: 20px;
+        }
+
+        .traffic-density {
+            margin-bottom: 20px;
+        }
+
+        .density-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .density-bar {
+            height: 24px;
+            background-color: #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .density-fill {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.8s ease;
+        }
+
+        .time-trends {
+            margin-top: 25px;
+        }
+
+        .time-trends h3 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #475569;
+        }
+
+        .time-slots {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .time-slot {
+            flex: 1;
+            text-align: center;
+            padding: 12px 5px;
+            border-radius: 8px;
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+        }
+
+        .time-slot.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .time-label {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .time-congestion {
+            font-size: 0.9rem;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .dashboard-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: #3b82f6;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .control-btn:hover {
+            background-color: #2563eb;
+        }
+
+        .control-btn i {
+            margin-right: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .traffic-zones {
+                grid-template-columns: 1fr;
+            }
+            
+            .overview-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .time-slots {
+                flex-wrap: wrap;
+            }
+            
+            .time-slot {
+                flex: 0 0 calc(50% - 10px);
+                margin-bottom: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .time-slot {
+                flex: 0 0 100%;
+            }
+            
+            .zone-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-traffic-light"></i> Simple City Traffic Dashboard</h1>
+            <p class="subtitle">Real-time visualization of traffic congestion across different city zones. Monitor traffic patterns and identify congestion hotspots at a glance.</p>
+        </header>
+
+        <div class="dashboard-overview">
+            <div class="overview-content">
+                <div class="overview-text">
+                    <h2>City Traffic Overview</h2>
+                    <p>Live traffic status updated every 5 minutes. Currently showing <span id="current-period">Morning</span> data.</p>
+                </div>
+                <div class="current-time">
+                    <i class="fas fa-clock"></i> <span id="time-display">08:45 AM</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-controls">
+            <button class="control-btn" id="refresh-btn">
+                <i class="fas fa-sync-alt"></i> Refresh Data
+            </button>
+            <button class="control-btn" id="morning-btn">
+                <i class="fas fa-sun"></i> Morning View
+            </button>
+            <button class="control-btn" id="afternoon-btn">
+                <i class="fas fa-cloud-sun"></i> Afternoon View
+            </button>
+            <button class="control-btn" id="evening-btn">
+                <i class="fas fa-moon"></i> Evening View
+            </button>
+        </div>
+
+        <div class="traffic-zones" id="traffic-zones-container">
+            <!-- Zone cards will be generated by JavaScript -->
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: var(--low-congestion);"></div>
+                <span>Low Congestion</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: var(--medium-congestion);"></div>
+                <span>Medium Congestion</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: var(--high-congestion);"></div>
+                <span>High Congestion</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: var(--off-peak);"></div>
+                <span>Off-Peak Hours</span>
+            </div>
+        </div>
+
+        <footer>
+            <p>Simple City Traffic Dashboard | Demonstrating real-world traffic management challenges visually</p>
+            <p>Data updates every 5 minutes | Last updated: <span id="last-updated">Just now</span></p>
+        </footer>
+    </div>
+
+    <script>
+        // Sample traffic data for three city zones
+        const trafficData = {
+            downtown: {
+                name: "Downtown Financial District",
+                current: { level: "high", density: 92 },
+                trends: {
+                    morning: { level: "high", density: 95 },
+                    afternoon: { level: "medium", density: 75 },
+                    evening: { level: "high", density: 88 }
+                }
+            },
+            midtown: {
+                name: "Midtown Commercial Zone",
+                current: { level: "medium", density: 65 },
+                trends: {
+                    morning: { level: "high", density: 85 },
+                    afternoon: { level: "medium", density: 65 },
+                    evening: { level: "low", density: 40 }
+                }
+            },
+            riverside: {
+                name: "Riverside Residential Area",
+                current: { level: "low", density: 30 },
+                trends: {
+                    morning: { level: "medium", density: 60 },
+                    afternoon: { level: "low", density: 35 },
+                    evening: { level: "medium", density: 55 }
+                }
+            },
+            northgate: {
+                name: "Northgate Industrial Park",
+                current: { level: "medium", density: 70 },
+                trends: {
+                    morning: { level: "high", density: 90 },
+                    afternoon: { level: "high", density: 80 },
+                    evening: { level: "low", density: 25 }
+                }
+            }
+        };
+
+        // Time periods
+        const timePeriods = [
+            { id: "morning", name: "Morning", time: "7:00 AM - 11:00 AM", active: true },
+            { id: "afternoon", name: "Afternoon", time: "12:00 PM - 4:00 PM", active: false },
+            { id: "evening", name: "Evening", time: "5:00 PM - 9:00 PM", active: false }
+        ];
+
+        // Current view state
+        let currentPeriod = "morning";
+        let lastUpdateTime = new Date();
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTimeDisplay();
+            renderTrafficZones();
+            setupEventListeners();
+            
+            // Simulate live updates every 30 seconds
+            setInterval(updateTrafficData, 30000);
+        });
+
+        // Update time display
+        function updateTimeDisplay() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('time-display').textContent = timeString;
+            
+            // Determine current period based on time
+            const hour = now.getHours();
+            if (hour >= 7 && hour < 11) currentPeriod = "morning";
+            else if (hour >= 12 && hour < 16) currentPeriod = "afternoon";
+            else if (hour >= 17 && hour < 21) currentPeriod = "evening";
+            
+            document.getElementById('current-period').textContent = currentPeriod.charAt(0).toUpperCase() + currentPeriod.slice(1);
+            
+            // Update active time slot
+            updateActiveTimeSlot();
+        }
+
+        // Render traffic zone cards
+        function renderTrafficZones() {
+            const container = document.getElementById('traffic-zones-container');
+            container.innerHTML = '';
+            
+            // Create a card for each zone
+            Object.keys(trafficData).forEach(zoneId => {
+                const zone = trafficData[zoneId];
+                const current = zone.current;
+                const trend = zone.trends[currentPeriod];
+                
+                // Determine border color based on congestion level
+                let borderColor = "";
+                let congestionClass = "";
+                
+                if (current.level === "low") {
+                    borderColor = "var(--low-congestion)";
+                    congestionClass = "low";
+                } else if (current.level === "medium") {
+                    borderColor = "var(--medium-congestion)";
+                    congestionClass = "medium";
+                } else {
+                    borderColor = "var(--high-congestion)";
+                    congestionClass = "high";
+                }
+                
+                // Create zone card
+                const zoneCard = document.createElement('div');
+                zoneCard.className = 'zone-card';
+                zoneCard.style.borderTopColor = borderColor;
+                
+                zoneCard.innerHTML = `
+                    <div class="zone-header">
+                        <div class="zone-name">${zone.name}</div>
+                        <div class="congestion-level ${congestionClass}">${current.level.toUpperCase()} CONGESTION</div>
+                    </div>
+                    <div class="zone-content">
+                        <div class="traffic-density">
+                            <div class="density-label">
+                                <span>Traffic Density</span>
+                                <span>${current.density}%</span>
+                            </div>
+                            <div class="density-bar">
+                                <div class="density-fill" style="width: ${current.density}%; background-color: ${borderColor};"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="time-trends">
+                            <h3><i class="fas fa-chart-line"></i> Traffic Trends by Time</h3>
+                            <div class="time-slots">
+                                ${timePeriods.map(period => {
+                                    const trendData = zone.trends[period.id];
+                                    let trendClass = "";
+                                    if (trendData.level === "low") trendClass = "low";
+                                    else if (trendData.level === "medium") trendClass = "medium";
+                                    else trendClass = "high";
+                                    
+                                    const activeClass = period.id === currentPeriod ? "active" : "";
+                                    
+                                    return `
+                                        <div class="time-slot ${activeClass}" data-period="${period.id}">
+                                            <div class="time-label">${period.name}</div>
+                                            <div class="time-congestion ${trendClass}">${trendData.level.toUpperCase()}</div>
+                                            <small>${period.time}</small>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(zoneCard);
+            });
+            
+            // Update last updated time
+            const timeString = lastUpdateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('last-updated').textContent = timeString;
+        }
+
+        // Update active time slot display
+        function updateActiveTimeSlot() {
+            // Update all time slots to remove active class
+            document.querySelectorAll('.time-slot').forEach(slot => {
+                slot.classList.remove('active');
+                
+                // Add active class to current period
+                if (slot.dataset.period === currentPeriod) {
+                    slot.classList.add('active');
+                }
+            });
+        }
+
+        // Simulate updating traffic data (random fluctuations)
+        function updateTrafficData() {
+            // Update last update time
+            lastUpdateTime = new Date();
+            
+            // Simulate small fluctuations in traffic density
+            Object.keys(trafficData).forEach(zoneId => {
+                const zone = trafficData[zoneId];
+                
+                // Randomly adjust current density by ±5%
+                const change = Math.floor(Math.random() * 11) - 5; // -5 to +5
+                let newDensity = zone.current.density + change;
+                
+                // Keep within bounds
+                newDensity = Math.max(10, Math.min(98, newDensity));
+                
+                // Update congestion level based on density
+                let newLevel = "low";
+                if (newDensity > 70) newLevel = "high";
+                else if (newDensity > 40) newLevel = "medium";
+                
+                zone.current.density = newDensity;
+                zone.current.level = newLevel;
+                
+                // Also update the trend for current period to match
+                zone.trends[currentPeriod].density = newDensity;
+                zone.trends[currentPeriod].level = newLevel;
+            });
+            
+            // Re-render zones with updated data
+            renderTrafficZones();
+        }
+
+        // Setup event listeners for controls
+        function setupEventListeners() {
+            // Refresh button
+            document.getElementById('refresh-btn').addEventListener('click', function() {
+                updateTrafficData();
+                
+                // Show refresh feedback
+                this.innerHTML = '<i class="fas fa-check"></i> Data Refreshed';
+                this.style.backgroundColor = '#10b981';
+                
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Data';
+                    this.style.backgroundColor = '#3b82f6';
+                }, 1500);
+            });
+            
+            // Time period buttons
+            document.getElementById('morning-btn').addEventListener('click', function() {
+                currentPeriod = "morning";
+                document.getElementById('current-period').textContent = "Morning";
+                updateActiveTimeSlot();
+                renderTrafficZones();
+            });
+            
+            document.getElementById('afternoon-btn').addEventListener('click', function() {
+                currentPeriod = "afternoon";
+                document.getElementById('current-period').textContent = "Afternoon";
+                updateActiveTimeSlot();
+                renderTrafficZones();
+            });
+            
+            document.getElementById('evening-btn').addEventListener('click', function() {
+                currentPeriod = "evening";
+                document.getElementById('current-period').textContent = "Evening";
+                updateActiveTimeSlot();
+                renderTrafficZones();
+            });
+            
+            // Time slot click events
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.time-slot')) {
+                    const timeSlot = e.target.closest('.time-slot');
+                    const period = timeSlot.dataset.period;
+                    
+                    if (period && period !== currentPeriod) {
+                        currentPeriod = period;
+                        document.getElementById('current-period').textContent = period.charAt(0).toUpperCase() + period.slice(1);
+                        updateActiveTimeSlot();
+                        renderTrafficZones();
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
