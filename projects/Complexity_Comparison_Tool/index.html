@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complexity Comparison Tool - Big-O Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #334155;
+        }
+
+        h1 {
+            color: #60a5fa;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .controls {
+            background-color: #1e293b;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .slider-container {
+            margin-bottom: 25px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .slider-label span {
+            font-weight: bold;
+            color: #60a5fa;
+        }
+
+        .slider {
+            width: 100%;
+            height: 12px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(to right, #4ade80, #fbbf24, #f87171);
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #60a5fa;
+            cursor: pointer;
+            border: 3px solid #0f172a;
+            box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+        }
+
+        .complexities {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .complexity-option {
+            background-color: #334155;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .complexity-option:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .complexity-option.selected {
+            border-color: #60a5fa;
+            background-color: #1e40af;
+        }
+
+        .complexity-option .name {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .complexity-option .example {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .visualization {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        .graph-container {
+            background-color: #1e293b;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .graph-title {
+            color: #60a5fa;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .graph {
+            height: 300px;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding: 20px 0;
+            border-bottom: 2px solid #334155;
+            border-left: 2px solid #334155;
+            background-color: rgba(30, 41, 59, 0.5);
+        }
+
+        .bar {
+            width: 15%;
+            position: relative;
+            border-radius: 8px 8px 0 0;
+            transition: height 1s ease-out;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            font-weight: bold;
+            color: #0f172a;
+            padding-top: 10px;
+            min-height: 40px;
+        }
+
+        .bar.fastest {
+            box-shadow: 0 0 15px #4ade80;
+            border: 2px solid #4ade80;
+        }
+
+        .bar.slowest {
+            box-shadow: 0 0 15px #f87171;
+            border: 2px solid #f87171;
+        }
+
+        .bar-label {
+            position: absolute;
+            top: -25px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-weight: bold;
+            color: #e2e8f0;
+        }
+
+        .bar-value {
+            position: absolute;
+            bottom: -30px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background-color: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h3 {
+            color: #60a5fa;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .comparison-list {
+            list-style-type: none;
+        }
+
+        .comparison-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .comparison-list li:last-child {
+            border-bottom: none;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .fastest-color {
+            background-color: #4ade80;
+        }
+
+        .slowest-color {
+            background-color: #f87171;
+        }
+
+        .info-box {
+            background-color: #1e40af;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .info-box h3 {
+            color: #e2e8f0;
+            margin-bottom: 10px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #334155;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .complexities {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .details {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Complexity Comparison Tool</h1>
+        <p class="subtitle">Visualize and compare time complexities (Big-O notation) of different algorithms. Adjust the input size to see how each complexity grows.</p>
+    </header>
+
+    <div class="container">
+        <section class="controls">
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Input Size (n)</span>
+                    <span id="current-n">50</span>
+                </div>
+                <input type="range" min="1" max="100" value="50" class="slider" id="input-slider">
+                <div class="slider-label">
+                    <small>Small input</small>
+                    <small>Large input</small>
+                </div>
+            </div>
+
+            <h3>Select Complexities to Compare:</h3>
+            <div class="complexities" id="complexities-list">
+                <!-- Complexity options will be added by JavaScript -->
+            </div>
+        </section>
+
+        <section class="visualization">
+            <div class="graph-container">
+                <div class="graph-title">
+                    <span>Growth Visualization</span>
+                    <span id="fastest-slowest">Fastest: O(1) | Slowest: O(n²)</span>
+                </div>
+                <div class="graph" id="graph">
+                    <!-- Bars will be added by JavaScript -->
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color fastest-color"></div>
+                        <span>Fastest growth</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color slowest-color"></div>
+                        <span>Slowest growth</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="details">
+                <div class="card">
+                    <h3>Complexity Values</h3>
+                    <ul class="comparison-list" id="values-list">
+                        <!-- Values will be added by JavaScript -->
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>Algorithm Examples</h3>
+                    <ul class="comparison-list">
+                        <li><strong>O(1):</strong> Array access, hash table lookup</li>
+                        <li><strong>O(log n):</strong> Binary search, balanced tree operations</li>
+                        <li><strong>O(n):</strong> Linear search, simple loops</li>
+                        <li><strong>O(n log n):</strong> Efficient sorting (merge sort, quick sort)</li>
+                        <li><strong>O(n²):</strong> Bubble sort, nested loops</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <div class="info-box">
+            <h3>Why This Matters</h3>
+            <p>Understanding time complexity helps developers choose efficient algorithms. This visualization makes abstract Big-O concepts concrete, showing how algorithm performance degrades as input size increases. Notice how O(1) stays constant while O(n²) grows rapidly!</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>Complexity Comparison Tool | Educational tool for understanding algorithm efficiency</p>
+        <p>Use the slider to adjust input size and see how different time complexities scale</p>
+    </footer>
+
+    <script>
+        // Define the complexity functions
+        const complexities = [
+            {
+                id: 'o1',
+                name: 'O(1)',
+                description: 'Constant Time',
+                example: 'Array access',
+                color: '#60a5fa',
+                func: (n) => 1
+            },
+            {
+                id: 'ologn',
+                name: 'O(log n)',
+                description: 'Logarithmic Time',
+                example: 'Binary search',
+                color: '#4ade80',
+                func: (n) => Math.log2(n) || 1
+            },
+            {
+                id: 'on',
+                name: 'O(n)',
+                description: 'Linear Time',
+                example: 'Linear search',
+                color: '#fbbf24',
+                func: (n) => n
+            },
+            {
+                id: 'onlogn',
+                name: 'O(n log n)',
+                description: 'Linearithmic Time',
+                example: 'Merge sort',
+                color: '#f97316',
+                func: (n) => n * Math.log2(n) || 1
+            },
+            {
+                id: 'on2',
+                name: 'O(n²)',
+                description: 'Quadratic Time',
+                example: 'Bubble sort',
+                color: '#ef4444',
+                func: (n) => n * n
+            }
+        ];
+
+        // DOM elements
+        const slider = document.getElementById('input-slider');
+        const currentN = document.getElementById('current-n');
+        const graph = document.getElementById('graph');
+        const complexitiesList = document.getElementById('complexities-list');
+        const valuesList = document.getElementById('values-list');
+        const fastestSlowestSpan = document.getElementById('fastest-slowest');
+
+        // Selected complexities (all selected by default)
+        let selectedComplexities = [...complexities];
+
+        // Initialize the complexity selector
+        function initializeComplexitySelector() {
+            complexitiesList.innerHTML = '';
+            
+            complexities.forEach(complexity => {
+                const option = document.createElement('div');
+                option.className = 'complexity-option selected';
+                option.id = `option-${complexity.id}`;
+                option.dataset.id = complexity.id;
+                
+                option.innerHTML = `
+                    <div class="name">${complexity.name}</div>
+                    <div class="description">${complexity.description}</div>
+                    <div class="example">${complexity.example}</div>
+                `;
+                
+                option.addEventListener('click', () => {
+                    option.classList.toggle('selected');
+                    
+                    if (option.classList.contains('selected')) {
+                        // Add to selected
+                        if (!selectedComplexities.find(c => c.id === complexity.id)) {
+                            selectedComplexities.push(complexity);
+                        }
+                    } else {
+                        // Remove from selected
+                        selectedComplexities = selectedComplexities.filter(c => c.id !== complexity.id);
+                    }
+                    
+                    // Make sure at least one complexity is selected
+                    if (selectedComplexities.length === 0) {
+                        selectedComplexities.push(complexity);
+                        option.classList.add('selected');
+                    }
+                    
+                    updateVisualization();
+                });
+                
+                complexitiesList.appendChild(option);
+            });
+        }
+
+        // Update the visualization
+        function updateVisualization() {
+            const n = parseInt(slider.value);
+            currentN.textContent = n;
+            
+            // Calculate values for each selected complexity
+            const values = selectedComplexities.map(c => ({
+                ...c,
+                value: c.func(n)
+            }));
+            
+            // Find min and max values (for highlighting)
+            const maxValue = Math.max(...values.map(v => v.value));
+            const minValue = Math.min(...values.map(v => v.value));
+            
+            // Find fastest and slowest (for display)
+            const fastest = values.find(v => v.value === minValue);
+            const slowest = values.find(v => v.value === maxValue);
+            
+            // Update the fastest/slowest display
+            fastestSlowestSpan.textContent = `Fastest: ${fastest.name} | Slowest: ${slowest.name}`;
+            
+            // Clear previous graph
+            graph.innerHTML = '';
+            
+            // Clear previous values list
+            valuesList.innerHTML = '';
+            
+            // Create bars for each complexity
+            values.forEach(complexity => {
+                // Calculate bar height (as percentage of max value)
+                const barHeight = maxValue > 0 ? (complexity.value / maxValue) * 100 : 0;
+                
+                // Create bar element
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                
+                // Add fastest/slowest class
+                if (complexity.value === minValue && minValue !== maxValue) {
+                    bar.classList.add('fastest');
+                }
+                if (complexity.value === maxValue && minValue !== maxValue) {
+                    bar.classList.add('slowest');
+                }
+                
+                bar.style.height = `${barHeight}%`;
+                bar.style.backgroundColor = complexity.color;
+                
+                // Add label
+                const label = document.createElement('div');
+                label.className = 'bar-label';
+                label.textContent = complexity.name;
+                bar.appendChild(label);
+                
+                // Add value display
+                const valueDisplay = document.createElement('div');
+                valueDisplay.className = 'bar-value';
+                
+                // Format the value for display
+                let displayValue;
+                if (complexity.value < 1000) {
+                    displayValue = complexity.value.toFixed(2);
+                } else if (complexity.value < 1000000) {
+                    displayValue = (complexity.value / 1000).toFixed(2) + 'K';
+                } else {
+                    displayValue = (complexity.value / 1000000).toFixed(2) + 'M';
+                }
+                
+                valueDisplay.textContent = displayValue;
+                bar.appendChild(valueDisplay);
+                
+                graph.appendChild(bar);
+                
+                // Add to values list
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `
+                    <span><strong>${complexity.name}:</strong> ${complexity.description}</span>
+                    <span>${displayValue}</span>
+                `;
+                valuesList.appendChild(listItem);
+            });
+        }
+
+        // Initialize the application
+        function init() {
+            initializeComplexitySelector();
+            updateVisualization();
+            
+            // Add event listener for slider
+            slider.addEventListener('input', updateVisualization);
+            
+            // Add some interactivity to the bars on hover
+            document.addEventListener('mouseover', (e) => {
+                if (e.target.classList.contains('bar')) {
+                    e.target.style.opacity = '0.9';
+                    e.target.style.transform = 'scale(1.05)';
+                }
+            });
+            
+            document.addEventListener('mouseout', (e) => {
+                if (e.target.classList.contains('bar')) {
+                    e.target.style.opacity = '1';
+                    e.target.style.transform = 'scale(1)';
+                }
+            });
+        }
+
+        // Start the application
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
