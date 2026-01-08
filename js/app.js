@@ -5,83 +5,7 @@
 import { ProjectVisibilityEngine } from "./core/projectVisibilityEngine.js";
 
 // ===============================
-// Theme Toggle
-// ===============================
-const toggleBtn = document.getElementById("toggle-mode-btn");
-const themeIcon = document.getElementById("theme-icon");
-const html = document.documentElement;
-
-// Load saved theme
-const savedTheme = localStorage.getItem("theme") || "light";
-html.setAttribute("data-theme", savedTheme);
-updateThemeIcon(savedTheme);
-
-if (toggleBtn) {
-    toggleBtn.addEventListener("click", () => {
-        const newTheme = html.getAttribute("data-theme") === "light" ? "dark" : "light";
-        html.setAttribute("data-theme", newTheme);
-        localStorage.setItem("theme", newTheme);
-        updateThemeIcon(newTheme);
-
-        // Add shake animation
-        toggleBtn.classList.add("shake");
-        setTimeout(() => toggleBtn.classList.remove("shake"), 500);
-    });
-}
-
-function updateThemeIcon(theme) {
-    if (!themeIcon) return;
-    if (theme === "dark") {
-        themeIcon.className = "ri-moon-fill";
-    } else {
-        themeIcon.className = "ri-sun-line";
-    }
-}
-
-// ===============================
-// Scroll to Top
-// ===============================
-const scrollBtn = document.getElementById("scrollToTopBtn");
-
-window.addEventListener("scroll", () => {
-    if (scrollBtn) {
-        scrollBtn.classList.toggle("show", window.scrollY > 300);
-    }
-});
-
-if (scrollBtn) {
-    scrollBtn.addEventListener("click", () => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-}
-
-// ===============================
-// Mobile Navbar
-// ===============================
-const navToggle = document.getElementById("navToggle");
-const navLinks = document.getElementById("navLinks");
-
-if (navToggle && navLinks) {
-    navToggle.addEventListener("click", () => {
-        navLinks.classList.toggle("active");
-        const icon = navToggle.querySelector("i");
-        if (navLinks.classList.contains("active")) {
-            icon.className = "ri-close-line";
-        } else {
-            icon.className = "ri-menu-3-line";
-        }
-    });
-
-    navLinks.querySelectorAll("a").forEach((link) => {
-        link.addEventListener("click", () => {
-            navLinks.classList.remove("active");
-            navToggle.querySelector("i").className = "ri-menu-3-line";
-        });
-    });
-}
-
-// ===============================
-// Projects Logic
+// Global State
 // ===============================
 const itemsPerPage = 9;
 let currentPage = 1;
@@ -90,60 +14,49 @@ let currentSort = "default";
 let allProjectsData = [];
 let visibilityEngine = null;
 
-// DOM Elements
-const searchInput = document.getElementById("project-search");
-const sortSelect = document.getElementById("project-sort");
-const filterBtns = document.querySelectorAll(".filter-btn");
-const clearBtn = document.getElementById("search-clear");
-const projectsContainer = document.querySelector(".projects-container");
-const paginationContainer = document.getElementById("pagination-controls");
+// ===============================
+// Theme Toggle
+// ===============================
+function initTheme() {
+    const toggleBtn = document.getElementById("toggle-mode-btn");
+    const themeIcon = document.getElementById("theme-icon");
+    const html = document.documentElement;
 
-// --- Event Listeners ---
+    // Load saved theme
+    const savedTheme = localStorage.getItem("theme") || "light";
+    html.setAttribute("data-theme", savedTheme);
+    updateThemeIcon(savedTheme, themeIcon);
 
-// 1. Search
-if (searchInput) {
-    searchInput.addEventListener("input", () => {
-        if (visibilityEngine) {
-            visibilityEngine.setSearchQuery(searchInput.value);
-        }
-        currentPage = 1;
-        renderProjects();
-    });
+    if (toggleBtn) {
+        // Remove old listeners to prevent duplicates
+        const newBtn = toggleBtn.cloneNode(true);
+        toggleBtn.parentNode.replaceChild(newBtn, toggleBtn);
+        
+        newBtn.addEventListener("click", () => {
+            const newTheme = html.getAttribute("data-theme") === "light" ? "dark" : "light";
+            html.setAttribute("data-theme", newTheme);
+            localStorage.setItem("theme", newTheme);
+            updateThemeIcon(newTheme, document.getElementById("theme-icon"));
+
+            // Add shake animation
+            newBtn.classList.add("shake");
+            setTimeout(() => newBtn.classList.remove("shake"), 500);
+        });
+    }
 }
 
-// 2. Clear Search
-if (clearBtn) {
-    clearBtn.addEventListener("click", () => {
-        if (searchInput) {
-            searchInput.value = "";
-            if (visibilityEngine) visibilityEngine.setSearchQuery("");
-        }
-        // Reset filters if needed, or just clear search text
-        renderProjects();
-    });
+function updateThemeIcon(theme, iconElement) {
+    if (!iconElement) return;
+    if (theme === "dark") {
+        iconElement.className = "ri-moon-fill";
+    } else {
+        iconElement.className = "ri-sun-line";
+    }
 }
 
-// 3. Sort
-if (sortSelect) {
-    sortSelect.addEventListener("change", () => {
-        currentSort = sortSelect.value;
-        currentPage = 1;
-        renderProjects();
-    });
-}
-
-// 4. Category Filters
-filterBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-        filterBtns.forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        currentCategory = btn.dataset.filter;
-        currentPage = 1;
-        renderProjects();
-    });
-});
-
-// --- Core Functions ---
+// ===============================
+// Projects Logic
+// ===============================
 
 // Fetch and Initialize Projects
 async function fetchProjects() {
@@ -168,10 +81,12 @@ async function fetchProjects() {
 
         visibilityEngine = new ProjectVisibilityEngine(projectMetadata);
 
+        setupProjectEventListeners();
         updateCategoryCounts();
         renderProjects();
     } catch (error) {
         console.error("Error loading projects:", error);
+        const projectsContainer = document.querySelector(".projects-container");
         if (projectsContainer) {
             projectsContainer.innerHTML = `
                 <div class="empty-state">
@@ -183,13 +98,63 @@ async function fetchProjects() {
     }
 }
 
+function setupProjectEventListeners() {
+    const searchInput = document.getElementById("project-search");
+    const sortSelect = document.getElementById("project-sort");
+    const filterBtns = document.querySelectorAll(".filter-btn");
+    const clearBtn = document.getElementById("search-clear");
+
+    // 1. Search
+    if (searchInput) {
+        searchInput.addEventListener("input", () => {
+            if (visibilityEngine) {
+                visibilityEngine.setSearchQuery(searchInput.value);
+            }
+            currentPage = 1;
+            renderProjects();
+        });
+    }
+
+    // 2. Clear Search
+    if (clearBtn) {
+        clearBtn.addEventListener("click", () => {
+            if (searchInput) {
+                searchInput.value = "";
+                if (visibilityEngine) visibilityEngine.setSearchQuery("");
+            }
+            renderProjects();
+        });
+    }
+
+    // 3. Sort
+    if (sortSelect) {
+        sortSelect.addEventListener("change", () => {
+            currentSort = sortSelect.value;
+            currentPage = 1;
+            renderProjects();
+        });
+    }
+
+    // 4. Category Filters
+    filterBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+            filterBtns.forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentCategory = btn.dataset.filter;
+            currentPage = 1;
+            renderProjects();
+        });
+    });
+}
+
 // Update Filter Button Counts
 function updateCategoryCounts() {
     if (allProjectsData.length === 0) return;
 
+    const filterBtns = document.querySelectorAll(".filter-btn");
     const counts = {};
+    
     allProjectsData.forEach(project => {
-        // Normalize category to lowercase to match buttons
         const cat = project.category.toLowerCase();
         counts[cat] = (counts[cat] || 0) + 1;
     });
@@ -199,7 +164,6 @@ function updateCategoryCounts() {
         if (cat === "all") {
             btn.innerText = `All (${allProjectsData.length})`;
         } else {
-            // Capitalize first letter
             const label = cat.charAt(0).toUpperCase() + cat.slice(1);
             btn.innerText = `${label} (${counts[cat] || 0})`;
         }
@@ -208,12 +172,13 @@ function updateCategoryCounts() {
 
 // Render Projects to DOM
 function renderProjects() {
+    const projectsContainer = document.querySelector(".projects-container");
     if (!projectsContainer) return;
 
     let filteredProjects = [...allProjectsData];
 
-    // 1. Search Filtering (via Engine)
-    if (visibilityEngine && searchInput && searchInput.value.trim() !== "") {
+    // 1. Search Filtering
+    if (visibilityEngine) {
         const visibleProjects = visibilityEngine.getFilteredProjects();
         const visibleTitles = new Set(visibleProjects.map(p => p.title));
         
@@ -238,14 +203,9 @@ function renderProjects() {
             filteredProjects.sort((a, b) => b.title.localeCompare(a.title));
             break;
         case "newest":
-            // Assuming the JSON order is newest-first or added sequentially. 
-            // If you have date fields, use those. Otherwise, reverse index.
-            // For now, we'll just reverse the array if it's "newest"
-            // (or if default is newest, then "oldest" would be reverse).
-            // Let's assume default JSON is random/mixed and "Newest" means bottom of list? 
-            // Usually JSON lists are top=newest. Let's keep specific logic simple:
-            // If your JSON is newest-at-top, default is fine.
-            break; 
+            // Assuming data is static, we just reverse for now
+            filteredProjects.reverse();
+            break;
     }
 
     // 4. Pagination
@@ -257,13 +217,16 @@ function renderProjects() {
     projectsContainer.innerHTML = "";
 
     // Empty State
+    const emptyState = document.getElementById("empty-state");
+    const showMoreBtn = document.getElementById("viewMoreProjects"); // Fix ID reference
+
     if (paginatedItems.length === 0) {
-        document.getElementById("empty-state").style.display = "block";
-        document.querySelector(".projects-show-more").style.display = "none";
+        if (emptyState) emptyState.style.display = "block";
+        if (showMoreBtn) showMoreBtn.style.display = "none";
         renderPagination(0);
         return;
     } else {
-        document.getElementById("empty-state").style.display = "none";
+        if (emptyState) emptyState.style.display = "none";
     }
 
     // Render Cards
@@ -273,19 +236,17 @@ function renderProjects() {
         card.className = "card";
         card.setAttribute("data-category", project.category);
 
-        // Handle cover styles (support both Class and Inline Style)
         let coverAttr = "";
         if (project.coverClass) {
             coverAttr = `class="card-cover ${project.coverClass}"`;
         } else if (project.coverStyle) {
             coverAttr = `class="card-cover" style="${project.coverStyle}"`;
         } else {
-            coverAttr = `class="card-cover"`; // Default fallback
+            coverAttr = `class="card-cover"`; 
         }
 
-        const techStackHtml = project.tech.map((t) => `<span>${t}</span>`).join("");
+        const techStackHtml = (project.tech || []).map((t) => `<span>${t}</span>`).join("");
 
-        // Bookmark Check
         const isBookmarked = window.bookmarksManager && window.bookmarksManager.isBookmarked(project.title);
         const bookmarkClass = isBookmarked ? 'bookmarked' : '';
         const bookmarkIcon = isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
@@ -305,7 +266,7 @@ function renderProjects() {
             </div>
         `;
 
-        // GitHub Link (if exists)
+        // GitHub Button
         if (project.github) {
             const githubBtn = document.createElement("a");
             githubBtn.href = project.github;
@@ -318,7 +279,7 @@ function renderProjects() {
             card.appendChild(githubBtn);
         }
 
-        // Bookmark Click Event
+        // Bookmark Event
         const bookmarkBtn = card.querySelector('.bookmark-btn');
         if (bookmarkBtn) {
             bookmarkBtn.addEventListener('click', (e) => {
@@ -328,7 +289,7 @@ function renderProjects() {
             });
         }
 
-        // Stagger Animation
+        // Animation
         card.style.opacity = "0";
         card.style.transform = "translateY(20px)";
         projectsContainer.appendChild(card);
@@ -391,6 +352,7 @@ function showBookmarkToast(message) {
 // --- Pagination ---
 
 function renderPagination(totalPages) {
+    const paginationContainer = document.getElementById("pagination-controls");
     if (!paginationContainer) return;
 
     paginationContainer.innerHTML = "";
@@ -414,7 +376,7 @@ function renderPagination(totalPages) {
         })
     );
 
-    // Page Numbers Logic
+    // Logic for page numbers...
     const maxVisible = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
     let endPage = Math.min(totalPages, startPage + maxVisible - 1);
@@ -479,11 +441,8 @@ function scrollToProjects() {
 // ===============================
 // Contributors Logic
 // ===============================
-const contributorsGrid = document.getElementById("contributors-grid");
-
 async function fetchContributors() {
     try {
-        // Fetch from GitHub API
         const response = await fetch(
             "https://api.github.com/repos/YadavAkhileshh/OpenPlayground/contributors"
         );
@@ -492,19 +451,20 @@ async function fetchContributors() {
         
         const contributors = await response.json();
 
-        // 1. Update the Hero Section Counter
+        // Update count
         const contributorCount = document.getElementById("contributor-count");
         if (contributorCount) {
             contributorCount.textContent = `${contributors.length}+`;
         }
 
-        // 2. Render Grid (only if on contributors page or section exists)
+        // Render Grid (if exists)
+        const contributorsGrid = document.getElementById("contributors-grid");
         if (contributorsGrid) {
             contributorsGrid.innerHTML = "";
             contributors.forEach((contributor, index) => {
                 const card = document.createElement("div");
                 card.className = "contributor-card";
-                const isDeveloper = contributor.contributions > 50; // Custom logic
+                const isDeveloper = contributor.contributions > 50; 
                 const badgeHTML = isDeveloper
                     ? `<span class="contributor-badge developer-badge"><i class="ri-code-s-slash-line"></i> Developer</span>`
                     : '';
@@ -525,7 +485,6 @@ async function fetchContributors() {
                     </a>
                 `;
 
-                // Stagger Animation
                 card.style.opacity = "0";
                 card.style.transform = "translateY(20px)";
                 contributorsGrid.appendChild(card);
@@ -542,22 +501,9 @@ async function fetchContributors() {
 }
 
 // ===============================
-// Animations & Navbar Scroll
+// Animations & Nav Logic
 // ===============================
-
-const navbar = document.getElementById('navbar');
-if (navbar) {
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 50) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
-    });
-}
-
 function setupAnimations() {
-    // We setup the observer only after components are loaded
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -572,40 +518,60 @@ function setupAnimations() {
     });
 }
 
+function initNavLogic() {
+    const navbar = document.getElementById('navbar');
+    const scrollBtn = document.getElementById("scrollToTopBtn");
+    
+    window.addEventListener('scroll', () => {
+        if (navbar && window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else if (navbar) {
+            navbar.classList.remove('scrolled');
+        }
+
+        if (scrollBtn) {
+            scrollBtn.classList.toggle("show", window.scrollY > 300);
+        }
+    });
+
+    if (scrollBtn) {
+        scrollBtn.addEventListener("click", () => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+    }
+}
+
 // ===============================
 // Initialization
 // ===============================
 
-// Logic to wait for components to load
-let componentsLoaded = 0;
-const totalComponents = 6; // header, hero, projects, contribute, footer, chatbot
+// Listen for the custom event fired by components.js
+let loadedCount = 0;
+const expectedComponents = 6; // header, hero, projects, contribute, footer, chatbot
 
 document.addEventListener('componentLoaded', () => {
-    componentsLoaded++;
-    if (componentsLoaded === totalComponents) {
+    loadedCount++;
+    // Once everything is loaded, run our main logic
+    if (loadedCount === expectedComponents) {
         initializeApp();
     }
 });
 
-// Fallback if events fail
+// Fallback: If event system fails, try to init anyway after a delay
 setTimeout(() => {
-    if (componentsLoaded < totalComponents) {
-        console.log('Initializing app via fallback timeout...');
+    if (loadedCount < expectedComponents) {
+        console.log("Fallback init triggered");
         initializeApp();
     }
 }, 3000);
 
 function initializeApp() {
-    // 1. Fetch & Render Projects
+    console.log("🚀 Initializing App Logic...");
+    initTheme();
+    initNavLogic();
     fetchProjects();
-
-    // 2. Fetch & Render Contributors (Fixes Hero Stats)
     fetchContributors();
-
-    // 3. Setup Animations (Fixes Hero Animations)
     setupAnimations();
-
-    console.log('🚀 OpenPlayground app initialized successfully!');
 }
 
 console.log(
