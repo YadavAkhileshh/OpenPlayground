@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion-Based UI Switcher</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* Default theme (Calm) */
+            --primary-color: #a3d9b1;
+            --secondary-color: #7bc8a6;
+            --background-color: #f8fffa;
+            --text-color: #2d5a3c;
+            --accent-color: #5ca08e;
+            --card-color: #ffffff;
+            --button-color: #7bc8a6;
+            --button-text-color: #ffffff;
+            --animation-speed: 0.5s;
+            --border-radius: 12px;
+            --font-weight: 400;
+            --spacing: 1.5;
+            --shadow: 0 4px 12px rgba(163, 217, 177, 0.2);
+            --motion-intensity: 0.5;
+            --background-effect: linear-gradient(135deg, #f8fffa 0%, #e6f7ed 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color var(--animation-speed) ease,
+                        color var(--animation-speed) ease,
+                        transform var(--animation-speed) ease,
+                        border-color var(--animation-speed) ease,
+                        box-shadow var(--animation-speed) ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--background-effect);
+            color: var(--text-color);
+            line-height: var(--spacing);
+            min-height: 100vh;
+            padding: 20px;
+            transition: all var(--animation-speed) ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            font-weight: calc(var(--font-weight) + 300);
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .emotion-selector {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .emotion-btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: var(--border-radius);
+            background-color: var(--card-color);
+            color: var(--text-color);
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow);
+            transition: all var(--animation-speed) ease;
+        }
+
+        .emotion-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .emotion-btn.active {
+            background-color: var(--primary-color);
+            color: var(--button-text-color);
+            transform: translateY(-2px);
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .ui-preview {
+            background-color: var(--card-color);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .ui-preview h2 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            font-weight: calc(var(--font-weight) + 200);
+            color: var(--accent-color);
+        }
+
+        .ui-element {
+            margin-bottom: 20px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: calc(var(--border-radius) - 4px);
+            background-color: var(--button-color);
+            color: var(--button-text-color);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--animation-speed) ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            border: 2px solid var(--button-color);
+            color: var(--button-color);
+        }
+
+        .input-group {
+            margin-top: 10px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--primary-color);
+            border-radius: calc(var(--border-radius) - 4px);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+
+        .card {
+            background-color: var(--background-color);
+            border-radius: calc(var(--border-radius) - 4px);
+            padding: 20px;
+            border-left: 5px solid var(--accent-color);
+        }
+
+        .card h3 {
+            margin-bottom: 10px;
+            font-weight: calc(var(--font-weight) + 100);
+        }
+
+        .motion-demo {
+            height: 100px;
+            background-color: var(--primary-color);
+            border-radius: var(--border-radius);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--button-text-color);
+            font-weight: 600;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .motion-demo .ball {
+            width: 40px;
+            height: 40px;
+            background-color: var(--button-text-color);
+            border-radius: 50%;
+            position: absolute;
+            animation: moveBall calc(4s / var(--motion-intensity)) infinite alternate ease-in-out;
+        }
+
+        @keyframes moveBall {
+            0% { left: 10%; transform: scale(1); }
+            100% { left: 80%; transform: scale(1.2); }
+        }
+
+        .emotion-info {
+            background-color: var(--card-color);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .emotion-info h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            font-weight: calc(var(--font-weight) + 200);
+            color: var(--accent-color);
+        }
+
+        .emotion-description {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            margin-bottom: 30px;
+        }
+
+        .theme-properties {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .property {
+            background-color: var(--background-color);
+            padding: 15px;
+            border-radius: calc(var(--border-radius) - 6px);
+            text-align: center;
+        }
+
+        .property-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--accent-color);
+        }
+
+        .property-value {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* Emotion-specific animations */
+        .pulse {
+            animation: pulse calc(2s / var(--motion-intensity)) infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .float {
+            animation: float calc(3s / var(--motion-intensity)) infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Emotion-Based UI Switcher</h1>
+            <p class="subtitle">Experience how interface design adapts to different emotional states. Select an emotion to transform the UI.</p>
+        </header>
+
+        <div class="emotion-selector">
+            <button class="emotion-btn active" data-emotion="calm">
+                <i class="fas fa-cloud"></i> 😌 Calm
+            </button>
+            <button class="emotion-btn" data-emotion="focus">
+                <i class="fas fa-bullseye"></i> 🎯 Focus
+            </button>
+            <button class="emotion-btn" data-emotion="energetic">
+                <i class="fas fa-bolt"></i> ⚡ Energetic
+            </button>
+            <button class="emotion-btn" data-emotion="sad">
+                <i class="fas fa-cloud-rain"></i> 🌧️ Sad
+            </button>
+            <button class="emotion-btn" data-emotion="happy">
+                <i class="fas fa-sun"></i> 🌈 Happy
+            </button>
+        </div>
+
+        <div class="content">
+            <section class="ui-preview">
+                <h2>Live UI Preview</h2>
+                
+                <div class="ui-element">
+                    <h3>Interactive Buttons</h3>
+                    <div class="buttons">
+                        <button class="btn pulse">Primary Action</button>
+                        <button class="btn btn-secondary">Secondary Action</button>
+                        <button class="btn float">Animated Button</button>
+                    </div>
+                </div>
+
+                <div class="ui-element">
+                    <h3>Input Field</h3>
+                    <div class="input-group">
+                        <label for="sample-input">How does this UI make you feel?</label>
+                        <input type="text" id="sample-input" placeholder="Type your response here...">
+                    </div>
+                </div>
+
+                <div class="ui-element">
+                    <h3>Sample Content Card</h3>
+                    <div class="card">
+                        <h3>UI Adaptation Demo</h3>
+                        <p>This card demonstrates how the UI adapts to your selected emotion. Notice the changes in colors, spacing, typography, and animation speed.</p>
+                    </div>
+                </div>
+
+                <div class="ui-element">
+                    <h3>Motion Demonstration</h3>
+                    <div class="motion-demo">
+                        <div class="ball"></div>
+                        <span>Animation Speed: <span id="speed-indicator">Normal</span></span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="emotion-info">
+                <h2>Emotion Analysis</h2>
+                <div class="emotion-description" id="emotion-description">
+                    <p><strong>😌 Calm Mode:</strong> This UI uses soft, natural colors and slow animations to create a peaceful, relaxing environment. The spacious layout and gentle transitions help reduce cognitive load and promote tranquility.</p>
+                </div>
+                
+                <h3>Active Theme Properties</h3>
+                <div class="theme-properties">
+                    <div class="property">
+                        <div class="property-name">Primary Color</div>
+                        <div class="property-value" id="primary-color">#a3d9b1</div>
+                    </div>
+                    <div class="property">
+                        <div class="property-name">Animation Speed</div>
+                        <div class="property-value" id="animation-speed">0.5s</div>
+                    </div>
+                    <div class="property">
+                        <div class="property-name">Font Weight</div>
+                        <div class="property-value" id="font-weight">400</div>
+                    </div>
+                    <div class="property">
+                        <div class="property-name">Line Spacing</div>
+                        <div class="property-value" id="line-spacing">1.5</div>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-top: 25px;">
+                    <h3>How It Works</h3>
+                    <p>This UI uses CSS custom properties (variables) that are dynamically updated via JavaScript when you select an emotion. Each emotion has predefined values for colors, animations, typography, and spacing that create a distinct user experience.</p>
+                    <p>Your selected emotion is saved to localStorage, so your preference will be remembered when you return.</p>
+                </div>
+            </section>
+        </div>
+
+        <footer>
+            <p>Emotion-Based UI Switcher | A Human-Centered Design Experiment | Your selected emotion is saved locally in your browser</p>
+        </footer>
+    </div>
+
+    <script>
+        // Emotion theme configurations
+        const themes = {
+            calm: {
+                name: "Calm",
+                description: "This UI uses soft, natural colors and slow animations to create a peaceful, relaxing environment. The spacious layout and gentle transitions help reduce cognitive load and promote tranquility.",
+                properties: {
+                    '--primary-color': '#a3d9b1',
+                    '--secondary-color': '#7bc8a6',
+                    '--background-color': '#f8fffa',
+                    '--text-color': '#2d5a3c',
+                    '--accent-color': '#5ca08e',
+                    '--card-color': '#ffffff',
+                    '--button-color': '#7bc8a6',
+                    '--button-text-color': '#ffffff',
+                    '--animation-speed': '0.5s',
+                    '--border-radius': '12px',
+                    '--font-weight': '400',
+                    '--spacing': '1.5',
+                    '--shadow': '0 4px 12px rgba(163, 217, 177, 0.2)',
+                    '--motion-intensity': '0.5',
+                    '--background-effect': 'linear-gradient(135deg, #f8fffa 0%, #e6f7ed 100%)'
+                }
+            },
+            focus: {
+                name: "Focus",
+                description: "Designed for concentration, this mode minimizes distractions with a clean, high-contrast interface. Reduced motion and enhanced readability help maintain attention on the task at hand.",
+                properties: {
+                    '--primary-color': '#3a506b',
+                    '--secondary-color': '#1c2541',
+                    '--background-color': '#f0f4f8',
+                    '--text-color': '#1c2541',
+                    '--accent-color': '#5bc0be',
+                    '--card-color': '#ffffff',
+                    '--button-color': '#3a506b',
+                    '--button-text-color': '#ffffff',
+                    '--animation-speed': '0.2s',
+                    '--border-radius': '8px',
+                    '--font-weight': '500',
+                    '--spacing': '1.6',
+                    '--shadow': '0 2px 8px rgba(28, 37, 65, 0.1)',
+                    '--motion-intensity': '0.2',
+                    '--background-effect': 'linear-gradient(135deg, #f0f4f8 0%, #e1e8f0 100%)'
+                }
+            },
+            energetic: {
+                name: "Energetic",
+                description: "Vibrant colors and dynamic animations create an energetic, stimulating interface. This mode is designed to feel lively and engaging, with bold visual elements that capture attention.",
+                properties: {
+                    '--primary-color': '#ff6b6b',
+                    '--secondary-color': '#ff9e6d',
+                    '--background-color': '#fff9f0',
+                    '--text-color': '#333333',
+                    '--accent-color': '#ff9e6d',
+                    '--card-color': '#ffffff',
+                    '--button-color': '#ff6b6b',
+                    '--button-text-color': '#ffffff',
+                    '--animation-speed': '0.3s',
+                    '--border-radius': '16px',
+                    '--font-weight': '600',
+                    '--spacing': '1.4',
+                    '--shadow': '0 8px 20px rgba(255, 107, 107, 0.25)',
+                    '--motion-intensity': '1.5',
+                    '--background-effect': 'linear-gradient(135deg, #fff9f0 0%, #ffe8cc 100%)'
+                }
+            },
+            sad: {
+                name: "Sad",
+                description: "Muted tones and subtle transitions create a soft, contemplative atmosphere. This UI is designed to feel comforting and gentle, with reduced visual stimulation for moments of reflection.",
+                properties: {
+                    '--primary-color': '#95a7c4',
+                    '--secondary-color': '#7a8fb3',
+                    '--background-color': '#f5f7fc',
+                    '--text-color': '#4a5568',
+                    '--accent-color': '#7a8fb3',
+                    '--card-color': '#ffffff',
+                    '--button-color': '#95a7c4',
+                    '--button-text-color': '#ffffff',
+                    '--animation-speed': '0.8s',
+                    '--border-radius': '10px',
+                    '--font-weight': '400',
+                    '--spacing': '1.7',
+                    '--shadow': '0 4px 10px rgba(149, 167, 196, 0.15)',
+                    '--motion-intensity': '0.3',
+                    '--background-effect': 'linear-gradient(135deg, #f5f7fc 0%, #e8edf9 100%)'
+                }
+            },
+            happy: {
+                name: "Happy",
+                description: "A bright, cheerful palette with playful UI elements creates an uplifting user experience. This mode uses vibrant colors and joyful animations to evoke positivity and delight.",
+                properties: {
+                    '--primary-color': '#ffd166',
+                    '--secondary-color': '#ffb347',
+                    '--background-color': '#fffdf5',
+                    '--text-color': '#5a4a42',
+                    '--accent-color': '#ffb347',
+                    '--card-color': '#ffffff',
+                    '--button-color': '#ffd166',
+                    '--button-text-color': '#5a4a42',
+                    '--animation-speed': '0.4s',
+                    '--border-radius': '20px',
+                    '--font-weight': '500',
+                    '--spacing': '1.5',
+                    '--shadow': '0 6px 16px rgba(255, 209, 102, 0.3)',
+                    '--motion-intensity': '1.2',
+                    '--background-effect': 'linear-gradient(135deg, #fffdf5 0%, #fff5e6 100%)'
+                }
+            }
+        };
+
+        // DOM elements
+        const emotionButtons = document.querySelectorAll('.emotion-btn');
+        const emotionDescription = document.getElementById('emotion-description');
+        const root = document.documentElement;
+        const speedIndicator = document.getElementById('speed-indicator');
+        
+        // Property display elements
+        const primaryColorEl = document.getElementById('primary-color');
+        const animationSpeedEl = document.getElementById('animation-speed');
+        const fontWeightEl = document.getElementById('font-weight');
+        const lineSpacingEl = document.getElementById('line-spacing');
+
+        // Set initial emotion from localStorage or default to 'calm'
+        let currentEmotion = localStorage.getItem('selectedEmotion') || 'calm';
+
+        // Function to apply an emotion theme
+        function applyEmotion(emotion) {
+            // Update active button
+            emotionButtons.forEach(btn => {
+                if (btn.dataset.emotion === emotion) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Apply CSS custom properties
+            const theme = themes[emotion];
+            Object.entries(theme.properties).forEach(([property, value]) => {
+                root.style.setProperty(property, value);
+            });
+
+            // Update emotion description
+            emotionDescription.innerHTML = `<p><strong>${theme.name} Mode:</strong> ${theme.description}</p>`;
+
+            // Update property displays
+            primaryColorEl.textContent = theme.properties['--primary-color'];
+            animationSpeedEl.textContent = theme.properties['--animation-speed'];
+            fontWeightEl.textContent = theme.properties['--font-weight'];
+            lineSpacingEl.textContent = theme.properties['--spacing'];
+
+            // Update speed indicator text
+            const speed = theme.properties['--motion-intensity'];
+            if (speed <= 0.3) {
+                speedIndicator.textContent = 'Slow';
+            } else if (speed <= 0.7) {
+                speedIndicator.textContent = 'Normal';
+            } else {
+                speedIndicator.textContent = 'Fast';
+            }
+
+            // Save to localStorage
+            localStorage.setItem('selectedEmotion', emotion);
+            currentEmotion = emotion;
+            
+            // Add a subtle animation to the UI preview card
+            const uiPreview = document.querySelector('.ui-preview');
+            uiPreview.style.transform = 'scale(1.02)';
+            setTimeout(() => {
+                uiPreview.style.transform = 'scale(1)';
+            }, 200);
+        }
+
+        // Add event listeners to emotion buttons
+        emotionButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const emotion = button.dataset.emotion;
+                applyEmotion(emotion);
+            });
+        });
+
+        // Initialize with saved emotion
+        document.addEventListener('DOMContentLoaded', () => {
+            applyEmotion(currentEmotion);
+            
+            // Add some interactive effects to the buttons in the preview
+            const previewButtons = document.querySelectorAll('.ui-preview .btn');
+            previewButtons.forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                });
+                
+                btn.addEventListener('mouseleave', function() {
+                    if (!this.classList.contains('float') && !this.classList.contains('pulse')) {
+                        this.style.transform = 'translateY(0)';
+                    }
+                });
+            });
+            
+            // Add focus effect to input
+            const sampleInput = document.getElementById('sample-input');
+            sampleInput.addEventListener('focus', function() {
+                this.style.transform = 'scale(1.02)';
+                this.style.boxShadow = '0 0 0 3px var(--primary-color)';
+            });
+            
+            sampleInput.addEventListener('blur', function() {
+                this.style.transform = 'scale(1)';
+                this.style.boxShadow = 'none';
+            });
+        });
+
+        // Add a simple console message for demonstration
+        console.log('Emotion-Based UI Switcher loaded!');
+        console.log('Try selecting different emotions to see how the UI adapts.');
+    </script>
+</body>
+</html>

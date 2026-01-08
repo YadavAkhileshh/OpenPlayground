@@ -1,30 +1,26 @@
 let secretNumber;
-let max;
 let attempts = 0;
-const MAX_ATTEMPTS = 7;
+const MAX_ATTEMPTS = 10;
+const MAX_NUMBER = 100;
+const MIN_NUMBER = 1;
 
 const startBtn = document.getElementById("startBtn");
 const guessBtn = document.getElementById("guessBtn");
 const quitBtn = document.getElementById("quitBtn");
+const restartBtn = document.getElementById("restartBtn");
 
-const maxInput = document.getElementById("maxNumber");
 const guessInput = document.getElementById("guessInput");
 
 const message = document.getElementById("message");
 const attemptsText = document.getElementById("attempts");
+const feedbackText = document.getElementById("feedback");
 
 const setupSection = document.querySelector(".setup");
 const gameSection = document.querySelector(".game");
 
 startBtn.addEventListener("click", () => {
-  max = Number(maxInput.value);
-
-  if (!max || max <= 0) {
-    alert("Please enter a valid maximum number.");
-    return;
-  }
-
-  secretNumber = Math.floor(Math.random() * max) + 1;
+  // Generate random number between 1 and 100
+  secretNumber = Math.floor(Math.random() * MAX_NUMBER) + MIN_NUMBER;
   attempts = 0;
 
   setupSection.classList.add("hidden");
@@ -33,6 +29,8 @@ startBtn.addEventListener("click", () => {
   message.textContent = "Game started! Make your guess.";
   message.className = "message warning";
   attemptsText.textContent = `Attempts: 0 / ${MAX_ATTEMPTS}`;
+  feedbackText.textContent = "";
+  restartBtn.classList.add("hidden");
 
   guessBtn.disabled = false;
   guessInput.value = "";
@@ -41,14 +39,23 @@ startBtn.addEventListener("click", () => {
 
 guessBtn.addEventListener("click", handleGuess);
 guessInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") handleGuess();
+  if (e.key === "Enter" && !guessBtn.disabled) handleGuess();
+});
+restartBtn.addEventListener("click", () => {
+  setupSection.classList.remove("hidden");
+  gameSection.classList.add("hidden");
+  guessBtn.disabled = false;
+  message.textContent = "";
+  message.className = "message";
+  attemptsText.textContent = "";
+  feedbackText.textContent = "";
 });
 
 function handleGuess() {
   const guess = Number(guessInput.value);
 
-  if (!guess) {
-    message.textContent = "Please enter a valid number.";
+  if (!guess || guess < MIN_NUMBER || guess > MAX_NUMBER) {
+    message.textContent = `Please enter a valid number between ${MIN_NUMBER} and ${MAX_NUMBER}.`;
     message.className = "message warning";
     return;
   }
@@ -56,10 +63,12 @@ function handleGuess() {
   attempts++;
 
   if (guess === secretNumber) {
-    message.textContent = `Correct! 🎉 The number was ${secretNumber}.`;
+    message.textContent = `Correct! 🎉 You found the number ${secretNumber}!`;
     message.className = "message success";
-    attemptsText.textContent = `You guessed it in ${attempts} attempts.`;
+    attemptsText.textContent = `You guessed it in ${attempts} attempt${attempts !== 1 ? 's' : ''}.`;
+    feedbackText.textContent = attempts <= 5 ? "Outstanding! 🌟" : "Well done! 👍";
     guessBtn.disabled = true;
+    restartBtn.classList.remove("hidden");
     return;
   }
 
@@ -67,28 +76,33 @@ function handleGuess() {
     message.textContent = `Game Over ❌ The number was ${secretNumber}.`;
     message.className = "message error";
     attemptsText.textContent = `Attempts used: ${attempts}/${MAX_ATTEMPTS}`;
+    feedbackText.textContent = "Better luck next time!";
     guessBtn.disabled = true;
+    restartBtn.classList.remove("hidden");
     return;
   }
 
   if (guess > secretNumber) {
-    message.textContent = "Too high ⬆️ Try again.";
+    message.textContent = "Too high! ⬆️ Try a lower number.";
   } else {
-    message.textContent = "Too low ⬇️ Try again.";
+    message.textContent = "Too low! ⬇️ Try a higher number.";
   }
 
   message.className = "message warning";
   attemptsText.textContent = `Attempts: ${attempts}/${MAX_ATTEMPTS}`;
+  feedbackText.textContent = `Remaining: ${MAX_ATTEMPTS - attempts} guess${MAX_ATTEMPTS - attempts !== 1 ? 'es' : ''}`;
   guessInput.value = "";
+  guessInput.focus();
 }
 
 quitBtn.addEventListener("click", () => {
   setupSection.classList.remove("hidden");
   gameSection.classList.add("hidden");
   guessBtn.disabled = false;
-  maxInput.value = "";
   message.textContent = "";
   message.className = "message";
   attemptsText.textContent = "";
+  feedbackText.textContent = "";
+  restartBtn.classList.add("hidden");
 });
 
