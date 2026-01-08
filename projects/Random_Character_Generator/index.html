@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fictional Character Generator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #f1f1f1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a0a0c0;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .character-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 700px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            margin-bottom: 2.5rem;
+        }
+        
+        .character-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .character-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #feb47b;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .character-age {
+            font-size: 1.5rem;
+            background: rgba(255, 126, 95, 0.2);
+            padding: 0.4rem 1rem;
+            border-radius: 50px;
+            font-weight: 600;
+        }
+        
+        .character-profession {
+            font-size: 1.8rem;
+            color: #7bb4fe;
+            margin-bottom: 1.8rem;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            color: #ff7e5f;
+            margin: 1.5rem 0 0.8rem 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title i {
+            font-size: 1.1rem;
+        }
+        
+        .personality-traits, .strengths, .weaknesses {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .trait, .strength, .weakness {
+            background: rgba(123, 180, 254, 0.15);
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            border: 1px solid rgba(123, 180, 254, 0.3);
+        }
+        
+        .strength {
+            background: rgba(76, 175, 80, 0.15);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .weakness {
+            background: rgba(244, 67, 54, 0.15);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        
+        .generate-btn {
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            border: none;
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 600;
+            padding: 1.2rem 3rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(255, 126, 95, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 1rem;
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(255, 126, 95, 0.4);
+        }
+        
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+        
+        .animation-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.5s ease;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease 0.5s forwards;
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        
+        .card-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 2rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1.5rem;
+            border-radius: 15px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #feb47b;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #a0a0c0;
+            margin-top: 0.3rem;
+        }
+        
+        footer {
+            margin-top: 2rem;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            width: 100%;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        @media (max-width: 768px) {
+            .character-card {
+                padding: 1.8rem;
+            }
+            
+            .character-name {
+                font-size: 2rem;
+            }
+            
+            .card-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .character-card {
+                padding: 1.5rem;
+            }
+            
+            .character-name {
+                font-size: 1.8rem;
+            }
+            
+            .generate-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Fictional Character Generator</h1>
+            <p class="subtitle">Click the button to create a unique character with random attributes, personality traits, strengths, and weaknesses.</p>
+        </header>
+        
+        <main>
+            <div class="character-card">
+                <div class="animation-area" id="animation-area"></div>
+                
+                <div class="card-content">
+                    <div class="card-header">
+                        <h2 class="character-name" id="character-name">Aelar Windrider</h2>
+                        <div class="character-age" id="character-age">27</div>
+                    </div>
+                    
+                    <div class="character-profession" id="character-profession">Sky Pirate Captain</div>
+                    
+                    <div class="section-title">
+                        <i class="fas fa-brain"></i>
+                        <span>Personality Traits</span>
+                    </div>
+                    <div class="personality-traits" id="personality-traits">
+                        <div class="trait">Charismatic</div>
+                        <div class="trait">Impulsive</div>
+                        <div class="trait">Optimistic</div>
+                    </div>
+                    
+                    <div class="section-title">
+                        <i class="fas fa-star"></i>
+                        <span>Strengths</span>
+                    </div>
+                    <div class="strengths" id="strengths">
+                        <div class="strength">Excellent pilot</div>
+                        <div class="strength">Natural leader</div>
+                        <div class="strength">Quick thinker</div>
+                    </div>
+                    
+                    <div class="section-title">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Weaknesses</span>
+                    </div>
+                    <div class="weaknesses" id="weaknesses">
+                        <div class="weakness">Too trusting</div>
+                        <div class="weakness">Fear of confined spaces</div>
+                        <div class="weakness">Poor with finances</div>
+                    </div>
+                    
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-value" id="charisma">85</div>
+                            <div class="stat-label">Charisma</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="intelligence">72</div>
+                            <div class="stat-label">Intelligence</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="courage">91</div>
+                            <div class="stat-label">Courage</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="wisdom">64</div>
+                            <div class="stat-label">Wisdom</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="generate-btn" id="generate-btn">
+                <i class="fas fa-redo-alt"></i>
+                Generate New Character
+            </button>
+        </main>
+        
+        <footer>
+            <p>Fictional Character Generator | Created with HTML, CSS, and JavaScript</p>
+            <p>Each character is randomly generated for storytelling, gaming, or creative inspiration.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Character data arrays
+        const names = [
+            "Aelar Windrider", "Lyra Moonshadow", "Thrain Ironfist", "Seraphina Flameheart",
+            "Kaelen Stormcaller", "Isolde Silverleaf", "Dorian Blackwood", "Elara Starweaver",
+            "Cassian Bloodfang", "Rowan Swiftarrow", "Valeria Nightshade", "Orion Skyborn",
+            "Morgana Darkwater", "Finnian Greenbriar", "Selene Frostveil", "Gideon Stoneheart"
+        ];
+        
+        const professions = [
+            "Sky Pirate Captain", "Arcane Archaeologist", "Steampunk Inventor", "Dreamweaver Bard",
+            "Celestial Cartographer", "Time Travel Historian", "Ghost Hunter Detective", "Alchemy Chef",
+            "Crystal Resonance Healer", "Beast Tamer Diplomat", "Memory Sculptor Artist", "Quantum Blacksmith",
+            "Echo Location Navigator", "Shadow Dancer Spy", "Reality Warping Librarian", "Mystic Forge Engineer"
+        ];
+        
+        const personalityTraits = [
+            ["Charismatic", "Impulsive", "Optimistic"],
+            ["Cautious", "Analytical", "Reserved"],
+            ["Bold", "Adventurous", "Reckless"],
+            ["Wise", "Patient", "Mysterious"],
+            ["Eccentric", "Creative", "Forgetful"],
+            ["Loyal", "Brave", "Stubborn"],
+            ["Clever", "Sarcastic", "Resourceful"],
+            ["Kind", "Empathetic", "Idealistic"],
+            ["Ambitious", "Charming", "Manipulative"],
+            ["Calm", "Observant", "Secretive"]
+        ];
+        
+        const strengths = [
+            ["Excellent pilot", "Natural leader", "Quick thinker"],
+            ["Photographic memory", "Master strategist", "Polyglot"],
+            ["Fearless in combat", "Expert survivalist", "Strong intuition"],
+            ["Powerful magic affinity", "Deep knowledge of lore", "Meditation mastery"],
+            ["Inventive problem solver", "Mechanical genius", "Artistic talent"],
+            ["Unbreakable will", "Inspirational speaker", "Master negotiator"],
+            ["Expert lockpicker", "Skilled actor", "Escape artist"],
+            ["Healing abilities", "Animal communication", "Plant manipulation"],
+            ["Political savvy", "Wealthy connections", "Persuasive orator"],
+            ["Stealth mastery", "Keen senses", "Trap detection"]
+        ];
+        
+        const weaknesses = [
+            ["Too trusting", "Fear of confined spaces", "Poor with finances"],
+            ["Overthinks everything", "Socially awkward", "Physical weakness"],
+            ["Acts before thinking", "Trouble with authority", "Addicted to risk"],
+            ["Too detached from reality", "Easily distracted by mysteries", "Poor at practical tasks"],
+            ["Absent-minded", "Disorganized", "Easily bored"],
+            ["Blind loyalty", "Holds grudges", "Refuses to ask for help"],
+            ["Trust issues", "Sarcasm gets him in trouble", "Gambling habit"],
+            ["Too idealistic", "Easily manipulated", "Avoids conflict"],
+            ["Arrogant", "Moral flexibility", "Workaholic"],
+            ["Secretive to a fault", "Paranoid", "Difficulty trusting others"]
+        ];
+        
+        // DOM Elements
+        const characterName = document.getElementById('character-name');
+        const characterAge = document.getElementById('character-age');
+        const characterProfession = document.getElementById('character-profession');
+        const personalityTraitsContainer = document.getElementById('personality-traits');
+        const strengthsContainer = document.getElementById('strengths');
+        const weaknessesContainer = document.getElementById('weaknesses');
+        const generateBtn = document.getElementById('generate-btn');
+        const animationArea = document.getElementById('animation-area');
+        
+        // Stat elements
+        const charismaStat = document.getElementById('charisma');
+        const intelligenceStat = document.getElementById('intelligence');
+        const courageStat = document.getElementById('courage');
+        const wisdomStat = document.getElementById('wisdom');
+        
+        // Generate random age between 18 and 120
+        function getRandomAge() {
+            return Math.floor(Math.random() * (120 - 18 + 1)) + 18;
+        }
+        
+        // Generate random stats between 30 and 100
+        function getRandomStat() {
+            return Math.floor(Math.random() * (100 - 30 + 1)) + 30;
+        }
+        
+        // Get random item from array
+        function getRandomItem(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+        
+        // Generate a new character
+        function generateCharacter() {
+            // Trigger fade-out animation
+            animationArea.classList.remove('fade-in');
+            animationArea.classList.add('fade-out');
+            
+            // After a short delay, update character and trigger fade-in
+            setTimeout(() => {
+                // Update character details
+                characterName.textContent = getRandomItem(names);
+                characterAge.textContent = getRandomAge();
+                characterProfession.textContent = getRandomItem(professions);
+                
+                // Get random trait sets
+                const randomPersonality = getRandomItem(personalityTraits);
+                const randomStrengths = getRandomItem(strengths);
+                const randomWeaknesses = getRandomItem(weaknesses);
+                
+                // Clear existing traits
+                personalityTraitsContainer.innerHTML = '';
+                strengthsContainer.innerHTML = '';
+                weaknessesContainer.innerHTML = '';
+                
+                // Add new personality traits
+                randomPersonality.forEach(trait => {
+                    const traitElement = document.createElement('div');
+                    traitElement.className = 'trait';
+                    traitElement.textContent = trait;
+                    personalityTraitsContainer.appendChild(traitElement);
+                });
+                
+                // Add new strengths
+                randomStrengths.forEach(strength => {
+                    const strengthElement = document.createElement('div');
+                    strengthElement.className = 'strength';
+                    strengthElement.textContent = strength;
+                    strengthsContainer.appendChild(strengthElement);
+                });
+                
+                // Add new weaknesses
+                randomWeaknesses.forEach(weakness => {
+                    const weaknessElement = document.createElement('div');
+                    weaknessElement.className = 'weakness';
+                    weaknessElement.textContent = weakness;
+                    weaknessesContainer.appendChild(weaknessElement);
+                });
+                
+                // Update stats
+                charismaStat.textContent = getRandomStat();
+                intelligenceStat.textContent = getRandomStat();
+                courageStat.textContent = getRandomStat();
+                wisdomStat.textContent = getRandomStat();
+                
+                // Trigger fade-in animation
+                animationArea.classList.remove('fade-out');
+                animationArea.classList.add('fade-in');
+                
+            }, 500); // Half second delay to match animation duration
+        }
+        
+        // Add event listener to generate button
+        generateBtn.addEventListener('click', generateCharacter);
+        
+        // Generate initial character on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Trigger initial fade-in animation
+            animationArea.classList.add('fade-in');
+        });
+        
+        // Generate a character every 30 seconds automatically
+        setInterval(generateCharacter, 30000);
+    </script>
+</body>
+</html>
