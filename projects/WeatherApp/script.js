@@ -4,6 +4,7 @@ const cityInput = document.getElementById('cityInput');
 const weatherData = document.getElementById('weatherData');
 const errorMsg = document.getElementById('errorMsg');
 const loader = document.getElementById('loader');
+const darkModeToggle = document.getElementById('darkModeToggle');
 
 // Elements to update
 const cityName = document.getElementById('cityName');
@@ -16,7 +17,12 @@ const feelsLike = document.getElementById('feelsLike');
 const uvIndex = document.getElementById('uvIndex');
 const visibility = document.getElementById('visibility');
 
-// Event Listeners
+if (darkModeToggle) {
+    darkModeToggle.addEventListener('change', () => {
+        document.body.classList.toggle('light-mode', darkModeToggle.checked);
+    });
+}
+
 searchBtn.addEventListener('click', () => {
     const city = cityInput.value.trim();
     if (city) getCityCoordinates(city);

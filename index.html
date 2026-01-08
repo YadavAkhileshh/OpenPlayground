@@ -10,462 +10,48 @@
     <meta name="description"
         content="A community-driven platform where developers showcase their creativity through interactive web projects">
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
 
-    <!-- Styles -->
     <link rel="stylesheet" href="./css/responsive.css">
     <link rel="stylesheet" href="./css/style.css">
-
-    <!-- Preload critical components -->
-    <link rel="preload" href="./components/header.html" as="fetch" crossorigin>
-    <link rel="preload" href="./components/hero.html" as="fetch" crossorigin>
+    <link rel="stylesheet" href="./css/contributor-cards.css">
+    <link rel="stylesheet" href="./css/bookmarks.css">
 </head>
 
 <body>
-    <!-- Header Component Placeholder -->
     <div id="header-placeholder"></div>
+ main
 
-    <!-- Hero Component Placeholder -->
     <div id="hero-placeholder"></div>
 
+
     <!-- Projects Component Placeholder --> 
+
+  
     <div id="projects-placeholder"></div>
 
-    <!-- Contribute Component Placeholder -->
     <div id="contribute-placeholder"></div>
 
-    <!-- Contributors Component Placeholder -->
-    <div id="contributors-placeholder"></div>
-
-    <!-- Footer Component Placeholder -->
     <div id="footer-placeholder"></div>
 
-    <!-- Chatbot Component Placeholder -->
     <div id="chatbot-placeholder"></div>
 
-    <!-- Scroll to Top Button -->
-    <button id="scrollToTopBtn" aria-label="Scroll to top">
-        <i class="ri-arrow-up-line"></i>
+    <button id="scrollToTopBtn" class="scroll-top-btn" aria-label="Scroll to top">
+        <i class="ri-arrow-up-line" aria-hidden="true"></i>
     </button>
 
-    <!-- Scripts -->
-    <script src="./js/components.js"></script>
-    <script src="./js/app.js"></script>
+    <script src="./js/bookmarks.js"></script>
+
     <script src="./js/chatbot.js"></script>
 
-    <!-- Contributors Script -->
-    <script>
-        // GitHub API Configuration
-        const GITHUB_API_URL = 'https://api.github.com/repos/YadavAkhileshh/OpenPlayground/contributors';
-        const CONTRIBUTORS_TO_SHOW = 12;
+    <script src="./js/components.js"></script>
 
-        // Fetch contributors from GitHub API
-        async function fetchContributors() {
-            const contributorsGrid = document.getElementById('contributors-grid');
-            const loadMoreBtn = document.getElementById('loadMoreContributors');
-            
-            if (!contributorsGrid) return;
-
-            try {
-                const response = await fetch(`${GITHUB_API_URL}?per_page=100`);
-
-                if (!response.ok) {
-                    throw new Error(`GitHub API error: ${response.status}`);
-                }
-
-                const contributors = await response.json();
-                displayContributors(contributors);
-            } catch (error) {
-                console.error('Error fetching contributors:', error);
-                showErrorState();
-            }
-        }
-
-        // Create contributor card HTML
-        function createContributorCard(contributor) {
-            const role = getRole(contributor);
-            
-            return `
-                <div class="contributor-card"
-                     data-role="${role}"
-                     data-name="${contributor.login.toLowerCase()}"
-                     data-date="${contributor.id}">
-                     
-                    <img src="${contributor.avatar_url}" class="contributor-avatar" loading="lazy" alt="${contributor.login}">
-                    <h4 class="contributor-name">${contributor.login}</h4>
-                    
-                    <span class="contributor-badge ${role}">
-                        ${role === 'developer' ? 'DEVELOPER' : 'CONTRIBUTOR'}
-                    </span>
-
-                    <a href="${contributor.html_url}" target="_blank" class="contributor-link">
-                        <i class="ri-github-fill"></i> Profile
-                    </a>
-                </div>
-            `;
-        }
-
-        function getRole(contributor) {
-            return contributor.contributions >= 50 ? "developer" : "contributor";
-        }
-
-        // Display contributors in the grid
-        function displayContributors(contributors) {
-            const contributorsGrid = document.getElementById('contributors-grid');
-            const loadMoreBtn = document.getElementById('loadMoreContributors');
-            
-            if (!contributorsGrid) return;
-
-            contributorsGrid.innerHTML = '';
-
-            if (contributors.length === 0) {
-                showNoContributors();
-                return;
-            }
-
-            // Filter out bots and limit to CONTRIBUTORS_TO_SHOW
-            const filteredContributors = contributors
-                .filter(contributor => !contributor.login.includes('[bot]'))
-                .slice(0, CONTRIBUTORS_TO_SHOW);
-
-            // Add contributor cards
-            filteredContributors.forEach((contributor, index) => {
-                const cardHTML = createContributorCard(contributor);
-                contributorsGrid.innerHTML += cardHTML;
-            });
-
-            // Show load more button if there are more contributors
-            const humanContributors = contributors.filter(c => !c.login.includes('[bot]'));
-            if (humanContributors.length > CONTRIBUTORS_TO_SHOW && loadMoreBtn) {
-                loadMoreBtn.style.display = 'inline-flex';
-                
-                loadMoreBtn.addEventListener('click', async () => {
-                    const allContributors = await fetch(`${GITHUB_API_URL}?per_page=100`).then(r => r.json());
-                    const humanContributors = allContributors.filter(c => !c.login.includes('[bot]'));
-
-                    contributorsGrid.innerHTML = '';
-                    humanContributors.forEach(contributor => {
-                        const cardHTML = createContributorCard(contributor);
-                        contributorsGrid.innerHTML += cardHTML;
-                    });
-
-                    loadMoreBtn.style.display = 'none';
-                });
-            }
-        }
-
-        // Show error state
-        function showErrorState() {
-            const contributorsGrid = document.getElementById('contributors-grid');
-            if (!contributorsGrid) return;
-            
-            contributorsGrid.innerHTML = `
-                <div class="contributors-error">
-                    <div class="error-icon">😕</div>
-                    <h3>Unable to load contributors</h3>
-                    <p>Please check your internet connection or try again later.</p>
-                </div>
-            `;
-        }
-
-        // Show no contributors state
-        function showNoContributors() {
-            const contributorsGrid = document.getElementById('contributors-grid');
-            if (!contributorsGrid) return;
-            
-            contributorsGrid.innerHTML = `
-                <div class="contributors-error">
-                    <div class="error-icon">👤</div>
-                    <h3>No contributors found</h3>
-                    <p>Be the first to contribute to this project!</p>
-                </div>
-            `;
-        }
-
-        // Initialize contributors when components are loaded
-        document.addEventListener('componentLoaded', (e) => {
-            if (e.detail.component === 'contributors') {
-                setTimeout(fetchContributors, 100);
-            }
-        });
-    </script>
-
-    <!-- Projects Management Script -->
-    <script>
-        // PROJECTS FILTERING AND PAGINATION SYSTEM
-        class ProjectManager {
-            constructor() {
-                this.cards = [];
-                this.filteredCards = [];
-                this.paginationContainer = null;
-                this.emptyState = null;
-                this.searchInput = null;
-                this.sortSelect = null;
-                this.filterButtons = [];
-
-                this.currentPage = 1;
-                this.cardsPerPage = 9;
-                this.currentFilter = "all";
-                this.currentSort = "default";
-                this.currentSearch = "";
-
-                // Wait for components to load
-                document.addEventListener('componentLoaded', (e) => {
-                    if (e.detail.component === 'projects') {
-                        setTimeout(() => this.init(), 100);
-                    }
-                });
-            }
-
-            init() {
-                this.cards = Array.from(document.querySelectorAll(".projects-container .card"));
-                this.paginationContainer = document.getElementById("pagination-controls");
-                this.emptyState = document.getElementById("empty-state");
-                this.searchInput = document.getElementById("project-search");
-                this.sortSelect = document.getElementById("project-sort");
-                this.filterButtons = document.querySelectorAll(".filter-btn");
-
-                if (this.cards.length === 0) {
-                    console.log('No project cards found, retrying...');
-                    setTimeout(() => this.init(), 500);
-                    return;
-                }
-
-                // Show all cards initially
-                this.cards.forEach(card => {
-                    card.style.display = "block";
-                    card.classList.remove("hidden");
-                });
-
-                this.addDateAttributes();
-                this.initEventListeners();
-                this.applyFilters();
-            }
-
-            addDateAttributes() {
-                const currentDate = new Date();
-                this.cards.forEach((card, index) => {
-                    if (!card.hasAttribute('data-date')) {
-                        const daysAgo = Math.floor(index / 3);
-                        const fakeDate = new Date(currentDate);
-                        fakeDate.setDate(currentDate.getDate() - daysAgo);
-                        card.setAttribute('data-date', fakeDate.toISOString());
-                    }
-                });
-            }
-
-            initEventListeners() {
-                if (this.searchInput) {
-                    this.searchInput.addEventListener("input", (e) => {
-                        this.currentSearch = e.target.value.toLowerCase();
-                        this.applyFilters();
-                        this.showPage(1);
-                    });
-                }
-
-                if (this.sortSelect) {
-                    this.sortSelect.addEventListener("change", (e) => {
-                        this.currentSort = e.target.value;
-                        this.applyFilters();
-                        this.showPage(1);
-                    });
-                }
-
-                this.filterButtons.forEach(btn => {
-                    btn.addEventListener("click", () => {
-                        this.filterButtons.forEach(b => b.classList.remove("active"));
-                        btn.classList.add("active");
-                        this.currentFilter = btn.dataset.filter;
-                        this.applyFilters();
-                        this.showPage(1);
-                    });
-                });
-
-                window.addEventListener("resize", () => {
-                    this.updatePagination();
-                });
-            }
-
-            applyFilters() {
-                let filtered = [...this.cards];
-
-                // Apply search filter
-                if (this.currentSearch) {
-                    filtered = filtered.filter(card => {
-                        const title = card.querySelector(".card-heading")?.textContent.toLowerCase() || '';
-                        const description = card.querySelector(".card-description")?.textContent.toLowerCase() || '';
-                        const tech = card.querySelector(".card-tech")?.textContent.toLowerCase() || '';
-                        const category = card.dataset.category?.toLowerCase() || '';
-
-                        return title.includes(this.currentSearch) ||
-                            description.includes(this.currentSearch) ||
-                            tech.includes(this.currentSearch) ||
-                            category.includes(this.currentSearch);
-                    });
-                }
-
-                // Apply category filter
-                if (this.currentFilter !== "all") {
-                    filtered = filtered.filter(card =>
-                        card.dataset.category === this.currentFilter
-                    );
-                }
-
-                // Apply sorting
-                filtered = this.sortCards(filtered);
-
-                this.filteredCards = filtered;
-                this.showAllCards();
-                this.updateEmptyState();
-            }
-
-            sortCards(cards) {
-                const sorted = [...cards];
-
-                switch (this.currentSort) {
-                    case "az":
-                        sorted.sort((a, b) => {
-                            const titleA = a.querySelector(".card-heading")?.textContent.toLowerCase() || '';
-                            const titleB = b.querySelector(".card-heading")?.textContent.toLowerCase() || '';
-                            return titleA.localeCompare(titleB);
-                        });
-                        break;
-
-                    case "za":
-                        sorted.sort((a, b) => {
-                            const titleA = a.querySelector(".card-heading")?.textContent.toLowerCase() || '';
-                            const titleB = b.querySelector(".card-heading")?.textContent.toLowerCase() || '';
-                            return titleB.localeCompare(titleA);
-                        });
-                        break;
-
-                    case "newest":
-                        sorted.sort((a, b) => {
-                            const dateA = new Date(a.getAttribute("data-date"));
-                            const dateB = new Date(b.getAttribute("data-date"));
-                            return dateB - dateA;
-                        });
-                        break;
-                }
-
-                return sorted;
-            }
-
-            showAllCards() {
-                // Show all filtered cards without pagination
-                this.cards.forEach(card => {
-                    card.style.display = "none";
-                });
-
-                this.filteredCards.forEach(card => {
-                    card.style.display = "block";
-                });
-            }
-
-            updatePagination() {
-                if (!this.paginationContainer) return;
-                
-                this.paginationContainer.innerHTML = "";
-                const totalPages = Math.ceil(this.filteredCards.length / this.cardsPerPage);
-
-                if (totalPages > 1) {
-                    // Previous button
-                    if (this.currentPage > 1) {
-                        const prevBtn = document.createElement("button");
-                        prevBtn.innerHTML = "&laquo;";
-                        prevBtn.addEventListener("click", () => this.showPage(this.currentPage - 1));
-                        this.paginationContainer.appendChild(prevBtn);
-                    }
-
-                    // Page buttons
-                    const maxVisiblePages = 5;
-                    let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
-                    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-                    if (endPage - startPage + 1 < maxVisiblePages) {
-                        startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                    }
-
-                    for (let i = startPage; i <= endPage; i++) {
-                        const btn = document.createElement("button");
-                        btn.textContent = i;
-                        btn.classList.toggle("active", i === this.currentPage);
-                        btn.addEventListener("click", () => this.showPage(i));
-                        this.paginationContainer.appendChild(btn);
-                    }
-
-                    // Next button
-                    if (this.currentPage < totalPages) {
-                        const nextBtn = document.createElement("button");
-                        nextBtn.innerHTML = "&raquo;";
-                        nextBtn.addEventListener("click", () => this.showPage(this.currentPage + 1));
-                        this.paginationContainer.appendChild(nextBtn);
-                    }
-
-                    this.paginationContainer.style.display = "flex";
-                } else {
-                    this.paginationContainer.style.display = "none";
-                }
-            }
-
-            updateActiveButton() {
-                if (!this.paginationContainer) return;
-                
-                const buttons = this.paginationContainer.querySelectorAll("button");
-                buttons.forEach(btn => {
-                    if (btn.innerHTML !== "&laquo;" && btn.innerHTML !== "&raquo;") {
-                        const pageNum = parseInt(btn.textContent);
-                        btn.classList.toggle("active", pageNum === this.currentPage);
-                    }
-                });
-            }
-
-            updateEmptyState() {
-                if (!this.emptyState) return;
-                
-                if (this.filteredCards.length === 0) {
-                    this.emptyState.style.display = "block";
-                } else {
-                    this.emptyState.style.display = "none";
-                }
-            }
-
-            scrollToProjects() {
-                const projectsSection = document.getElementById("projects");
-                if (projectsSection && this.currentPage > 1) {
-                    const navbarHeight = 75;
-                    const targetPosition = projectsSection.offsetTop - navbarHeight;
-
-                    window.scrollTo({
-                        top: targetPosition,
-                        behavior: "smooth"
-                    });
-                }
-            }
-        }
-
-        // Initialize when DOM is loaded
-        document.addEventListener("DOMContentLoaded", function () {
-            window.ProjectManager = new ProjectManager();
-        });
-    </script>
-
-    <!-- Force scroll to top on page load -->
-    <script>
-        window.addEventListener('load', function () {
-            window.scrollTo(0, 0);
-            setTimeout(() => window.scrollTo(0, 0), 100);
-        });
-
-        document.addEventListener('DOMContentLoaded', function () {
-            window.scrollTo(0, 0);
-        });
-    </script>
+    <script type="module" src="./js/app.js"></script>
+    <script src="projects.json"></script>
 </body>
 
 </html>
