@@ -89,6 +89,7 @@ function initializeUI() {
     scrollBtn = document.getElementById("scrollToTopBtn");
     navToggle = document.getElementById("navToggle");
     navLinks = document.getElementById("navLinks");
+    searchInput = document.getElementById("project-search");
 
     // Projects Elements
     searchInput = document.getElementById("project-search");
@@ -150,7 +151,15 @@ function setupEventListeners() {
     }
 
     // Project Controls
-
+    if (searchInput) {
+        searchInput.addEventListener("input", () => {
+            if (visibilityEngine) {
+                visibilityEngine.setSearchQuery(searchInput.value);
+            }
+            currentPage = 1;
+            renderProjects();
+        });
+    }
 
     if (sortSelect) {
         sortSelect.addEventListener("change", () => {
