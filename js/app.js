@@ -5,106 +5,27 @@
 // This file controls core UI behavior such as theme switching,
 // project rendering, filtering, sorting, pagination, and contributor display.
 
-// ===============================
-// Architecture: ProjectVisibilityEngine Integration
-// ===============================
-// We're introducing a centralized visibility engine to handle project filtering logic.
-// Phase 1: Migrate SEARCH functionality to use the engine.
-// Phase 2 (future): Migrate category filtering, sorting, and pagination.
-// Benefits:
-// - Separation of concerns: logic vs. DOM manipulation
-// - Reusability: engine can be used across multiple views
-// - Testability: pure functions easier to unit test
-// - Scalability: complex filters (multi-select, tags, dates) become manageable
-
 import { ProjectVisibilityEngine } from "./core/projectVisibilityEngine.js";
 
 // ===============================
-// Theme Toggle
+// Global UI Variables (Initialized dynamically)
 // ===============================
-
-// Elements related to theme toggle (light/dark mode)
-const toggleBtn = document.getElementById("toggle-mode-btn");
-const themeIcon = document.getElementById("theme-icon");
-const html = document.documentElement;
-
-// Load previously saved theme from localStorage or default to light theme
-const savedTheme = localStorage.getItem("theme") || "light";
-html.setAttribute("data-theme", savedTheme);
-updateThemeIcon(savedTheme);
-
-// Toggle between light and dark theme when the user clicks the theme button
-toggleBtn.addEventListener("click", () => {
-    const newTheme =
-        html.getAttribute("data-theme") === "light" ? "dark" : "light";
-    html.setAttribute("data-theme", newTheme);
-    localStorage.setItem("theme", newTheme);
-    updateThemeIcon(newTheme);
-
-    // Add shake animation
-    toggleBtn.classList.add("shake");
-    setTimeout(() => toggleBtn.classList.remove("shake"), 500);
-});
-
-// Updates the theme icon based on the currently active theme
-function updateThemeIcon(theme) {
-    if (theme === "dark") {
-        themeIcon.className = "ri-moon-fill";
-    } else {
-        themeIcon.className = "ri-sun-line";
-    }
-}
+let toggleBtn;
+let themeIcon;
+let scrollBtn;
+let navToggle;
+let navLinks;
+let searchInput;
+let sortSelect;
+let filterBtns;
+let surpriseBtn;
+let clearBtn;
+let projectsContainer;
+let paginationContainer;
+let contributorsGrid;
 
 // ===============================
-// Scroll to Top
-// ===============================
-
-// Button used to scroll back to the top of the page
-const scrollBtn = document.getElementById("scrollToTopBtn");
-
-// Show or hide the scroll-to-top button based on scroll position
-window.addEventListener("scroll", () => {
-    scrollBtn.classList.toggle("show", window.scrollY > 300);
-});
-
-// Smoothly scroll to the top when the button is clicked
-scrollBtn.addEventListener("click", () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-});
-
-// ===============================
-// Mobile Navbar
-// ===============================
-
-// Mobile navigation toggle elements
-const navToggle = document.getElementById("navToggle");
-const navLinks = document.getElementById("navLinks");
-
-if (navToggle && navLinks) {
-    // Toggle mobile navigation menu and update menu icon
-    navToggle.addEventListener("click", () => {
-        navLinks.classList.toggle("active");
-
-        // Toggle icon
-        const icon = navToggle.querySelector("i");
-        if (navLinks.classList.contains("active")) {
-            icon.className = "ri-close-line";
-        } else {
-            icon.className = "ri-menu-3-line";
-        }
-    });
-
-    // Close mobile menu when a navigation link is clicked
-    navLinks.querySelectorAll("a").forEach((link) => {
-        link.addEventListener("click", () => {
-            navLinks.classList.remove("active");
-            navToggle.querySelector("i").className = "ri-menu-3-line";
-        });
-    });
-}
-
-// ===============================
-// Projects Logic
+// Projects Logic Variables
 // ===============================
 
 // Number of project cards displayed per page
@@ -121,90 +42,197 @@ let allProjectsData = [];
 // ===============================
 // Architecture: ProjectVisibilityEngine Instance
 // ===============================
-// This engine will progressively replace inline filtering logic.
-// Currently handles: search query matching
-// Future: category filters, sorting, advanced filters
 let visibilityEngine = null;
 
-const searchInput = document.getElementById("project-search");
-const sortSelect = document.getElementById("project-sort");
-const filterBtns = document.querySelectorAll(".filter-btn");
-const surpriseBtn = document.getElementById("surprise-btn");
-const clearBtn = document.getElementById("clear-filters");
-
-// Reset all filters, search input, and pagination when clear button is clicked
-if (clearBtn) {
-    clearBtn.addEventListener("click", () => {
-        searchInput.value = "";
-        sortSelect.value = "default";
-        currentCategory = "all";
-        currentPage = 1;
-
-        filterBtns.forEach(b => b.classList.remove("active"));
-        document.querySelector('[data-filter="all"]').classList.add("active");
-
-        // Architecture: Clear search query in engine
-        if (visibilityEngine) {
-            visibilityEngine.setSearchQuery("");
-        }
-
-        renderProjects();
-    });
-}
-
-const projectsContainer = document.querySelector(".projects-container");
-const paginationContainer = document.getElementById("pagination-controls");
-
-const allCards = Array.from(document.querySelectorAll(".card"));
-
-// Updates the project count displayed on category filter buttons
-function updateCategoryCounts() {
-    const counts = {};
-
-    allCards.forEach(card => {
-        const cat = card.dataset.category;
-        counts[cat] = (counts[cat] || 0) + 1;
-    });
-
-    filterBtns.forEach(btn => {
-        const cat = btn.dataset.filter;
-        if (cat === "all") {
-            btn.innerText = `All (${allCards.length})`;
-        } else {
-            btn.innerText = `${cat.charAt(0).toUpperCase() + cat.slice(1)} (${counts[cat] || 0})`;
-        }
-    });
-}
-
 // ===============================
-// Add GitHub link button to cards
+// Initialization Logic
 // ===============================
 
-// Dynamically add GitHub repository links to project cards
-allCards.forEach(card => {
-    const githubUrl = card.dataset.github;
-    if (!githubUrl) return;
+// Wait for all components to be loaded before initializing
+let componentsLoaded = 0;
+const totalComponents = 6; // header, hero, projects, contribute, footer, chatbot
 
-    const githubBtn = document.createElement("a");
-    githubBtn.href = githubUrl;
-    githubBtn.target = "_blank";
-    githubBtn.rel = "noopener noreferrer";
-    githubBtn.className = "github-link";
-    githubBtn.innerHTML = `<i class="ri-github-fill"></i>`;
-
-    // Prevent card navigation when clicking the GitHub button
-    githubBtn.addEventListener("click", e => e.stopPropagation());
-
-    card.style.position = "relative";
-    card.appendChild(githubBtn);
+document.addEventListener('componentLoaded', (e) => {
+    componentsLoaded++;
+    // Once all components are loaded, initialize the app
+    if (componentsLoaded === totalComponents) {
+        initializeApp();
+    }
 });
 
-// Fetch project data from projects.json and initialize project rendering
+// Also add a fallback timeout in case event doesn't fire
+setTimeout(() => {
+    if (componentsLoaded < totalComponents) {
+        initializeApp();
+    }
+}, 3000);
+
+function initializeApp() {
+    initializeUI();
+    setupEventListeners();
+    fetchProjects();
+    fetchContributors();
+
+    // Initialize Theme Logic after UI is ready
+    const html = document.documentElement;
+    const savedTheme = localStorage.getItem("theme") || "light";
+    html.setAttribute("data-theme", savedTheme);
+    if (themeIcon) updateThemeIcon(savedTheme);
+
+    console.log('🚀 OpenPlayground app initialized with UI!');
+}
+
+function initializeUI() {
+    // Select elements after they have been injected by components.js
+    toggleBtn = document.getElementById("toggle-mode-btn");
+    themeIcon = document.getElementById("theme-icon");
+    scrollBtn = document.getElementById("scrollToTopBtn");
+    navToggle = document.getElementById("navToggle");
+    navLinks = document.getElementById("navLinks");
+
+    // Projects Elements
+    searchInput = document.getElementById("project-search");
+    sortSelect = document.getElementById("project-sort");
+    filterBtns = document.querySelectorAll(".filter-btn");
+    surpriseBtn = document.getElementById("surprise-btn");
+    clearBtn = document.getElementById("clear-filters");
+    projectsContainer = document.querySelector(".projects-container");
+    paginationContainer = document.getElementById("pagination-controls");
+
+    // Contributors Elements
+    contributorsGrid = document.getElementById("contributors-grid");
+}
+
+function setupEventListeners() {
+    // Theme Toggle
+    if (toggleBtn) {
+        toggleBtn.addEventListener("click", () => {
+            const html = document.documentElement;
+            const newTheme = html.getAttribute("data-theme") === "light" ? "dark" : "light";
+            html.setAttribute("data-theme", newTheme);
+            localStorage.setItem("theme", newTheme);
+            updateThemeIcon(newTheme);
+
+            // Add shake animation
+            toggleBtn.classList.add("shake");
+            setTimeout(() => toggleBtn.classList.remove("shake"), 500);
+        });
+    }
+
+    // Scroll to Top
+    if (scrollBtn) {
+        window.addEventListener("scroll", () => {
+            scrollBtn.classList.toggle("show", window.scrollY > 300);
+        });
+        scrollBtn.addEventListener("click", () => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+    }
+
+    // Mobile Navbar
+    if (navToggle && navLinks) {
+        navToggle.addEventListener("click", () => {
+            navLinks.classList.toggle("active");
+            const icon = navToggle.querySelector("i");
+            if (navLinks.classList.contains("active")) {
+                icon.className = "ri-close-line";
+            } else {
+                icon.className = "ri-menu-3-line";
+            }
+        });
+
+        navLinks.querySelectorAll("a").forEach((link) => {
+            link.addEventListener("click", () => {
+                navLinks.classList.remove("active");
+                navToggle.querySelector("i").className = "ri-menu-3-line";
+            });
+        });
+    }
+
+    // Project Controls
+
+
+    if (sortSelect) {
+        sortSelect.addEventListener("change", () => {
+            currentSort = sortSelect.value;
+            currentPage = 1;
+            renderProjects();
+        });
+    }
+
+    if (filterBtns) {
+        filterBtns.forEach((btn) => {
+            btn.addEventListener("click", () => {
+                filterBtns.forEach((b) => b.classList.remove("active"));
+                btn.classList.add("active");
+                currentCategory = btn.dataset.filter;
+                currentPage = 1;
+                renderProjects();
+            });
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener("click", () => {
+            if (searchInput) searchInput.value = "";
+            if (sortSelect) sortSelect.value = "default";
+            currentCategory = "all";
+            currentPage = 1;
+
+            if (filterBtns) {
+                filterBtns.forEach(b => b.classList.remove("active"));
+                const allBtn = document.querySelector('[data-filter="all"]');
+                if (allBtn) allBtn.classList.add("active");
+            }
+
+            if (visibilityEngine) {
+                visibilityEngine.setSearchQuery("");
+            }
+
+            renderProjects();
+        });
+    }
+
+    if (surpriseBtn) {
+        surpriseBtn.addEventListener("click", () => {
+            if (allProjectsData.length > 0) {
+                const randomIndex = Math.floor(Math.random() * allProjectsData.length);
+                const randomProject = allProjectsData[randomIndex];
+                window.open(randomProject.link, "_self");
+            }
+        });
+    }
+}
+
+// Updates the theme icon based on the currently active theme
+function updateThemeIcon(theme) {
+    if (!themeIcon) return;
+    if (theme === "dark") {
+        themeIcon.className = "ri-moon-fill";
+    } else {
+        themeIcon.className = "ri-sun-line";
+    }
+}
+
+// ===============================
+// Project Logic
+// ===============================
+
 async function fetchProjects() {
+    if (!projectsContainer && document.querySelector(".projects-container")) {
+        projectsContainer = document.querySelector(".projects-container");
+    }
+
     try {
         const response = await fetch("./projects.json");
         const data = await response.json();
-        allProjectsData = data;
+
+        // Explicitly sort data alphabetically by default initially
+        allProjectsData = data.sort((a, b) => {
+            const titleA = (a.title || "").toLowerCase();
+            const titleB = (b.title || "").toLowerCase();
+            return titleA.localeCompare(titleB);
+        });
 
         // Update project count in hero
         const projectCount = document.getElementById("project-count");
@@ -212,13 +240,8 @@ async function fetchProjects() {
             projectCount.textContent = `${data.length}+`;
         }
 
-        // ===============================
-        // Architecture: Initialize ProjectVisibilityEngine
-        // ===============================
-        // Extract metadata from project data to initialize the engine
-        // This creates a clean separation between data model and presentation
         const projectMetadata = data.map(project => ({
-            id: project.title, // Using title as unique identifier
+            id: project.title,
             title: project.title,
             category: project.category,
             description: project.description || ""
@@ -226,122 +249,72 @@ async function fetchProjects() {
 
         visibilityEngine = new ProjectVisibilityEngine(projectMetadata);
 
+        updateCategoryCounts();
         renderProjects();
     } catch (error) {
-        // Display a fallback message if project data fails to load
         console.error("Error loading projects:", error);
         if (projectsContainer) {
+            // Display specific error message for easier debugging
             projectsContainer.innerHTML = `
                 <div class="empty-state">
                     <h3>Unable to load projects</h3>
-                    <p>Please try refreshing the page</p>
+                    <p>${error.message}</p>
+                    <p class="error-detail" style="font-size: 0.8rem; opacity: 0.7;">Check console for details</p>
                 </div>
             `;
         }
     }
 }
 
-// ===============================
-// Event Listeners
-// ===============================
-
-if (searchInput) {
-    // Architecture: Search input now updates the visibility engine
-    // The engine computes which projects should be visible
-    // renderProjects() will read this state and update the DOM accordingly
-    searchInput.addEventListener("input", () => {
-        if (visibilityEngine) {
-            visibilityEngine.setSearchQuery(searchInput.value);
-        }
-        currentPage = 1;
-        renderProjects();
-    });
-}
-
-if (sortSelect) {
-    sortSelect.addEventListener("change", () => {
-        currentSort = sortSelect.value;
-        currentPage = 1;
-        renderProjects();
-    });
-}
-
-filterBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-        filterBtns.forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        currentCategory = btn.dataset.filter;
-        currentPage = 1;
-        renderProjects();
-    });
-});
-
-// Surprise Me Button Logic
-if (surpriseBtn) {
-    surpriseBtn.addEventListener("click", () => {
-        if (allProjectsData.length > 0) {
-            const randomIndex = Math.floor(Math.random() * allProjectsData.length);
-            const randomProject = allProjectsData[randomIndex];
-            // Open project link
-            window.open(randomProject.link, "_self");
-        }
-    });
-}
-
-// Render project cards based on search text, category filter, sorting option,
-// and pagination state
 function renderProjects() {
+    if (!projectsContainer) projectsContainer = document.querySelector(".projects-container");
     if (!projectsContainer) return;
 
     let filteredProjects = [...allProjectsData];
 
-    // ===============================
-    // Architecture: Use ProjectVisibilityEngine for Search Filtering
-    // ===============================
-    // Instead of inline search logic, we delegate to the engine
-    // The engine returns IDs of visible projects based on search query
-    // We then filter our data array to match these IDs
-    // This enables:
-    // 1. Complex search algorithms without cluttering this function
-    // 2. Easy A/B testing of different search strategies
-    // 3. Consistent search behavior across multiple UI components
     if (visibilityEngine) {
-        const visibleProjectIds = visibilityEngine.getVisibleProjects();
-        const visibleIdSet = new Set(visibleProjectIds);
+        // Corrected method name: getFilteredProjects returns the array of project objects
+        const visibleProjects = visibilityEngine.getFilteredProjects();
+        const visibleIdSet = new Set(visibleProjects.map(p => p.title));
+
         filteredProjects = filteredProjects.filter(project =>
             visibleIdSet.has(project.title)
         );
     }
 
-    // Filter projects based on selected category
-    // Note: This will be migrated to the engine in Phase 2
     if (currentCategory !== "all") {
         filteredProjects = filteredProjects.filter(
             (project) => project.category === currentCategory
         );
     }
 
-    // Sort projects according to the selected sorting option
-    // Note: This will be migrated to the engine in Phase 2
+    // Robust sorting logic
     switch (currentSort) {
+        case "default":
         case "az":
-            filteredProjects.sort((a, b) => a.title.localeCompare(b.title));
+            filteredProjects.sort((a, b) => {
+                const titleA = (a.title || "").toLowerCase();
+                const titleB = (b.title || "").toLowerCase();
+                return titleA.localeCompare(titleB);
+            });
             break;
         case "za":
-            filteredProjects.sort((a, b) => b.title.localeCompare(a.title));
+            filteredProjects.sort((a, b) => {
+                const titleA = (a.title || "").toLowerCase();
+                const titleB = (b.title || "").toLowerCase();
+                return titleB.localeCompare(titleA);
+            });
             break;
         case "newest":
             filteredProjects.reverse();
             break;
     }
 
-    // Calculate pagination values and slice project list accordingly
     const totalItems = filteredProjects.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const start = (currentPage - 1) * itemsPerPage;
     const paginatedItems = filteredProjects.slice(start, start + itemsPerPage);
 
-    // Display empty state message if no projects match the criteria
     projectsContainer.innerHTML = "";
 
     if (paginatedItems.length === 0) {
@@ -356,14 +329,12 @@ function renderProjects() {
         return;
     }
 
-    // Render cards with stagger animation
     paginatedItems.forEach((project, index) => {
         const card = document.createElement("a");
         card.href = project.link;
         card.className = "card";
         card.setAttribute("data-category", project.category);
 
-        // Cover style
         let coverAttr = "";
         if (project.coverClass) {
             coverAttr = `class="card-cover ${project.coverClass}"`;
@@ -373,32 +344,27 @@ function renderProjects() {
             coverAttr = `class="card-cover"`;
         }
 
-        // Tech stack
-        const techStackHtml = project.tech.map((t) => `<span>${t}</span>`).join("");
+        const techStackHtml = (project.tech || []).map((t) => `<span>${t}</span>`).join("");
 
-        // Check if project is bookmarked
         const isBookmarked = window.bookmarksManager && window.bookmarksManager.isBookmarked(project.title);
         const bookmarkClass = isBookmarked ? 'bookmarked' : '';
         const bookmarkIcon = isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
 
         card.innerHTML = `
-            <button class="bookmark-btn ${bookmarkClass}" data-project-title="${escapeHtml(project.title)}" aria-label="${isBookmarked ? 'Remove bookmark' : 'Add bookmark'}">
+            <button class="bookmark-btn ${bookmarkClass}" data-project-title="${escapeHtml(project.title || '')}" aria-label="${isBookmarked ? 'Remove bookmark' : 'Add bookmark'}">
                 <i class="${bookmarkIcon}"></i>
             </button>
             <div ${coverAttr}><i class="${project.icon}"></i></div>
             <div class="card-content">
                 <div class="card-header-flex">
                     <h3 class="card-heading">${project.title}</h3>
-                    <span class="category-tag">${capitalize(
-            project.category
-        )}</span>
+                    <span class="category-tag">${capitalize(project.category)}</span>
                 </div>
                 <p class="card-description">${project.description}</p>
                 <div class="card-tech">${techStackHtml}</div>
             </div>
         `;
 
-        // Add bookmark button click handler
         const bookmarkBtn = card.querySelector('.bookmark-btn');
         bookmarkBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -406,7 +372,6 @@ function renderProjects() {
             handleBookmarkClick(bookmarkBtn, project);
         });
 
-        // Stagger animation
         card.style.opacity = "0";
         card.style.transform = "translateY(20px)";
         projectsContainer.appendChild(card);
@@ -418,50 +383,65 @@ function renderProjects() {
         }, index * 50);
     });
 
-    // Render pagination controls and handle page navigation
     renderPagination(totalPages);
 }
 
-// Capitalize the first letter of a given string
+// Updates the project count displayed on category filter buttons
+function updateCategoryCounts() {
+    if (!filterBtns) return;
+    const counts = {};
+
+    // We calculate counts based on allProjectsData source of truth
+    allProjectsData.forEach(p => {
+        const cat = p.category;
+        counts[cat] = (counts[cat] || 0) + 1;
+    });
+
+    filterBtns.forEach(btn => {
+        const cat = btn.dataset.filter;
+        if (cat === "all") {
+            btn.innerText = `All (${allProjectsData.length})`;
+        } else {
+            btn.innerText = `${cat.charAt(0).toUpperCase() + cat.slice(1)} (${counts[cat] || 0})`;
+        }
+    });
+}
+
+
+// ===============================
+// Helpers
+// ===============================
+
 function capitalize(str) {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// Escape HTML to prevent XSS
 function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
 }
 
-// Handle bookmark button click
 function handleBookmarkClick(btn, project) {
     if (!window.bookmarksManager) return;
-    
+
     const isNowBookmarked = window.bookmarksManager.toggleBookmark(project);
     const icon = btn.querySelector('i');
-    
-    // Update button state
+
     btn.classList.toggle('bookmarked', isNowBookmarked);
     icon.className = isNowBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
     btn.setAttribute('aria-label', isNowBookmarked ? 'Remove bookmark' : 'Add bookmark');
-    
-    // Add animation
+
     btn.classList.add('animate');
     setTimeout(() => btn.classList.remove('animate'), 300);
-    
-    // Show toast notification
     showBookmarkToast(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
 }
 
-// Show toast notification
 function showBookmarkToast(message) {
-    // Remove existing toast
     const existingToast = document.querySelector('.bookmark-toast');
     if (existingToast) existingToast.remove();
-    
-    // Create toast
+
     const toast = document.createElement('div');
     toast.className = 'bookmark-toast';
     toast.innerHTML = `
@@ -469,22 +449,17 @@ function showBookmarkToast(message) {
         <span>${message}</span>
     `;
     document.body.appendChild(toast);
-    
-    // Show toast
     setTimeout(() => toast.classList.add('show'), 10);
-    
-    // Hide and remove toast
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
     }, 2000);
 }
 
-// ===============================
-// Pagination
-// ===============================
-
 function renderPagination(totalPages) {
+    if (!paginationContainer) {
+        paginationContainer = document.getElementById("pagination-controls");
+    }
     if (!paginationContainer) return;
 
     paginationContainer.innerHTML = "";
@@ -499,7 +474,6 @@ function renderPagination(totalPages) {
         return btn;
     };
 
-    // Create previous page navigation button
     paginationContainer.appendChild(
         createBtn('<i class="ri-arrow-left-s-line"></i>', currentPage === 1, () => {
             currentPage--;
@@ -508,7 +482,6 @@ function renderPagination(totalPages) {
         })
     );
 
-    // Page numbers (with ellipsis for many pages)
     const maxVisible = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
     let endPage = Math.min(totalPages, startPage + maxVisible - 1);
@@ -566,7 +539,6 @@ function renderPagination(totalPages) {
         );
     }
 
-    // Create next page navigation button
     paginationContainer.appendChild(
         createBtn(
             '<i class="ri-arrow-right-s-line"></i>',
@@ -587,52 +559,26 @@ function scrollToProjects() {
     }
 }
 
-// ===============================
-// Init
-// ===============================
-
-updateCategoryCounts();
-
-console.log(
-    "%cWant to contribute? https://github.com/YadavAkhileshh/OpenPlayground",
-    "color:#8b5cf6;font-size:14px"
-);
-
-
-// ===============================
-// Hall of Contributors Logic
-// ===============================
-
-const contributorsGrid = document.getElementById("contributors-grid");
-
-// Fetch GitHub contributors and display them in the contributors section
 async function fetchContributors() {
+    if (!contributorsGrid) contributorsGrid = document.getElementById("contributors-grid");
     if (!contributorsGrid) return;
 
     try {
         const response = await fetch(
             "https://api.github.com/repos/YadavAkhileshh/OpenPlayground/contributors"
         );
-
-        if (!response.ok) {
-            throw new Error("Failed to fetch contributors");
-        }
-
+        if (!response.ok) throw new Error("Failed to fetch contributors");
         const contributors = await response.json();
 
-        // Update contributor count in hero
         const contributorCount = document.getElementById("contributor-count");
         if (contributorCount) {
             contributorCount.textContent = `${contributors.length}+`;
         }
 
         contributorsGrid.innerHTML = "";
-
         contributors.forEach((contributor, index) => {
             const card = document.createElement("div");
             card.className = "contributor-card";
-
-            // Determine if this is a developer (>50 contributions)
             const isDeveloper = contributor.contributions > 50;
             const badgeHTML = isDeveloper
                 ? `<span class="contributor-badge developer-badge"><i class="ri-code-s-slash-line"></i> Developer</span>`
@@ -654,11 +600,9 @@ async function fetchContributors() {
                 </a>
             `;
 
-            // Stagger animation
             card.style.opacity = "0";
             card.style.transform = "translateY(20px)";
             contributorsGrid.appendChild(card);
-
             setTimeout(() => {
                 card.style.transition = "opacity 0.4s ease, transform 0.4s ease";
                 card.style.opacity = "1";
@@ -666,7 +610,6 @@ async function fetchContributors() {
             }, index * 30);
         });
     } catch (error) {
-        // Show fallback message if contributors cannot be loaded
         console.error("Error fetching contributors:", error);
         contributorsGrid.innerHTML = `
             <div class="loading-msg">
@@ -681,129 +624,20 @@ async function fetchContributors() {
     }
 }
 
-// ===============================
-// Smooth Scroll for Anchor Links
-// ===============================
-
-document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-    // Enable smooth scrolling behavior for internal anchor links
-    anchor.addEventListener("click", function (e) {
-        const targetId = this.getAttribute("href");
-        if (targetId === "#") return;
-
-        const target = document.querySelector(targetId);
-        if (target) {
-            e.preventDefault();
-            target.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-            });
-        }
-    });
-});
-
-// ===============================
-// Initialize
-// ===============================
-
-// Wait for all components to be loaded before initializing
-// The components.js dispatches a 'componentLoaded' event when each component is loaded
-let componentsLoaded = 0;
-const totalComponents = 6; // header, hero, projects, contribute, footer, chatbot
-
-document.addEventListener('componentLoaded', (e) => {
-    componentsLoaded++;
-    console.log(`✅ Component loaded: ${e.detail.component} (${componentsLoaded}/${totalComponents})`);
-
-    // Once all components are loaded, initialize the app
-    if (componentsLoaded === totalComponents) {
-        console.log('🎉 All components loaded! Initializing app...');
-        initializeApp();
-    }
-});
-
-// Also add a fallback timeout in case event doesn't fire
-setTimeout(() => {
-    if (componentsLoaded < totalComponents) {
-        console.log('⏰ Timeout reached, initializing app anyway...');
-        initializeApp();
-    }
-}, 3000);
-
-function initializeApp() {
-    // Initialize project data
-    fetchProjects();
-
-    console.log('🚀 OpenPlayground app initialized!');
-}
-
-// Console message
-console.log(
-    "%c🚀 Want to contribute? https://github.com/YadavAkhileshh/OpenPlayground",
-    "color: #6366f1; font-size: 14px; font-weight: bold;"
-);
-
-feat / your - feature
-// ================= CATEGORY FILTERING FOR PROJECTS =================
-document.addEventListener("DOMContentLoaded", () => {
-    const filterButtons = document.querySelectorAll(".filter-btn");
-    const projectCards = document.querySelectorAll(".projects-container .card");
-    const emptyState = document.getElementById("empty-state");
-
-    filterButtons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-            // Active button UI
-            filterButtons.forEach((b) => b.classList.remove("active"));
-            btn.classList.add("active");
-
-            const selectedCategory = btn.dataset.filter;
-            let visibleCount = 0;
-
-            projectCards.forEach((card) => {
-                const cardCategory = card.dataset.category;
-
-                if (
-                    selectedCategory === "all" ||
-                    cardCategory === selectedCategory
-                ) {
-                    card.style.display = "block";
-                    visibleCount++;
-                } else {
-                    card.style.display = "none";
-                }
-            });
-
-            // Empty state handling
-            if (emptyState) {
-                emptyState.style.display = visibleCount === 0 ? "block" : "none";
-            }
-        });
-    });
-});
-
-
-// --- 1. Navbar Scroll Logic ---
-const navbar = document.getElementById('navbar');
-window.addEventListener('scroll', () => {
-    if (window.scrollY > 50) {
-        navbar.classList.add('scrolled');
-    } else {
-        navbar.classList.remove('scrolled');
-    }
-});
-
-// --- 2. Fade Up Animation Trigger ---
+// Smooth Scroll for Anchor Links (re-initialized)
 document.addEventListener('DOMContentLoaded', () => {
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-                observer.unobserve(entry.target);
+    // This part might run before components are loaded, but header anchors are dynamic.
+    // So better keep the logic in components.js which initializeSmoothScrolling.
+    // But we keep this for static anchors if any.
+    document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+            const targetId = this.getAttribute("href");
+            if (targetId === "#") return;
+            const target = document.querySelector(targetId);
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({ behavior: "smooth", block: "start" });
             }
         });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('.fade-up').forEach(el => {
-        observer.observe(el);
     });
 });

@@ -51,7 +51,7 @@ class ProjectsLoader {
     async init() {
         this.showSkeletonCards();
         await this.loadProjects();
-        this.renderProjects();
+        this.applyFilters();
         this.setupEventListeners();
         this.setupPagination();
     }
@@ -299,11 +299,12 @@ class ProjectsLoader {
         const sorted = [...projects];
         
         switch (this.currentSort) {
+            case 'default':
             case 'az':
-                sorted.sort((a, b) => a.title.localeCompare(b.title));
+                sorted.sort((a, b) => a.title.toLowerCase().localeCompare(b.title.toLowerCase()));
                 break;
             case 'za':
-                sorted.sort((a, b) => b.title.localeCompare(a.title));
+                sorted.sort((a, b) => b.title.toLowerCase().localeCompare(a.title.toLowerCase()));
                 break;
             case 'newest':
                 // Reverse order (newest first, assuming JSON is ordered oldest to newest)
