@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Burnout Meter</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        
+        :root {
+            --primary: #4a6fa5;
+            --primary-light: #6b8cbc;
+            --secondary: #8a9bb2;
+            --accent: #ff9a76;
+            --light: #f8f9fa;
+            --dark: #333;
+            --gray: #7a7a7a;
+            --shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            --border-radius: 16px;
+            --transition: all 0.3s ease;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 300;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--gray);
+            font-weight: 400;
+            margin-bottom: 25px;
+        }
+        
+        .meter-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        @media (max-width: 768px) {
+            .meter-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            color: var(--primary);
+            font-size: 1.3rem;
+        }
+        
+        .card-title i {
+            margin-right: 12px;
+            font-size: 1.5rem;
+        }
+        
+        .progress-container {
+            margin-bottom: 30px;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            color: var(--gray);
+        }
+        
+        .progress-bar {
+            height: 12px;
+            background-color: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary-light), var(--primary));
+            border-radius: 6px;
+            transition: width 1s ease;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 300;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+        
+        .burnout-meter {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .meter-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient(#4CAF50 0%, #FFC107 50%, #FF5722 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .meter-circle::before {
+            content: '';
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            background: white;
+            border-radius: 50%;
+        }
+        
+        .meter-value {
+            position: relative;
+            z-index: 2;
+            font-size: 3.5rem;
+            font-weight: 300;
+            color: var(--dark);
+        }
+        
+        .meter-label {
+            font-size: 1.2rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .reflection-message {
+            text-align: center;
+            font-size: 1.3rem;
+            line-height: 1.5;
+            color: var(--dark);
+            padding: 25px;
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+            margin-top: 30px;
+            transition: var(--transition);
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 40px;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-light);
+        }
+        
+        .btn-secondary {
+            background-color: #e9ecef;
+            color: var(--dark);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #dde1e6;
+        }
+        
+        .btn i {
+            margin-right: 8px;
+        }
+        
+        .session-info {
+            text-align: center;
+            color: var(--gray);
+            font-size: 0.95rem;
+            margin-top: 15px;
+        }
+        
+        .footer {
+            text-align: center;
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            width: 100%;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+        }
+        
+        .loading-dots {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .loading-dots div {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            animation: bounce 1.5s infinite ease-in-out;
+        }
+        
+        .loading-dots div:nth-child(1) {
+            animation-delay: -0.3s;
+        }
+        
+        .loading-dots div:nth-child(2) {
+            animation-delay: -0.15s;
+        }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        
+        .active-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: #4CAF50;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Digital Burnout Meter</h1>
+            <p class="subtitle">A gentle tool to help you become aware of your digital interaction patterns</p>
+        </header>
+        
+        <div class="meter-container">
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-chart-line"></i>
+                    <h2>Interaction Metrics</h2>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-label">
+                        <span>Session Progress</span>
+                        <span id="session-time">0:00 / 5:00</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="session-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-label">
+                        <span>Active vs Idle Time</span>
+                        <span id="active-percentage">0% Active</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="active-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="clicks-count">0</div>
+                        <div class="stat-label">Clicks</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="scrolls-count">0</div>
+                        <div class="stat-label">Scrolls</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="tab-switches-count">0</div>
+                        <div class="stat-label">Tab Switches</div>
+                    </div>
+                </div>
+                
+                <div class="session-info">
+                    <span class="active-indicator"></span>
+                    <span id="session-status">Session starting...</span>
+                </div>
+            </div>
+            
+            <div class="card burnout-meter">
+                <div class="card-title">
+                    <i class="fas fa-fire"></i>
+                    <h2>Burnout Score</h2>
+                </div>
+                
+                <div class="meter-circle">
+                    <div class="meter-value" id="burnout-score">0</div>
+                </div>
+                
+                <div class="meter-label" id="burnout-level">Minimal</div>
+                <p id="burnout-description">Your digital activity is calm and balanced.</p>
+            </div>
+        </div>
+        
+        <div class="reflection-message" id="reflection-message">
+            <div class="loading" id="loading-message">
+                <div class="loading-dots">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </div>
+            <div id="final-message" class="hidden">
+                The session is complete. Click "Start New Session" to begin tracking.
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-primary" id="start-btn">
+                <i class="fas fa-play"></i> Start Session
+            </button>
+            <button class="btn btn-secondary" id="reset-btn" disabled>
+                <i class="fas fa-redo"></i> Reset
+            </button>
+        </div>
+        
+        <div class="footer">
+            <p>This tool runs entirely in your browser and doesn't store any personal data. It's designed for self-awareness, not productivity tracking.</p>
+            <p>Session duration: 5 minutes</p>
+        </div>
+    </div>
+
+    <script>
+        // Session Configuration
+        const SESSION_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+        const IDLE_THRESHOLD = 5000; // 5 seconds of inactivity
+        
+        // State variables
+        let sessionStartTime = null;
+        let sessionTimer = null;
+        let lastInteractionTime = null;
+        let activeTime = 0;
+        let idleTime = 0;
+        let isSessionActive = false;
+        let isTabActive = true;
+        
+        // Interaction counters
+        let clickCount = 0;
+        let scrollCount = 0;
+        let tabSwitchCount = 0;
+        
+        // DOM Elements
+        const startBtn = document.getElementById('start-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const sessionTimeEl = document.getElementById('session-time');
+        const sessionProgressEl = document.getElementById('session-progress');
+        const activeProgressEl = document.getElementById('active-progress');
+        const activePercentageEl = document.getElementById('active-percentage');
+        const clicksCountEl = document.getElementById('clicks-count');
+        const scrollsCountEl = document.getElementById('scrolls-count');
+        const tabSwitchesCountEl = document.getElementById('tab-switches-count');
+        const burnoutScoreEl = document.getElementById('burnout-score');
+        const burnoutLevelEl = document.getElementById('burnout-level');
+        const burnoutDescriptionEl = document.getElementById('burnout-description');
+        const sessionStatusEl = document.getElementById('session-status');
+        const loadingMessageEl = document.getElementById('loading-message');
+        const finalMessageEl = document.getElementById('final-message');
+        const reflectionMessageEl = document.getElementById('reflection-message');
+        
+        // Burnout messages based on score
+        const burnoutMessages = [
+            { threshold: 20, level: "Minimal", description: "Your digital activity is calm and balanced.", message: "You're maintaining a healthy digital balance. Keep up the mindful interaction." },
+            { threshold: 40, level: "Low", description: "You're engaging moderately with digital content.", message: "You're engaging with digital content at a moderate pace. Consider taking brief breaks to stretch or look away from the screen." },
+            { threshold: 60, level: "Moderate", description: "You're showing signs of heightened digital activity.", message: "You were fairly active during this session. A short walk or some deep breathing could help reset your focus." },
+            { threshold: 80, level: "High", description: "You're interacting intensely with digital content.", message: "You were highly active during this session. Consider taking a 5-10 minute break away from screens to recharge." },
+            { threshold: 100, level: "Intense", description: "You're experiencing intense digital interaction patterns.", message: "Your interaction patterns suggest digital fatigue. A longer break or engaging in a non-screen activity would be beneficial." }
+        ];
+        
+        // Initialize event listeners
+        function init() {
+            // Start session button
+            startBtn.addEventListener('click', startSession);
+            
+            // Reset button
+            resetBtn.addEventListener('click', resetSession);
+            
+            // Track clicks
+            document.addEventListener('click', trackClick);
+            
+            // Track scrolls (with debouncing to avoid too many events)
+            let scrollTimeout;
+            document.addEventListener('scroll', () => {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(trackScroll, 200);
+            });
+            
+            // Track tab visibility changes
+            document.addEventListener('visibilitychange', trackTabVisibility);
+            
+            // Update UI initially
+            updateUI();
+        }
+        
+        // Start a new session
+        function startSession() {
+            if (isSessionActive) return;
+            
+            // Reset all counters
+            resetCounters();
+            
+            // Set session start time
+            sessionStartTime = Date.now();
+            lastInteractionTime = sessionStartTime;
+            
+            // Start session timer
+            sessionTimer = setInterval(updateSession, 1000);
+            
+            // Update state
+            isSessionActive = true;
+            startBtn.disabled = true;
+            resetBtn.disabled = false;
+            startBtn.innerHTML = '<i class="fas fa-pause"></i> Session Active';
+            
+            // Show loading message
+            loadingMessageEl.classList.remove('hidden');
+            finalMessageEl.classList.add('hidden');
+            
+            // Set initial status
+            sessionStatusEl.textContent = "Session active - tracking interactions...";
+            
+            // Update UI
+            updateUI();
+        }
+        
+        // Reset the session
+        function resetSession() {
+            // Clear timer
+            clearInterval(sessionTimer);
+            
+            // Reset state
+            isSessionActive = false;
+            startBtn.disabled = false;
+            resetBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Start Session';
+            
+            // Update status
+            sessionStatusEl.textContent = "Session reset. Click 'Start Session' to begin.";
+            
+            // Show final message
+            loadingMessageEl.classList.add('hidden');
+            finalMessageEl.classList.remove('hidden');
+            
+            // Reset counters
+            resetCounters();
+            updateUI();
+        }
+        
+        // Reset all counters and state
+        function resetCounters() {
+            clickCount = 0;
+            scrollCount = 0;
+            tabSwitchCount = 0;
+            activeTime = 0;
+            idleTime = 0;
+            sessionStartTime = null;
+            lastInteractionTime = null;
+        }
+        
+        // Update session progress and calculations
+        function updateSession() {
+            if (!isSessionActive || !sessionStartTime) return;
+            
+            const currentTime = Date.now();
+            const elapsedTime = currentTime - sessionStartTime;
+            const sessionProgress = Math.min(elapsedTime / SESSION_DURATION * 100, 100);
+            
+            // Check if user is active (interacted within idle threshold)
+            const timeSinceLastInteraction = currentTime - lastInteractionTime;
+            const isCurrentlyActive = timeSinceLastInteraction < IDLE_THRESHOLD && isTabActive;
+            
+            // Update active and idle time
+            if (isCurrentlyActive) {
+                activeTime += 1000; // Add 1 second (update interval)
+            } else {
+                idleTime += 1000; // Add 1 second (update interval)
+            }
+            
+            // Calculate active percentage
+            const totalTime = activeTime + idleTime;
+            const activePercentage = totalTime > 0 ? (activeTime / totalTime) * 100 : 0;
+            
+            // Update session time display
+            const elapsedMinutes = Math.floor(elapsedTime / 60000);
+            const elapsedSeconds = Math.floor((elapsedTime % 60000) / 1000);
+            const totalMinutes = Math.floor(SESSION_DURATION / 60000);
+            const totalSeconds = Math.floor((SESSION_DURATION % 60000) / 1000);
+            
+            sessionTimeEl.textContent = `${elapsedMinutes}:${elapsedSeconds.toString().padStart(2, '0')} / ${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`;
+            
+            // Update progress bars
+            sessionProgressEl.style.width = `${sessionProgress}%`;
+            activeProgressEl.style.width = `${activePercentage}%`;
+            activePercentageEl.textContent = `${Math.round(activePercentage)}% Active`;
+            
+            // Update status message
+            if (!isTabActive) {
+                sessionStatusEl.textContent = "Tab inactive - session paused";
+            } else if (!isCurrentlyActive) {
+                sessionStatusEl.textContent = "Idle - no recent interactions";
+            } else {
+                sessionStatusEl.textContent = "Active - tracking interactions";
+            }
+            
+            // Calculate and update burnout score
+            updateBurnoutScore();
+            
+            // Check if session is complete
+            if (elapsedTime >= SESSION_DURATION) {
+                endSession();
+            }
+            
+            updateUI();
+        }
+        
+        // Calculate and update burnout score
+        function updateBurnoutScore() {
+            if (!isSessionActive || activeTime + idleTime === 0) {
+                burnoutScoreEl.textContent = "0";
+                burnoutLevelEl.textContent = "Minimal";
+                burnoutDescriptionEl.textContent = "Your digital activity is calm and balanced.";
+                return;
+            }
+            
+            // Calculate score based on:
+            // 1. Active time percentage (higher = more burnout potential)
+            // 2. Interaction frequency (clicks, scrolls, tab switches per minute)
+            const totalTimeMinutes = (activeTime + idleTime) / 60000;
+            const activePercentage = activeTime / (activeTime + idleTime);
+            
+            // Calculate interaction rate (per minute)
+            const interactionRate = (clickCount + scrollCount + tabSwitchCount) / Math.max(totalTimeMinutes, 0.1);
+            
+            // Normalize interaction rate (0-1 scale, assuming >10 per minute is high)
+            const normalizedInteractionRate = Math.min(interactionRate / 10, 1);
+            
+            // Calculate final score (0-100)
+            // Weight: 60% active percentage, 40% interaction rate
+            const burnoutScore = Math.min(
+                Math.round((activePercentage * 60) + (normalizedInteractionRate * 40)),
+                100
+            );
+            
+            // Update burnout score display
+            burnoutScoreEl.textContent = burnoutScore;
+            
+            // Find matching burnout level and description
+            let matchedLevel = burnoutMessages[0];
+            for (const level of burnoutMessages) {
+                if (burnoutScore <= level.threshold) {
+                    matchedLevel = level;
+                    break;
+                }
+            }
+            
+            // Update burnout level and description
+            burnoutLevelEl.textContent = matchedLevel.level;
+            burnoutDescriptionEl.textContent = matchedLevel.description;
+            
+            // Update reflection message if session is complete
+            if (!isSessionActive && finalMessageEl.classList.contains('hidden') === false) {
+                finalMessageEl.textContent = matchedLevel.message;
+            }
+        }
+        
+        // End the current session
+        function endSession() {
+            clearInterval(sessionTimer);
+            isSessionActive = false;
+            startBtn.disabled = false;
+            resetBtn.disabled = false;
+            startBtn.innerHTML = '<i class="fas fa-redo"></i> Restart Session';
+            
+            // Update final message with reflection
+            loadingMessageEl.classList.add('hidden');
+            finalMessageEl.classList.remove('hidden');
+            
+            // Get appropriate message based on final burnout score
+            const burnoutScore = parseInt(burnoutScoreEl.textContent) || 0;
+            let matchedMessage = burnoutMessages[0].message;
+            
+            for (const level of burnoutMessages) {
+                if (burnoutScore <= level.threshold) {
+                    matchedMessage = level.message;
+                    break;
+                }
+            }
+            
+            finalMessageEl.textContent = matchedMessage;
+            sessionStatusEl.textContent = "Session complete. Review your results above.";
+        }
+        
+        // Track click events
+        function trackClick() {
+            if (!isSessionActive || !isTabActive) return;
+            
+            clickCount++;
+            lastInteractionTime = Date.now();
+            updateUI();
+        }
+        
+        // Track scroll events
+        function trackScroll() {
+            if (!isSessionActive || !isTabActive) return;
+            
+            scrollCount++;
+            lastInteractionTime = Date.now();
+            updateUI();
+        }
+        
+        // Track tab visibility changes
+        function trackTabVisibility() {
+            if (document.hidden) {
+                // Tab became inactive
+                isTabActive = false;
+                tabSwitchCount++;
+            } else {
+                // Tab became active
+                isTabActive = true;
+                lastInteractionTime = Date.now();
+            }
+            updateUI();
+        }
+        
+        // Update UI elements with current state
+        function updateUI() {
+            clicksCountEl.textContent = clickCount;
+            scrollsCountEl.textContent = scrollCount;
+            tabSwitchesCountEl.textContent = tabSwitchCount;
+            
+            // Update burnout score in real-time
+            if (isSessionActive) {
+                updateBurnoutScore();
+            }
+        }
+        
+        // Initialize the application
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
