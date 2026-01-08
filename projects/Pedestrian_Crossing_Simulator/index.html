@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedestrian Crossing Simulator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f7ff;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+            background: linear-gradient(135deg, #1a5fb4, #26a269);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .simulator-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .simulation-area {
+            flex: 1;
+            min-width: 300px;
+            background-color: #2c2c2c;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .controls-panel {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .road {
+            height: 400px;
+            background-color: #5a5a5a;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .zebra-crossing {
+            position: absolute;
+            width: 100%;
+            height: 80px;
+            background: repeating-linear-gradient(
+                to right,
+                white,
+                white 30px,
+                transparent 30px,
+                transparent 60px
+            );
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+        
+        .sidewalk {
+            position: absolute;
+            width: 100%;
+            height: 60px;
+            background-color: #a8a8a8;
+            z-index: 2;
+        }
+        
+        .sidewalk.top {
+            top: 0;
+        }
+        
+        .sidewalk.bottom {
+            bottom: 0;
+        }
+        
+        .pedestrian {
+            position: absolute;
+            width: 40px;
+            height: 60px;
+            background-color: #4a6fa5;
+            border-radius: 4px;
+            bottom: 70px;
+            left: 50px;
+            z-index: 5;
+            transition: left 0.3s linear, bottom 0.3s linear;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+        
+        .pedestrian.crossing {
+            animation: walk 1s steps(2) infinite;
+        }
+        
+        @keyframes walk {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0); }
+        }
+        
+        .vehicle {
+            position: absolute;
+            width: 70px;
+            height: 40px;
+            background-color: #e53e3e;
+            border-radius: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+        
+        .vehicle.car2 {
+            background-color: #3182ce;
+            top: 30%;
+        }
+        
+        .vehicle.car3 {
+            background-color: #38a169;
+            top: 70%;
+        }
+        
+        .signal-container {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 140px;
+            background-color: #222;
+            border-radius: 8px;
+            z-index: 4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            padding: 10px 0;
+        }
+        
+        .signal-container.left {
+            left: 20px;
+        }
+        
+        .signal-container.right {
+            right: 20px;
+        }
+        
+        .signal-light {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #444;
+        }
+        
+        .signal-light.red.active {
+            background-color: #f56565;
+            box-shadow: 0 0 15px #f56565;
+        }
+        
+        .signal-light.green.active {
+            background-color: #48bb78;
+            box-shadow: 0 0 15px #48bb78;
+        }
+        
+        .signal-text {
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .controls-panel h2 {
+            color: #1a5fb4;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+        }
+        
+        .control-group h3 {
+            color: #4a5568;
+            margin-bottom: 12px;
+            font-size: 1.2rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: #4299e1;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            background-color: #3182ce;
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn.walk {
+            background-color: #38a169;
+        }
+        
+        .btn.walk:hover {
+            background-color: #2f855a;
+        }
+        
+        .btn.stop {
+            background-color: #e53e3e;
+        }
+        
+        .btn.stop:hover {
+            background-color: #c53030;
+        }
+        
+        .timer-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            color: #2d3748;
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #f7fafc;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .status-safe {
+            background-color: #c6f6d5;
+            color: #22543d;
+            border-left: 5px solid #38a169;
+        }
+        
+        .status-warning {
+            background-color: #fed7d7;
+            color: #742a2a;
+            border-left: 5px solid #e53e3e;
+        }
+        
+        .instructions {
+            background-color: #ebf8ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 5px solid #4299e1;
+        }
+        
+        .instructions h3 {
+            color: #2b6cb0;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .instructions .key {
+            display: inline-block;
+            background-color: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background-color: #f7fafc;
+            border-radius: 8px;
+            min-width: 120px;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-top: 5px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #cbd5e0;
+            color: #718096;
+            font-size: 0.9rem;
+            width: 100%;
+        }
+        
+        @media (max-width: 768px) {
+            .simulator-container {
+                flex-direction: column;
+            }
+            
+            .road {
+                height: 300px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-walking"></i> Pedestrian Crossing Simulator</h1>
+            <p class="tagline">An interactive tool to learn how to safely cross roads using pedestrian signals and zebra crossings</p>
+        </header>
+        
+        <div class="simulator-container">
+            <div class="simulation-area">
+                <div class="road">
+                    <!-- Sidewalks -->
+                    <div class="sidewalk top"></div>
+                    <div class="sidewalk bottom"></div>
+                    
+                    <!-- Zebra crossing -->
+                    <div class="zebra-crossing"></div>
+                    
+                    <!-- Pedestrian signals -->
+                    <div class="signal-container left">
+                        <div class="signal-light red active" id="left-red"></div>
+                        <div class="signal-light green" id="left-green"></div>
+                        <div class="signal-text" id="left-text">STOP</div>
+                    </div>
+                    
+                    <div class="signal-container right">
+                        <div class="signal-light red active" id="right-red"></div>
+                        <div class="signal-light green" id="right-green"></div>
+                        <div class="signal-text" id="right-text">STOP</div>
+                    </div>
+                    
+                    <!-- Pedestrian -->
+                    <div class="pedestrian" id="pedestrian">
+                        <i class="fas fa-male"></i>
+                    </div>
+                    
+                    <!-- Vehicles -->
+                    <div class="vehicle" id="car1">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <div class="vehicle car2" id="car2">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <div class="vehicle car3" id="car3">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                </div>
+                
+                <div class="timer-display" id="timer">
+                    <span id="time-left">30</span>s
+                </div>
+            </div>
+            
+            <div class="controls-panel">
+                <h2><i class="fas fa-sliders-h"></i> Simulation Controls</h2>
+                
+                <div class="control-group">
+                    <h3>Pedestrian Signal</h3>
+                    <button class="btn walk" id="walk-btn">
+                        <i class="fas fa-walking"></i> WALK Signal
+                    </button>
+                    <button class="btn stop" id="stop-btn">
+                        <i class="fas fa-hand-paper"></i> STOP Signal
+                    </button>
+                    <button class="btn" id="auto-btn">
+                        <i class="fas fa-sync-alt"></i> Auto Cycle
+                    </button>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Pedestrian Action</h3>
+                    <button class="btn" id="cross-btn">
+                        <i class="fas fa-person-walking"></i> Cross Now
+                    </button>
+                    <button class="btn" id="wait-btn">
+                        <i class="fas fa-clock"></i> Wait at Curb
+                    </button>
+                    <button class="btn" id="reset-btn">
+                        <i class="fas fa-redo"></i> Reset Simulation
+                    </button>
+                </div>
+                
+                <div class="status-message status-warning" id="status-message">
+                    Press WALK signal button to cross safely
+                </div>
+                
+                <div class="instructions">
+                    <h3><i class="fas fa-info-circle"></i> How to Cross Safely</h3>
+                    <ol>
+                        <li>Wait for the <span class="key">WALK</span> signal before crossing</li>
+                        <li>Check for vehicles even when you have the right of way</li>
+                        <li>Cross only at designated zebra crossings</li>
+                        <li>Don't start crossing if the signal is flashing or shows <span class="key">STOP</span></li>
+                        <li>Continue crossing if the signal changes while you're on the road</li>
+                    </ol>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="safe-crossings">0</div>
+                        <div class="stat-label">Safe Crossings</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="unsafe-attempts">0</div>
+                        <div class="stat-label">Unsafe Attempts</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="total-simulations">0</div>
+                        <div class="stat-label">Total Simulations</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Pedestrian Crossing Simulator &copy; 2023 | Designed for road safety education</p>
+            <p>This simulator demonstrates proper pedestrian crossing procedures at signal-controlled intersections.</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const pedestrian = document.getElementById('pedestrian');
+        const car1 = document.getElementById('car1');
+        const car2 = document.getElementById('car2');
+        const car3 = document.getElementById('car3');
+        const leftRed = document.getElementById('left-red');
+        const leftGreen = document.getElementById('left-green');
+        const rightRed = document.getElementById('right-red');
+        const rightGreen = document.getElementById('right-green');
+        const leftText = document.getElementById('left-text');
+        const rightText = document.getElementById('right-text');
+        const timerElement = document.getElementById('time-left');
+        const statusMessage = document.getElementById('status-message');
+        const safeCrossingsElement = document.getElementById('safe-crossings');
+        const unsafeAttemptsElement = document.getElementById('unsafe-attempts');
+        const totalSimulationsElement = document.getElementById('total-simulations');
+        
+        // Buttons
+        const walkBtn = document.getElementById('walk-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const autoBtn = document.getElementById('auto-btn');
+        const crossBtn = document.getElementById('cross-btn');
+        const waitBtn = document.getElementById('wait-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        
+        // Simulation state
+        let state = {
+            signal: 'STOP', // 'WALK' or 'STOP'
+            pedestrianCrossing: false,
+            pedestrianPosition: 'curb', // 'curb', 'crossing', 'otherside'
+            timer: 30,
+            timerInterval: null,
+            autoMode: false,
+            vehiclesMoving: true,
+            safeCrossings: 0,
+            unsafeAttempts: 0,
+            totalSimulations: 0
+        };
+        
+        // Initialize simulation
+        function initSimulation() {
+            // Set initial positions
+            pedestrian.style.left = '50px';
+            pedestrian.style.bottom = '70px';
+            pedestrian.classList.remove('crossing');
+            
+            car1.style.left = '800px';
+            car2.style.left = '400px';
+            car3.style.left = '1000px';
+            
+            // Set initial signal state
+            setSignal('STOP');
+            
+            // Start vehicle movement
+            moveVehicles();
+            
+            // Update stats
+            updateStats();
+            
+            // Update status message
+            updateStatusMessage();
+            
+            // Start timer
+            startTimer();
+        }
+        
+        // Set pedestrian signal state
+        function setSignal(signal) {
+            state.signal = signal;
+            
+            if (signal === 'WALK') {
+                // Activate walk signal
+                leftRed.classList.remove('active');
+                leftGreen.classList.add('active');
+                rightRed.classList.remove('active');
+                rightGreen.classList.add('active');
+                leftText.textContent = 'WALK';
+                rightText.textContent = 'WALK';
+                
+                // Stop vehicles
+                state.vehiclesMoving = false;
+                stopVehicles();
+                
+                // Update status
+                statusMessage.textContent = 'WALK signal is on. You may cross now.';
+                statusMessage.className = 'status-message status-safe';
+                
+                // Reset timer to walking time
+                state.timer = 15;
+                updateTimerDisplay();
+                
+            } else {
+                // Activate stop signal
+                leftRed.classList.add('active');
+                leftGreen.classList.remove('active');
+                rightRed.classList.add('active');
+                rightGreen.classList.remove('active');
+                leftText.textContent = 'STOP';
+                rightText.textContent = 'STOP';
+                
+                // Start vehicles
+                state.vehiclesMoving = true;
+                moveVehicles();
+                
+                // Update status
+                if (state.pedestrianCrossing) {
+                    statusMessage.textContent = 'Signal changed to STOP! Finish crossing carefully.';
+                    statusMessage.className = 'status-message status-warning';
+                } else {
+                    statusMessage.textContent = 'STOP signal is on. Wait for WALK signal.';
+                    statusMessage.className = 'status-message status-warning';
+                }
+                
+                // Reset timer to stop time
+                state.timer = 30;
+                updateTimerDisplay();
+            }
+        }
+        
+        // Move vehicles across the road
+        function moveVehicles() {
+            if (!state.vehiclesMoving) return;
+            
+            // Reset car positions if they've moved off screen
+            if (parseInt(car1.style.left) < -100) car1.style.left = '1000px';
+            if (parseInt(car2.style.left) < -100) car2.style.left = '1000px';
+            if (parseInt(car3.style.left) < -100) car3.style.left = '1000px';
+            
+            // Move cars left
+            let car1Pos = parseInt(car1.style.left) || 800;
+            let car2Pos = parseInt(car2.style.left) || 400;
+            let car3Pos = parseInt(car3.style.left) || 1000;
+            
+            car1.style.left = (car1Pos - 2) + 'px';
+            car2.style.left = (car2Pos - 3) + 'px';
+            car3.style.left = (car3Pos - 2.5) + 'px';
+            
+            // Continue animation if vehicles should be moving
+            if (state.vehiclesMoving) {
+                requestAnimationFrame(moveVehicles);
+            }
+        }
+        
+        // Stop vehicles
+        function stopVehicles() {
+            // Vehicles will stop naturally because moveVehicles won't be called
+            // when state.vehiclesMoving is false
+        }
+        
+        // Pedestrian attempts to cross
+        function crossRoad() {
+            if (state.pedestrianCrossing) return; // Already crossing
+            
+            // Check if crossing is safe
+            if (state.signal === 'WALK') {
+                // Safe crossing
+                state.safeCrossings++;
+                state.pedestrianCrossing = true;
+                pedestrian.classList.add('crossing');
+                
+                // Animate pedestrian crossing
+                let startPos = 50;
+                const crossingInterval = setInterval(() => {
+                    startPos += 2;
+                    pedestrian.style.left = startPos + 'px';
+                    
+                    // Check if reached the other side
+                    if (startPos >= 850) {
+                        clearInterval(crossingInterval);
+                        state.pedestrianCrossing = false;
+                        pedestrian.classList.remove('crossing');
+                        state.pedestrianPosition = 'otherside';
+                        
+                        // Reset pedestrian after a delay
+                        setTimeout(() => {
+                            pedestrian.style.left = '50px';
+                            pedestrian.style.bottom = '70px';
+                            state.pedestrianPosition = 'curb';
+                        }, 2000);
+                    }
+                }, 50);
+                
+                statusMessage.textContent = 'Safe crossing! You followed the rules correctly.';
+                statusMessage.className = 'status-message status-safe';
+                
+            } else {
+                // Unsafe crossing attempt
+                state.unsafeAttempts++;
+                
+                // Show danger - move pedestrian a little then reset
+                state.pedestrianCrossing = true;
+                pedestrian.classList.add('crossing');
+                
+                let startPos = 50;
+                const unsafeInterval = setInterval(() => {
+                    startPos += 3;
+                    pedestrian.style.left = startPos + 'px';
+                    
+                    // Check if pedestrian is in danger zone (near moving cars)
+                    if (startPos > 200 && startPos < 600) {
+                        // Show danger by briefly stopping pedestrian
+                        clearInterval(unsafeInterval);
+                        setTimeout(() => {
+                            // Return pedestrian to curb
+                            const returnInterval = setInterval(() => {
+                                startPos -= 4;
+                                pedestrian.style.left = startPos + 'px';
+                                
+                                if (startPos <= 50) {
+                                    clearInterval(returnInterval);
+                                    state.pedestrianCrossing = false;
+                                    pedestrian.classList.remove('crossing');
+                                }
+                            }, 40);
+                        }, 500);
+                    }
+                    
+                    // Stop if pedestrian goes too far
+                    if (startPos >= 300) {
+                        clearInterval(unsafeInterval);
+                        state.pedestrianCrossing = false;
+                        pedestrian.classList.remove('crossing');
+                        
+                        // Reset pedestrian position
+                        setTimeout(() => {
+                            pedestrian.style.left = '50px';
+                            pedestrian.style.bottom = '70px';
+                        }, 1000);
+                    }
+                }, 40);
+                
+                statusMessage.textContent = 'Unsafe crossing! Never cross on a STOP signal.';
+                statusMessage.className = 'status-message status-warning';
+            }
+            
+            state.totalSimulations++;
+            updateStats();
+        }
+        
+        // Pedestrian waits at curb
+        function waitAtCurb() {
+            if (state.pedestrianCrossing) {
+                statusMessage.textContent = 'Finish crossing if you already started.';
+            } else {
+                pedestrian.style.left = '50px';
+                pedestrian.style.bottom = '70px';
+                state.pedestrianPosition = 'curb';
+                statusMessage.textContent = 'Waiting at curb. Good decision.';
+                statusMessage.className = 'status-message status-safe';
+            }
+        }
+        
+        // Update statistics display
+        function updateStats() {
+            safeCrossingsElement.textContent = state.safeCrossings;
+            unsafeAttemptsElement.textContent = state.unsafeAttempts;
+            totalSimulationsElement.textContent = state.totalSimulations;
+        }
+        
+        // Update status message
+        function updateStatusMessage() {
+            if (state.signal === 'WALK') {
+                statusMessage.textContent = 'WALK signal is on. You may cross now.';
+                statusMessage.className = 'status-message status-safe';
+            } else {
+                if (state.pedestrianCrossing) {
+                    statusMessage.textContent = 'Signal changed to STOP! Finish crossing carefully.';
+                } else {
+                    statusMessage.textContent = 'STOP signal is on. Wait for WALK signal.';
+                }
+                statusMessage.className = 'status-message status-warning';
+            }
+        }
+        
+        // Start timer
+        function startTimer() {
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+            }
+            
+            state.timerInterval = setInterval(() => {
+                state.timer--;
+                updateTimerDisplay();
+                
+                if (state.timer <= 0) {
+                    // Switch signal automatically in auto mode
+                    if (state.autoMode) {
+                        if (state.signal === 'STOP') {
+                            setSignal('WALK');
+                            state.timer = 15; // Walk time
+                        } else {
+                            setSignal('STOP');
+                            state.timer = 30; // Stop time
+                        }
+                    } else {
+                        // Just reset the timer
+                        state.timer = state.signal === 'STOP' ? 30 : 15;
+                    }
+                }
+            }, 1000);
+        }
+        
+        // Update timer display
+        function updateTimerDisplay() {
+            timerElement.textContent = state.timer;
+            
+            // Change color when time is running low
+            if (state.timer <= 5) {
+                timerElement.style.color = '#e53e3e';
+            } else if (state.timer <= 10) {
+                timerElement.style.color = '#d69e2e';
+            } else {
+                timerElement.style.color = '#2d3748';
+            }
+        }
+        
+        // Toggle auto mode
+        function toggleAutoMode() {
+            state.autoMode = !state.autoMode;
+            
+            if (state.autoMode) {
+                autoBtn.innerHTML = '<i class="fas fa-pause"></i> Stop Auto Cycle';
+                autoBtn.style.backgroundColor = '#d69e2e';
+                
+                // Set initial timer for auto cycling
+                state.timer = state.signal === 'STOP' ? 30 : 15;
+                startTimer();
+            } else {
+                autoBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Auto Cycle';
+                autoBtn.style.backgroundColor = '#4299e1';
+            }
+        }
+        
+        // Reset simulation
+        function resetSimulation() {
+            state.safeCrossings = 0;
+            state.unsafeAttempts = 0;
+            state.totalSimulations = 0;
+            state.autoMode = false;
+            
+            autoBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Auto Cycle';
+            autoBtn.style.backgroundColor = '#4299e1';
+            
+            initSimulation();
+        }
+        
+        // Event listeners
+        walkBtn.addEventListener('click', () => {
+            setSignal('WALK');
+            state.autoMode = false;
+            autoBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Auto Cycle';
+            autoBtn.style.backgroundColor = '#4299e1';
+        });
+        
+        stopBtn.addEventListener('click', () => {
+            setSignal('STOP');
+            state.autoMode = false;
+            autoBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Auto Cycle';
+            autoBtn.style.backgroundColor = '#4299e1';
+        });
+        
+        autoBtn.addEventListener('click', toggleAutoMode);
+        
+        crossBtn.addEventListener('click', crossRoad);
+        
+        waitBtn.addEventListener('click', waitAtCurb);
+        
+        resetBtn.addEventListener('click', resetSimulation);
+        
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'w':
+                case 'W':
+                    setSignal('WALK');
+                    break;
+                case 's':
+                case 'S':
+                    setSignal('STOP');
+                    break;
+                case ' ':
+                    crossRoad();
+                    break;
+                case 'a':
+                case 'A':
+                    toggleAutoMode();
+                    break;
+                case 'r':
+                case 'R':
+                    resetSimulation();
+                    break;
+            }
+        });
+        
+        // Initialize the simulation
+        initSimulation();
+    </script>
+</body>
+</html>
