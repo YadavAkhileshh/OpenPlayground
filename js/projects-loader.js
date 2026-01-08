@@ -13,11 +13,43 @@ class ProjectsLoader {
         this.currentFilter = 'all';
         this.currentSort = 'default';
         this.currentSearch = '';
+        this.ratings = {};
         
         this.init();
     }
 
+    showSkeletonCards() {
+        this.container.innerHTML = '';
+        for (let i = 0; i < this.cardsPerPage; i++) {
+            const skeleton = this.createSkeletonCard();
+            this.container.appendChild(skeleton);
+        }
+    }
+
+    createSkeletonCard() {
+        const card = document.createElement('div');
+        card.className = 'card skeleton-card';
+        card.innerHTML = `
+            <div class="card-cover skeleton"></div>
+            <div class="card-content">
+                <div class="card-header-flex">
+                    <div class="skeleton skeleton-title"></div>
+                    <div class="skeleton skeleton-category"></div>
+                </div>
+                <div class="skeleton skeleton-description"></div>
+                <div class="skeleton skeleton-rating"></div>
+                <div class="card-tech">
+                    <span class="skeleton skeleton-tech"></span>
+                    <span class="skeleton skeleton-tech"></span>
+                    <span class="skeleton skeleton-tech"></span>
+                </div>
+            </div>
+        `;
+        return card;
+    }
+
     async init() {
+        this.showSkeletonCards();
         await this.loadProjects();
         this.renderProjects();
         this.setupEventListeners();
@@ -30,6 +62,7 @@ class ProjectsLoader {
             if (!response.ok) throw new Error('Failed to load projects');
             this.projects = await response.json();
             this.filteredProjects = [...this.projects];
+            this.loadRatings();
         } catch (error) {
             console.error('Error loading projects:', error);
             this.container.innerHTML = `
@@ -42,33 +75,171 @@ class ProjectsLoader {
         }
     }
 
+    loadRatings() {
+        const stored = localStorage.getItem('projectRatings');
+        this.ratings = stored ? JSON.parse(stored) : {};
+    }
+
+    saveRatings() {
+        localStorage.setItem('projectRatings', JSON.stringify(this.ratings));
+    }
+
+    getProjectRating(projectTitle) {
+        const key = this.sanitizeKey(projectTitle);
+        const projectRatings = this.ratings[key] || [];
+        if (projectRatings.length === 0) return { average: 0, count: 0 };
+        
+        const sum = projectRatings.reduce((acc, r) => acc + r.rating, 0);
+        return {
+            average: sum / projectRatings.length,
+            count: projectRatings.length
+        };
+    }
+
+    sanitizeKey(title) {
+        return title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    }
+
+    generateStars(rating) {
+        let stars = '';
+        for (let i = 1; i <= 5; i++) {
+            if (i <= rating) {
+                stars += '<i class="ri-star-fill"></i>';
+            } else if (i - 0.5 <= rating) {
+                stars += '<i class="ri-star-half-fill"></i>';
+            } else {
+                stars += '<i class="ri-star-line"></i>';
+            }
+        }
+        return stars;
+    }
+
+    showRatingModal(project) {
+        const modal = document.createElement('div');
+        modal.className = 'rating-modal-overlay';
+        modal.innerHTML = `
+            <div class="rating-modal">
+                <div class="rating-modal-header">
+                    <h3>Rate "${project.title}"</h3>
+                    <button class="rating-modal-close">&times;</button>
+                </div>
+                <div class="rating-modal-body">
+                    <div class="star-rating">
+                        <span class="star" data-rating="1">★</span>
+                        <span class="star" data-rating="2">★</span>
+                        <span class="star" data-rating="3">★</span>
+                        <span class="star" data-rating="4">★</span>
+                        <span class="star" data-rating="5">★</span>
+                    </div>
+                    <textarea placeholder="Leave a review (optional)" class="review-textarea"></textarea>
+                    <button class="submit-rating">Submit Rating</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Star selection
+        const stars = modal.querySelectorAll('.star');
+        let selectedRating = 0;
+        
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                selectedRating = parseInt(star.dataset.rating);
+                stars.forEach((s, i) => {
+                    s.classList.toggle('selected', i < selectedRating);
+                });
+            });
+        });
+        
+        // Close modal
+        modal.querySelector('.rating-modal-close').addEventListener('click', () => {
+            modal.remove();
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+        
+        // Submit rating
+        modal.querySelector('.submit-rating').addEventListener('click', () => {
+            if (selectedRating > 0) {
+                const review = modal.querySelector('.review-textarea').value.trim();
+                this.submitRating(project.title, selectedRating, review);
+                modal.remove();
+                this.renderProjects(); // Re-render to update ratings
+            }
+        });
+    }
+
+    openRandomProject() {
+        if (this.projects.length === 0) return;
+        
+        const randomIndex = Math.floor(Math.random() * this.projects.length);
+        const randomProject = this.projects[randomIndex];
+        
+        // Navigate to the project
+        window.location.href = randomProject.link;
+    }
+
+    submitRating(projectTitle, rating, review) {
+        const key = this.sanitizeKey(projectTitle);
+        if (!this.ratings[key]) {
+            this.ratings[key] = [];
+        }
+        
+        this.ratings[key].push({
+            rating: rating,
+            review: review,
+            timestamp: Date.now()
+        });
+        
+        this.saveRatings();
+    }
+
     createProjectCard(project) {
         const card = document.createElement('a');
         card.href = project.link;
         card.className = 'card';
         card.dataset.category = project.category;
         
-        const techTags = project.tech.map(t => `<span>${t}</span>`).join('');
+        const techTags = project.tech.map(t => `<span>${this.highlightText(t, this.currentSearch)}</span>`).join('');
+        const rating = this.getProjectRating(project.title);
+        const stars = this.generateStars(rating.average);
         
         card.innerHTML = `
             <div class="card-cover" style="${project.coverStyle}">
-                <i class="${project.icon}"></i>
+                <i class="${project.icon}" aria-hidden="true"></i>
             </div>
             <div class="card-content">
                 <div class="card-header-flex">
-                    <h3 class="card-heading">${project.title}</h3>
-                    <span class="category-tag">${this.capitalizeFirst(project.category)}</span>
+                    <h3 class="card-heading">${this.highlightText(project.title, this.currentSearch)}</h3>
+                    <span class="category-tag">${this.capitalizeFirst(this.highlightText(project.category, this.currentSearch))}</span>
                 </div>
-                <p class="card-description">${project.description}</p>
+                <p class="card-description">${this.highlightText(project.description, this.currentSearch)}</p>
+                <div class="card-rating">
+                    <div class="stars">${stars}</div>
+                    <span class="rating-text">${rating.average.toFixed(1)} (${rating.count})</span>
+                </div>
                 <div class="card-tech">${techTags}</div>
             </div>
         `;
         
+        // Add click handler for rating
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.card-rating')) {
+                e.preventDefault();
+                this.showRatingModal(project);
+            }
+        });
+        
         return card;
     }
 
-    capitalizeFirst(str) {
-        return str.charAt(0).toUpperCase() + str.slice(1);
+    highlightText(text, searchTerm) {
+        if (!searchTerm) return text;
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        return text.replace(regex, '<mark>$1</mark>');
     }
 
     renderProjects() {
@@ -138,6 +309,12 @@ class ProjectsLoader {
                 // Reverse order (newest first, assuming JSON is ordered oldest to newest)
                 sorted.reverse();
                 break;
+            case 'rating-high':
+                sorted.sort((a, b) => this.getProjectRating(b.title).average - this.getProjectRating(a.title).average);
+                break;
+            case 'rating-low':
+                sorted.sort((a, b) => this.getProjectRating(a.title).average - this.getProjectRating(b.title).average);
+                break;
             default:
                 break;
         }
@@ -145,13 +322,32 @@ class ProjectsLoader {
         return sorted;
     }
 
+    toggleClearButton() {
+        const searchBox = document.querySelector('.search-box');
+        const hasText = this.currentSearch.length > 0;
+        searchBox.classList.toggle('has-text', hasText);
+    }
+
     setupEventListeners() {
         // Search input
         const searchInput = document.getElementById('project-search');
+        const searchBox = document.querySelector('.search-box');
+        const clearButton = document.getElementById('search-clear');
+        
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 this.currentSearch = e.target.value;
                 this.applyFilters();
+                this.toggleClearButton();
+            });
+        }
+        
+        if (clearButton) {
+            clearButton.addEventListener('click', () => {
+                this.currentSearch = '';
+                searchInput.value = '';
+                this.applyFilters();
+                this.toggleClearButton();
             });
         }
         
@@ -174,6 +370,14 @@ class ProjectsLoader {
                 this.applyFilters();
             });
         });
+        
+        // Random project button
+        const randomBtn = document.getElementById('random-project-btn');
+        if (randomBtn) {
+            randomBtn.addEventListener('click', () => {
+                this.openRandomProject();
+            });
+        }
     }
 
     setupPagination() {

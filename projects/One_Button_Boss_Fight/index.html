@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhythm Boss - One Button Challenge</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #0c0c0c, #1a1a2e);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 800px;
+            max-width: 95%;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #aaa;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        .game-area {
+            background: rgba(30, 30, 46, 0.8);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #4ecdc4;
+        }
+
+        .boss-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 30px;
+        }
+
+        .boss {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 250px;
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            border-radius: 100px 100px 20px 20px;
+            transition: all 0.3s ease;
+        }
+
+        .boss-eye {
+            position: absolute;
+            top: 60px;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .boss-eye-left {
+            left: 40px;
+        }
+
+        .boss-eye-right {
+            right: 40px;
+        }
+
+        .boss-pupil {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: #1a1a2e;
+            border-radius: 50%;
+            top: 12px;
+            left: 12px;
+        }
+
+        .health-bars {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+
+        .health-container {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 10px;
+            border: 2px solid #333;
+        }
+
+        .health-label {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: #4ecdc4;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .health-bar {
+            height: 30px;
+            background: #333;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .health-fill {
+            height: 100%;
+            width: 100%;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        #boss-health {
+            background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+        }
+
+        #player-health {
+            background: linear-gradient(90deg, #4ecdc4, #44a08d);
+        }
+
+        .health-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        .action-zone {
+            height: 150px;
+            background: rgba(20, 20, 35, 0.8);
+            border-radius: 15px;
+            margin: 25px 0;
+            position: relative;
+            border: 3px solid #333;
+            overflow: hidden;
+        }
+
+        .timing-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 100%;
+            background: #4ecdc4;
+            transform: translateX(-50%);
+            box-shadow: 0 0 20px rgba(78, 205, 196, 0.7);
+            border-radius: 10px;
+            transition: left 0.05s linear;
+        }
+
+        .timing-zone {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 33.33%;
+            opacity: 0.3;
+        }
+
+        .attack-zone { 
+            left: 0; 
+            background: #ff6b6b; 
+        }
+        .dodge-zone { 
+            left: 33.33%; 
+            background: #4ecdc4; 
+        }
+        .jump-zone { 
+            left: 66.66%; 
+            background: #ffe66d; 
+        }
+
+        .zone-label {
+            position: absolute;
+            top: 10px;
+            width: 33.33%;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        .attack-label { left: 0; color: #ff6b6b; }
+        .dodge-label { left: 33.33%; color: #4ecdc4; }
+        .jump-label { left: 66.66%; color: #ffe66d; }
+
+        .action-button {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            border: 5px solid #2d7a70;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .action-button:hover {
+            transform: scale(1.05);
+        }
+
+        .action-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-message {
+            height: 60px;
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4ecdc4;
+            text-shadow: 0 2px 10px rgba(78, 205, 196, 0.5);
+            margin: 15px 0;
+        }
+
+        .phase-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 107, 107, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+        }
+
+        .visual-cue {
+            position: absolute;
+            width: 300px;
+            height: 50px;
+            background: rgba(255, 107, 107, 0.9);
+            border-radius: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            top: -70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 2px solid white;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .visual-cue.show {
+            opacity: 1;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+
+        .game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            border-radius: 20px;
+        }
+
+        .game-over-screen h2 {
+            font-size: 3.5rem;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(255, 107, 107, 0.7);
+        }
+
+        .game-over-screen p {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            color: #4ecdc4;
+        }
+
+        .retry-button {
+            padding: 15px 40px;
+            font-size: 1.3rem;
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .retry-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(78, 205, 196, 0.7);
+        }
+
+        .instructions {
+            margin-top: 20px;
+            color: #888;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 1.2rem;
+            color: #ffe66d;
+            background: rgba(255, 230, 109, 0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid #ffe66d;
+        }
+
+        .attack-animation {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: rgba(78, 205, 196, 0.8);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: attackEffect 0.5s ease-out;
+        }
+
+        @keyframes attackEffect {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+
+        .boss-attack {
+            animation: bossAttack 0.3s ease;
+        }
+
+        @keyframes bossAttack {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.1); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Rhythm Boss</h1>
+            <p class="subtitle">One Button. Perfect Timing. Defeat the Boss.</p>
+        </div>
+
+        <div class="game-area">
+            <div class="score">Score: <span id="score-value">0</span></div>
+            <div class="phase-indicator">Phase: <span id="phase-value">1</span></div>
+
+            <div class="boss-container">
+                <div class="visual-cue" id="visual-cue"></div>
+                <div class="boss" id="boss">
+                    <div class="boss-eye boss-eye-left">
+                        <div class="boss-pupil"></div>
+                    </div>
+                    <div class="boss-eye boss-eye-right">
+                        <div class="boss-pupil"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="health-bars">
+                <div class="health-container">
+                    <div class="health-label">Boss Health</div>
+                    <div class="health-bar">
+                        <div class="health-fill" id="boss-health" style="width: 100%">
+                            <div class="health-text">100%</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="health-container">
+                    <div class="health-label">Your Health</div>
+                    <div class="health-bar">
+                        <div class="health-fill" id="player-health" style="width: 100%">
+                            <div class="health-text">100%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-zone">
+                <div class="timing-indicator" id="timing-indicator"></div>
+                <div class="timing-zone attack-zone"></div>
+                <div class="timing-zone dodge-zone"></div>
+                <div class="timing-zone jump-zone"></div>
+                <div class="zone-label attack-label">Attack</div>
+                <div class="zone-label dodge-label">Dodge</div>
+                <div class="zone-label jump-label">Jump</div>
+            </div>
+
+            <div class="game-message" id="game-message">Press the button!</div>
+
+            <button class="action-button" id="action-button">Action</button>
+
+            <div class="game-over-screen" id="game-over-screen">
+                <h2 id="game-over-title">Game Over</h2>
+                <p id="final-score">Score: 0</p>
+                <p id="game-over-message"></p>
+                <button class="retry-button" id="retry-button">Play Again</button>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <p>Timing is everything! The button performs different actions based on where the indicator is:</p>
+            <p>Red Zone: Attack | Blue Zone: Dodge | Yellow Zone: Jump</p>
+            <p>Watch for visual cues to anticipate boss attacks!</p>
+        </div>
+    </div>
+
+    <script>
+        class RhythmBossGame {
+            constructor() {
+                // Game state
+                this.gameActive = true;
+                this.score = 0;
+                this.phase = 1;
+                
+                // Health values
+                this.bossHealth = 100;
+                this.playerHealth = 100;
+                
+                // Timing
+                this.indicatorPosition = 0;
+                this.indicatorSpeed = 2;
+                this.indicatorDirection = 1;
+                
+                // Game elements
+                this.boss = document.getElementById('boss');
+                this.timingIndicator = document.getElementById('timing-indicator');
+                this.actionButton = document.getElementById('action-button');
+                this.visualCue = document.getElementById('visual-cue');
+                this.gameMessage = document.getElementById('game-message');
+                this.gameOverScreen = document.getElementById('game-over-screen');
+                this.retryButton = document.getElementById('retry-button');
+                
+                // Boss attack pattern
+                this.bossAttackTimer = null;
+                this.currentAttack = null;
+                this.attackCooldown = 2000;
+                
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.startGameLoop();
+                this.startBossAttacks();
+                this.updateUI();
+            }
+
+            setupEventListeners() {
+                this.actionButton.addEventListener('click', () => this.handleAction());
+                this.retryButton.addEventListener('click', () => this.restartGame());
+                
+                // Also allow spacebar for accessibility
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space' && this.gameActive) {
+                        e.preventDefault();
+                        this.handleAction();
+                        this.actionButton.classList.add('active');
+                    }
+                });
+                
+                document.addEventListener('keyup', (e) => {
+                    if (e.code === 'Space') {
+                        this.actionButton.classList.remove('active');
+                    }
+                });
+            }
+
+            startGameLoop() {
+                const gameLoop = () => {
+                    if (!this.gameActive) return;
+                    
+                    // Update timing indicator
+                    this.updateTimingIndicator();
+                    
+                    // Update UI
+                    this.updateUI();
+                    
+                    requestAnimationFrame(gameLoop);
+                };
+                
+                gameLoop();
+            }
+
+            startBossAttacks() {
+                const scheduleAttack = () => {
+                    if (!this.gameActive) return;
+                    
+                    const attackDelay = Math.random() * 1000 + 1500;
+                    
+                    this.bossAttackTimer = setTimeout(() => {
+                        if (!this.gameActive) return;
+                        
+                        this.prepareBossAttack();
+                        scheduleAttack();
+                    }, attackDelay);
+                };
+                
+                scheduleAttack();
+            }
+
+            prepareBossAttack() {
+                const attacks = ['attack', 'slam', 'jump'];
+                this.currentAttack = attacks[Math.floor(Math.random() * attacks.length)];
+                
+                // Show visual cue
+                this.visualCue.textContent = `${this.currentAttack.toUpperCase()} INCOMING!`;
+                this.visualCue.classList.add('show');
+                
+                // Schedule actual attack
+                setTimeout(() => {
+                    if (this.gameActive) {
+                        this.executeBossAttack();
+                    }
+                }, 1000);
+            }
+
+            executeBossAttack() {
+                this.visualCue.classList.remove('show');
+                this.boss.classList.add('boss-attack');
+                
+                // Player has a short window to dodge/jump
+                setTimeout(() => {
+                    this.boss.classList.remove('boss-attack');
+                    
+                    // Check if player is in correct zone
+                    const currentZone = this.getCurrentZone();
+                    
+                    if (this.currentAttack === 'attack' && currentZone !== 'dodge') {
+                        this.takePlayerDamage(15);
+                        this.gameMessage.textContent = "Didn't Dodge! -15 HP";
+                        this.gameMessage.style.color = "#ff6b6b";
+                    } 
+                    else if (this.currentAttack === 'slam' && currentZone !== 'jump') {
+                        this.takePlayerDamage(20);
+                        this.gameMessage.textContent = "Didn't Jump! -20 HP";
+                        this.gameMessage.style.color = "#ff6b6b";
+                    }
+                    else if (this.currentAttack === 'jump' && currentZone === 'jump') {
+                        // Jumping during jump attack still causes damage
+                        this.takePlayerDamage(10);
+                        this.gameMessage.textContent = "Jumped but still hit! -10 HP";
+                        this.gameMessage.style.color = "#ff6b6b";
+                    }
+                    else {
+                        this.gameMessage.textContent = "Successfully Avoided!";
+                        this.gameMessage.style.color = "#4ecdc4";
+                        this.score += 50;
+                    }
+                    
+                    setTimeout(() => {
+                        this.gameMessage.style.color = "#4ecdc4";
+                    }, 1000);
+                    
+                }, 300);
+            }
+
+            updateTimingIndicator() {
+                this.indicatorPosition += this.indicatorSpeed * this.indicatorDirection;
+                
+                // Bounce at edges
+                if (this.indicatorPosition >= 100) {
+                    this.indicatorPosition = 100;
+                    this.indicatorDirection = -1;
+                } else if (this.indicatorPosition <= 0) {
+                    this.indicatorPosition = 0;
+                    this.indicatorDirection = 1;
+                }
+                
+                this.timingIndicator.style.left = `${this.indicatorPosition}%`;
+            }
+
+            getCurrentZone() {
+                if (this.indicatorPosition < 33.33) return 'attack';
+                if (this.indicatorPosition < 66.66) return 'dodge';
+                return 'jump';
+            }
+
+            handleAction() {
+                if (!this.gameActive) return;
+                
+                const zone = this.getCurrentZone();
+                
+                switch(zone) {
+                    case 'attack':
+                        this.attackBoss();
+                        break;
+                    case 'dodge':
+                        this.dodge();
+                        break;
+                    case 'jump':
+                        this.jump();
+                        break;
+                }
+                
+                // Visual feedback
+                this.createAttackAnimation();
+            }
+
+            attackBoss() {
+                if (this.currentAttack) {
+                    this.gameMessage.textContent = "Can't attack while boss is attacking!";
+                    this.gameMessage.style.color = "#ffe66d";
+                    return;
+                }
+                
+                const damage = 10 + Math.floor(Math.random() * 5);
+                this.bossHealth -= damage;
+                this.score += 25;
+                
+                this.gameMessage.textContent = `Hit! -${damage} HP`;
+                this.gameMessage.style.color = "#4ecdc4";
+                
+                // Check for phase change
+                if (this.bossHealth <= 66 && this.phase === 1) {
+                    this.phase = 2;
+                    this.indicatorSpeed = 2.5;
+                    this.gameMessage.textContent = "Phase 2! Boss is faster!";
+                } else if (this.bossHealth <= 33 && this.phase === 2) {
+                    this.phase = 3;
+                    this.indicatorSpeed = 3;
+                    this.attackCooldown = 1500;
+                    this.gameMessage.textContent = "Phase 3! Final Stand!";
+                }
+                
+                if (this.bossHealth <= 0) {
+                    this.defeatBoss();
+                }
+            }
+
+            dodge() {
+                this.gameMessage.textContent = "Dodge ready!";
+                this.gameMessage.style.color = "#4ecdc4";
+                this.score += 10;
+            }
+
+            jump() {
+                this.gameMessage.textContent = "Jump ready!";
+                this.gameMessage.style.color = "#ffe66d";
+                this.score += 10;
+            }
+
+            takePlayerDamage(amount) {
+                this.playerHealth -= amount;
+                
+                if (this.playerHealth <= 0) {
+                    this.playerHealth = 0;
+                    this.gameOver();
+                }
+            }
+
+            createAttackAnimation() {
+                const animation = document.createElement('div');
+                animation.classList.add('attack-animation');
+                animation.style.left = `${this.indicatorPosition}%`;
+                animation.style.top = '50%';
+                animation.style.transform = 'translate(-50%, -50%)';
+                
+                document.querySelector('.action-zone').appendChild(animation);
+                
+                setTimeout(() => {
+                    animation.remove();
+                }, 500);
+            }
+
+            updateUI() {
+                // Update health bars
+                document.getElementById('boss-health').style.width = `${this.bossHealth}%`;
+                document.querySelector('#boss-health .health-text').textContent = `${this.bossHealth}%`;
+                
+                document.getElementById('player-health').style.width = `${this.playerHealth}%`;
+                document.querySelector('#player-health .health-text').textContent = `${this.playerHealth}%`;
+                
+                // Update score and phase
+                document.getElementById('score-value').textContent = this.score;
+                document.getElementById('phase-value').textContent = this.phase;
+            }
+
+            defeatBoss() {
+                this.gameActive = false;
+                clearTimeout(this.bossAttackTimer);
+                
+                document.getElementById('game-over-title').textContent = "Victory!";
+                document.getElementById('game-over-message').textContent = "You defeated the Rhythm Boss!";
+                document.getElementById('final-score').textContent = `Final Score: ${this.score}`;
+                this.gameOverScreen.style.display = 'flex';
+            }
+
+            gameOver() {
+                this.gameActive = false;
+                clearTimeout(this.bossAttackTimer);
+                
+                document.getElementById('game-over-title').textContent = "Game Over";
+                document.getElementById('game-over-message').textContent = "The boss was too strong!";
+                document.getElementById('final-score').textContent = `Final Score: ${this.score}`;
+                this.gameOverScreen.style.display = 'flex';
+            }
+
+            restartGame() {
+                this.gameActive = true;
+                this.score = 0;
+                this.phase = 1;
+                this.bossHealth = 100;
+                this.playerHealth = 100;
+                this.indicatorSpeed = 2;
+                this.attackCooldown = 2000;
+                this.currentAttack = null;
+                
+                this.gameOverScreen.style.display = 'none';
+                this.gameMessage.textContent = "Press the button!";
+                this.gameMessage.style.color = "#4ecdc4";
+                
+                this.updateUI();
+                this.startBossAttacks();
+            }
+        }
+
+        // Start the game when page loads
+        window.addEventListener('load', () => {
+            new RhythmBossGame();
+        });
+    </script>
+</body>
+</html>

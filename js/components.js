@@ -7,7 +7,7 @@ class ComponentLoader {
     constructor() {
         this.components = {
             'header': './components/header.html',
-            'hero': './components/hero.html', 
+            'hero': './components/hero.html',
             'projects': './components/projects.html',
             'contribute': './components/contribute.html',
             'contributors': './components/contributors.html',
@@ -31,16 +31,16 @@ class ComponentLoader {
 
             const html = await response.text();
             const target = document.querySelector(targetSelector);
-            
+
             if (!target) {
                 throw new Error(`Target element ${targetSelector} not found`);
             }
 
             target.innerHTML = html;
             this.loadedComponents.add(name);
-            
+
             console.log(`✅ Component ${name} loaded successfully`);
-            
+
             // Trigger custom event for component loaded
             document.dispatchEvent(new CustomEvent('componentLoaded', {
                 detail: { component: name, target: targetSelector }
@@ -48,7 +48,7 @@ class ComponentLoader {
 
         } catch (error) {
             console.error(`❌ Error loading component ${name}:`, error);
-            
+
             // Show fallback content
             const target = document.querySelector(targetSelector);
             if (target) {
@@ -68,7 +68,6 @@ class ComponentLoader {
             { name: 'hero', selector: '#hero-placeholder' },
             { name: 'projects', selector: '#projects-placeholder' },
             { name: 'contribute', selector: '#contribute-placeholder' },
-            { name: 'contributors', selector: '#contributors-placeholder' },
             { name: 'footer', selector: '#footer-placeholder' },
             { name: 'chatbot', selector: '#chatbot-placeholder' }
         ];
@@ -78,20 +77,20 @@ class ComponentLoader {
 
         try {
             // Load components in parallel for better performance
-            const loadPromises = componentMap.map(({ name, selector }) => 
+            const loadPromises = componentMap.map(({ name, selector }) =>
                 this.loadComponent(name, selector)
             );
 
             await Promise.all(loadPromises);
-            
+
             console.log('🎉 All components loaded successfully');
-            
+
             // Hide loading indicator
             this.hideLoadingIndicator();
-            
+
             // Initialize app after all components are loaded
             this.initializeApp();
-            
+
         } catch (error) {
             console.error('❌ Error loading components:', error);
             this.hideLoadingIndicator();
@@ -150,48 +149,48 @@ class ComponentLoader {
     initializeApp() {
         // Initialize theme
         this.initializeTheme();
-        
+
         // Initialize mobile navigation
         this.initializeMobileNav();
-        
+
         // Initialize scroll to top
         this.initializeScrollToTop();
-        
+
         // Initialize chatbot
         this.initializeChatbot();
-        
+
         // Initialize smooth scrolling
         this.initializeSmoothScrolling();
-        
+
         // Initialize project functionality
         if (window.ProjectManager) {
             new window.ProjectManager();
         }
-        
+
         // Initialize contributors
         if (typeof fetchContributors === 'function') {
             fetchContributors();
         }
-        
+
         console.log('🚀 OpenPlayground initialized successfully');
     }
 
     initializeTheme() {
         const themeToggle = document.getElementById('themeToggle');
         const html = document.documentElement;
-        
+
         // Load saved theme
         const savedTheme = localStorage.getItem('theme') || 'light';
         html.setAttribute('data-theme', savedTheme);
-        
+
         if (themeToggle) {
             themeToggle.addEventListener('click', () => {
                 const currentTheme = html.getAttribute('data-theme');
                 const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-                
+
                 html.setAttribute('data-theme', newTheme);
                 localStorage.setItem('theme', newTheme);
-                
+
                 // Add animation
                 themeToggle.style.transform = 'scale(0.9)';
                 setTimeout(() => {
@@ -204,12 +203,12 @@ class ComponentLoader {
     initializeMobileNav() {
         const navToggle = document.getElementById('navToggle');
         const navLinks = document.getElementById('navLinks');
-        
+
         if (navToggle && navLinks) {
             navToggle.addEventListener('click', (e) => {
                 e.stopPropagation();
                 navLinks.classList.toggle('active');
-                
+
                 // Update icon
                 const icon = navToggle.querySelector('i');
                 if (navLinks.classList.contains('active')) {
@@ -220,7 +219,7 @@ class ComponentLoader {
                     document.body.style.overflow = 'auto';
                 }
             });
-            
+
             // Close menu when clicking links
             navLinks.querySelectorAll('a').forEach(link => {
                 link.addEventListener('click', () => {
@@ -229,7 +228,7 @@ class ComponentLoader {
                     document.body.style.overflow = 'auto';
                 });
             });
-            
+
             // Close menu on escape key
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && navLinks.classList.contains('active')) {
@@ -243,7 +242,7 @@ class ComponentLoader {
 
     initializeScrollToTop() {
         const scrollBtn = document.getElementById('scrollToTopBtn');
-        
+
         if (scrollBtn) {
             // Show/hide button based on scroll position
             window.addEventListener('scroll', () => {
@@ -253,7 +252,7 @@ class ComponentLoader {
                     scrollBtn.classList.remove('show');
                 }
             });
-            
+
             // Scroll to top when clicked
             scrollBtn.addEventListener('click', () => {
                 window.scrollTo({
@@ -264,76 +263,76 @@ class ComponentLoader {
         }
     }
 
-    initializeChatbot() {
-        // Initialize chatbot functionality
-        const chatbotBtn = document.querySelector('.chatbot-btn');
-        const chatbot = document.getElementById('chatbot');
-        const chatInput = document.getElementById('chatInput');
-        const chatMessages = document.getElementById('chatMessages');
+    // initializeChatbot() {
+    //     // Initialize chatbot functionality
+    //     const chatbotBtn = document.querySelector('.chatbot-btn');
+    //     const chatbot = document.getElementById('chatbot');
+    //     const chatInput = document.getElementById('chatInput');
+    //     const chatMessages = document.getElementById('chatMessages');
         
-        if (chatbotBtn && chatbot) {
-            // Toggle chatbot
-            window.toggleChatbot = () => {
-                const isVisible = chatbot.style.display === 'flex';
-                chatbot.style.display = isVisible ? 'none' : 'flex';
-            };
+    //     if (chatbotBtn && chatbot) {
+    //         // Toggle chatbot
+    //         window.toggleChatbot = () => {
+    //             const isVisible = chatbot.style.display === 'flex';
+    //             chatbot.style.display = isVisible ? 'none' : 'flex';
+    //         };
             
-            // Send message
-            window.sendChat = () => {
-                if (!chatInput || !chatMessages) return;
+    //         // Send message
+    //         window.sendChat = () => {
+    //             if (!chatInput || !chatMessages) return;
                 
-                const message = chatInput.value.trim();
-                if (!message) return;
+    //             const message = chatInput.value.trim();
+    //             if (!message) return;
                 
-                // Add user message
-                const userMsg = document.createElement('div');
-                userMsg.className = 'user-msg';
-                userMsg.textContent = message;
-                chatMessages.appendChild(userMsg);
+    //             // Add user message
+    //             const userMsg = document.createElement('div');
+    //             userMsg.className = 'user-msg';
+    //             userMsg.textContent = message;
+    //             chatMessages.appendChild(userMsg);
                 
-                chatInput.value = '';
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+    //             chatInput.value = '';
+    //             chatMessages.scrollTop = chatMessages.scrollHeight;
                 
-                // Bot response
-                setTimeout(() => {
-                    const botMsg = document.createElement('div');
-                    botMsg.className = 'bot-msg';
-                    botMsg.textContent = this.getBotResponse(message);
-                    chatMessages.appendChild(botMsg);
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                }, 500);
-            };
+    //             // Bot response
+    //             setTimeout(() => {
+    //                 const botMsg = document.createElement('div');
+    //                 botMsg.className = 'bot-msg';
+    //                 botMsg.textContent = this.getBotResponse(message);
+    //                 chatMessages.appendChild(botMsg);
+    //                 chatMessages.scrollTop = chatMessages.scrollHeight;
+    //             }, 500);
+    //         };
             
-            // Enter key support
-            if (chatInput) {
-                chatInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        window.sendChat();
-                    }
-                });
-            }
-        }
-    }
+    //         // Enter key support
+    //         if (chatInput) {
+    //             chatInput.addEventListener('keypress', (e) => {
+    //                 if (e.key === 'Enter') {
+    //                     window.sendChat();
+    //                 }
+    //             });
+    //         }
+    //     }
+    // }
 
-    getBotResponse(message) {
-        const msg = message.toLowerCase();
+    // getBotResponse(message) {
+    //     const msg = message.toLowerCase();
         
-        if (msg.includes('project')) {
-            return '📁 You can explore projects in the Projects section. Use filters to find specific types!';
-        } else if (msg.includes('contribute')) {
-            return '🤝 Check out the Contribute section for step-by-step instructions on how to add your projects.';
-        } else if (msg.includes('github')) {
-            return '🐙 Visit our GitHub repository to explore the code, open issues, or submit PRs!';
-        } else if (msg.includes('hello') || msg.includes('hi')) {
-            return '👋 Hello! I\'m the OpenPlayground AI. How can I help you today?';
-        } else if (msg.includes('theme')) {
-            return '🎨 You can toggle between dark and light themes using the toggle in the navigation bar!';
-        } else if (msg.includes('help')) {
-            return '🆘 I can help you with: projects, contributing, GitHub, theme, and searching. Just ask!';
-        } else {
-            return 'I\'m not sure about that 🤔. Try asking about projects, contributing, or GitHub!';
-        }
-    }
+    //     if (msg.includes('project')) {
+    //         return '📁 You can explore projects in the Projects section. Use filters to find specific types!';
+    //     } else if (msg.includes('contribute')) {
+    //         return '🤝 Check out the Contribute section for step-by-step instructions on how to add your projects.';
+    //     } else if (msg.includes('github')) {
+    //         return '🐙 Visit our GitHub repository to explore the code, open issues, or submit PRs!';
+    //     } else if (msg.includes('hello') || msg.includes('hi')) {
+    //         return '👋 Hello! I\'m the OpenPlayground AI. How can I help you today?';
+    //     } else if (msg.includes('theme')) {
+    //         return '🎨 You can toggle between dark and light themes using the toggle in the navigation bar!';
+    //     } else if (msg.includes('help')) {
+    //         return '🆘 I can help you with: projects, contributing, GitHub, theme, and searching. Just ask!';
+    //     } else {
+    //         return 'I\'m not sure about that 🤔. Try asking about projects, contributing, or GitHub!';
+    //     }
+    // }
 
     initializeSmoothScrolling() {
         // Smooth scroll for anchor links
@@ -341,13 +340,13 @@ class ComponentLoader {
             anchor.addEventListener('click', function (e) {
                 const targetId = this.getAttribute('href');
                 if (targetId === '#') return;
-                
+
                 const target = document.querySelector(targetId);
                 if (target) {
                     e.preventDefault();
                     const navbarHeight = 75;
                     const targetPosition = target.offsetTop - navbarHeight;
-                    
+
                     window.scrollTo({
                         top: targetPosition,
                         behavior: 'smooth'
