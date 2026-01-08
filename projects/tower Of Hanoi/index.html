@@ -2,43 +2,167 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>OpenPlayground | Tower of Hanoi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tower of Hanoi | OpenPlayground</title>
 
-  <link rel="stylesheet" href="../../style.css">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../../style.css" />
+  <link rel="icon" href="/logo.jpg" type="image/png" />
+  <style>
+    /* Game container */
+    .game-container {
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      height: 400px;
+      margin: 40px auto;
+      max-width: 800px;
+    }
+
+    .rod {
+      width: 150px;
+      height: 100%;
+      background-color: #f0f0f0;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: center;
+      padding: 10px;
+      position: relative;
+    }
+
+    .rod::before {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      width: 10px;
+      height: 100%;
+      background-color: #666;
+      border-radius: 5px;
+    }
+
+    .disk {
+      height: 30px;
+      margin: 5px 0;
+      border-radius: 5px;
+      color: white;
+      text-align: center;
+      line-height: 30px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .disk-1 { background-color: #e74c3c; width: 40px; }
+    .disk-2 { background-color: #3498db; width: 70px; }
+    .disk-3 { background-color: #f1c40f; width: 100px; }
+    .disk-4 { background-color: #2ecc71; width: 130px; }
+
+    .controls {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .controls button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 0 10px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
+  <header>
+    <img src="/logo.jpg" alt="OpenPlayground Logo" class="logo">
+    <div class="heading-text">
+      <h1>OpenPlayground</h1>
+      <p>Learn by Building</p>
+    </div>
+    <button id="theme-toggle" onclick="toggleTheme()">🌙</button>
+  </header>
 
-<header>
-  <img src="/logo.jpg" class="logo">
-  <div class="heading-text">
-    <h1>OpenPlayground</h1>
-    <p>Learn by Building</p>
-  </div>
-  <button onclick="toggleTheme()">🌙</button>
-</header>
+  <main class="tower-game">
+    <h2>🎯 Tower of Hanoi</h2>
+    <div class="game-container">
+      <div class="rod" id="rod-0" data-index="0"></div>
+      <div class="rod" id="rod-1" data-index="1"></div>
+      <div class="rod" id="rod-2" data-index="2"></div>
+    </div>
 
-<h2>Tower of Hanoi</h2>
+    <div class="controls">
+      <button id="start-game">Start Game</button>
+      <button id="reset-game">Reset Game</button>
+      <p>Moves: <span id="move-count">0</span></p>
+    </div>
+  </main>
 
-<div class="hanoi-controls">
-  <label>
-    Disks:
-    <input type="number" id="diskCount" min="1" max="6" value="3">
-  </label>
-  <button onclick="startGame()">Start Game</button>
-  <a href="instructions.html" class="instructions-btn">How to Play</a>
-</div>
+  <script>
+    // Tower of Hanoi Logic
+    document.addEventListener("DOMContentLoaded", () => {
+      const rods = document.querySelectorAll(".rod");
+      const startBtn = document.getElementById("start-game");
+      const resetBtn = document.getElementById("reset-game");
+      const moveCountEl = document.getElementById("move-count");
 
-<p id="moves">Moves: 0</p>
-<p id="status"></p>
+      let moveCount = 0;
+      let selectedDisk = null;
+      let disks = [];
 
-<div class="game">
-  <div class="rod" id="A" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
-  <div class="rod" id="B" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
-  <div class="rod" id="C" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
-</div>
+      // Initialize disks
+      function initDisks() {
+        rods.forEach(rod => rod.innerHTML = "");
+        disks = [
+          { id: 1, width: 40, class: 'disk-1' },
+          { id: 2, width: 70, class: 'disk-2' },
+          { id: 3, width: 100, class: 'disk-3' },
+          { id: 4, width: 130, class: 'disk-4' },
+        ];
 
-<script src="../../script.js"></script>
-<script src="script.js"></script>
+        disks.reverse().forEach(d => {
+          const div = document.createElement("div");
+          div.className = `disk ${d.class}`;
+          div.dataset.size = d.id;
+          div.textContent = d.id;
+          rods[0].appendChild(div);
+        });
+
+        moveCount = 0;
+        moveCountEl.textContent = moveCount;
+      }
+
+      // Click to select and move disk
+      rods.forEach(rod => {
+        rod.addEventListener("click", () => {
+          const topDisk = rod.lastElementChild;
+
+          if (selectedDisk) {
+            // Move logic
+            const targetDisk = rod.lastElementChild;
+            const selectedSize = parseInt(selectedDisk.dataset.size);
+            const targetSize = targetDisk ? parseInt(targetDisk.dataset.size) : Infinity;
+
+            if (selectedSize < targetSize) {
+              rod.appendChild(selectedDisk);
+              moveCount++;
+              moveCountEl.textContent = moveCount;
+              selectedDisk = null;
+
+              // Check win
+              if (rods[2].children.length === disks.length) {
+                alert(`🎉 You solved it in ${moveCount} moves!`);
+              }
+            } else {
+              alert("❌ Can't place larger disk on smaller disk!");
+              selectedDisk = null;
+            }
+          } else if (topDisk) {
+            selectedDisk = topDisk;
+          }
+        });
+      });
+
+      startBtn.addEventListener("click", initDisks);
+      resetBtn.addEventListener("click", initDisks);
+    });
+  </script>
 </body>
 </html>

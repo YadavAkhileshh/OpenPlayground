@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood-Driven Visual Music</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --calm-primary: #4a6fa5;
+            --calm-secondary: #7db1d1;
+            --focus-primary: #3a7d5f;
+            --focus-secondary: #5ca08e;
+            --energy-primary: #c44536;
+            --energy-secondary: #e68a6f;
+            --dark-bg: #121212;
+            --light-bg: #f8f9fa;
+            --text-light: #ffffff;
+            --text-dark: #333333;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background-color 0.5s ease;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #7db1d1, #5ca08e, #e68a6f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+        
+        .accessibility-notice {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 30px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
+            border-left: 4px solid #7db1d1;
+        }
+        
+        .accessibility-notice i {
+            margin-right: 10px;
+            color: #7db1d1;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        
+        .mood-selector {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .mood-btn {
+            padding: 18px 30px;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            min-width: 180px;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            transform: translateY(0);
+        }
+        
+        .mood-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .mood-btn:active {
+            transform: translateY(-2px);
+        }
+        
+        .mood-btn i {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+        
+        #calm-btn {
+            background: linear-gradient(135deg, var(--calm-primary), var(--calm-secondary));
+            color: white;
+        }
+        
+        #focus-btn {
+            background: linear-gradient(135deg, var(--focus-primary), var(--focus-secondary));
+            color: white;
+        }
+        
+        #energy-btn {
+            background: linear-gradient(135deg, var(--energy-primary), var(--energy-secondary));
+            color: white;
+        }
+        
+        .active-mood {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3), 0 12px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .visualizer-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        }
+        
+        .waveform {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 50px;
+        }
+        
+        .wave-bar {
+            width: 12px;
+            margin: 0 4px;
+            background: linear-gradient(to top, var(--calm-secondary), var(--calm-primary));
+            border-radius: 6px 6px 0 0;
+            transform-origin: bottom;
+        }
+        
+        .mood-title {
+            position: absolute;
+            top: 30px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 3.5rem;
+            font-weight: 800;
+            opacity: 0.1;
+            z-index: 1;
+            transition: all 0.8s ease;
+        }
+        
+        .particles-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.7;
+        }
+        
+        .settings {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .setting-group {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            min-width: 250px;
+        }
+        
+        .setting-group h3 {
+            margin-bottom: 15px;
+            color: #7db1d1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .slider-container {
+            margin-bottom: 15px;
+        }
+        
+        .slider-container label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 10px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            background: var(--calm-secondary);
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            background: var(--calm-secondary);
+            border: none;
+        }
+        
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider-switch {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider-switch:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider-switch {
+            background-color: var(--focus-secondary);
+        }
+        
+        input:checked + .slider-switch:before {
+            transform: translateX(30px);
+        }
+        
+        .instructions {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 15px;
+            max-width: 800px;
+            margin: 0 auto 40px;
+        }
+        
+        .instructions h2 {
+            color: #5ca08e;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+            line-height: 1.6;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        @media (max-width: 768px) {
+            .mood-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .mood-btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .visualizer-container {
+                height: 400px;
+            }
+            
+            .mood-title {
+                font-size: 2.5rem;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+        
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            .wave-bar, .particle, .mood-title {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            
+            .mood-btn:hover {
+                transform: none;
+            }
+        }
+        
+        /* High contrast mode */
+        @media (prefers-contrast: high) {
+            .wave-bar, .particle {
+                opacity: 1;
+            }
+            
+            .mood-btn {
+                border: 2px solid white;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Mood-Driven Visual Music</h1>
+            <p class="subtitle">Experience music through animated visuals—no sound required</p>
+            
+            <div class="accessibility-notice">
+                <i class="fas fa-universal-access"></i>
+                <span>This interface is designed to be fully accessible, with no audio required. All "music" is expressed through visual rhythm, color, and motion.</span>
+            </div>
+        </header>
+        
+        <main>
+            <div class="controls">
+                <div class="mood-selector">
+                    <button id="calm-btn" class="mood-btn active-mood">
+                        <i class="fas fa-water"></i> Calm
+                    </button>
+                    <button id="focus-btn" class="mood-btn">
+                        <i class="fas fa-brain"></i> Focus
+                    </button>
+                    <button id="energy-btn" class="mood-btn">
+                        <i class="fas fa-bolt"></i> Energy
+                    </button>
+                </div>
+            </div>
+            
+            <div class="visualizer-container">
+                <div class="mood-title" id="mood-title">CALM</div>
+                
+                <div class="waveform" id="waveform">
+                    <!-- Wave bars will be generated by JavaScript -->
+                </div>
+                
+                <div class="particles-container" id="particles-container">
+                    <!-- Particles will be generated by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="settings">
+                <div class="setting-group">
+                    <h3><i class="fas fa-sliders-h"></i> Visual Settings</h3>
+                    
+                    <div class="slider-container">
+                        <label for="tempo-slider">Tempo & Animation Speed</label>
+                        <input type="range" min="1" max="10" value="5" class="slider" id="tempo-slider">
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label for="intensity-slider">Visual Intensity</label>
+                        <input type="range" min="1" max="10" value="5" class="slider" id="intensity-slider">
+                    </div>
+                    
+                    <div class="toggle-switch">
+                        <span>High Contrast Mode</span>
+                        <label class="switch">
+                            <input type="checkbox" id="contrast-toggle">
+                            <span class="slider-switch"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <h3><i class="fas fa-palette"></i> Color Settings</h3>
+                    
+                    <div class="slider-container">
+                        <label for="hue-slider">Color Hue Shift</label>
+                        <input type="range" min="0" max="360" value="0" class="slider" id="hue-slider">
+                    </div>
+                    
+                    <div class="toggle-switch">
+                        <span>Reduce Motion</span>
+                        <label class="switch">
+                            <input type="checkbox" id="motion-toggle">
+                            <span class="slider-switch"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle-switch">
+                        <span>Dark Mode</span>
+                        <label class="switch">
+                            <input type="checkbox" id="darkmode-toggle" checked>
+                            <span class="slider-switch"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <h2><i class="fas fa-info-circle"></i> How It Works</h2>
+                <ul>
+                    <li>This interface simulates the emotional experience of music using only visual elements.</li>
+                    <li>Select a mood to change the visual rhythm, color palette, and motion patterns.</li>
+                    <li>Each mood has a unique visual signature: <strong>Calm</strong> features gentle waves and cool colors, <strong>Focus</strong> uses rhythmic patterns and green tones, <strong>Energy</strong> creates vibrant bursts and warm colors.</li>
+                    <li>Adjust the sliders to customize tempo, intensity, and color to match your preference.</li>
+                    <li>The interface is designed to be fully accessible with reduced motion and high contrast options.</li>
+                </ul>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Mood-Driven Visual Music UI | A silent, accessibility-friendly music experience | Created with HTML, CSS & JavaScript</p>
+        </footer>
+    </div>
+
+    <script>
+        // Current state
+        let currentMood = 'calm';
+        let animationSpeed = 5;
+        let visualIntensity = 5;
+        let hueShift = 0;
+        let highContrast = false;
+        let reduceMotion = false;
+        let darkMode = true;
+        
+        // DOM Elements
+        const calmBtn = document.getElementById('calm-btn');
+        const focusBtn = document.getElementById('focus-btn');
+        const energyBtn = document.getElementById('energy-btn');
+        const moodTitle = document.getElementById('mood-title');
+        const waveform = document.getElementById('waveform');
+        const particlesContainer = document.getElementById('particles-container');
+        const tempoSlider = document.getElementById('tempo-slider');
+        const intensitySlider = document.getElementById('intensity-slider');
+        const hueSlider = document.getElementById('hue-slider');
+        const contrastToggle = document.getElementById('contrast-toggle');
+        const motionToggle = document.getElementById('motion-toggle');
+        const darkmodeToggle = document.getElementById('darkmode-toggle');
+        
+        // Mood data with visual properties
+        const moods = {
+            calm: {
+                title: "CALM",
+                primaryColor: "#4a6fa5",
+                secondaryColor: "#7db1d1",
+                waveCount: 40,
+                waveHeightMultiplier: 0.7,
+                particleCount: 15,
+                particleSpeed: 1.5,
+                waveAnimation: "calmWave"
+            },
+            focus: {
+                title: "FOCUS",
+                primaryColor: "#3a7d5f",
+                secondaryColor: "#5ca08e",
+                waveCount: 60,
+                waveHeightMultiplier: 0.9,
+                particleCount: 10,
+                particleSpeed: 2.0,
+                waveAnimation: "focusWave"
+            },
+            energy: {
+                title: "ENERGY",
+                primaryColor: "#c44536",
+                secondaryColor: "#e68a6f",
+                waveCount: 80,
+                waveHeightMultiplier: 1.2,
+                particleCount: 25,
+                particleSpeed: 3.0,
+                waveAnimation: "energyWave"
+            }
+        };
+        
+        // Initialize the visualizer
+        function initVisualizer() {
+            createWaveBars();
+            createParticles();
+            updateVisualizer();
+            
+            // Start animation
+            animateVisuals();
+            
+            // Set up event listeners
+            setupEventListeners();
+        }
+        
+        // Create waveform bars
+        function createWaveBars() {
+            waveform.innerHTML = '';
+            const mood = moods[currentMood];
+            
+            for (let i = 0; i < mood.waveCount; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'wave-bar';
+                bar.style.height = `${10 + Math.random() * 30}px`;
+                waveform.appendChild(bar);
+            }
+        }
+        
+        // Create particles
+        function createParticles() {
+            particlesContainer.innerHTML = '';
+            const mood = moods[currentMood];
+            
+            for (let i = 0; i < mood.particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random size between 5 and 20px
+                const size = 5 + Math.random() * 15;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Random position
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                
+                // Random color
+                const colorChoice = Math.random() > 0.5 ? mood.primaryColor : mood.secondaryColor;
+                particle.style.backgroundColor = colorChoice;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Update visualizer based on current settings
+        function updateVisualizer() {
+            const mood = moods[currentMood];
+            
+            // Update title
+            moodTitle.textContent = mood.title;
+            
+            // Calculate adjusted colors based on hue shift
+            const primaryColor = adjustHue(mood.primaryColor, hueShift);
+            const secondaryColor = adjustHue(mood.secondaryColor, hueShift);
+            
+            // Update waveform bars
+            const waveBars = document.querySelectorAll('.wave-bar');
+            waveBars.forEach((bar, index) => {
+                // Calculate color gradient based on position
+                const position = index / waveBars.length;
+                const r = interpolateColor(primaryColor, secondaryColor, position);
+                
+                // Apply color and animation
+                bar.style.background = `linear-gradient(to top, ${secondaryColor}, ${primaryColor})`;
+                
+                // Set animation with current speed
+                const animationDuration = 1 + (10 - animationSpeed) * 0.5;
+                const animationName = reduceMotion ? 'none' : mood.waveAnimation;
+                
+                bar.style.animation = `${animationName} ${animationDuration}s ease-in-out infinite`;
+                bar.style.animationDelay = `${index * 0.05}s`;
+                
+                // Adjust height based on intensity
+                const baseHeight = 10 + Math.random() * 30;
+                const intensityMultiplier = 0.5 + (visualIntensity / 10);
+                bar.style.height = `${baseHeight * intensityMultiplier * mood.waveHeightMultiplier}px`;
+            });
+            
+            // Update particles
+            const particles = document.querySelectorAll('.particle');
+            particles.forEach((particle, index) => {
+                // Calculate color
+                const colorChoice = index % 2 === 0 ? primaryColor : secondaryColor;
+                particle.style.backgroundColor = colorChoice;
+                
+                // Set animation with current speed
+                if (!reduceMotion) {
+                    const animationDuration = 3 + (10 - mood.particleSpeed) * 2;
+                    particle.style.animation = `floatParticle ${animationDuration}s ease-in-out infinite`;
+                    particle.style.animationDelay = `${index * 0.2}s`;
+                } else {
+                    particle.style.animation = 'none';
+                }
+                
+                // Adjust opacity based on contrast setting
+                particle.style.opacity = highContrast ? '1' : '0.7';
+            });
+            
+            // Update container background
+            const visualizerContainer = document.querySelector('.visualizer-container');
+            visualizerContainer.style.background = `linear-gradient(135deg, 
+                rgba(${hexToRgb(primaryColor)}, 0.1), 
+                rgba(${hexToRgb(secondaryColor)}, 0.05))`;
+            
+            // Update mood title color
+            moodTitle.style.color = primaryColor;
+            
+            // Update slider thumb colors
+            document.documentElement.style.setProperty('--calm-secondary', secondaryColor);
+        }
+        
+        // Main animation loop
+        function animateVisuals() {
+            if (reduceMotion) return;
+            
+            // Animate waveform bars with slight random variations
+            const waveBars = document.querySelectorAll('.wave-bar');
+            waveBars.forEach((bar, index) => {
+                // Add subtle random movement
+                const randomOffset = Math.sin(Date.now() / 1000 + index) * 5;
+                bar.style.transform = `scaleY(${1 + (visualIntensity / 100) * Math.sin(Date.now() / (1000 - animationSpeed * 80) + index)}) translateY(${randomOffset}px)`;
+            });
+            
+            // Continue animation
+            requestAnimationFrame(animateVisuals);
+        }
+        
+        // Set up event listeners
+        function setupEventListeners() {
+            // Mood buttons
+            calmBtn.addEventListener('click', () => setMood('calm'));
+            focusBtn.addEventListener('click', () => setMood('focus'));
+            energyBtn.addEventListener('click', () => setMood('energy'));
+            
+            // Sliders
+            tempoSlider.addEventListener('input', () => {
+                animationSpeed = parseInt(tempoSlider.value);
+                updateVisualizer();
+            });
+            
+            intensitySlider.addEventListener('input', () => {
+                visualIntensity = parseInt(intensitySlider.value);
+                updateVisualizer();
+            });
+            
+            hueSlider.addEventListener('input', () => {
+                hueShift = parseInt(hueSlider.value);
+                updateVisualizer();
+            });
+            
+            // Toggles
+            contrastToggle.addEventListener('change', () => {
+                highContrast = contrastToggle.checked;
+                updateVisualizer();
+            });
+            
+            motionToggle.addEventListener('change', () => {
+                reduceMotion = motionToggle.checked;
+                if (reduceMotion) {
+                    document.body.classList.add('reduced-motion');
+                } else {
+                    document.body.classList.remove('reduced-motion');
+                    animateVisuals();
+                }
+                updateVisualizer();
+            });
+            
+            darkmodeToggle.addEventListener('change', () => {
+                darkMode = darkmodeToggle.checked;
+                if (darkMode) {
+                    document.body.style.backgroundColor = 'var(--dark-bg)';
+                    document.body.style.color = 'var(--text-light)';
+                } else {
+                    document.body.style.backgroundColor = 'var(--light-bg)';
+                    document.body.style.color = 'var(--text-dark)';
+                }
+            });
+        }
+        
+        // Set the current mood
+        function setMood(mood) {
+            currentMood = mood;
+            
+            // Update active button
+            document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.remove('active-mood'));
+            
+            if (mood === 'calm') calmBtn.classList.add('active-mood');
+            if (mood === 'focus') focusBtn.classList.add('active-mood');
+            if (mood === 'energy') energyBtn.classList.add('active-mood');
+            
+            // Recreate visual elements for new mood
+            createWaveBars();
+            createParticles();
+            updateVisualizer();
+        }
+        
+        // Color utility functions
+        function adjustHue(hex, hueShift) {
+            // Convert hex to HSL, adjust hue, convert back to hex
+            const rgb = hexToRgb(hex);
+            const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+            hsl.h = (hsl.h + hueShift) % 360;
+            const newRgb = hslToRgb(hsl.h, hsl.s, hsl.l);
+            return rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+        }
+        
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : {r: 0, g: 0, b: 0};
+        }
+        
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+        
+        function rgbToHsl(r, g, b) {
+            r /= 255, g /= 255, b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            
+            if (max === min) {
+                h = s = 0; // achromatic
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            
+            return { h: h * 360, s: s * 100, l: l * 100 };
+        }
+        
+        function hslToRgb(h, s, l) {
+            h /= 360;
+            s /= 100;
+            l /= 100;
+            let r, g, b;
+            
+            if (s === 0) {
+                r = g = b = l; // achromatic
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            
+            return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+        }
+        
+        function interpolateColor(color1, color2, factor) {
+            const rgb1 = hexToRgb(color1);
+            const rgb2 = hexToRgb(color2);
+            
+            const r = Math.round(rgb1.r + (rgb2.r - rgb1.r) * factor);
+            const g = Math.round(rgb1.g + (rgb2.g - rgb1.g) * factor);
+            const b = Math.round(rgb1.b + (rgb2.b - rgb1.b) * factor);
+            
+            return rgbToHex(r, g, b);
+        }
+        
+        // Add CSS animations for waveforms
+        function addWaveAnimations() {
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes calmWave {
+                    0%, 100% { transform: scaleY(1); }
+                    50% { transform: scaleY(1.2); }
+                }
+                
+                @keyframes focusWave {
+                    0%, 100% { transform: scaleY(1); }
+                    25% { transform: scaleY(1.3); }
+                    75% { transform: scaleY(0.9); }
+                }
+                
+                @keyframes energyWave {
+                    0%, 100% { transform: scaleY(1); }
+                    20% { transform: scaleY(1.8); }
+                    40% { transform: scaleY(0.7); }
+                    60% { transform: scaleY(1.4); }
+                    80% { transform: scaleY(0.9); }
+                }
+                
+                @keyframes floatParticle {
+                    0%, 100% { 
+                        transform: translate(0, 0) rotate(0deg); 
+                    }
+                    25% { 
+                        transform: translate(20px, -30px) rotate(90deg); 
+                    }
+                    50% { 
+                        transform: translate(-15px, -50px) rotate(180deg); 
+                    }
+                    75% { 
+                        transform: translate(10px, -20px) rotate(270deg); 
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            addWaveAnimations();
+            initVisualizer();
+        });
+    </script>
+</body>
+</html>
