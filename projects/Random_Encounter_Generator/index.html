@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Encounter Generator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            border-bottom: 2px solid #0f3460;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #4cc9f0, #4361ee);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a9b7c6;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+        
+        .encounter-container {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            margin-bottom: 40px;
+            border: 1px solid #2d3748;
+            transition: all 0.4s ease;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .encounter-type {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.8s ease forwards;
+        }
+        
+        .type-icon {
+            margin-right: 15px;
+            font-size: 2rem;
+        }
+        
+        .peaceful {
+            background-color: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 2px solid #4ade80;
+        }
+        
+        .neutral {
+            background-color: rgba(250, 204, 21, 0.15);
+            color: #facc15;
+            border: 2px solid #facc15;
+        }
+        
+        .dangerous {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 2px solid #ef4444;
+        }
+        
+        .encounter-description {
+            background: rgba(30, 41, 59, 0.7);
+            padding: 30px;
+            border-radius: 15px;
+            font-size: 1.3rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            border-left: 5px solid #4361ee;
+            animation: slideIn 0.8s ease forwards;
+            min-height: 140px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            gap: 15px;
+        }
+        
+        .stat {
+            background: rgba(30, 41, 59, 0.8);
+            padding: 15px 25px;
+            border-radius: 12px;
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+            border-top: 3px solid #4361ee;
+        }
+        
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #a9b7c6;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        
+        .generate-btn {
+            background: linear-gradient(90deg, #4361ee, #3a0ca3);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.4);
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(67, 97, 238, 0.6);
+        }
+        
+        .generate-btn:active {
+            transform: translateY(1px);
+        }
+        
+        .generate-btn i {
+            margin-right: 10px;
+            font-size: 1.6rem;
+        }
+        
+        .animation-area {
+            display: flex;
+            justify-content: center;
+            margin: 25px 0;
+            height: 80px;
+        }
+        
+        .dice {
+            width: 60px;
+            height: 60px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1s ease;
+        }
+        
+        .dice-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(67, 97, 238, 0.9);
+            border: 2px solid #3a0ca3;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .face-1 { transform: translateZ(30px); }
+        .face-2 { transform: rotateY(90deg) translateZ(30px); }
+        .face-3 { transform: rotateY(180deg) translateZ(30px); }
+        .face-4 { transform: rotateY(-90deg) translateZ(30px); }
+        .face-5 { transform: rotateX(90deg) translateZ(30px); }
+        .face-6 { transform: rotateX(-90deg) translateZ(30px); }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #2d3748;
+            color: #a9b7c6;
+            font-size: 0.9rem;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes diceRoll {
+            0% { transform: rotateX(0) rotateY(0); }
+            25% { transform: rotateX(180deg) rotateY(90deg); }
+            50% { transform: rotateX(360deg) rotateY(180deg); }
+            75% { transform: rotateX(540deg) rotateY(270deg); }
+            100% { transform: rotateX(720deg) rotateY(360deg); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 0.5s ease;
+        }
+        
+        .rolling {
+            animation: diceRoll 1s ease;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .encounter-container {
+                padding: 20px;
+            }
+            
+            .encounter-type {
+                font-size: 1.4rem;
+                padding: 12px 20px;
+            }
+            
+            .encounter-description {
+                font-size: 1.1rem;
+                padding: 20px;
+            }
+            
+            .generate-btn {
+                padding: 15px 30px;
+                font-size: 1.2rem;
+            }
+            
+            .stats {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .stat {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .encounter-type {
+                font-size: 1.2rem;
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .type-icon {
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-dice-d20"></i> Random Encounter Generator</h1>
+            <p class="subtitle">Generate random encounter scenarios for your adventures. Each encounter can be peaceful, neutral, or dangerous with unique descriptions and stats.</p>
+        </header>
+        
+        <main>
+            <div class="encounter-container">
+                <div id="encounterType" class="encounter-type">
+                    <span class="type-icon" id="typeIcon"></span>
+                    <span id="typeText">Ready to Generate</span>
+                </div>
+                
+                <div class="animation-area">
+                    <div class="dice" id="dice">
+                        <div class="dice-face face-1">1</div>
+                        <div class="dice-face face-2">2</div>
+                        <div class="dice-face face-3">3</div>
+                        <div class="dice-face face-4">4</div>
+                        <div class="dice-face face-5">5</div>
+                        <div class="dice-face face-6">6</div>
+                    </div>
+                </div>
+                
+                <div id="encounterDescription" class="encounter-description">
+                    Click the "Generate New Encounter" button to begin your adventure!
+                </div>
+                
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value" id="encounterCount">0</div>
+                        <div class="stat-label">Encounters Generated</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="dangerLevel">-</div>
+                        <div class="stat-label">Current Danger</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="totalEncounters">3</div>
+                        <div class="stat-label">Encounter Types</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="generateBtn" class="generate-btn">
+                    <i class="fas fa-dice"></i> Generate New Encounter
+                </button>
+            </div>
+        </main>
+        
+        <footer class="footer">
+            <p>Random Encounter Generator | Created for immersive game-like experiences | Refresh for new adventures</p>
+        </footer>
+    </div>
+
+    <script>
+        // Encounter data
+        const encounterData = {
+            peaceful: {
+                icon: '😌',
+                colorClass: 'peaceful',
+                descriptions: [
+                    "A friendly traveler offers to share their provisions and tells tales of distant lands. They have a map that could be useful for your journey.",
+                    "You discover a serene glade with a crystal-clear pond. The area is safe for resting and there are edible berries growing nearby.",
+                    "A group of merchants sets up a temporary camp. They're willing to trade supplies at fair prices and share news from nearby settlements.",
+                    "You encounter a wise old hermit who lives in harmony with nature. They offer healing herbs and valuable advice about the region.",
+                    "A family of deer grazes peacefully in a sun-dappled clearing. They are unafraid of your presence and continue their gentle activities.",
+                    "You find an abandoned campsite that's still in good condition. There's firewood stacked neatly and a clean water source nearby."
+                ]
+            },
+            neutral: {
+                icon: '😐',
+                colorClass: 'neutral',
+                descriptions: [
+                    "A patrol from a nearby kingdom passes by. They're cautious but not hostile, asking about your business in the area before continuing.",
+                    "You spot mysterious ruins that appear undisturbed. While there may be artifacts of value, the area gives off an uneasy feeling.",
+                    "A wandering minstrel plays a melancholic tune. They'll share stories in exchange for coin or news from your travels.",
+                    "The weather suddenly changes, bringing heavy fog that reduces visibility. Navigation becomes difficult but there's no immediate threat.",
+                    "You find tracks from an unknown creature. They're large but don't appear aggressive—possibly just passing through the area.",
+                    "A disputed territory lies ahead with markers from two rival factions. Proceeding requires careful negotiation or stealth."
+                ]
+            },
+            dangerous: {
+                icon: '😨',
+                colorClass: 'dangerous',
+                descriptions: [
+                    "Bandits have set up an ambush on the road ahead! They're well-armed and demand all your valuables.",
+                    "A territorial beast guards the path forward. Its aggressive posture suggests it will attack if you come any closer.",
+                    "The ground gives way to a hidden pit trap! Sharpened stakes line the bottom, and the sides are too steep to climb easily.",
+                    "You accidentally disturb a nest of giant wasps. They swarm aggressively, their stingers capable of delivering paralyzing venom.",
+                    "A sudden rockslide blocks the path forward while unstable debris continues to fall from the cliff above.",
+                    "A cursed area radiates dark energy. Strange whispers fill the air and shadows seem to move with malicious intent."
+                ]
+            }
+        };
+
+        // DOM Elements
+        const encounterTypeElement = document.getElementById('encounterType');
+        const typeIconElement = document.getElementById('typeIcon');
+        const typeTextElement = document.getElementById('typeText');
+        const encounterDescriptionElement = document.getElementById('encounterDescription');
+        const generateBtn = document.getElementById('generateBtn');
+        const diceElement = document.getElementById('dice');
+        const encounterCountElement = document.getElementById('encounterCount');
+        const dangerLevelElement = document.getElementById('dangerLevel');
+        const totalEncountersElement = document.getElementById('totalEncounters');
+
+        // Statistics
+        let encounterCount = 0;
+        let currentType = '';
+        
+        // Initialize total encounters count
+        totalEncountersElement.textContent = Object.keys(encounterData).length;
+
+        // Function to get a random item from an array
+        function getRandomItem(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        // Function to generate a random encounter
+        function generateEncounter() {
+            // Reset dice animation
+            diceElement.classList.remove('rolling');
+            void diceElement.offsetWidth; // Trigger reflow to restart animation
+            diceElement.classList.add('rolling');
+            
+            // Generate a random number for dice face
+            const diceRoll = Math.floor(Math.random() * 6) + 1;
+            
+            // Determine encounter type based on dice roll
+            let type;
+            if (diceRoll <= 2) {
+                type = 'peaceful';
+            } else if (diceRoll <= 4) {
+                type = 'neutral';
+            } else {
+                type = 'dangerous';
+            }
+            
+            // Update dice to show the rolled number
+            setTimeout(() => {
+                diceElement.style.transform = `rotateX(${360 * diceRoll}deg) rotateY(${180 * diceRoll}deg)`;
+            }, 800);
+            
+            // Get encounter data
+            const encounter = encounterData[type];
+            const description = getRandomItem(encounter.descriptions);
+            
+            // Update UI with a delay to sync with dice animation
+            setTimeout(() => {
+                // Update encounter type display
+                typeIconElement.textContent = encounter.icon;
+                typeTextElement.textContent = type.toUpperCase();
+                
+                // Update encounter description
+                encounterDescriptionElement.textContent = description;
+                
+                // Update colors and classes
+                encounterTypeElement.className = `encounter-type ${encounter.colorClass}`;
+                
+                // Update danger level
+                dangerLevelElement.textContent = type.toUpperCase();
+                
+                // Add pulse animation to encounter container
+                document.querySelector('.encounter-container').classList.add('pulse');
+                setTimeout(() => {
+                    document.querySelector('.encounter-container').classList.remove('pulse');
+                }, 500);
+                
+                // Update encounter count
+                encounterCount++;
+                encounterCountElement.textContent = encounterCount;
+                
+                // Update current type for stats
+                currentType = type;
+            }, 1000);
+        }
+
+        // Event listener for generate button
+        generateBtn.addEventListener('click', generateEncounter);
+
+        // Generate initial encounter on page load
+        window.addEventListener('load', () => {
+            // Small delay to let page load completely
+            setTimeout(generateEncounter, 500);
+        });
+    </script>
+</body>
+</html>

@@ -13,7 +13,7 @@ OpenPlayground uses a **component-based architecture**. This means:
 - ❌ **DO NOT:** Add inline HTML/CSS to `index.html`
 - ❌ **DO NOT:** Modify the component placeholders in `index.html`
 
-**Why?** `index.html` is only 44 lines long and should stay that way. It dynamically loads:
+**Why?** `index.html` is only 57 lines long and should stay that way. It dynamically loads:
 - Components from `components/` folder (header, footer, etc.)
 - Projects from `projects.json` file
 
