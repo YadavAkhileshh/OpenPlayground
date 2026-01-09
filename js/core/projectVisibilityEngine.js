@@ -31,7 +31,7 @@ export class ProjectVisibilityEngine {
     }
 
     setCategory(category) {
-        this.state.category = category;
+        this.state.category = category.toLowerCase();
         this.state.page = 1;
     }
 
@@ -39,25 +39,32 @@ export class ProjectVisibilityEngine {
         this.state.page = page;
     }
 
+    reset() {
+        this.state.searchQuery = "";
+        this.state.category = "all";
+        this.state.page = 1;
+    }
+
     /* ------------------
      * Derived state
      * ------------------ */
 
-    getFilteredProjects() {
+    getVisibleProjects() {
         return this.projects.filter(project => {
             const matchesSearch =
                 project.title.toLowerCase().includes(this.state.searchQuery);
 
+            const projectCat = project.category ? project.category.toLowerCase() : "";
             const matchesCategory =
                 this.state.category === "all" ||
-                project.category === this.state.category;
+                projectCat === this.state.category;
 
             return matchesSearch && matchesCategory;
         });
     }
 
     getPaginatedProjects() {
-        const filtered = this.getFilteredProjects();
+        const filtered = this.getVisibleProjects();
         const start =
             (this.state.page - 1) * this.state.itemsPerPage;
         const end = start + this.state.itemsPerPage;
@@ -67,11 +74,11 @@ export class ProjectVisibilityEngine {
 
     getTotalPages() {
         return Math.ceil(
-            this.getFilteredProjects().length / this.state.itemsPerPage
+            this.getVisibleProjects().length / this.state.itemsPerPage
         );
     }
 
     isEmpty() {
-        return this.getFilteredProjects().length === 0;
+        return this.getVisibleProjects().length === 0;
     }
 }
