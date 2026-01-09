@@ -13,11 +13,41 @@ OpenPlayground uses a **component-based architecture**. This means:
 - ❌ **DO NOT:** Add inline HTML/CSS to `index.html`
 - ❌ **DO NOT:** Modify the component placeholders in `index.html`
 
-**Why?** `index.html` is only 44 lines long and should stay that way. It dynamically loads:
+**Why?** `index.html` is only 57 lines long and should stay that way. It dynamically loads:
 - Components from `components/` folder (header, footer, etc.)
 - Projects from `projects.json` file
 
 **PRs that violate this rule will be rejected.**
+
+### 📸 MANDATORY: Add Screenshots of Your Changes
+
+- ✅ **ALWAYS** include screenshots showing your changes in the PR
+- ✅ Show before/after screenshots if you're fixing a bug
+- ✅ Show the UI working on both desktop and mobile if applicable
+- ❌ PRs without screenshots may be rejected or delayed
+
+### 🚫 DO NOT Modify Unrelated Files
+
+- ✅ Only modify files that are directly related to your contribution
+- ❌ **STRICTLY PROHIBITED:** Changing any file that is not part of your feature/fix
+- ❌ Do not "clean up" or "format" other files
+- ❌ Do not add random changes to existing code
+
+**PRs with unnecessary file changes will be rejected.**
+
+### 🤖 FOR LLM/AI USERS - IMPORTANT WARNING
+
+If you are using AI tools (ChatGPT, Copilot, Claude, etc.) to generate code:
+
+- ⚠️ **ALWAYS review the generated code before committing**
+- ⚠️ **CHECK that no unrelated files were modified**
+- ⚠️ **VERIFY the changes make sense and don't break existing functionality**
+- ⚠️ **TEST your changes locally before pushing**
+- ⚠️ **Run `git diff` to see exactly what files changed**
+
+**Tip:** Use `git status` and `git diff` before every commit to ensure only intended files are modified.
+
+**PRs with AI-generated errors or unnecessary changes will be rejected.**
 
 ## Table of Contents
 
@@ -235,6 +265,9 @@ Add screenshots of your project
 - [ ] I have added my project to `projects.json` (NOT `index.html`!)
 - [ ] I have NOT modified `index.html` directly
 - [ ] My `projects.json` entry is valid JSON
+- [ ] **I have included screenshots of my changes**
+- [ ] **I have NOT modified any unrelated files**
+- [ ] **If using AI/LLM tools, I have reviewed all generated code**
 ```
 
 ## Code Review Process
