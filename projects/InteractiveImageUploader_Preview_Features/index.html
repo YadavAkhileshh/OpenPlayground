@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Image Preview Uploader</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            padding: 25px 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 15px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .uploader-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .upload-area {
+            border: 3px dashed #c3cfe2;
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            background-color: #f9fbfd;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #4b6cb7;
+            background-color: #edf2ff;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(75, 108, 183, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #4b6cb7;
+            margin-bottom: 15px;
+        }
+
+        .upload-area h3 {
+            font-size: 22px;
+            margin-bottom: 10px;
+            color: #182848;
+        }
+
+        .upload-area p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .upload-btn {
+            display: inline-block;
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 16px;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(75, 108, 183, 0.3);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .preview-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .preview-container.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .preview-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #182848;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .preview-title i {
+            color: #4b6cb7;
+        }
+
+        .preview-content {
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+
+        .image-preview {
+            flex: 1;
+            min-width: 300px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .image-preview:hover {
+            transform: scale(1.01);
+        }
+
+        .preview-img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .image-info {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .info-box {
+            background-color: #f9fbfd;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid #4b6cb7;
+        }
+
+        .info-box h4 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #182848;
+        }
+
+        .file-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .file-detail {
+            display: flex;
+            justify-content: space-between;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .file-detail:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .detail-value {
+            color: #333;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .replace-btn {
+            background-color: #e9f0ff;
+            color: #4b6cb7;
+        }
+
+        .replace-btn:hover {
+            background-color: #d9e4ff;
+        }
+
+        .remove-btn {
+            background-color: #ffeaea;
+            color: #e74c3c;
+        }
+
+        .remove-btn:hover {
+            background-color: #ffdada;
+        }
+
+        .remove-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #f5f5f5;
+            color: #999;
+        }
+
+        .validation-container {
+            margin-top: 15px;
+        }
+
+        .validation-message {
+            padding: 12px 15px;
+            border-radius: 10px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .validation-message.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .validation-message.success {
+            background-color: #e8f7ef;
+            color: #27ae60;
+            border-left: 4px solid #27ae60;
+        }
+
+        .validation-message.error {
+            background-color: #fdeaea;
+            color: #e74c3c;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .validation-message.warning {
+            background-color: #fef9e7;
+            color: #f39c12;
+            border-left: 4px solid #f39c12;
+        }
+
+        .specifications {
+            margin-top: 30px;
+            background-color: #f9fbfd;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .specifications h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #182848;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .specs-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .spec-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .spec-item i {
+            color: #4b6cb7;
+            width: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+
+        @media (max-width: 768px) {
+            .preview-content {
+                flex-direction: column;
+            }
+            
+            .image-preview, .image-info {
+                min-width: 100%;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Interactive Image Preview Uploader</h1>
+            <p>Upload, preview, and validate images with drag & drop support</p>
+        </div>
+        
+        <div class="content">
+            <div class="uploader-container">
+                <!-- Upload Area -->
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <h3>Drag & Drop Your Image</h3>
+                    <p>Supported formats: JPG, PNG, WEBP (Max size: 2MB)</p>
+                    <div class="upload-btn" id="browseBtn">
+                        <i class="fas fa-folder-open"></i> Browse Files
+                    </div>
+                    <input type="file" id="fileInput" class="file-input" accept=".jpg,.jpeg,.png,.webp">
+                </div>
+                
+                <!-- Preview Container -->
+                <div class="preview-container" id="previewContainer">
+                    <div class="preview-title">
+                        <i class="fas fa-image"></i> Image Preview
+                    </div>
+                    
+                    <div class="preview-content">
+                        <div class="image-preview">
+                            <img id="previewImage" class="preview-img" alt="Image preview">
+                        </div>
+                        
+                        <div class="image-info">
+                            <div class="info-box">
+                                <h4>File Details</h4>
+                                <div class="file-details" id="fileDetails">
+                                    <!-- File details will be inserted here -->
+                                </div>
+                            </div>
+                            
+                            <div class="controls">
+                                <button class="control-btn replace-btn" id="replaceBtn">
+                                    <i class="fas fa-exchange-alt"></i> Replace Image
+                                </button>
+                                <button class="control-btn remove-btn" id="removeBtn" disabled>
+                                    <i class="fas fa-trash-alt"></i> Remove Image
+                                </button>
+                            </div>
+                            
+                            <div class="validation-container">
+                                <!-- Validation messages will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Specifications -->
+                <div class="specifications">
+                    <h3><i class="fas fa-check-circle"></i> Upload Requirements</h3>
+                    <div class="specs-list">
+                        <div class="spec-item">
+                            <i class="fas fa-file-image"></i>
+                            <span>Formats: JPG, PNG, WEBP</span>
+                        </div>
+                        <div class="spec-item">
+                            <i class="fas fa-weight-hanging"></i>
+                            <span>Max file size: 2MB</span>
+                        </div>
+                        <div class="spec-item">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                            <span>Dimensions: Up to 4000x4000px</span>
+                        </div>
+                        <div class="spec-item">
+                            <i class="fas fa-palette"></i>
+                            <span>Color mode: RGB, RGBA</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Interactive Image Preview Uploader Component | Built with HTML, CSS & JavaScript</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const browseBtn = document.getElementById('browseBtn');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImage = document.getElementById('previewImage');
+        const fileDetails = document.getElementById('fileDetails');
+        const replaceBtn = document.getElementById('replaceBtn');
+        const removeBtn = document.getElementById('removeBtn');
+        const validationContainer = document.querySelector('.validation-container');
+        
+        // Allowed file types and max size (2MB)
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+        
+        // Current file state
+        let currentFile = null;
+        
+        // Event Listeners
+        browseBtn.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        // Drag & drop events
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+        
+        // File input change event
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        // Replace button event
+        replaceBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // Remove button event
+        removeBtn.addEventListener('click', () => {
+            resetUploader();
+        });
+        
+        // Handle selected/dropped file
+        function handleFile(file) {
+            currentFile = file;
+            
+            // Validate file
+            const validation = validateFile(file);
+            
+            if (validation.isValid) {
+                // Show preview
+                showPreview(file);
+                // Show success message
+                showValidationMessage('Image selected successfully and ready for upload!', 'success');
+                // Enable remove button
+                removeBtn.disabled = false;
+            } else {
+                // Show error message
+                showValidationMessage(validation.message, validation.type);
+                // Reset file input
+                fileInput.value = '';
+                currentFile = null;
+            }
+        }
+        
+        // Validate file type and size
+        function validateFile(file) {
+            // Check file type
+            if (!allowedTypes.includes(file.type)) {
+                return {
+                    isValid: false,
+                    type: 'error',
+                    message: `Invalid file type. Please select a JPG, PNG, or WEBP image.`
+                };
+            }
+            
+            // Check file size
+            if (file.size > maxSize) {
+                return {
+                    isValid: false,
+                    type: 'warning',
+                    message: `File is too large (${(file.size / (1024*1024)).toFixed(2)} MB). Maximum size is 2MB.`
+                };
+            }
+            
+            return {
+                isValid: true,
+                type: 'success',
+                message: 'File is valid.'
+            };
+        }
+        
+        // Show image preview
+        function showPreview(file) {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewContainer.classList.add('active');
+                
+                // Update file details
+                updateFileDetails(file);
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        // Update file details panel
+        function updateFileDetails(file) {
+            const fileSize = file.size < 1024 * 1024 
+                ? `${(file.size / 1024).toFixed(2)} KB` 
+                : `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+            
+            const fileName = file.name.length > 25 
+                ? file.name.substring(0, 22) + '...' 
+                : file.name;
+            
+            const fileType = file.type.split('/')[1].toUpperCase();
+            
+            // Create file details HTML
+            fileDetails.innerHTML = `
+                <div class="file-detail">
+                    <span class="detail-label">Name:</span>
+                    <span class="detail-value">${fileName}</span>
+                </div>
+                <div class="file-detail">
+                    <span class="detail-label">Type:</span>
+                    <span class="detail-value">${fileType}</span>
+                </div>
+                <div class="file-detail">
+                    <span class="detail-label">Size:</span>
+                    <span class="detail-value">${fileSize}</span>
+                </div>
+                <div class="file-detail">
+                    <span class="detail-label">Last Modified:</span>
+                    <span class="detail-value">${new Date(file.lastModified).toLocaleDateString()}</span>
+                </div>
+            `;
+        }
+        
+        // Show validation message
+        function showValidationMessage(message, type) {
+            // Remove any existing message
+            const existingMessage = validationContainer.querySelector('.validation-message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            // Create new message element
+            const messageEl = document.createElement('div');
+            messageEl.className = `validation-message ${type} active`;
+            
+            // Set icon based on message type
+            let icon = 'info-circle';
+            if (type === 'success') icon = 'check-circle';
+            if (type === 'error') icon = 'exclamation-circle';
+            if (type === 'warning') icon = 'exclamation-triangle';
+            
+            messageEl.innerHTML = `
+                <i class="fas fa-${icon}"></i>
+                <span>${message}</span>
+            `;
+            
+            validationContainer.appendChild(messageEl);
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    if (messageEl.parentNode) {
+                        messageEl.classList.remove('active');
+                        setTimeout(() => {
+                            if (messageEl.parentNode) {
+                                messageEl.remove();
+                            }
+                        }, 300);
+                    }
+                }, 5000);
+            }
+        }
+        
+        // Reset uploader to initial state
+        function resetUploader() {
+            // Reset file input
+            fileInput.value = '';
+            currentFile = null;
+            
+            // Hide preview
+            previewContainer.classList.remove('active');
+            
+            // Clear preview image
+            previewImage.src = '';
+            
+            // Clear file details
+            fileDetails.innerHTML = '';
+            
+            // Disable remove button
+            removeBtn.disabled = true;
+            
+            // Clear validation messages
+            const existingMessage = validationContainer.querySelector('.validation-message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            // Show reset message
+            showValidationMessage('Image removed. You can select a new image.', 'success');
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Show initial instructions
+            showValidationMessage('Select an image or drag & drop it here to preview', 'info');
+        });
+    </script>
+</body>
+</html>
