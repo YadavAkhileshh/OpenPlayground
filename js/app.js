@@ -1,6 +1,5 @@
 // ===============================
-// OpenPlayground - Main JavaScript
-// Clean, Modular Implementation
+// OpenPlayground - Unified App Logic
 // ===============================
 
 import { ProjectVisibilityEngine } from "./core/projectVisibilityEngine.js";
@@ -63,20 +62,26 @@ function updateThemeIcon(theme, iconElement) {
 async function fetchProjects() {
     const elements = getElements();
 
-    try {
-        const response = await fetch('./projects.json');
-        if (!response.ok) throw new Error('Failed to fetch projects');
+    /* -----------------------------------------------------------
+     * Event Handling
+     * ----------------------------------------------------------- */
+    setupEventListeners() {
+        const elements = this.getElements();
 
-        state.allProjects = await response.json();
+        // Search
+        if (elements.searchInput) {
+            elements.searchInput.addEventListener('input', (e) => {
+                this.state.visibilityEngine.setSearchQuery(e.target.value);
+                this.state.currentPage = 1;
+                this.render();
+            });
+        }
 
-        // Remove duplicates by title
-        const seen = new Set();
-        state.allProjects = state.allProjects.filter(project => {
-            if (!project.title || !project.link) return false;
-            const key = project.title.toLowerCase();
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
+        // Sort alphabetically by title (case-insensitive)
+        state.allProjects.sort((a, b) => {
+            const titleA = (a.title || '').toLowerCase();
+            const titleB = (b.title || '').toLowerCase();
+            return titleA.localeCompare(titleB);
         });
 
         // Update project count in hero
@@ -108,8 +113,6 @@ async function fetchProjects() {
                 </div>
             `;
         }
-    }
-}
 
 function setupProjectEventListeners() {
     const searchInput = document.getElementById("project-search");
@@ -264,65 +267,32 @@ function renderProjects() {
         const bookmarkClass = isBookmarked ? 'bookmarked' : '';
         const bookmarkIcon = isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
 
-    // Update view more button
-    updateViewMoreButton(remaining);
-}
+    renderListView(container, projects) {
+        container.innerHTML = projects.map(project => {
+            const isBookmarked = window.bookmarksManager?.isBookmarked(project.title);
+            const coverStyle = project.coverStyle || '';
+            const coverClass = project.coverClass || '';
 
-function renderCardView(container, projects) {
-    container.innerHTML = projects.map((project, index) => {
-        const isBookmarked = window.bookmarksManager?.isBookmarked?.(project.title) || false;
-        const techHtml = project.tech?.map(t => `<span>${escapeHtml(t)}</span>`).join('') || '';
-        const coverStyle = project.coverStyle || 'background: var(--gradient-primary); color: white;';
-
-        return `
-            <a href="${escapeHtml(project.link)}" class="card" data-category="${escapeHtml(project.category || 'utility')}">
-                <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
-                        data-project-title="${escapeHtml(project.title)}" 
-                        aria-label="${isBookmarked ? 'Remove bookmark' : 'Add bookmark'}"
-                        onclick="event.preventDefault(); event.stopPropagation(); window.toggleProjectBookmark(this, '${escapeHtml(project.title)}', '${escapeHtml(project.link)}', '${escapeHtml(project.category || 'utility')}', '${escapeHtml(project.description || '')}');">
-                    <i class="${isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line'}"></i>
-                </button>
-                <div class="card-cover" style="${coverStyle}">
-                    <i class="${project.icon || 'ri-code-s-slash-line'}"></i>
-                </div>
-                <div class="card-content">
-                    <div class="card-header-flex">
-                        <h3 class="card-heading">${escapeHtml(project.title)}</h3>
-                        <span class="category-tag">${capitalize(project.category || 'utility')}</span>
+            return `
+                <div class="list-card">
+                    <div class="list-card-icon ${coverClass}" style="${coverStyle}">
+                        <i class="${this.escapeHtml(project.icon || 'ri-code-s-slash-line')}"></i>
                     </div>
-                    <p class="card-description">${escapeHtml(project.description || '')}</p>
-                    <div class="card-tech">${techHtml}</div>
-                </div>
-            </a>
-        `;
-    }).join('');
-}
-
-function renderListView(container, projects) {
-    container.innerHTML = projects.map((project, index) => {
-        const isBookmarked = window.bookmarksManager?.isBookmarked?.(project.title) || false;
-        const coverStyle = project.coverStyle || 'background: var(--gradient-primary); color: white;';
-
-        return `
-            <div class="list-card">
-                <div class="list-card-icon" style="${coverStyle}">
-                    <i class="${project.icon || 'ri-code-s-slash-line'}"></i>
-                </div>
-                <div class="list-card-content">
-                    <h4 class="list-card-title">${escapeHtml(project.title)}</h4>
-                    <p class="list-card-description">${escapeHtml(project.description || '')}</p>
-                </div>
-                <div class="list-card-meta">
-                    <span class="list-card-category">${capitalize(project.category || 'utility')}</span>
-                    <div class="list-card-actions">
-                        <button class="list-card-btn ${isBookmarked ? 'bookmarked' : ''}" 
-                                onclick="window.toggleProjectBookmark(this, '${escapeHtml(project.title)}', '${escapeHtml(project.link)}', '${escapeHtml(project.category || 'utility')}', '${escapeHtml(project.description || '')}');" 
-                                title="Bookmark">
-                            <i class="${isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line'}"></i>
-                        </button>
-                        <a href="${escapeHtml(project.link)}" class="list-card-btn" title="Open Project">
-                            <i class="ri-external-link-line"></i>
-                        </a>
+                    <div class="list-card-content">
+                        <h4 class="list-card-title">${this.escapeHtml(project.title)}</h4>
+                        <p class="list-card-description">${this.escapeHtml(project.description || '')}</p>
+                    </div>
+                    <div class="list-card-meta">
+                        <span class="list-card-category">${this.capitalize(project.category || 'project')}</span>
+                        <div class="list-card-actions">
+                            <button class="list-card-btn ${isBookmarked ? 'bookmarked' : ''}" 
+                                    onclick="window.toggleProjectBookmark(this, '${this.escapeHtml(project.title)}', '${this.escapeHtml(project.link)}', '${this.escapeHtml(project.category)}', '${this.escapeHtml(project.description || '')}');">
+                                <i class="${isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line'}"></i>
+                            </button>
+                            <a href="${this.escapeHtml(project.link)}" class="list-card-btn" title="Open Project">
+                                <i class="ri-external-link-line"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -357,24 +327,30 @@ function renderListView(container, projects) {
         card.style.opacity = "0";
         card.style.transform = "translateY(20px)";
 
-function handleSort(e) {
-    state.currentSort = e.target.value;
-    state.itemsShown = CONFIG.ITEMS_PER_PAGE;
-    filterAndRenderProjects();
-}
+        // Page numbers (简化的)
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= this.state.currentPage - 1 && i <= this.state.currentPage + 1)) {
+                html += `<button class="pagination-btn ${i === this.state.currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            } else if (i === this.state.currentPage - 2 || i === this.state.currentPage + 2) {
+                html += `<span class="pagination-dots">...</span>`;
+            }
+        }
 
-function handleFilter(category) {
-    state.currentCategory = category;
-    state.itemsShown = CONFIG.ITEMS_PER_PAGE;
+        // Next button
+        html += `<button class="pagination-btn" ${this.state.currentPage === totalPages ? 'disabled' : ''} id="pagination-next">
+                    <i class="ri-arrow-right-s-line"></i>
+                 </button>`;
 
-    // Update active state
-    const elements = getElements();
-    elements.filterBtns.forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.filter === category);
-    });
+        container.innerHTML = html;
 
-    filterAndRenderProjects();
-}
+        // Events
+        container.querySelectorAll('[data-page]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.state.currentPage = parseInt(btn.dataset.page);
+                this.render();
+                this.scrollToTop();
+            });
+        });
 
 // --- Helper Functions ---
 
