@@ -239,25 +239,43 @@ class ComponentLoader {
 
     initializeScrollToTop() {
         const scrollBtn = document.getElementById('scrollToTopBtn');
+        if (!scrollBtn) return;
 
-        if (scrollBtn) {
-            // Show/hide button based on scroll position
-            window.addEventListener('scroll', () => {
-                if (window.scrollY > 300) {
-                    scrollBtn.classList.add('show');
-                } else {
-                    scrollBtn.classList.remove('show');
-                }
-            });
+        const circle = scrollBtn.querySelector('.progress-ring__circle');
+        const radius = circle ? (parseFloat(circle.getAttribute('r')) || 21) : 21;
+        const circumference = 2 * Math.PI * radius;
 
-            // Scroll to top when clicked
-            scrollBtn.addEventListener('click', () => {
-                window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
-                });
-            });
+        if (circle) {
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+            circle.style.strokeDashoffset = circumference;
         }
+
+        const updateProgress = () => {
+            const scrollCurrent = window.scrollY;
+            const scrollTotal = document.documentElement.scrollHeight - window.innerHeight;
+
+            if (circle && scrollTotal > 0) {
+                const scrollPercentage = (scrollCurrent / scrollTotal) * 100;
+                const offset = circumference - (Math.min(scrollPercentage, 100) / 100 * circumference);
+                circle.style.strokeDashoffset = offset;
+            }
+
+            if (scrollCurrent > 100) {
+                scrollBtn.classList.add('show');
+            } else {
+                scrollBtn.classList.remove('show');
+            }
+        };
+
+        window.addEventListener('scroll', updateProgress);
+        updateProgress(); // Initial call
+
+        scrollBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
     }
 
     initializeSmoothScrolling() {
