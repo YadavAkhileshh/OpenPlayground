@@ -548,4 +548,142 @@ function initTheme() {
 
 initTheme();
 
+// ===============================
+// Degradation System (Meta-Narrative)
+// ===============================
+class DegradationManager {
+    constructor() {
+        this.maxLevel = 5;
+        this.clickThreshold = 15; // Clicks per level
+        this.timeThreshold = 60000; // Milliseconds per level (1 min)
+
+        this.state = {
+            level: 0,
+            clicks: 0,
+            startTime: Date.now(),
+            ...JSON.parse(localStorage.getItem('degradationState') || '{}')
+        };
+
+        // Reset start time on new session if not persisting strictly
+        if (!localStorage.getItem('degradationState')) {
+            this.state.startTime = Date.now();
+        }
+
+        this.init();
+    }
+
+    init() {
+        this.bindEvents();
+        this.checkLevel();
+        this.applyEffects();
+
+        // Periodic check for time-based degradation
+        setInterval(() => this.checkLevel(), 10000);
+
+        // Expose global reset
+        window.resetDegradation = () => this.reset();
+    }
+
+    bindEvents() {
+        document.addEventListener('click', () => {
+            this.state.clicks++;
+            this.saveState();
+            this.checkLevel();
+        });
+    }
+
+    checkLevel() {
+        const timeElapsed = Date.now() - this.state.startTime;
+        const clickLevel = Math.floor(this.state.clicks / this.clickThreshold);
+        const timeLevel = Math.floor(timeElapsed / this.timeThreshold);
+
+        // Level is determined by whichever is higher
+        const newLevel = Math.min(Math.max(clickLevel, timeLevel), this.maxLevel);
+
+        if (newLevel !== this.state.level) {
+            this.state.level = newLevel;
+            this.saveState();
+            this.applyEffects();
+
+            if (newLevel > 0) {
+                console.log(`⚠️ System Integrity Dropping... Level ${newLevel}`);
+            }
+        }
+    }
+
+    saveState() {
+        localStorage.setItem('degradationState', JSON.stringify(this.state));
+    }
+
+    applyEffects() {
+        // Remove existing level classes
+        document.body.classList.forEach(cls => {
+            if (cls.startsWith('degradation-level-')) {
+                document.body.classList.remove(cls);
+            }
+        });
+
+        // Apply new level
+        if (this.state.level > 0) {
+            document.body.classList.add(`degradation-level-${this.state.level}`);
+        }
+
+        // Dynamic random glitch injection for higher levels
+        if (this.state.level >= 3) {
+            this.startGlitchEffects();
+        }
+    }
+
+    startGlitchEffects() {
+        // Clear any existing interval
+        if (this.glitchInterval) clearInterval(this.glitchInterval);
+
+        // Frequency increases with level
+        const frequency = Math.max(500, 3000 - (this.state.level * 500));
+
+        this.glitchInterval = setInterval(() => {
+            if (Math.random() > 0.7) {
+                const elements = document.querySelectorAll('h1, h2, h3, p, a, button');
+                if (elements.length) {
+                    const el = elements[Math.floor(Math.random() * elements.length)];
+                    el.style.transform = `translate(${Math.random() * 4 - 2}px, ${Math.random() * 4 - 2}px)`;
+
+                    setTimeout(() => {
+                        el.style.transform = '';
+                    }, 150);
+                }
+            }
+        }, frequency);
+    }
+
+    reset() {
+        this.state = {
+            level: 0,
+            clicks: 0,
+            startTime: Date.now()
+        };
+        this.saveState();
+        this.applyEffects();
+        if (this.glitchInterval) clearInterval(this.glitchInterval);
+
+        // Visual feedback for reset
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed; inset: 0; background: #fff; z-index: 99999;
+            opacity: 0; transition: opacity 0.5s; pointer-events: none;
+        `;
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.style.opacity = 0.8);
+        setTimeout(() => {
+            overlay.style.opacity = 0;
+            setTimeout(() => overlay.remove(), 500);
+        }, 500);
+
+        console.log('✅ System Integrity Restored.');
+    }
+}
+
+// Initialize
+window.degradationManager = new DegradationManager();
+
 console.log('%c🚀 OpenPlayground - https://github.com/YadavAkhileshh/OpenPlayground', 'color:#6366f1;font-size:14px;font-weight:bold;');
