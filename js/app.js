@@ -4,107 +4,63 @@
 
 import { ProjectVisibilityEngine } from "./core/projectVisibilityEngine.js";
 
-/**
- * ProjectManager
- * Manages project data fetching, filtering, and rendering.
- * Acts as the centerpiece for the OpenPlayground project hub.
- */
-class ProjectManager {
-    constructor() {
-        // Prevent multiple instances
-        if (window.projectManagerInstance) {
-            console.log("♻️ ProjectManager: Instance already exists.");
-            return window.projectManagerInstance;
-        }
+// ===============================
+// Global State
+// ===============================
+const itemsPerPage = 9;
+let currentPage = 1;
+let currentCategory = "all";
+let currentSort = "default";
+let allProjectsData = [];
+let visibilityEngine = null;
 
-        this.config = {
-            ITEMS_PER_PAGE: 12,
-            ANIMATION_DELAY: 50
-        };
+// ===============================
+// Theme Toggle
+// ===============================
+function initTheme() {
+    const toggleBtn = document.getElementById("toggle-mode-btn");
+    const themeIcon = document.getElementById("theme-icon");
+    const html = document.documentElement;
 
-        this.state = {
-            allProjects: [],
-            visibilityEngine: null,
-            viewMode: 'card', // 'card' or 'list'
-            currentPage: 1,
-            initialized: false
-        };
+    // Load saved theme
+    const savedTheme = localStorage.getItem("theme") || "light";
+    html.setAttribute("data-theme", savedTheme);
+    updateThemeIcon(savedTheme, themeIcon);
 
-        window.projectManagerInstance = this;
+    if (toggleBtn) {
+        // Remove old listeners to prevent duplicates
+        const newBtn = toggleBtn.cloneNode(true);
+        toggleBtn.parentNode.replaceChild(newBtn, toggleBtn);
+        
+        newBtn.addEventListener("click", () => {
+            const newTheme = html.getAttribute("data-theme") === "light" ? "dark" : "light";
+            html.setAttribute("data-theme", newTheme);
+            localStorage.setItem("theme", newTheme);
+            updateThemeIcon(newTheme, document.getElementById("theme-icon"));
+
+            // Add shake animation
+            newBtn.classList.add("shake");
+            setTimeout(() => newBtn.classList.remove("shake"), 500);
+        });
     }
+}
 
-    async init() {
-        if (this.state.initialized) return;
-
-        console.log("🚀 ProjectManager: Initializing...");
-
-        // Initial setup
-        this.setupEventListeners();
-        await this.fetchProjects();
-
-        this.state.initialized = true;
-        console.log("✅ ProjectManager: Ready.");
+function updateThemeIcon(theme, iconElement) {
+    if (!iconElement) return;
+    if (theme === "dark") {
+        iconElement.className = "ri-moon-fill";
+    } else {
+        iconElement.className = "ri-sun-line";
     }
+}
 
-    /* -----------------------------------------------------------
-     * DOM Element Selection
-     * ----------------------------------------------------------- */
-    getElements() {
-        return {
-            projectsGrid: document.getElementById('projects-grid'),
-            projectsList: document.getElementById('projects-list'),
-            paginationContainer: document.getElementById('pagination-controls'),
-            searchInput: document.getElementById('project-search'),
-            sortSelect: document.getElementById('project-sort'),
-            filterBtns: document.querySelectorAll('.filter-btn'),
-            cardViewBtn: document.getElementById('card-view-btn'),
-            listViewBtn: document.getElementById('list-view-btn'),
-            emptyState: document.getElementById('empty-state'),
-            projectCount: document.getElementById('project-count')
-        };
-    }
+// ===============================
+// Projects Logic
+// ===============================
 
-    /* -----------------------------------------------------------
-     * Data Management
-     * ----------------------------------------------------------- */
-    async fetchProjects() {
-        try {
-            const response = await fetch('./projects.json');
-            if (!response.ok) throw new Error('Failed to fetch projects');
-
-            const data = await response.json();
-
-            // Deduplicate and validate
-            const seen = new Set();
-            this.state.allProjects = data.filter(project => {
-                if (!project.title || !project.link) return false;
-                const key = project.title.toLowerCase();
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
-
-            // Update UI count
-            const elements = this.getElements();
-            if (elements.projectCount) {
-                elements.projectCount.textContent = `${this.state.allProjects.length}+`;
-            }
-
-            // Initialize Visibility Engine
-            this.state.visibilityEngine = new ProjectVisibilityEngine(this.state.allProjects);
-            this.state.visibilityEngine.state.itemsPerPage = this.config.ITEMS_PER_PAGE;
-
-            console.log(`📦 Loaded ${this.state.allProjects.length} projects.`);
-            this.render();
-
-        } catch (error) {
-            console.error('❌ ProjectManager Error:', error);
-            const elements = this.getElements();
-            if (elements.projectsGrid) {
-                elements.projectsGrid.innerHTML = `<div class="error-msg">Failed to load projects.</div>`;
-            }
-        }
-    }
+// Fetch and Initialize Projects
+async function fetchProjects() {
+    const elements = getElements();
 
     /* -----------------------------------------------------------
      * Event Handling
@@ -129,122 +85,183 @@ class ProjectManager {
             });
         }
 
-        // Category Filters
-        if (elements.filterBtns) {
-            elements.filterBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const category = btn.dataset.filter;
+        // Initialize Visibility Engine
+        const projectMetadata = data.map(project => ({
+            id: project.title,
+            title: project.title,
+            category: project.category,
+            description: project.description || ""
+        }));
 
-                    // Update active class
-                    elements.filterBtns.forEach(b => b.classList.toggle('active', b === btn));
+        visibilityEngine = new ProjectVisibilityEngine(projectMetadata);
 
-                    this.state.visibilityEngine.setCategory(category);
-                    this.state.currentPage = 1;
-                    this.render();
-                });
-            });
-        }
-
-        // View Toggles
-        if (elements.cardViewBtn && elements.listViewBtn) {
-            elements.cardViewBtn.addEventListener('click', () => this.setViewMode('card'));
-            elements.listViewBtn.addEventListener('click', () => this.setViewMode('list'));
-        }
-    }
-
-    setViewMode(mode) {
-        this.state.viewMode = mode;
-        const elements = this.getElements();
-
-        if (elements.cardViewBtn) elements.cardViewBtn.classList.toggle('active', mode === 'card');
-        if (elements.listViewBtn) elements.listViewBtn.classList.toggle('active', mode === 'list');
-
-        this.render();
-    }
-
-    /* -----------------------------------------------------------
-     * Rendering Logic
-     * ----------------------------------------------------------- */
-    render() {
-        const elements = this.getElements();
-        if (!this.state.visibilityEngine) return;
-
-        // Sync visibility engine page
-        this.state.visibilityEngine.setPage(this.state.currentPage);
-
-        let filtered = this.state.visibilityEngine.getVisibleProjects();
-
-        // Sorting
-        const sortMode = elements.sortSelect?.value || 'default';
-        if (sortMode === 'az') filtered.sort((a, b) => a.title.localeCompare(b.title));
-        else if (sortMode === 'za') filtered.sort((a, b) => b.title.localeCompare(a.title));
-        else if (sortMode === 'newest') filtered.reverse();
-
-        // Pagination Calculations
-        const totalPages = Math.ceil(filtered.length / this.config.ITEMS_PER_PAGE);
-        const start = (this.state.currentPage - 1) * this.config.ITEMS_PER_PAGE;
-        const pageItems = filtered.slice(start, start + this.config.ITEMS_PER_PAGE);
-
-        // Grid/List visibility management
-        if (elements.projectsGrid) {
-            elements.projectsGrid.style.display = this.state.viewMode === 'card' ? 'grid' : 'none';
-            if (this.state.viewMode !== 'card') elements.projectsGrid.innerHTML = '';
-        }
-        if (elements.projectsList) {
-            elements.projectsList.style.display = this.state.viewMode === 'list' ? 'flex' : 'none';
-            if (this.state.viewMode !== 'list') elements.projectsList.innerHTML = '';
-        }
-
-        // Handle empty state
-        if (pageItems.length === 0) {
-            if (elements.emptyState) elements.emptyState.style.display = 'block';
-            if (elements.projectsGrid) elements.projectsGrid.innerHTML = '';
-            if (elements.projectsList) elements.projectsList.innerHTML = '';
-            this.renderPagination(0);
-            return;
-        }
-
-        if (elements.emptyState) elements.emptyState.style.display = 'none';
-
-        // Render appropriate view
-        if (this.state.viewMode === 'card') {
-            this.renderCardView(elements.projectsGrid, pageItems);
-        } else {
-            this.renderListView(elements.projectsList, pageItems);
-        }
-
-        this.renderPagination(totalPages);
-    }
-
-    renderCardView(container, projects) {
-        container.innerHTML = projects.map((project) => {
-            const isBookmarked = window.bookmarksManager?.isBookmarked(project.title);
-            const techHtml = project.tech?.map(t => `<span>${this.escapeHtml(t)}</span>`).join('') || '';
-            const coverStyle = project.coverStyle || '';
-            const coverClass = project.coverClass || '';
-
-            return `
-                <a href="${this.escapeHtml(project.link)}" class="card" data-category="${this.escapeHtml(project.category)}">
-                    <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
-                            data-project-title="${this.escapeHtml(project.title)}" 
-                            onclick="event.preventDefault(); event.stopPropagation(); window.toggleProjectBookmark(this, '${this.escapeHtml(project.title)}', '${this.escapeHtml(project.link)}', '${this.escapeHtml(project.category)}', '${this.escapeHtml(project.description || '')}');">
-                        <i class="${isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line'}"></i>
-                    </button>
-                    <div class="card-cover ${coverClass}" style="${coverStyle}">
-                        <i class="${this.escapeHtml(project.icon || 'ri-code-s-slash-line')}"></i>
-                    </div>
-                    <div class="card-content">
-                        <div class="card-header-flex">
-                            <h3 class="card-heading">${this.escapeHtml(project.title)}</h3>
-                            <span class="category-tag">${this.capitalize(project.category)}</span>
-                        </div>
-                        <p class="card-description">${this.escapeHtml(project.description || '')}</p>
-                        <div class="card-tech">${techHtml}</div>
-                    </div>
-                </a>
+        setupProjectEventListeners();
+        updateCategoryCounts();
+        renderProjects();
+    } catch (error) {
+        console.error("Error loading projects:", error);
+        const projectsContainer = document.querySelector(".projects-container");
+        if (projectsContainer) {
+            projectsContainer.innerHTML = `
+                <div class="empty-state">
+                    <h3>Unable to load projects</h3>
+                    <p>Please check your internet connection or try refreshing.</p>
+                </div>
             `;
-        }).join('');
+        }
+
+function setupProjectEventListeners() {
+    const searchInput = document.getElementById("project-search");
+    const sortSelect = document.getElementById("project-sort");
+    const filterBtns = document.querySelectorAll(".filter-btn");
+    const clearBtn = document.getElementById("search-clear");
+
+    // 1. Search
+    if (searchInput) {
+        searchInput.addEventListener("input", () => {
+            if (visibilityEngine) {
+                visibilityEngine.setSearchQuery(searchInput.value);
+            }
+            currentPage = 1;
+            renderProjects();
+        });
     }
+
+    // 2. Clear Search
+    if (clearBtn) {
+        clearBtn.addEventListener("click", () => {
+            if (searchInput) {
+                searchInput.value = "";
+                if (visibilityEngine) visibilityEngine.setSearchQuery("");
+            }
+            renderProjects();
+        });
+    }
+
+    // 3. Sort
+    if (sortSelect) {
+        sortSelect.addEventListener("change", () => {
+            currentSort = sortSelect.value;
+            currentPage = 1;
+            renderProjects();
+        });
+    }
+
+    // 4. Category Filters
+    filterBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+            filterBtns.forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentCategory = btn.dataset.filter;
+            currentPage = 1;
+            renderProjects();
+        });
+    });
+}
+
+// Update Filter Button Counts
+function updateCategoryCounts() {
+    if (allProjectsData.length === 0) return;
+
+    const filterBtns = document.querySelectorAll(".filter-btn");
+    const counts = {};
+    
+    allProjectsData.forEach(project => {
+        const cat = project.category.toLowerCase();
+        counts[cat] = (counts[cat] || 0) + 1;
+    });
+
+    filterBtns.forEach(btn => {
+        const cat = btn.dataset.filter;
+        if (cat === "all") {
+            btn.innerText = `All (${allProjectsData.length})`;
+        } else {
+            const label = cat.charAt(0).toUpperCase() + cat.slice(1);
+            btn.innerText = `${label} (${counts[cat] || 0})`;
+        }
+    });
+}
+
+// Render Projects to DOM
+function renderProjects() {
+    const projectsContainer = document.querySelector(".projects-container");
+    if (!projectsContainer) return;
+
+    let filteredProjects = [...allProjectsData];
+
+    // 1. Search Filtering
+    if (visibilityEngine) {
+        const visibleProjects = visibilityEngine.getFilteredProjects();
+        const visibleTitles = new Set(visibleProjects.map(p => p.title));
+        
+        filteredProjects = filteredProjects.filter(project =>
+            visibleTitles.has(project.title)
+        );
+    }
+
+    // 2. Category Filtering
+    if (currentCategory !== "all") {
+        filteredProjects = filteredProjects.filter(
+            (project) => project.category.toLowerCase() === currentCategory.toLowerCase()
+        );
+    }
+
+    // 3. Sorting
+    switch (currentSort) {
+        case "az":
+            filteredProjects.sort((a, b) => a.title.localeCompare(b.title));
+            break;
+        case 'za':
+            projects.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+            break;
+        case "newest":
+            // Assuming data is static, we just reverse for now
+            filteredProjects.reverse();
+            break;
+    }
+
+    // 4. Pagination
+    const totalItems = filteredProjects.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    const paginatedItems = filteredProjects.slice(start, start + itemsPerPage);
+
+    projectsContainer.innerHTML = "";
+
+    // Empty State
+    const emptyState = document.getElementById("empty-state");
+    const showMoreBtn = document.getElementById("viewMoreProjects"); // Fix ID reference
+
+    if (paginatedItems.length === 0) {
+        if (emptyState) emptyState.style.display = "block";
+        if (showMoreBtn) showMoreBtn.style.display = "none";
+        renderPagination(0);
+        return;
+    } else {
+        if (emptyState) emptyState.style.display = "none";
+    }
+
+    // Render Cards
+    paginatedItems.forEach((project, index) => {
+        const card = document.createElement("a");
+        card.href = project.link;
+        card.className = "card";
+        card.setAttribute("data-category", project.category);
+
+        let coverAttr = "";
+        if (project.coverClass) {
+            coverAttr = `class="card-cover ${project.coverClass}"`;
+        } else if (project.coverStyle) {
+            coverAttr = `class="card-cover" style="${project.coverStyle}"`;
+        } else {
+            coverAttr = `class="card-cover"`; 
+        }
+
+        const techStackHtml = (project.tech || []).map((t) => `<span>${t}</span>`).join("");
+
+        const isBookmarked = window.bookmarksManager && window.bookmarksManager.isBookmarked(project.title);
+        const bookmarkClass = isBookmarked ? 'bookmarked' : '';
+        const bookmarkIcon = isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
 
     renderListView(container, projects) {
         container.innerHTML = projects.map(project => {
@@ -274,23 +291,37 @@ class ProjectManager {
                         </div>
                     </div>
                 </div>
-            `;
-        }).join('');
-    }
+            </div>
+        `;
+    }).join('');
+}
 
-    renderPagination(totalPages) {
-        const container = this.getElements().paginationContainer;
-        if (!container || totalPages <= 1) {
-            if (container) container.innerHTML = '';
-            return;
+        // GitHub Button
+        if (project.github) {
+            const githubBtn = document.createElement("a");
+            githubBtn.href = project.github;
+            githubBtn.target = "_blank";
+            githubBtn.rel = "noopener noreferrer";
+            githubBtn.className = "github-link";
+            githubBtn.innerHTML = `<i class="ri-github-fill"></i>`;
+            githubBtn.addEventListener("click", e => e.stopPropagation());
+            card.style.position = "relative";
+            card.appendChild(githubBtn);
         }
 
-        let html = '';
+        // Bookmark Event
+        const bookmarkBtn = card.querySelector('.bookmark-btn');
+        if (bookmarkBtn) {
+            bookmarkBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleBookmarkClick(bookmarkBtn, project);
+            });
+        }
 
-        // Prev button
-        html += `<button class="pagination-btn" ${this.state.currentPage === 1 ? 'disabled' : ''} id="pagination-prev">
-                    <i class="ri-arrow-left-s-line"></i>
-                 </button>`;
+        // Animation
+        card.style.opacity = "0";
+        card.style.transform = "translateY(20px)";
 
         // Page numbers
         for (let i = 1; i <= totalPages; i++) {
@@ -317,119 +348,44 @@ class ProjectManager {
             });
         });
 
-        const prev = container.querySelector('#pagination-prev');
-        if (prev && !prev.disabled) {
-            prev.addEventListener('click', () => {
-                this.state.currentPage--;
-                this.render();
-                this.scrollToTop();
-            });
-        }
+// --- Helper Functions ---
 
-        const next = container.querySelector('#pagination-next');
-        if (next && !next.disabled) {
-            next.addEventListener('click', () => {
-                this.state.currentPage++;
-                this.render();
-                this.scrollToTop();
-            });
-        }
-    }
-
-    scrollToTop() {
-        const section = document.getElementById('projects');
-        if (section) {
-            const navbarHeight = 75;
-            window.scrollTo({
-                top: section.offsetTop - navbarHeight,
-                behavior: 'smooth'
-            });
-        }
-    }
-
-    /* -----------------------------------------------------------
-     * Utilities
-     * ----------------------------------------------------------- */
-    capitalize(str) {
-        if (!str) return '';
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    }
-
-    escapeHtml(str) {
-        if (!str) return '';
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
+function capitalize(str) {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-/**
- * Contributors Fetcher
- */
-async function fetchContributors() {
-    const grid = document.getElementById('contributors-grid');
-    if (!grid) return;
-
-    try {
-        const response = await fetch('https://api.github.com/repos/YadavAkhileshh/OpenPlayground/contributors');
-        if (!response.ok) throw new Error('Failed to fetch contributors');
-
-        const contributors = await response.json();
-
-        // Update count if exists
-        const count = document.getElementById('contributor-count');
-        if (count) count.textContent = `${contributors.length}+`;
-
-        grid.innerHTML = contributors.map(user => `
-            <div class="contributor-card">
-                <img src="${user.avatar_url}" alt="${user.login}" class="contributor-avatar" loading="lazy">
-                <div class="contributor-info">
-                    <h3 class="contributor-name">${user.login}</h3>
-                    <div class="contributor-stats">
-                        <span class="contributor-contributions">
-                            <i class="ri-git-commit-line"></i> ${user.contributions} contributions
-                        </span>
-                    </div>
-                </div>
-                <a href="${user.html_url}" target="_blank" class="contributor-github-link">
-                    <i class="ri-github-fill"></i>
-                </a>
-            </div>
-        `).join('');
-
-    } catch (error) {
-        console.warn('Contributors Load Error:', error);
-        grid.innerHTML = `<div class="loading-msg">Unable to load contributors.</div>`;
-    }
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
 
-/**
- * Global Bookmark Toggle Wrapper
- */
-window.toggleProjectBookmark = function (btn, title, link, category, description) {
+function handleBookmarkClick(btn, project) {
     if (!window.bookmarksManager) return;
-
-    const project = { title, link, category, description };
+    
     const isNowBookmarked = window.bookmarksManager.toggleBookmark(project);
-
-    // Update button icon
     const icon = btn.querySelector('i');
+    
     btn.classList.toggle('bookmarked', isNowBookmarked);
-    if (icon) icon.className = isNowBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
+    icon.className = isNowBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
+    btn.setAttribute('aria-label', isNowBookmarked ? 'Remove bookmark' : 'Add bookmark');
+    
+    btn.classList.add('animate');
+    setTimeout(() => btn.classList.remove('animate'), 300);
+    
+    showBookmarkToast(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
+}
 
-    // Show toast
-    showToast(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
-};
-
-function showToast(message) {
-    const existing = document.querySelector('.bookmark-toast');
-    if (existing) existing.remove();
-
+function showBookmarkToast(message) {
+    const existingToast = document.querySelector('.bookmark-toast');
+    if (existingToast) existingToast.remove();
+    
     const toast = document.createElement('div');
     toast.className = 'bookmark-toast';
     toast.innerHTML = `<i class="ri-bookmark-fill"></i><span>${message}</span>`;
     document.body.appendChild(toast);
-
+    
     setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => {
         toast.classList.remove('show');
@@ -437,27 +393,163 @@ function showToast(message) {
     }, 2000);
 }
 
-// ===============================
-// Global Initialization
-// ===============================
+// --- Pagination ---
 
-// Expose to global scope for components.js compatibility
-window.ProjectManager = ProjectManager;
-window.fetchContributors = fetchContributors;
+function renderPagination(totalPages) {
+    const paginationContainer = document.getElementById("pagination-controls");
+    if (!paginationContainer) return;
 
-// Listen for component load events from components.js
-document.addEventListener('componentLoaded', (e) => {
-    if (e.detail && e.detail.component === 'projects') {
-        const manager = new ProjectManager();
-        manager.init();
+// Pagination
+function renderPagination(totalPages){
+    paginationContainer.innerHTML = "";
+    if(totalPages <= 1) return;
+
+    for(let i=1;i<=totalPages;i++){
+        const btn = document.createElement("button");
+        btn.className = `pagination-btn${isActive ? " active" : ""}`;
+        btn.innerHTML = label;
+        btn.disabled = disabled;
+        btn.onclick = onClick;
+        return btn;
+    };
+
+    // Prev Button
+    paginationContainer.appendChild(
+        createBtn('<i class="ri-arrow-left-s-line"></i>', currentPage === 1, () => {
+            currentPage--;
+            renderProjects();
+            scrollToProjects();
+        })
+    );
+
+    // Logic for page numbers...
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+    if (endPage - startPage + 1 < maxVisible) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
     }
-    if (e.detail && e.detail.component === 'contributors') {
-        fetchContributors();
-    }
-});
 
-// Fade-in animation observer
-document.addEventListener('DOMContentLoaded', () => {
+    if (startPage > 1) {
+        paginationContainer.appendChild(createBtn("1", false, () => {
+            currentPage = 1;
+            renderProjects();
+            scrollToProjects();
+        }));
+        if (startPage > 2) {
+            const ellipsis = document.createElement("span");
+            ellipsis.className = "pagination-btn";
+            ellipsis.textContent = "...";
+            paginationContainer.appendChild(ellipsis);
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        paginationContainer.appendChild(createBtn(i, false, () => {
+            currentPage = i;
+            renderProjects();
+            scrollToProjects();
+        }, i === currentPage));
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const ellipsis = document.createElement("span");
+            ellipsis.className = "pagination-btn";
+            ellipsis.textContent = "...";
+            paginationContainer.appendChild(ellipsis);
+        }
+        paginationContainer.appendChild(createBtn(totalPages, false, () => {
+            currentPage = totalPages;
+            renderProjects();
+            scrollToProjects();
+        }));
+    }
+
+    // Next Button
+    paginationContainer.appendChild(
+        createBtn('<i class="ri-arrow-right-s-line"></i>', currentPage === totalPages, () => {
+            currentPage++;
+            renderProjects();
+            scrollToProjects();
+        })
+    );
+}
+
+    // Search
+    if (elements.searchInput) {
+        elements.searchInput.addEventListener('input', debounce(handleSearch, 200));
+        console.log('✅ Search listener attached');
+    }
+
+function capitalize(str){ return str.charAt(0).toUpperCase() + str.slice(1); }
+
+// ===============================
+// Contributors Logic
+// ===============================
+async function fetchContributors() {
+    try {
+        const response = await fetch(
+            "https://api.github.com/repos/YadavAkhileshh/OpenPlayground/contributors"
+        );
+        
+        if (!response.ok) throw new Error("Failed to fetch contributors");
+        
+        const contributors = await response.json();
+
+        // Update count
+        const contributorCount = document.getElementById("contributor-count");
+        if (contributorCount) {
+            contributorCount.textContent = `${contributors.length}+`;
+        }
+
+        // Render Grid (if exists)
+        const contributorsGrid = document.getElementById("contributors-grid");
+        if (contributorsGrid) {
+            contributorsGrid.innerHTML = "";
+            contributors.forEach((contributor, index) => {
+                const card = document.createElement("div");
+                card.className = "contributor-card";
+                const isDeveloper = contributor.contributions > 50; 
+                const badgeHTML = isDeveloper
+                    ? `<span class="contributor-badge developer-badge"><i class="ri-code-s-slash-line"></i> Developer</span>`
+                    : '';
+
+                card.innerHTML = `
+                    <img src="${contributor.avatar_url}" alt="${contributor.login}" class="contributor-avatar" loading="lazy">
+                    <div class="contributor-info">
+                        <h3 class="contributor-name">${contributor.login}</h3>
+                        <div class="contributor-stats">
+                            <span class="contributor-contributions">
+                                <i class="ri-git-commit-line"></i> ${contributor.contributions} contributions
+                            </span>
+                            ${badgeHTML}
+                        </div>
+                    </div>
+                    <a href="${contributor.html_url}" target="_blank" rel="noopener noreferrer" class="contributor-github-link" aria-label="View ${contributor.login} on GitHub">
+                        <i class="ri-github-fill"></i>
+                    </a>
+                `;
+
+                card.style.opacity = "0";
+                card.style.transform = "translateY(20px)";
+                contributorsGrid.appendChild(card);
+                setTimeout(() => {
+                    card.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+                    card.style.opacity = "1";
+                    card.style.transform = "translateY(0)";
+                }, index * 30);
+            });
+        }
+    } catch (error) {
+        console.error("Error fetching contributors:", error);
+    }
+
+// ===============================
+// Animations & Nav Logic
+// ===============================
+function setupAnimations() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -467,7 +559,67 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }, { threshold: 0.1 });
 
-    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
-});
+    document.querySelectorAll('.fade-up').forEach(el => {
+        observer.observe(el);
+    });
+}
 
-console.log('%c🚀 OpenPlayground Unified Logic Active', 'color:#6366f1;font-weight:bold;');
+function initNavLogic() {
+    const navbar = document.getElementById('navbar');
+    const scrollBtn = document.getElementById("scrollToTopBtn");
+    
+    window.addEventListener('scroll', () => {
+        if (navbar && window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else if (navbar) {
+            navbar.classList.remove('scrolled');
+        }
+
+        if (scrollBtn) {
+            scrollBtn.classList.toggle("show", window.scrollY > 300);
+        }
+    });
+
+    if (scrollBtn) {
+        scrollBtn.addEventListener("click", () => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+    }
+}
+
+// ===============================
+// Initialization
+// ===============================
+
+// Listen for the custom event fired by components.js
+let loadedCount = 0;
+const expectedComponents = 6; // header, hero, projects, contribute, footer, chatbot
+
+document.addEventListener('componentLoaded', () => {
+    loadedCount++;
+    // Once everything is loaded, run our main logic
+    if (loadedCount === expectedComponents) {
+        initializeApp();
+    }
+}
+
+// Fallback: If event system fails, try to init anyway after a delay
+setTimeout(() => {
+    if (loadedCount < expectedComponents) {
+        console.log("Fallback init triggered");
+        initializeApp();
+    }
+
+function initializeApp() {
+    console.log("🚀 Initializing App Logic...");
+    initTheme();
+    initNavLogic();
+    fetchProjects();
+    fetchContributors();
+    setupAnimations();
+}
+
+console.log(
+    "%c🚀 Want to contribute? https://github.com/YadavAkhileshh/OpenPlayground",
+    "color: #6366f1; font-size: 14px; font-weight: bold;"
+);
