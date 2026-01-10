@@ -1,64 +1,96 @@
 const board = document.getElementById("board");
+const rollBtn = document.getElementById("rollBtn");
 const diceText = document.getElementById("dice");
 const statusText = document.getElementById("status");
 
-let position = 0;
+let cells = [];
 
-const snakes = {
-  17: 7,
-  54: 34,
-  62: 19,
-  98: 79
-};
-
+// REALISTIC ladders (min 3 steps)
 const ladders = {
-  3: 22,
-  8: 26,
-  20: 41,
-  28: 84
+  3: 22, 8: 26, 20: 38, 27: 56,
+  50: 72, 63: 81, 70: 92
 };
 
-// Build board
+// REALISTIC snakes
+const snakes = {
+  17: 7, 32: 10, 48: 30,
+  62: 19, 88: 36, 95: 75, 99: 64
+};
+
+// Create board
 for (let i = 100; i >= 1; i--) {
   const cell = document.createElement("div");
   cell.className = "cell";
-  cell.id = `cell-${i}`;
-  cell.innerText = i;
+  cell.innerHTML = `<span class="num">${i}</span>`;
+
+  if (ladders[i]) {
+    cell.classList.add("ladder");
+    cell.innerHTML += `<span class="mark">🪜 ↑${ladders[i]}</span>`;
+  }
+
+  if (snakes[i]) {
+    cell.classList.add("snake");
+    cell.innerHTML += `<span class="mark">🐍 ↓${snakes[i]}</span>`;
+  }
+
   board.appendChild(cell);
+  cells[i] = cell;
+}
+
+let playerPos = [0, 0];
+let currentPlayer = 0;
+
+function drawPlayers() {
+  document.querySelectorAll(".player1,.player2").forEach(p => p.remove());
+
+  if (playerPos[0] > 0) {
+    const p1 = document.createElement("div");
+    p1.className = "player1";
+    cells[playerPos[0]].appendChild(p1);
+  }
+
+  if (playerPos[1] > 0) {
+    const p2 = document.createElement("div");
+    p2.className = "player2";
+    cells[playerPos[1]].appendChild(p2);
+  }
 }
 
 function rollDice() {
-  const roll = Math.floor(Math.random() * 6) + 1;
-  diceText.innerText = `Dice: ${roll}`;
-
-  let next = position + roll;
-  if (next > 100) return;
-
-  position = next;
-
-  if (snakes[position]) {
-    position = snakes[position];
-    statusText.innerText = "🐍 Snake bite!";
-  } else if (ladders[position]) {
-    position = ladders[position];
-    statusText.innerText = "🪜 Ladder climb!";
-  } else {
-    statusText.innerText = "Moving...";
-  }
-
-  updatePlayer();
-
-  if (position === 100) {
-    statusText.innerText = "🎉 You won!";
-  }
+  return Math.floor(Math.random() * 6) + 1;
 }
 
-function updatePlayer() {
-  document.querySelectorAll(".player").forEach(p => p.remove());
-  const cell = document.getElementById(`cell-${position}`);
-  if (!cell) return;
+function movePlayer() {
+  const dice = rollDice();
+  diceText.innerText = `Dice: ${dice}`;
 
-  const player = document.createElement("div");
-  player.className = "player";
-  cell.appendChild(player);
+  let next = playerPos[currentPlayer] + dice;
+  if (next > 100) {
+    statusText.innerText = "Exact roll needed!";
+    switchTurn();
+    return;
+  }
+
+  playerPos[currentPlayer] = next;
+
+  if (snakes[next]) playerPos[currentPlayer] = snakes[next];
+  if (ladders[next]) playerPos[currentPlayer] = ladders[next];
+
+  drawPlayers();
+
+  if (playerPos[currentPlayer] === 100) {
+    statusText.innerText = `🎉 Player ${currentPlayer + 1} Wins!`;
+    rollBtn.disabled = true;
+    return;
+  }
+
+  switchTurn();
 }
+
+function switchTurn() {
+  currentPlayer = currentPlayer === 0 ? 1 : 0;
+  statusText.innerText = `Player ${currentPlayer + 1} Turn`;
+}
+
+rollBtn.addEventListener("click", movePlayer);
+drawPlayers();

@@ -2,6 +2,35 @@
 // OpenPlayground - Unified App Logic
 // ===============================
 
+
+
+import { ProjectVisibilityEngine } from "./core/projectVisibilityEngine.js";
+
+
+/* =====================================================
+   GLOBAL ELEMENTS & STATE
+===================================================== */
+const html = document.documentElement;
+const toggleBtn = document.getElementById("toggle-mode-btn");
+const themeIcon = document.getElementById("theme-icon");
+
+
+// ===============================
+
+// THEME TOGGLE
+
+// Architecture: ProjectVisibilityEngine Integration
+// ===============================
+// We're introducing a centralized visibility engine to handle project filtering logic.
+// Phase 1: Migrate SEARCH functionality to use the engine.
+// Phase 2 (future): Migrate category filtering, sorting, and pagination.
+// Benefits:
+// - Separation of concerns: logic vs. DOM manipulation
+// - Reusability: engine can be used across multiple views
+// - Testability: pure functions easier to unit test
+// - Scalability: complex filters (multi-select, tags, dates) become manageable
+
+
 import { ProjectVisibilityEngine } from "./core/projectVisibilityEngine.js";
 
 /**
@@ -97,14 +126,130 @@ class ProjectManager {
             console.log(`📦 Loaded ${this.state.allProjects.length} projects.`);
             this.render();
 
+
+// ===============================
+// Architecture: ProjectVisibilityEngine Instance
+// ===============================
+// This engine will progressively replace inline filtering logic.
+// Currently handles: search query matching
+// Future: category filters, sorting, advanced filters
+let visibilityEngine = null;
+
+const searchInput = document.getElementById("project-search");
+const sortSelect = document.getElementById("project-sort");
+const filterBtns = document.querySelectorAll(".filter-btn");
+
+const clearBtn = document.getElementById("clear-filters");
+const surpriseBtn = document.getElementById("surprise-btn");
+
+const surpriseBtn = document.getElementById("surprise-btn");
+const clearBtn = document.getElementById("clear-filters");
+
+// Reset all filters, search input, and pagination when clear button is clicked
+if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        sortSelect.value = "default";
+        currentCategory = "all";
+        currentPage = 1;
+
+        filterBtns.forEach(b => b.classList.remove("active"));
+        document.querySelector('[data-filter="all"]').classList.add("active");
+
+        // Architecture: Clear search query in engine
+        if (visibilityEngine) {
+            visibilityEngine.setSearchQuery("");
+
         } catch (error) {
             console.error('❌ ProjectManager Error:', error);
             const elements = this.getElements();
             if (elements.projectsGrid) {
                 elements.projectsGrid.innerHTML = `<div class="error-msg">Failed to load projects.</div>`;
             }
+
         }
     }
+
+
+        renderProjects();
+    });
+}
+
+
+const projectsContainer = document.querySelector(".projects-container");
+const paginationContainer = document.getElementById("pagination-controls");
+const emptyState = document.getElementById("empty-state");
+
+
+
+const scrollBtn = document.getElementById("scrollToTopBtn");
+const navbar = document.getElementById("navbar");
+
+let allProjectsData = [];
+let currentPage = 1;
+const itemsPerPage = 9;
+let currentCategory = "all";
+let currentSort = "default";
+
+
+const allCards = Array.from(document.querySelectorAll(".card"));
+
+// Updates the project count displayed on category filter buttons
+function updateCategoryCounts() {
+    const counts = {};
+
+    allCards.forEach(card => {
+        const cat = card.dataset.category;
+        counts[cat] = (counts[cat] || 0) + 1;
+    });
+
+    filterBtns.forEach(btn => {
+        const cat = btn.dataset.filter;
+        if (cat === "all") {
+            btn.innerText = `All (${allCards.length})`;
+        } else {
+            btn.innerText = `${cat.charAt(0).toUpperCase() + cat.slice(1)} (${counts[cat] || 0})`;
+        }
+    });
+}
+
+// ===============================
+// Add GitHub link button to cards
+// ===============================
+
+
+const contributorsGrid = document.getElementById("contributors-grid");
+
+let allProjectsData = [];
+let currentPage = 1;
+let currentCategory = "all";
+let currentSort = "default";
+const itemsPerPage = 9;
+
+let visibilityEngine = null;
+
+/* =====================================================
+   THEME TOGGLE
+===================================================== */
+const savedTheme = localStorage.getItem("theme") || "light";
+html.setAttribute("data-theme", savedTheme);
+updateThemeIcon(savedTheme);
+
+
+toggleBtn?.addEventListener("click", () => {
+  const newTheme = html.getAttribute("data-theme") === "light" ? "dark" : "light";
+  html.setAttribute("data-theme", newTheme);
+  localStorage.setItem("theme", newTheme);
+  updateThemeIcon(newTheme);
+
+  toggleBtn.classList.add("shake");
+  setTimeout(() => toggleBtn.classList.remove("shake"), 500);
+});
+
+
+// Fetch projects JSON
+async function fetchProjects() {
+    try {
 
     /* -----------------------------------------------------------
      * Event Handling
@@ -128,6 +273,7 @@ class ProjectManager {
                 this.render();
             });
         }
+
 
         // Category Filters
         if (elements.filterBtns) {
@@ -195,6 +341,34 @@ class ProjectManager {
             if (this.state.viewMode !== 'list') elements.projectsList.innerHTML = '';
         }
 
+
+
+function updateThemeIcon(theme) {
+  themeIcon.className = theme === "dark" ? "ri-moon-fill" : "ri-sun-line";
+}
+
+/* =====================================================
+   SCROLL TO TOP + NAVBAR SHADOW
+===================================================== */
+window.addEventListener("scroll", () => {
+  scrollBtn?.classList.toggle("show", window.scrollY > 300);
+  navbar?.classList.toggle("scrolled", window.scrollY > 50);
+});
+
+
+scrollBtn?.addEventListener("click", () =>
+  window.scrollTo({ top: 0, behavior: "smooth" })
+);
+
+// Surprise Me Button Logic
+if (surpriseBtn) {
+    surpriseBtn.addEventListener("click", () => {
+        if (allProjectsData.length > 0) {
+            const randomIndex = Math.floor(Math.random() * allProjectsData.length);
+            const randomProject = allProjectsData[randomIndex];
+            // Open project link
+            window.open(randomProject.link, "_self");
+
         // Handle empty state
         if (pageItems.length === 0) {
             if (elements.emptyState) elements.emptyState.style.display = 'block';
@@ -211,6 +385,7 @@ class ProjectManager {
             this.renderCardView(elements.projectsGrid, pageItems);
         } else {
             this.renderListView(elements.projectsList, pageItems);
+
         }
 
         this.renderPagination(totalPages);
@@ -332,6 +507,104 @@ class ProjectManager {
             });
         });
 
+
+        // Stagger animation
+        card.style.opacity = "0";
+        card.style.transform = "translateY(20px)";
+
+        projectsContainer.appendChild(card);
+    });
+
+
+
+/* =====================================================
+   FETCH PROJECTS
+===================================================== */
+async function fetchProjects() {
+  try {
+    const res = await fetch("./projects.json");
+    const data = await res.json();
+    allProjectsData = data;
+
+    const metadata = data.map(p => ({
+      id: p.title,
+      title: p.title,
+      category: p.category,
+      description: p.description || ""
+    }));
+
+    visibilityEngine = new ProjectVisibilityEngine(metadata);
+    renderProjects();
+  } catch (err) {
+    console.error("Failed to load projects:", err);
+    projectsContainer.innerHTML = `<p>Unable to load projects.</p>`;
+  }
+}
+
+/* =====================================================
+   RENDER PROJECTS
+===================================================== */
+function renderProjects() {
+  if (!projectsContainer) return;
+
+  let filtered = [...allProjectsData];
+
+  // Search via engine
+  if (visibilityEngine) {
+    const visibleIds = new Set(visibilityEngine.getVisibleProjects());
+    filtered = filtered.filter(p => visibleIds.has(p.title));
+  }
+
+  // Category filter
+  if (currentCategory !== "all") {
+    filtered = filtered.filter(p => p.category === currentCategory);
+  }
+
+  // Sorting
+  if (currentSort === "az") filtered.sort((a, b) => a.title.localeCompare(b.title));
+  if (currentSort === "za") filtered.sort((a, b) => b.title.localeCompare(a.title));
+  if (currentSort === "newest") filtered.reverse();
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const start = (currentPage - 1) * itemsPerPage;
+  const paginated = filtered.slice(start, start + itemsPerPage);
+
+  projectsContainer.innerHTML = "";
+
+  if (paginated.length === 0) {
+    emptyState.style.display = "block";
+    renderPagination(0);
+    return;
+  } else {
+    emptyState.style.display = "none";
+  }
+
+  paginated.forEach(project => {
+    const card = document.createElement("a");
+    card.href = project.link;
+    card.className = "card";
+    card.dataset.category = project.category;
+
+    card.innerHTML = `
+      <div class="card-cover"><i class="${project.icon}"></i></div>
+      <div class="card-content">
+        <h3 class="card-heading">${escapeHtml(project.title)}</h3>
+        <p class="card-description">${escapeHtml(project.description)}</p>
+        <div class="card-tech">
+          ${(project.tech || []).map(t => `<span>${t}</span>`).join("")}
+        </div>
+      </div>
+    `;
+
+    projectsContainer.appendChild(card);
+  });
+
+  renderPagination(totalPages);
+
+    renderPagination(totalPages);
+}
+
+
         const prev = container.querySelector('#pagination-prev');
         if (prev && !prev.disabled) {
             prev.addEventListener('click', () => {
@@ -339,7 +612,7 @@ class ProjectManager {
                 this.render();
                 this.scrollToTop();
             });
-        }
+
 
         const next = container.querySelector('#pagination-next');
         if (next && !next.disabled) {
@@ -350,6 +623,26 @@ class ProjectManager {
             });
         }
     }
+
+
+// Capitalize the first letter of a given string
+function capitalize(str) {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1);
+
+}
+
+
+/* =====================================================
+   PAGINATION
+===================================================== */
+
+// Escape HTML to prevent XSS
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
 
     scrollToTop() {
         const section = document.getElementById('projects');
@@ -370,6 +663,7 @@ class ProjectManager {
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
+
     escapeHtml(str) {
         if (!str) return '';
         const div = document.createElement('div');
@@ -388,7 +682,51 @@ class ProjectManager {
         // Remove trailing /index.html or index.html
         path = path.replace(/\/index\.html$/, '').replace(/^index\.html$/, '');
 
+
+// Pagination
+// ===============================
+
+
+function renderPagination(totalPages) {
+  paginationContainer.innerHTML = "";
+  if (totalPages <= 1) return;
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement("button");
+    btn.textContent = i;
+    btn.classList.toggle("active", i === currentPage);
+    btn.onclick = () => {
+      currentPage = i;
+      renderProjects();
+      scrollToProjects();
+    };
+    paginationContainer.appendChild(btn);
+  }
+}
+
+function scrollToProjects() {
+  document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" });
+}
+
+
+// Pagination
+function renderPagination(totalPages){
+    paginationContainer.innerHTML = "";
+    if(totalPages <= 1) return;
+
+    for(let i=1;i<=totalPages;i++){
+        const btn = document.createElement("button");
+        btn.textContent = i;
+        btn.classList.toggle("active", i===currentPage);
+        btn.addEventListener("click", () => {
+            currentPage=i;
+            renderProjects();
+            window.scrollTo({top: document.getElementById("projects").offsetTop-80, behavior:"smooth"});
+        });
+        paginationContainer.appendChild(btn);
+
         return `https://github.com/YadavAkhileshh/OpenPlayground/tree/main/${path}`;
+
     }
 }
 
@@ -399,9 +737,93 @@ async function fetchContributors() {
     const grid = document.getElementById('contributors-grid');
     if (!grid) return;
 
+
+function capitalize(str){ return str.charAt(0).toUpperCase() + str.slice(1); }
+
+
+
+/* =====================================================
+   FILTER / SEARCH / SORT EVENTS
+===================================================== */
+searchInput?.addEventListener("input", () => {
+  visibilityEngine?.setSearchQuery(searchInput.value);
+  currentPage = 1;
+  renderProjects();
+});
+
+// ===============================
+// Init
+// ===============================
+
+updateCategoryCounts();
+
+
+sortSelect?.addEventListener("change", () => {
+  currentSort = sortSelect.value;
+  currentPage = 1;
+  renderProjects();
+});
+
+
+filterBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    filterBtns.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentCategory = btn.dataset.filter;
+    currentPage = 1;
+    renderProjects();
+  });
+});
+
+clearBtn?.addEventListener("click", () => {
+  searchInput.value = "";
+  sortSelect.value = "default";
+  currentCategory = "all";
+  currentPage = 1;
+  visibilityEngine?.setSearchQuery("");
+  renderProjects();
+});
+
+surpriseBtn?.addEventListener("click", () => {
+  if (!allProjectsData.length) return;
+  const random = allProjectsData[Math.floor(Math.random() * allProjectsData.length)];
+  window.location.href = random.link;
+});
+
+/* =====================================================
+   CONTRIBUTORS
+===================================================== */
+async function fetchContributors() {
+
+  if (!contributorsGrid) return;
+  try {
+    const res = await fetch(
+      "https://api.github.com/repos/YadavAkhileshh/OpenPlayground/contributors"
+    );
+    const contributors = await res.json();
+
+    contributorsGrid.innerHTML = "";
+    contributors.forEach(c => {
+      const card = document.createElement("a");
+      card.href = c.html_url;
+      card.target = "_blank";
+      card.className = "contributor-card";
+      card.innerHTML = `
+        <img src="${c.avatar_url}" alt="${c.login}" loading="lazy">
+        <span>${c.login}</span>
+      `;
+      contributorsGrid.appendChild(card);
+    });
+  } catch (err) {
+    console.error("Failed to fetch contributors:", err);
+  }
+
+    if (!contributorsGrid) return;
+
     try {
         const response = await fetch('https://api.github.com/repos/YadavAkhileshh/OpenPlayground/contributors');
         if (!response.ok) throw new Error('Failed to fetch contributors');
+
 
         const contributors = await response.json();
 
@@ -409,9 +831,46 @@ async function fetchContributors() {
         const count = document.getElementById('contributor-count');
         if (count) count.textContent = `${contributors.length}+`;
 
+
+// ===============================
+// FETCH CONTRIBUTORS
+// ===============================
+const contributorsGrid = document.getElementById("contributors-grid");
+async function fetchContributors(){
+    if(!contributorsGrid) return;
+
+    try {
+        const res = await fetch("https://api.github.com/repos/YadavAkhileshh/OpenPlayground/contributors");
+        const contributors = await res.json();
+        contributorsGrid.innerHTML = "";
+
+        contributors.forEach((c,i)=>{
+            const card = document.createElement("a");
+            card.href = c.html_url;
+            card.target = "_blank";
+            card.className = "contributor-card";
+            card.innerHTML = `
+                <img src="${c.avatar_url}" alt="${c.login}" class="contributor-avatar" loading="lazy">
+                <span class="contributor-name">${c.login}</span>
+
+
+        contributors.forEach((contributor, index) => {
+            const card = document.createElement("div");
+            card.className = "contributor-card";
+
+            // Determine if this is a developer (>50 contributions)
+            const isDeveloper = contributor.contributions > 50;
+            const badgeHTML = isDeveloper
+                ? `<span class="contributor-badge developer-badge"><i class="ri-code-s-slash-line"></i> Developer</span>`
+                : '';
+
+            card.innerHTML = `
+                <img src="${contributor.avatar_url}" alt="${contributor.login}" class="contributor-avatar" loading="lazy">
+
         grid.innerHTML = contributors.map(user => `
             <div class="contributor-card">
                 <img src="${user.avatar_url}" alt="${user.login}" class="contributor-avatar" loading="lazy">
+
                 <div class="contributor-info">
                     <h3 class="contributor-name">${user.login}</h3>
                     <div class="contributor-stats">
@@ -430,13 +889,68 @@ async function fetchContributors() {
         console.warn('Contributors Load Error:', error);
         grid.innerHTML = `<div class="loading-msg">Unable to load contributors.</div>`;
     }
+
+
 }
+
+/* =====================================================
+   UTILS
+===================================================== */
+function escapeHtml(str = "") {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+
+/* =====================================================
+   INIT
+===================================================== */
+document.addEventListener("DOMContentLoaded", () => {
+  fetchProjects();
+  fetchContributors();
+
+// ===============================
+// SMOOTH SCROLL ANCHORS
+// ===============================
+document.querySelectorAll('a[href^="#"]').forEach(anchor=>{
+    anchor.addEventListener("click", function(e){
+        const targetId = this.getAttribute("href");
+        if(targetId==="#") return;
+        const target = document.querySelector(targetId);
+        if(target){
+            e.preventDefault();
+            target.scrollIntoView({behavior:"smooth", block:"start"});
+        }
+    });
+
+});
+
+
+
+// ===============================
+// NAVBAR SCROLL SHADOW
+// ===============================
+
+const navbar = document.getElementById('navbar');
+window.addEventListener("scroll", ()=>{
+    navbar?.classList.toggle("scrolled", window.scrollY > 50);
+});
+
+// ===============================
+// INITIALIZATION
+// ===============================
+fetchProjects();
+fetchContributors();
+console.log("%c🚀 Contribute at https://github.com/YadavAkhileshh/OpenPlayground", "color:#6366f1;font-size:14px;font-weight:bold;");
+
 
 /**
  * Global Bookmark Toggle Wrapper
  */
 window.toggleProjectBookmark = function (btn, title, link, category, description) {
     if (!window.bookmarksManager) return;
+
 
     const project = { title, link, category, description };
     const isNowBookmarked = window.bookmarksManager.toggleBookmark(project);
@@ -466,9 +980,58 @@ function showToast(message) {
     }, 2000);
 }
 
+
+// Console message
+
+console.log(
+  "%c🚀 Want to contribute? https://github.com/YadavAkhileshh/OpenPlayground",
+  "color:#6366f1;font-size:14px;font-weight:bold"
+);
+
+
+
+feat / your - feature
+// ================= CATEGORY FILTERING FOR PROJECTS =================
+document.addEventListener("DOMContentLoaded", () => {
+    const filterButtons = document.querySelectorAll(".filter-btn");
+    const projectCards = document.querySelectorAll(".projects-container .card");
+    const emptyState = document.getElementById("empty-state");
+
+    filterButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+            // Active button UI
+            filterButtons.forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+
+            const selectedCategory = btn.dataset.filter;
+            let visibleCount = 0;
+
+            projectCards.forEach((card) => {
+                const cardCategory = card.dataset.category;
+
+                if (
+                    selectedCategory === "all" ||
+                    cardCategory === selectedCategory
+                ) {
+                    card.style.display = "block";
+                    visibleCount++;
+                } else {
+                    card.style.display = "none";
+                }
+            });
+
+            // Empty state handling
+            if (emptyState) {
+                emptyState.style.display = visibleCount === 0 ? "block" : "none";
+            }
+        });
+    });
+});
+
 // ===============================
 // Global Initialization
 // ===============================
+
 
 // Expose to global scope for components.js compatibility
 window.ProjectManager = ProjectManager;
