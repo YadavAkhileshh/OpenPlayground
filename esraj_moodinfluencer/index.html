@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esraj Mood Influencer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            transition: background 1s ease, color 1s ease;
+            text-align: center;
+            background: linear-gradient(to bottom, #f0f0f0, #e0e0e0);
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #4a90e2;
+        }
+
+        .mood-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        .mood-display {
+            margin: 30px 0;
+            padding: 20px;
+            border-radius: 10px;
+            transition: all 1s ease;
+            animation: fadeIn 1s;
+        }
+
+        #mood-icon {
+            font-size: 50px;
+            margin: 10px 0;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Mood-specific themes */
+        .happy {
+            background: linear-gradient(to bottom, #ffeb3b, #ffc107);
+            color: #333;
+        }
+
+        .sad {
+            background: linear-gradient(to bottom, #90a4ae, #607d8b);
+            color: #fff;
+        }
+
+        .relaxed {
+            background: linear-gradient(to bottom, #a5d6a7, #66bb6a);
+            color: #333;
+        }
+
+        .energetic {
+            background: linear-gradient(to bottom, #ff5722, #d84315);
+            color: #fff;
+        }
+
+        #video-container {
+            margin-top: 20px;
+            display: none;
+            position: relative;
+        }
+
+        iframe {
+            width: 100%;
+            height: 400px;
+            border: none;
+            border-radius: 10px;
+            pointer-events: none;
+        }
+
+        #video-container.show iframe {
+            pointer-events: auto;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #fff;
+            border-radius: 10px;
+            pointer-events: none;
+        }
+
+        .restrict-note {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Esraj Mood Influencer</h1>
+        <p>Select your mood to transform the UI and auto-play Esraj/Tagore videos. Videos cycle automatically for a playlist-like experience.</p>
+        
+        <div class="mood-buttons">
+            <button data-mood="happy">😊 Happy</button>
+            <button data-mood="sad">😢 Sad</button>
+            <button data-mood="relaxed">😌 Relaxed</button>
+            <button data-mood="energetic">⚡ Energetic</button>
+        </div>
+        
+        <div class="mood-display">
+            <h2 id="mood-title">Choose a Mood</h2>
+            <p id="mood-description">Music has a powerful healing effect. Let Esraj and Tagore's melodies uplift you.</p>
+            <div id="mood-icon">🎵</div>
+        </div>
+        
+        <div id="video-container">
+            <iframe id="video-iframe" src="" allowfullscreen></iframe>
+            <div class="overlay">Video Loading... Click to Interact if Needed</div>
+            <p class="restrict-note">Note: View is restricted—no related videos or full navigation. Autoplay may require a click.</p>
+        </div>
+    </div>
+    
+    <script>
+        const moods = {
+            happy: {
+                title: "Happy Vibes!",
+                description: "Energize with upbeat Esraj melodies and Tagore's joyful songs.",
+                icon: "🎉",
+                videoIds: ["ipdTwtitRYQ"]  // Replace with real video IDs (e.g., Esraj happy videos)
+            },
+            sad: {
+                title: "Sad & Reflective",
+                description: "Heal with soothing Esraj and Tagore's melancholic compositions.",
+                icon: "🌧️",
+                videoIds: ["Qk-Jt7vBNHE"]  // Replace with real IDs
+            },
+            relaxed: {
+                title: "Relaxed & Calm",
+                description: "Unwind with Esraj's gentle tones and Tagore's serene songs.",
+                icon: "🧘",
+                videoIds: ["pd_b4dNJoDg"]  // Replace with real IDs
+            },
+            energetic: {
+                title: "Energetic Burst!",
+                description: "Get pumped with dynamic Esraj and Tagore-inspired rhythms.",
+                icon: "🔥",
+                videoIds: ["Nab5qHngOTY"]  // Replace with real IDs
+            }
+        };
+
+        const moodDisplay = document.querySelector('.mood-display');
+        const moodTitle = document.getElementById('mood-title');
+        const moodDescription = document.getElementById('mood-description');
+        const moodIcon = document.getElementById('mood-icon');
+        const videoContainer = document.getElementById('video-container');
+        const videoIframe = document.getElementById('video-iframe');
+        let currentVideoIds = [];
+        let currentIndex = 0;
+
+        // Function to update UI and load/play videos
+        function setMood(mood) {
+            // Remove previous mood classes
+            document.body.className = '';
+            moodDisplay.className = 'mood-display';
+
+            // Apply new mood
+            document.body.classList.add(mood);
+            moodDisplay.classList.add(mood);
+            moodTitle.textContent = moods[mood].title;
+            moodDescription.textContent = moods[mood].description;
+            moodIcon.textContent = moods[mood].icon;
+
+            // Load and play video sequence
+            currentVideoIds = moods[mood].videoIds;
+            currentIndex = 0;
+            loadVideo(currentIndex);
+            videoContainer.style.display = 'block';
+            videoContainer.classList.add('show');
+        }
+
+        // Load a video from the array
+        function loadVideo(index) {
+            if (currentVideoIds[index]) {
+                const videoUrl = `https://www.youtube.com/embed/${currentVideoIds[index]}?modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&fs=0&autoplay=1&mute=1&enablejsapi=1`;  // Restricted embed with API for auto-advance
+                videoIframe.src = videoUrl;
+            }
+        }
+
+        // Add event listeners to buttons
+        document.querySelectorAll('.mood-buttons button').forEach(button => {
+            button.addEventListener('click', () => {
+                const mood = button.getAttribute('data-mood');
+                setMood(mood);
+            });
+        });
+    </script>
+</body>
+</html>
