@@ -38,9 +38,22 @@ class ProjectManager {
 
         console.log("🚀 ProjectManager: Initializing...");
 
+
+
+    html.setAttribute("data-theme", newTheme);
+
+  html.setAttribute("data-theme", newTheme);
+
+    localStorage.setItem("theme", newTheme);
+    updateThemeIcon(newTheme);
+    toggleBtn.classList.add("shake");
+    setTimeout(() => toggleBtn.classList.remove("shake"), 500);
+});
+
         // Initial setup
         this.setupEventListeners();
         await this.fetchProjects();
+
 
         this.state.initialized = true;
         console.log("✅ ProjectManager: Ready.");
@@ -94,8 +107,34 @@ class ProjectManager {
             this.state.visibilityEngine = new ProjectVisibilityEngine(this.state.allProjects);
             this.state.visibilityEngine.state.itemsPerPage = this.config.ITEMS_PER_PAGE;
 
+
+
+const searchInput = document.getElementById("project-search");
+const sortSelect = document.getElementById("project-sort");
+const filterBtns = document.querySelectorAll(".filter-btn");
+
+
+
+  const searchInput = document.getElementById("project-search");
+const sortSelect = document.getElementById("project-sort");
+const filterBtns = document.querySelectorAll(".filter-btn");
+
+  
+
+// Number of project cards displayed per page
+const itemsPerPage = 9;
+// Tracks the current page number for pagination
+let currentPage = 1;
+// Stores the currently selected project category filter
+let currentCategory = "all";
+// Stores the currently selected sorting option
+let currentSort = "default";
+// Holds all project data fetched from the projects.json file
+let allProjectsData = [];
+
             console.log(`📦 Loaded ${this.state.allProjects.length} projects.`);
             this.render();
+
 
         } catch (error) {
             console.error('❌ ProjectManager Error:', error);
@@ -121,6 +160,22 @@ class ProjectManager {
             });
         }
 
+
+    // Prevent card navigation when clicking the GitHub button
+    githubBtn.addEventListener("click", e => e.stopPropagation());
+
+    card.style.position = "relative";
+    card.appendChild(githubBtn);
+});
+
+
+
+
+
+// Fetch projects JSON
+async function fetchProjects() {
+    try {
+
         // Sort
         if (elements.sortSelect) {
             elements.sortSelect.addEventListener('change', (e) => {
@@ -128,6 +183,7 @@ class ProjectManager {
                 this.render();
             });
         }
+
 
         // Category Filters
         if (elements.filterBtns) {
@@ -293,11 +349,37 @@ class ProjectManager {
         }).join('');
     }
 
+
+    // Render project cards
+    projectsContainer.innerHTML = "";
+    paginated.forEach(project=>{
+        const card = document.createElement("a");
+        card.href = project.link;
+        card.className = "card";
+        card.setAttribute("data-category", project.category);
+
+        card.innerHTML = `
+            <div class="card-cover" style="${project.coverStyle || ''}"><i class="${project.icon}"></i></div>
+
+
+
+
+
+        // Cover style
+        let coverAttr = "";
+        if (project.coverClass) {
+            coverAttr = `class="card-cover ${project.coverClass}"`;
+        } else if (project.coverStyle) {
+            coverAttr = `class="card-cover" style="${project.coverStyle}"`;
+        } else {
+            coverAttr = `class="card-cover"`;
+
     renderPagination(totalPages) {
         const container = this.getElements().paginationContainer;
         if (!container || totalPages <= 1) {
             if (container) container.innerHTML = '';
             return;
+
         }
 
         let html = '';

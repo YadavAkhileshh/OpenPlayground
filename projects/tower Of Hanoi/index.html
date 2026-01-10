@@ -7,6 +7,46 @@
 
   <link rel="stylesheet" href="../../style.css" />
   <link rel="icon" href="/logo.jpg" type="image/png" />
+
+
+  <style>
+    /* ===============================
+       LAYOUT
+    =============================== */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #3498db;
+    }
+
+    main.tower-game {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    /* ===============================
+       GAME CONTAINER
+    =============================== */
+    .game-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      height: clamp(260px, 50vw, 420px);
+      margin: 30px auto;
+      gap: 10px;
+    }
+
+    .rod {
+      flex: 1;
+      max-width: 160px;
+      background: #f5f5f5;
+
   <style>
     /* Game container */
     .game-container {
@@ -22,6 +62,7 @@
       width: 150px;
       height: 100%;
       background-color: #f0f0f0;
+
       border: 2px solid #ccc;
       border-radius: 10px;
       display: flex;
@@ -34,6 +75,44 @@
     .rod::before {
       content: "";
       position: absolute;
+
+      bottom: 10px;
+      width: 10px;
+      height: 90%;
+      background-color: #777;
+      border-radius: 5px;
+    }
+
+    /* ===============================
+       DISKS
+    =============================== */
+    .disk {
+      height: clamp(22px, 4vw, 30px);
+      margin: 5px 0;
+      border-radius: 5px;
+      color: #fff;
+      font-size: clamp(12px, 2vw, 14px);
+      line-height: 30px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .disk.selected {
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+      transform: scale(1.05);
+    }
+
+    .disk-1 { background: #e74c3c; width: 35%; }
+    .disk-2 { background: #3498db; width: 55%; }
+    .disk-3 { background: #f1c40f; width: 75%; }
+    .disk-4 { background: #2ecc71; width: 95%; }
+
+    /* ===============================
+       CONTROLS
+    =============================== */
+    .controls {
+
       bottom: 0;
       width: 10px;
       height: 100%;
@@ -59,18 +138,56 @@
 
     .controls {
       text-align: center;
+
       margin-top: 20px;
     }
 
     .controls button {
+
+      padding: 10px 18px;
+      font-size: 16px;
+      margin: 8px;
+      cursor: pointer;
+    }
+
+    .controls p {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    /* ===============================
+       MOBILE
+    =============================== */
+    @media (max-width: 600px) {
+      .game-container {
+        height: 280px;
+      }
+
+      .controls button {
+        width: 100%;
+        max-width: 260px;
+      }
+    }
+
       padding: 10px 20px;
       font-size: 16px;
       margin: 0 10px;
       cursor: pointer;
     }
+
   </style>
 </head>
+
 <body>
+
+  <main class="tower-game">
+    <h2>🎯 Tower of Hanoi</h2>
+
+    <div class="game-container">
+      <div class="rod" data-index="0"></div>
+      <div class="rod" data-index="1"></div>
+      <div class="rod" data-index="2"></div>
+
   <header>
     <img src="/logo.jpg" alt="OpenPlayground Logo" class="logo">
     <div class="heading-text">
@@ -86,6 +203,7 @@
       <div class="rod" id="rod-0" data-index="0"></div>
       <div class="rod" id="rod-1" data-index="1"></div>
       <div class="rod" id="rod-2" data-index="2"></div>
+
     </div>
 
     <div class="controls">
@@ -93,6 +211,82 @@
       <button id="reset-game">Reset Game</button>
       <p>Moves: <span id="move-count">0</span></p>
     </div>
+
+
+    <button onclick="window.location.href='instructions.html'">
+      📘 Go to Instructions
+    </button>
+  </main>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+  const rods = document.querySelectorAll(".rod");
+  const startBtn = document.getElementById("start-game");
+  const resetBtn = document.getElementById("reset-game");
+  const moveCountEl = document.getElementById("move-count");
+
+  let moveCount = 0;
+  let selectedDisk = null;
+  let disks = [];
+
+  // Initialize disks
+  function initDisks() {
+    rods.forEach(rod => rod.innerHTML = "");
+    disks = [
+      { id: 1, width: 40, class: 'disk-1' },
+      { id: 2, width: 70, class: 'disk-2' },
+      { id: 3, width: 100, class: 'disk-3' },
+      { id: 4, width: 130, class: 'disk-4' },
+    ];
+
+    disks.reverse().forEach(d => {
+      const div = document.createElement("div");
+      div.className = `disk ${d.class}`;
+      div.dataset.size = d.id;
+      div.textContent = d.id;
+      rods[0].appendChild(div);
+    });
+
+    moveCount = 0;
+    moveCountEl.textContent = moveCount;
+  }
+
+  // Click to select and move disk
+  rods.forEach(rod => {
+    rod.addEventListener("click", () => {
+      const topDisk = rod.lastElementChild;
+
+      if (selectedDisk) {
+        const targetDisk = rod.lastElementChild;
+        const selectedSize = parseInt(selectedDisk.dataset.size);
+        const targetSize = targetDisk ? parseInt(targetDisk.dataset.size) : Infinity;
+
+        if (selectedSize < targetSize) {
+          rod.appendChild(selectedDisk);
+          moveCount++;
+          moveCountEl.textContent = moveCount;
+          selectedDisk = null;
+
+          // Check win condition
+          if (rods[2].children.length === disks.length) {
+            setTimeout(() => {
+              alert(`🎉 Game Over! You solved it in ${moveCount} moves!`);
+            }, 100); // Slight delay to ensure last disk is visible
+          }
+        } else {
+          alert("❌ Can't place larger disk on smaller disk!");
+          selectedDisk = null;
+        }
+      } else if (topDisk) {
+        selectedDisk = topDisk;
+      }
+    });
+  });
+
+  startBtn.addEventListener("click", initDisks);
+  resetBtn.addEventListener("click", initDisks);
+});
+</script>
+
   </main>
 
   <script>
@@ -164,5 +358,6 @@
       resetBtn.addEventListener("click", initDisks);
     });
   </script>
+
 </body>
 </html>
