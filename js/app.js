@@ -77,16 +77,12 @@ async function fetchProjects() {
             });
         }
 
-        // Sort alphabetically by title (case-insensitive)
-        state.allProjects.sort((a, b) => {
-            const titleA = (a.title || '').toLowerCase();
-            const titleB = (b.title || '').toLowerCase();
-            return titleA.localeCompare(titleB);
-        });
-
-        // Update project count in hero
-        if (elements.projectCount) {
-            elements.projectCount.textContent = `${state.allProjects.length}+`;
+        // Sort
+        if (elements.sortSelect) {
+            elements.sortSelect.addEventListener('change', (e) => {
+                this.state.currentPage = 1;
+                this.render();
+            });
         }
 
         // Initialize Visibility Engine
@@ -327,7 +323,7 @@ function renderProjects() {
         card.style.opacity = "0";
         card.style.transform = "translateY(20px)";
 
-        // Page numbers (简化的)
+        // Page numbers
         for (let i = 1; i <= totalPages; i++) {
             if (i === 1 || i === totalPages || (i >= this.state.currentPage - 1 && i <= this.state.currentPage + 1)) {
                 html += `<button class="pagination-btn ${i === this.state.currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
