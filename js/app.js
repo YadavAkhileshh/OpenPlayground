@@ -121,6 +121,16 @@ class ProjectManager {
             });
         }
 
+        // Sort alphabetically by title (case-insensitive)
+        state.allProjects.sort((a, b) => {
+            const titleA = (a.title || '').toLowerCase();
+            const titleB = (b.title || '').toLowerCase();
+            return titleA.localeCompare(titleB);
+        });
+
+        // Update project count in hero
+        if (elements.projectCount) {
+            elements.projectCount.textContent = `${state.allProjects.length}+`;
         // Sort
         if (elements.sortSelect) {
             elements.sortSelect.addEventListener('change', (e) => {
