@@ -2,6 +2,16 @@
 
 Thank you for your interest in contributing to OpenPlayground! This document provides guidelines and instructions for contributing to this project.
 
+## ⚡ Quick Contribution Summary
+
+- ❌ **Do NOT modify `index.html` directly** (auto-generated)
+- ✅ **Add new projects via** `projects/` + `projects.json`
+- 🧩 **UI / styling changes** → `components/` and `css/`
+- 📄 **Documentation updates** → `README.md` / `CONTRIBUTING.md`
+- 📸 **Screenshots are mandatory** for all PRs
+- 🔍 **Run `git diff` before committing** to verify changes
+
+
 ## ⚠️ CRITICAL RULES - READ FIRST
 
 ### ❌ DO NOT MODIFY `index.html` DIRECTLY!
