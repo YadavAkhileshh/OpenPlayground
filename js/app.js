@@ -180,6 +180,44 @@ class ProjectManager {
         else if (sortMode === 'za') filtered.sort((a, b) => b.title.localeCompare(a.title));
         else if (sortMode === 'newest') filtered.reverse();
 
+function renderCardView(container, projects) {
+    container.innerHTML = projects.map((project, index) => {
+        const isBookmarked = window.bookmarksManager?.isBookmarked?.(project.title) || false;
+        const techHtml = project.tech?.map(t => `<span>${escapeHtml(t)}</span>`).join('') || '';
+        const coverStyle = project.coverStyle || 'background: var(--gradient-primary); color: white;';
+
+        return `
+            <a href="${escapeHtml(project.link)}" class="card" data-category="${escapeHtml(project.category || 'utility')}">
+                <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
+                        data-project-title="${escapeHtml(project.title)}" 
+                        aria-label="${isBookmarked ? 'Remove bookmark' : 'Add bookmark'}"
+                        onclick="event.preventDefault(); event.stopPropagation(); window.toggleProjectBookmark(this, '${escapeHtml(project.title)}', '${escapeHtml(project.link)}', '${escapeHtml(project.category || 'utility')}', '${escapeHtml(project.description || '')}');">
+                    <i class="${isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line'}"></i>
+                </button>
+                <div class="card-cover" style="${coverStyle}">
+                    <i class="${project.icon || 'ri-code-s-slash-line'}"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-header-flex">
+                        <h3 class="card-heading">${escapeHtml(project.title)}</h3>
+                        <span class="category-tag">${capitalize(project.category || 'utility')}</span>
+                    </div>
+                    <p class="card-description">${escapeHtml(project.description || '')}</p>
+                    <div class="card-tech">${techHtml}</div>
+                </div>
+            </a>
+            </a>
+        `;
+    }).join('');
+
+    // Add audio listeners to new cards
+    setTimeout(() => {
+        container.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('mouseenter', () => window.audioManager?.playHover());
+            card.addEventListener('click', () => window.audioManager?.playClick());
+        });
+    }, 0);
+}
         // Pagination Calculations
         const totalPages = Math.ceil(filtered.length / this.config.ITEMS_PER_PAGE);
         const start = (this.state.currentPage - 1) * this.config.ITEMS_PER_PAGE;
@@ -254,6 +292,18 @@ class ProjectManager {
                         </div>
                     </div>
                 </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add audio listeners to new list items
+    setTimeout(() => {
+        container.querySelectorAll('.list-card').forEach(card => {
+            card.addEventListener('mouseenter', () => window.audioManager?.playHover());
+            card.addEventListener('click', () => window.audioManager?.playClick());
+        });
+    }, 0);
+}
             `;
         }).join('');
     }
@@ -321,6 +371,14 @@ class ProjectManager {
                     <i class="ri-arrow-right-s-line"></i>
                  </button>`;
 
+
+
+    if (state.searchQuery.length > 0) {
+        window.audioManager?.playClick();
+    }
+
+    filterAndRenderProjects();
+}
         container.innerHTML = html;
 
         // Events
@@ -351,16 +409,11 @@ class ProjectManager {
         }
     }
 
-    scrollToTop() {
-        const section = document.getElementById('projects');
-        if (section) {
-            const navbarHeight = 75;
-            window.scrollTo({
-                top: section.offsetTop - navbarHeight,
-                behavior: 'smooth'
-            });
-        }
-    }
+
+
+    window.audioManager?.playClick();
+    filterAndRenderProjects();
+}
 
     /* -----------------------------------------------------------
      * Utilities
@@ -392,43 +445,15 @@ class ProjectManager {
     }
 }
 
-/**
- * Contributors Fetcher
- */
-async function fetchContributors() {
-    const grid = document.getElementById('contributors-grid');
-    if (!grid) return;
+function handleClearSearch() {
+    const elements = getElements();
+    if (elements.searchInput) {
+        elements.searchInput.value = '';
+        state.searchQuery = '';
+        if (elements.searchBox) elements.searchBox.classList.remove('has-text');
 
-    try {
-        const response = await fetch('https://api.github.com/repos/YadavAkhileshh/OpenPlayground/contributors');
-        if (!response.ok) throw new Error('Failed to fetch contributors');
-
-        const contributors = await response.json();
-
-        // Update count if exists
-        const count = document.getElementById('contributor-count');
-        if (count) count.textContent = `${contributors.length}+`;
-
-        grid.innerHTML = contributors.map(user => `
-            <div class="contributor-card">
-                <img src="${user.avatar_url}" alt="${user.login}" class="contributor-avatar" loading="lazy">
-                <div class="contributor-info">
-                    <h3 class="contributor-name">${user.login}</h3>
-                    <div class="contributor-stats">
-                        <span class="contributor-contributions">
-                            <i class="ri-git-commit-line"></i> ${user.contributions} contributions
-                        </span>
-                    </div>
-                </div>
-                <a href="${user.html_url}" target="_blank" class="contributor-github-link">
-                    <i class="ri-github-fill"></i>
-                </a>
-            </div>
-        `).join('');
-
-    } catch (error) {
-        console.warn('Contributors Load Error:', error);
-        grid.innerHTML = `<div class="loading-msg">Unable to load contributors.</div>`;
+        window.audioManager?.playError(); // Distinct sound for clearing
+        filterAndRenderProjects();
     }
 }
 
@@ -445,6 +470,14 @@ window.toggleProjectBookmark = function (btn, title, link, category, description
     const icon = btn.querySelector('i');
     btn.classList.toggle('bookmarked', isNowBookmarked);
     if (icon) icon.className = isNowBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
+
+
+
+    if (isNowBookmarked) {
+        window.audioManager?.playSuccess();
+    } else {
+        window.audioManager?.playClick();
+    }
 
     // Show toast
     showToast(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
@@ -499,4 +532,142 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 });
 
-console.log('%c🚀 OpenPlayground Unified Logic Active', 'color:#6366f1;font-weight:bold;');
+// ===============================
+// Degradation System (Meta-Narrative)
+// ===============================
+class DegradationManager {
+    constructor() {
+        this.maxLevel = 5;
+        this.clickThreshold = 15; // Clicks per level
+        this.timeThreshold = 60000; // Milliseconds per level (1 min)
+
+        this.state = {
+            level: 0,
+            clicks: 0,
+            startTime: Date.now(),
+            ...JSON.parse(localStorage.getItem('degradationState') || '{}')
+        };
+
+        // Reset start time on new session if not persisting strictly
+        if (!localStorage.getItem('degradationState')) {
+            this.state.startTime = Date.now();
+        }
+
+        this.init();
+    }
+
+    init() {
+        this.bindEvents();
+        this.checkLevel();
+        this.applyEffects();
+
+        // Periodic check for time-based degradation
+        setInterval(() => this.checkLevel(), 10000);
+
+        // Expose global reset
+        window.resetDegradation = () => this.reset();
+    }
+
+    bindEvents() {
+        document.addEventListener('click', () => {
+            this.state.clicks++;
+            this.saveState();
+            this.checkLevel();
+        });
+    }
+
+    checkLevel() {
+        const timeElapsed = Date.now() - this.state.startTime;
+        const clickLevel = Math.floor(this.state.clicks / this.clickThreshold);
+        const timeLevel = Math.floor(timeElapsed / this.timeThreshold);
+
+        // Level is determined by whichever is higher
+        const newLevel = Math.min(Math.max(clickLevel, timeLevel), this.maxLevel);
+
+        if (newLevel !== this.state.level) {
+            this.state.level = newLevel;
+            this.saveState();
+            this.applyEffects();
+
+            if (newLevel > 0) {
+                console.log(`⚠️ System Integrity Dropping... Level ${newLevel}`);
+            }
+        }
+    }
+
+    saveState() {
+        localStorage.setItem('degradationState', JSON.stringify(this.state));
+    }
+
+    applyEffects() {
+        // Remove existing level classes
+        document.body.classList.forEach(cls => {
+            if (cls.startsWith('degradation-level-')) {
+                document.body.classList.remove(cls);
+            }
+        });
+
+        // Apply new level
+        if (this.state.level > 0) {
+            document.body.classList.add(`degradation-level-${this.state.level}`);
+        }
+
+        // Dynamic random glitch injection for higher levels
+        if (this.state.level >= 3) {
+            this.startGlitchEffects();
+        }
+    }
+
+    startGlitchEffects() {
+        // Clear any existing interval
+        if (this.glitchInterval) clearInterval(this.glitchInterval);
+
+        // Frequency increases with level
+        const frequency = Math.max(500, 3000 - (this.state.level * 500));
+
+        this.glitchInterval = setInterval(() => {
+            if (Math.random() > 0.7) {
+                const elements = document.querySelectorAll('h1, h2, h3, p, a, button');
+                if (elements.length) {
+                    const el = elements[Math.floor(Math.random() * elements.length)];
+                    el.style.transform = `translate(${Math.random() * 4 - 2}px, ${Math.random() * 4 - 2}px)`;
+
+                    setTimeout(() => {
+                        el.style.transform = '';
+                    }, 150);
+                }
+            }
+        }, frequency);
+    }
+
+    reset() {
+        this.state = {
+            level: 0,
+            clicks: 0,
+            startTime: Date.now()
+        };
+        this.saveState();
+        this.applyEffects();
+        if (this.glitchInterval) clearInterval(this.glitchInterval);
+
+        // Visual feedback for reset
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed; inset: 0; background: #fff; z-index: 99999;
+            opacity: 0; transition: opacity 0.5s; pointer-events: none;
+        `;
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.style.opacity = 0.8);
+        setTimeout(() => {
+            overlay.style.opacity = 0;
+            setTimeout(() => overlay.remove(), 500);
+        }, 500);
+
+        console.log('✅ System Integrity Restored.');
+    }
+}
+
+// Initialize
+window.degradationManager = new DegradationManager();
+
+console.log('%c🚀 OpenPlayground - https://github.com/YadavAkhileshh/OpenPlayground', 'color:#6366f1;font-size:14px;font-weight:bold;');
