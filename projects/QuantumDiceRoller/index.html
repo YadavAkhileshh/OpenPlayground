@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Dice Roller</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes diceSpin {
+            0% { transform: rotateX(0deg) rotateY(0deg); }
+            100% { transform: rotateX(720deg) rotateY(360deg); }
+        }
+        @keyframes quantumGlow {
+            0%, 100% { box-shadow: 0 0 20px #60a5fa, 0 0 40px #3b82f6; }
+            50% { box-shadow: 0 0 30px #8b5cf6, 0 0 60px #7c3aed; }
+        }
+        @keyframes entanglePulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.05); }
+        }
+        .dice-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            backface-visibility: hidden;
+        }
+        .dice-3d {
+            transform-style: preserve-3d;
+            transition: transform 1.5s ease-out;
+        }
+        .pip {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1f2937;
+        }
+        .pip-container {
+            display: grid;
+            gap: 10px;
+        }
+        .entangle-line {
+            background: linear-gradient(90deg, transparent, #8b5cf6, transparent);
+            height: 2px;
+            position: absolute;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 to-blue-900 min-h-screen text-white p-4">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8 pt-4">
+            <h1 class="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+                <i class="fas fa-atom mr-3"></i>Quantum Dice Roller
+            </h1>
+            <p class="text-gray-300 mt-2 max-w-2xl mx-auto">
+                Explore probability with "quantum-entangled" dice. When dice are entangled, their outcomes become correlated!
+            </p>
+        </header>
+
+        <div class="grid lg:grid-cols-3 gap-8">
+            <!-- Left Panel: Controls & Stats -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Quantum Controls -->
+                <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 text-cyan-300">
+                        <i class="fas fa-sliders-h mr-2"></i>Quantum Controls
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <!-- Entanglement Control -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Quantum Entanglement</label>
+                            <div class="flex items-center space-x-4">
+                                <button id="entangle-btn" 
+                                        class="flex-1 py-2 px-4 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90 transition">
+                                    <i class="fas fa-link mr-2"></i>Entangle Dice
+                                </button>
+                                <button id="separate-btn" 
+                                        class="flex-1 py-2 px-4 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600 hover:opacity-90 transition">
+                                    <i class="fas fa-unlink mr-2"></i>Separate
+                                </button>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-400">
+                                <span id="entanglement-status">Status: Dice are independent</span>
+                            </div>
+                        </div>
+
+                        <!-- Dice Count -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Number of Dice</label>
+                            <div class="flex space-x-2">
+                                <button data-dice="1" class="dice-count-btn active flex-1 py-2 rounded-lg bg-blue-600">1 Dice</button>
+                                <button data-dice="2" class="dice-count-btn flex-1 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">2 Dice</button>
+                                <button data-dice="3" class="dice-count-btn flex-1 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">3 Dice</button>
+                            </div>
+                        </div>
+
+                        <!-- Roll Button -->
+                        <button id="roll-btn" 
+                                class="w-full py-3 mt-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:opacity-90 transition text-lg font-bold shadow-lg">
+                            <i class="fas fa-bolt mr-2"></i>Quantum Roll!
+                        </button>
+
+                        <!-- Auto Roll -->
+                        <div class="flex items-center justify-between pt-2">
+                            <div>
+                                <span class="text-sm font-medium">Auto-Roll Experiment</span>
+                                <p class="text-xs text-gray-400">Run 100 rolls to see probability distribution</p>
+                            </div>
+                            <button id="auto-roll-btn" 
+                                    class="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 hover:opacity-90 transition">
+                                Run Experiment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Probability Stats -->
+                <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+                    <h2 class="text-xl font-bold mb-4 text-green-300">
+                        <i class="fas fa-chart-bar mr-2"></i>Quantum Statistics
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center p-3 bg-gray-900/50 rounded-lg">
+                                <div class="text-2xl font-bold text-cyan-300" id="total-rolls">0</div>
+                                <div class="text-sm text-gray-400">Total Rolls</div>
+                            </div>
+                            <div class="text-center p-3 bg-gray-900/50 rounded-lg">
+                                <div class="text-2xl font-bold text-purple-300" id="entangled-rolls">0</div>
+                                <div class="text-sm text-gray-400">Entangled Rolls</div>
+                            </div>
+                        </div>
+
+                        <!-- Distribution -->
+                        <div>
+                            <h3 class="font-medium mb-2">Current Distribution</h3>
+                            <div id="distribution-bars" class="space-y-1">
+                                <!-- Bars will be generated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Quantum Observation -->
+                        <div class="pt-4 border-t border-gray-700">
+                            <h3 class="font-medium mb-2 text-yellow-300">
+                                <i class="fas fa-eye mr-2"></i>Observer Effect
+                            </h3>
+                            <p class="text-sm text-gray-300">
+                                <span id="observer-text">Dice are in superposition. Roll to collapse the wave function!</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center: Dice Display -->
+            <div class="lg:col-span-2">
+                <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 h-full border border-gray-700">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">
+                            <i class="fas fa-dice mr-2"></i>Quantum Dice Chamber
+                        </h2>
+                        <div class="text-sm px-4 py-2 bg-gray-800 rounded-full">
+                            <i class="fas fa-info-circle mr-2 text-blue-400"></i>
+                            <span id="probability-law">Click roll to begin experiment</span>
+                        </div>
+                    </div>
+
+                    <!-- Dice Container -->
+                    <div id="dice-container" class="relative flex flex-wrap justify-center items-center min-h-[400px] gap-8 p-6">
+                        <!-- Dice will be generated here -->
+                        <div class="text-center py-20">
+                            <i class="fas fa-atom text-6xl text-gray-600 mb-4"></i>
+                            <p class="text-gray-500">Configure your dice and click "Quantum Roll!"</p>
+                        </div>
+                    </div>
+
+                    <!-- Quantum Effects -->
+                    <div id="entanglement-effect" class="hidden">
+                        <div class="flex justify-center mt-8">
+                            <div class="text-center">
+                                <div class="flex items-center justify-center space-x-2 mb-2">
+                                    <div class="w-4 h-4 rounded-full bg-purple-500 animate-pulse"></div>
+                                    <span class="text-purple-300 font-medium">QUANTUM ENTANGLEMENT ACTIVE</span>
+                                    <div class="w-4 h-4 rounded-full bg-purple-500 animate-pulse"></div>
+                                </div>
+                                <p class="text-sm text-gray-400 max-w-md">
+                                    When dice are entangled, their outcomes become correlated. Rolling one affects the probability distribution of the others!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Last Roll Display -->
+                    <div id="last-roll-display" class="mt-8 p-4 bg-gray-800/50 rounded-xl hidden">
+                        <h3 class="font-bold mb-2 text-lg">
+                            <i class="fas fa-history mr-2"></i>Last Quantum Observation
+                        </h3>
+                        <div class="flex items-center space-x-4">
+                            <div id="last-roll-values" class="text-2xl font-bold"></div>
+                            <div id="last-roll-sum" class="ml-auto text-xl">
+                                Sum: <span class="text-green-400">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Probability Explanation -->
+        <div class="mt-8 bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+            <h2 class="text-xl font-bold mb-4 text-amber-300">
+                <i class="fas fa-lightbulb mr-2"></i>Understanding Quantum Probability
+            </h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="p-4 bg-gray-900/50 rounded-lg">
+                    <h3 class="font-bold text-cyan-300 mb-2">Independent Dice</h3>
+                    <p class="text-sm text-gray-300">
+                        Each die has a 1/6 chance for each number. With 2 dice, there are 36 possible combinations.
+                    </p>
+                    <div class="text-xs text-gray-400 mt-2">
+                        Probability of rolling 7: <span class="text-green-400">16.67%</span>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-900/50 rounded-lg">
+                    <h3 class="font-bold text-purple-300 mb-2">Entangled Dice</h3>
+                    <p class="text-sm text-gray-300">
+                        Outcomes become correlated. If Die A = 6, Die B is more likely to be 1 (or other correlated values).
+                    </p>
+                    <div class="text-xs text-gray-400 mt-2">
+                        Probability distribution becomes non-uniform
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-900/50 rounded-lg">
+                    <h3 class="font-bold text-green-300 mb-2">Observer Effect</h3>
+                    <p class="text-sm text-gray-300">
+                        In quantum mechanics, the act of observation affects the system. Here, "observing" means rolling!
+                    </p>
+                    <div class="text-xs text-gray-400 mt-2">
+                        The dice exist in superposition until rolled
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center mt-8 pt-4 border-t border-gray-800 text-gray-500 text-sm">
+            <p>
+                <i class="fas fa-flask mr-2"></i>
+                A playful demonstration of probability concepts inspired by quantum mechanics
+            </p>
+            <p class="mt-1">
+                Not actual quantum physics — but a fun way to learn about statistics!
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Quantum Dice Roller - Core Logic
+        document.addEventListener('DOMContentLoaded', function() {
+            // State
+            let diceCount = 1;
+            let isEntangled = false;
+            let totalRolls = 0;
+            let entangledRolls = 0;
+            let distribution = {};
+            let lastRoll = [];
+            
+            // DOM Elements
+            const diceContainer = document.getElementById('dice-container');
+            const rollBtn = document.getElementById('roll-btn');
+            const entangleBtn = document.getElementById('entangle-btn');
+            const separateBtn = document.getElementById('separate-btn');
+            const autoRollBtn = document.getElementById('auto-roll-btn');
+            const diceCountBtns = document.querySelectorAll('.dice-count-btn');
+            const entanglementStatus = document.getElementById('entanglement-status');
+            const entanglementEffect = document.getElementById('entanglement-effect');
+            const lastRollDisplay = document.getElementById('last-roll-display');
+            const lastRollValues = document.getElementById('last-roll-values');
+            const lastRollSum = document.querySelector('#last-roll-sum span');
+            const totalRollsEl = document.getElementById('total-rolls');
+            const entangledRollsEl = document.getElementById('entangled-rolls');
+            const distributionBars = document.getElementById('distribution-bars');
+            const probabilityLaw = document.getElementById('probability-law');
+            const observerText = document.getElementById('observer-text');
+
+            // Initialize
+            initDice();
+            updateDistributionDisplay();
+            
+            // Event Listeners
+            rollBtn.addEventListener('click', rollDice);
+            entangleBtn.addEventListener('click', () => setEntanglement(true));
+            separateBtn.addEventListener('click', () => setEntanglement(false));
+            autoRollBtn.addEventListener('click', runAutoExperiment);
+            
+            diceCountBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    diceCount = parseInt(this.dataset.dice);
+                    diceCountBtns.forEach(b => b.classList.remove('active', 'bg-blue-600'));
+                    diceCountBtns.forEach(b => b.classList.add('bg-gray-700'));
+                    this.classList.add('active', 'bg-blue-600');
+                    this.classList.remove('bg-gray-700');
+                    initDice();
+                });
+            });
+
+            // Functions
+            function initDice() {
+                diceContainer.innerHTML = '';
+                lastRoll = [];
+                
+                for (let i = 0; i < diceCount; i++) {
+                    const dice = document.createElement('div');
+                    dice.className = 'relative w-32 h-32 dice-3d cursor-pointer';
+                    dice.dataset.index = i;
+                    dice.innerHTML = createDiceFaces();
+                    
+                    // Add quantum glow if entangled
+                    if (isEntangled) {
+                        dice.classList.add('animate-quantumGlow');
+                        dice.style.animation = 'quantumGlow 2s infinite';
+                    }
+                    
+                    // Initial rotation
+                    const rotation = i * 45;
+                    dice.style.transform = `rotateX(${rotation}deg) rotateY(${rotation}deg)`;
+                    
+                    diceContainer.appendChild(dice);
+                }
+                
+                // Add entanglement visualization
+                updateEntanglementVisuals();
+            }
+
+            function createDiceFaces() {
+                // Create 6 faces for a 3D dice
+                const faces = [
+                    '<div class="dice-face" style="transform: translateZ(60px)"><div class="pip-container grid-cols-1"><div class="pip"></div></div></div>',
+                    '<div class="dice-face" style="transform: rotateY(180deg) translateZ(60px)"><div class="pip-container grid-cols-3"><div class="pip col-start-3"></div><div class="pip col-start-2 row-start-2"></div><div class="pip col-start-1 row-start-3"></div></div></div>',
+                    '<div class="dice-face" style="transform: rotateY(90deg) translateZ(60px)"><div class="pip-container grid-cols-3"><div class="pip"></div><div class="pip col-start-2 row-start-2"></div><div class="pip col-start-3 row-start-3"></div></div></div>',
+                    '<div class="dice-face" style="transform: rotateY(-90deg) translateZ(60px)"><div class="pip-container grid-cols-2"><div class="pip"></div><div class="pip col-start-2"></div><div class="pip row-start-2"></div><div class="pip col-start-2 row-start-2"></div></div></div>',
+                    '<div class="dice-face" style="transform: rotateX(90deg) translateZ(60px)"><div class="pip-container grid-cols-3"><div class="pip"></div><div class="pip col-start-3"></div><div class="pip col-start-2 row-start-2"></div><div class="pip row-start-3"></div><div class="pip col-start-3 row-start-3"></div></div></div>',
+                    '<div class="dice-face" style="transform: rotateX(-90deg) translateZ(60px)"><div class="pip-container grid-cols-3"><div class="pip"></div><div class="pip col-start-2"></div><div class="pip col-start-3"></div><div class="pip col-start-1 row-start-2"></div><div class="pip col-start-2 row-start-2"></div><div class="pip col-start-3 row-start-2"></div><div class="pip col-start-1 row-start-3"></div><div class="pip col-start-2 row-start-3"></div><div class="pip col-start-3 row-start-3"></div></div></div>'
+                ];
+                
+                return faces.join('');
+            }
+
+            function rollDice() {
+                totalRolls++;
+                if (isEntangled) entangledRolls++;
+                
+                // Update counters
+                totalRollsEl.textContent = totalRolls;
+                entangledRollsEl.textContent = entangledRolls;
+                
+                // Get dice elements
+                const diceElements = document.querySelectorAll('.dice-3d');
+                const results = [];
+                
+                // Generate results based on entanglement
+                if (isEntangled) {
+                    // For entangled dice, generate correlated results
+                    const baseValue = Math.floor(Math.random() * 6) + 1;
+                    
+                    for (let i = 0; i < diceCount; i++) {
+                        // Correlated but not identical: second die often adds to 7 with first, etc.
+                        let result;
+                        if (i === 0) {
+                            result = baseValue;
+                        } else {
+                            // Create correlation: often sum to 7 or have other relationship
+                            const correlation = Math.random();
+                            if (correlation < 0.6) {
+                                // Strong correlation: sum often equals 7 or other patterns
+                                result = 7 - baseValue;
+                                if (result < 1) result = 1;
+                                if (result > 6) result = 6;
+                            } else {
+                                // Some randomness still
+                                result = Math.floor(Math.random() * 6) + 1;
+                            }
+                        }
+                        results.push(result);
+                    }
+                } else {
+                    // Independent dice
+                    for (let i = 0; i < diceCount; i++) {
+                        results.push(Math.floor(Math.random() * 6) + 1);
+                    }
+                }
+                
+                lastRoll = results;
+                
+                // Animate dice
+                diceElements.forEach((dice, index) => {
+                    // Reset animation
+                    dice.style.animation = 'diceSpin 1s ease-out';
+                    
+                    // Determine which face to show based on result
+                    const result = results[index];
+                    const rotations = {
+                        1: 'rotateX(0deg) rotateY(0deg)',
+                        2: 'rotateX(0deg) rotateY(-180deg)',
+                        3: 'rotateX(0deg) rotateY(-90deg)',
+                        4: 'rotateX(0deg) rotateY(90deg)',
+                        5: 'rotateX(-90deg) rotateY(0deg)',
+                        6: 'rotateX(90deg) rotateY(0deg)'
+                    };
+                    
+                    // Apply final rotation after animation
+                    setTimeout(() => {
+                        dice.style.animation = '';
+                        dice.style.transform = rotations[result];
+                    }, 1000);
+                });
+                
+                // Update distribution
+                const sum = results.reduce((a, b) => a + b, 0);
+                distribution[sum] = (distribution[sum] || 0) + 1;
+                
+                // Update UI
+                updateLastRollDisplay(results);
+                updateDistributionDisplay();
+                updateProbabilityLaw();
+                updateObserverText();
+                
+                // Show last roll display
+                lastRollDisplay.classList.remove('hidden');
+            }
+
+            function setEntanglement(entangled) {
+                isEntangled = entangled;
+                
+                // Update UI
+                if (isEntangled) {
+                    entangleBtn.classList.add('from-purple-600', 'to-blue-600');
+                    entangleBtn.classList.remove('from-gray-700', 'to-gray-600');
+                    separateBtn.classList.remove('from-purple-600', 'to-blue-600');
+                    separateBtn.classList.add('from-gray-700', 'to-gray-600');
+                    entanglementStatus.textContent = 'Status: Dice are quantum entangled!';
+                    entanglementStatus.classList.add('text-purple-300');
+                    entanglementEffect.classList.remove('hidden');
+                    
+                    // Add quantum glow to dice
+                    document.querySelectorAll('.dice-3d').forEach(dice => {
+                        dice.style.animation = 'quantumGlow 2s infinite';
+                    });
+                } else {
+                    entangleBtn.classList.remove('from-purple-600', 'to-blue-600');
+                    entangleBtn.classList.add('from-gray-700', 'to-gray-600');
+                    separateBtn.classList.add('from-purple-600', 'to-blue-600');
+                    separateBtn.classList.remove('from-gray-700', 'to-gray-600');
+                    entanglementStatus.textContent = 'Status: Dice are independent';
+                    entanglementStatus.classList.remove('text-purple-300');
+                    entanglementEffect.classList.add('hidden');
+                    
+                    // Remove glow from dice
+                    document.querySelectorAll('.dice-3d').forEach(dice => {
+                        dice.style.animation = '';
+                    });
+                }
+                
+                updateEntanglementVisuals();
+            }
+
+            function updateEntanglementVisuals() {
+                // Remove existing entanglement lines
+                document.querySelectorAll('.entangle-line').forEach(el => el.remove());
+                
+                if (isEntangled && diceCount > 1) {
+                    // Add visual connection lines between dice
+                    const diceElements = document.querySelectorAll('.dice-3d');
+                    
+                    for (let i = 0; i < diceElements.length - 1; i++) {
+                        for (let j = i + 1; j < diceElements.length; j++) {
+                            const line = document.createElement('div');
+                            line.className = 'entangle-line';
+                            line.style.width = '100px';
+                            line.style.top = '50%';
+                            line.style.left = 'calc(50% - 50px)';
+                            line.style.opacity = '0.5';
+                            line.style.animation = `entanglePulse 2s infinite ${i * 0.2}s`;
+                            
+                            diceContainer.appendChild(line);
+                        }
+                    }
+                }
+            }
+
+            function updateLastRollDisplay(results) {
+                lastRollValues.innerHTML = results.map((val, idx) => `
+                    <div class="inline-flex flex-col items-center mx-2">
+                        <div class="text-3xl bg-gray-800 w-16 h-16 rounded-xl flex items-center justify-center border-2 border-blue-500">
+                            ${val}
+                        </div>
+                        <div class="text-xs mt-1 text-gray-400">Die ${idx + 1}</div>
+                    </div>
+                `).join('');
+                
+                const sum = results.reduce((a, b) => a + b, 0);
+                lastRollSum.textContent = sum;
+            }
+
+            function updateDistributionDisplay() {
+                if (Object.keys(distribution).length === 0) {
+                    distributionBars.innerHTML = '<p class="text-gray-500 text-center py-4">No rolls yet. Roll the dice to see distribution!</p>';
+                    return;
+                }
+                
+                const total = Object.values(distribution).reduce((a, b) => a + b, 0);
+                const maxValue = Math.max(...Object.values(distribution));
+                
+                let barsHTML = '';
+                for (let sum = diceCount; sum <= diceCount * 6; sum++) {
+                    const count = distribution[sum] || 0;
+                    const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+                    const barWidth = total > 0 ? (count / maxValue * 100) : 0;
+                    
+                    barsHTML += `
+                        <div class="flex items-center">
+                            <div class="w-10 text-sm font-medium">${sum}</div>
+                            <div class="flex-1 ml-2">
+                                <div class="h-6 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full transition-all duration-500" 
+                                     style="width: ${barWidth}%"></div>
+                            </div>
+                            <div class="w-16 text-right text-sm">${percentage}%</div>
+                        </div>
+                    `;
+                }
+                
+                distributionBars.innerHTML = barsHTML;
+            }
+
+            function updateProbabilityLaw() {
+                if (isEntangled) {
+                    probabilityLaw.textContent = "Quantum Entanglement: Dice outcomes are correlated!";
+                } else {
+                    if (diceCount === 1) {
+                        probabilityLaw.textContent = "Single die: Equal 1/6 probability for each outcome";
+                    } else if (diceCount === 2) {
+                        probabilityLaw.textContent = "Two dice: Bell curve distribution centered around 7";
+                    } else {
+                        probabilityLaw.textContent = "Multiple dice: Normal distribution applies";
+                    }
+                }
+            }
+
+            function updateObserverText() {
+                const texts = [
+                    "Wave function collapsed! Dice have taken definite values.",
+                    "The quantum superposition has been observed!",
+                    "Measurement complete. The dice are now in a definite state.",
+                    "Observer effect in action: Rolling collapsed the probabilities!"
+                ];
+                
+                observerText.textContent = texts[Math.floor(Math.random() * texts.length)];
+            }
+
+            function runAutoExperiment() {
+                autoRollBtn.disabled = true;
+                autoRollBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Running Experiment...';
+                
+                let rollsCompleted = 0;
+                const totalExperimentRolls = 100;
+                
+                const rollInterval = setInterval(() => {
+                    rollDice();
+                    rollsCompleted++;
+                    
+                    if (rollsCompleted >= totalExperimentRolls) {
+                        clearInterval(rollInterval);
+                        autoRollBtn.disabled = false;
+                        autoRollBtn.innerHTML = 'Run Experiment';
+                        
+                        // Show completion message
+                        probabilityLaw.textContent = `Experiment complete: ${totalExperimentRolls} rolls analyzed!`;
+                    }
+                }, 50);
+            }
+
+            // Add some initial rolls for demo
+            setTimeout(() => {
+                if (totalRolls === 0) {
+                    rollDice();
+                    setTimeout(() => rollDice(), 1200);
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

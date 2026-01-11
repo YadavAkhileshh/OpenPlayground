@@ -11,6 +11,12 @@ import { ProjectVisibilityEngine } from "./core/projectVisibilityEngine.js";
  */
 class ProjectManager {
     constructor() {
+        // Prevent multiple instances
+        if (window.projectManagerInstance) {
+            console.log("♻️ ProjectManager: Instance already exists.");
+            return window.projectManagerInstance;
+        }
+
         this.config = {
             ITEMS_PER_PAGE: 12,
             ANIMATION_DELAY: 50
@@ -24,7 +30,7 @@ class ProjectManager {
             initialized: false
         };
 
-        this.init();
+        window.projectManagerInstance = this;
     }
 
     async init() {
@@ -128,7 +134,6 @@ class ProjectManager {
         // Sort
         if (elements.sortSelect) {
             elements.sortSelect.addEventListener('change', (e) => {
-                // Sorting logic handled during render for now
                 this.state.currentPage = 1;
                 this.render();
             });
@@ -179,21 +184,28 @@ class ProjectManager {
 
         let filtered = this.state.visibilityEngine.getVisibleProjects();
 
-        // Sorting (Custom Switch)
+        // Sorting
         const sortMode = elements.sortSelect?.value || 'default';
         if (sortMode === 'az') filtered.sort((a, b) => a.title.localeCompare(b.title));
         else if (sortMode === 'za') filtered.sort((a, b) => b.title.localeCompare(a.title));
         else if (sortMode === 'newest') filtered.reverse();
 
-        // Pagination
+        // Pagination Calculations
         const totalPages = Math.ceil(filtered.length / this.config.ITEMS_PER_PAGE);
         const start = (this.state.currentPage - 1) * this.config.ITEMS_PER_PAGE;
         const pageItems = filtered.slice(start, start + this.config.ITEMS_PER_PAGE);
 
-        // Visibility
-        if (elements.projectsGrid) elements.projectsGrid.style.display = this.state.viewMode === 'card' ? 'grid' : 'none';
-        if (elements.projectsList) elements.projectsList.style.display = this.state.viewMode === 'list' ? 'flex' : 'none';
+        // Grid/List visibility management
+        if (elements.projectsGrid) {
+            elements.projectsGrid.style.display = this.state.viewMode === 'card' ? 'grid' : 'none';
+            if (this.state.viewMode !== 'card') elements.projectsGrid.innerHTML = '';
+        }
+        if (elements.projectsList) {
+            elements.projectsList.style.display = this.state.viewMode === 'list' ? 'flex' : 'none';
+            if (this.state.viewMode !== 'list') elements.projectsList.innerHTML = '';
+        }
 
+        // Handle empty state
         if (pageItems.length === 0) {
             if (elements.emptyState) elements.emptyState.style.display = 'block';
             if (elements.projectsGrid) elements.projectsGrid.innerHTML = '';
@@ -215,31 +227,43 @@ class ProjectManager {
     }
 
     renderCardView(container, projects) {
-        container.innerHTML = projects.map((project, index) => {
+        container.innerHTML = projects.map((project) => {
             const isBookmarked = window.bookmarksManager?.isBookmarked(project.title);
             const techHtml = project.tech?.map(t => `<span>${this.escapeHtml(t)}</span>`).join('') || '';
             const coverStyle = project.coverStyle || '';
             const coverClass = project.coverClass || '';
 
+            const sourceUrl = this.getSourceCodeUrl(project.link);
+
             return `
-                <a href="${this.escapeHtml(project.link)}" class="card" data-category="${this.escapeHtml(project.category)}">
-                    <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
-                            data-project-title="${this.escapeHtml(project.title)}" 
-                            onclick="event.preventDefault(); event.stopPropagation(); window.toggleProjectBookmark(this, '${this.escapeHtml(project.title)}', '${this.escapeHtml(project.link)}', '${this.escapeHtml(project.category)}', '${this.escapeHtml(project.description || '')}');">
-                        <i class="${isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line'}"></i>
-                    </button>
-                    <div class="card-cover ${coverClass}" style="${coverStyle}">
-                        <i class="${this.escapeHtml(project.icon || 'ri-code-s-slash-line')}"></i>
+                <div class="card" data-category="${this.escapeHtml(project.category)}" onclick="window.location.href='${this.escapeHtml(project.link)}'; event.stopPropagation();">
+                    <div class="card-actions">
+                        <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
+                                data-project-title="${this.escapeHtml(project.title)}" 
+                                onclick="event.preventDefault(); event.stopPropagation(); window.toggleProjectBookmark(this, '${this.escapeHtml(project.title)}', '${this.escapeHtml(project.link)}', '${this.escapeHtml(project.category)}', '${this.escapeHtml(project.description || '')}');"
+                                title="${isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}">
+                            <i class="${isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line'}"></i>
+                        </button>
+                        <a href="${sourceUrl}" target="_blank" class="source-btn" 
+                           onclick="event.stopPropagation();" 
+                           title="View Source Code">
+                            <i class="ri-github-fill"></i>
+                        </a>
                     </div>
-                    <div class="card-content">
-                        <div class="card-header-flex">
-                            <h3 class="card-heading">${this.escapeHtml(project.title)}</h3>
-                            <span class="category-tag">${this.capitalize(project.category)}</span>
+                    <div class="card-link">
+                        <div class="card-cover ${coverClass}" style="${coverStyle}">
+                            <i class="${this.escapeHtml(project.icon || 'ri-code-s-slash-line')}"></i>
                         </div>
-                        <p class="card-description">${this.escapeHtml(project.description || '')}</p>
-                        <div class="card-tech">${techHtml}</div>
+                        <div class="card-content">
+                            <div class="card-header-flex">
+                                <h3 class="card-heading">${this.escapeHtml(project.title)}</h3>
+                                <span class="category-tag">${this.capitalize(project.category)}</span>
+                            </div>
+                            <p class="card-description">${this.escapeHtml(project.description || '')}</p>
+                            <div class="card-tech">${techHtml}</div>
+                        </div>
                     </div>
-                </a>
+                </div>
             `;
         }).join('');
     }
@@ -269,6 +293,9 @@ class ProjectManager {
                             <a href="${this.escapeHtml(project.link)}" class="list-card-btn" title="Open Project">
                                 <i class="ri-external-link-line"></i>
                             </a>
+                            <a href="${this.getSourceCodeUrl(project.link)}" target="_blank" class="list-card-btn" title="View Source Code">
+                                <i class="ri-github-fill"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -290,7 +317,7 @@ class ProjectManager {
                     <i class="ri-arrow-left-s-line"></i>
                  </button>`;
 
-        // Page numbers (简化的)
+        // Page numbers
         for (let i = 1; i <= totalPages; i++) {
             if (i === 1 || i === totalPages || (i >= this.state.currentPage - 1 && i <= this.state.currentPage + 1)) {
                 html += `<button class="pagination-btn ${i === this.state.currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
@@ -336,7 +363,13 @@ class ProjectManager {
 
     scrollToTop() {
         const section = document.getElementById('projects');
-        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (section) {
+            const navbarHeight = 75;
+            window.scrollTo({
+                top: section.offsetTop - navbarHeight,
+                behavior: 'smooth'
+            });
+        }
     }
 
     /* -----------------------------------------------------------
@@ -353,6 +386,20 @@ class ProjectManager {
         div.textContent = str;
         return div.innerHTML;
     }
+
+    getSourceCodeUrl(link) {
+        if (!link) return 'https://github.com/YadavAkhileshh/OpenPlayground';
+
+        let path = link;
+        // Remove leading ./
+        if (path.startsWith('./')) {
+            path = path.slice(2);
+        }
+        // Remove trailing /index.html or index.html
+        path = path.replace(/\/index\.html$/, '').replace(/^index\.html$/, '');
+
+        return `https://github.com/YadavAkhileshh/OpenPlayground/tree/main/${path}`;
+    }
 }
 
 /**
@@ -368,7 +415,7 @@ async function fetchContributors() {
 
         const contributors = await response.json();
 
-        // Update count
+        // Update count if exists
         const count = document.getElementById('contributor-count');
         if (count) count.textContent = `${contributors.length}+`;
 
@@ -410,9 +457,7 @@ window.toggleProjectBookmark = function (btn, title, link, category, description
     if (icon) icon.className = isNowBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
 
     // Show toast
-    if (typeof showToast === 'function') {
-        showToast(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
-    }
+    showToast(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
 };
 
 function showToast(message) {
@@ -431,22 +476,26 @@ function showToast(message) {
     }, 2000);
 }
 
-// Export for window scope
+// ===============================
+// Global Initialization
+// ===============================
+
+// Expose to global scope for components.js compatibility
 window.ProjectManager = ProjectManager;
 window.fetchContributors = fetchContributors;
 
-// Listen for component load events
+// Listen for component load events from components.js
 document.addEventListener('componentLoaded', (e) => {
     if (e.detail && e.detail.component === 'projects') {
-        console.log("📍 Projects component loaded, initializing ProjectManager...");
-        new ProjectManager();
+        const manager = new ProjectManager();
+        manager.init();
     }
     if (e.detail && e.detail.component === 'contributors') {
         fetchContributors();
     }
 });
 
-// Animation triggers (from user version)
+// Fade-in animation observer
 document.addEventListener('DOMContentLoaded', () => {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
