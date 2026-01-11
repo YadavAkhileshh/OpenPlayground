@@ -232,8 +232,17 @@ function renderCardView(container, projects) {
                     <div class="card-tech">${techHtml}</div>
                 </div>
             </a>
+            </a>
         `;
     }).join('');
+
+    // Add audio listeners to new cards
+    setTimeout(() => {
+        container.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('mouseenter', () => window.audioManager?.playHover());
+            card.addEventListener('click', () => window.audioManager?.playClick());
+        });
+    }, 0);
 }
 
 function renderListView(container, projects) {
@@ -266,6 +275,14 @@ function renderListView(container, projects) {
             </div>
         `;
     }).join('');
+
+    // Add audio listeners to new list items
+    setTimeout(() => {
+        container.querySelectorAll('.list-card').forEach(card => {
+            card.addEventListener('mouseenter', () => window.audioManager?.playHover());
+            card.addEventListener('click', () => window.audioManager?.playClick());
+        });
+    }, 0);
 }
 
 function updateViewMoreButton(remaining) {
@@ -296,6 +313,12 @@ function handleSearch(e) {
         elements.searchBox.classList.toggle('has-text', state.searchQuery.length > 0);
     }
 
+
+
+    if (state.searchQuery.length > 0) {
+        window.audioManager?.playClick();
+    }
+
     filterAndRenderProjects();
 }
 
@@ -315,6 +338,9 @@ function handleFilter(category) {
         btn.classList.toggle('active', btn.dataset.filter === category);
     });
 
+
+
+    window.audioManager?.playClick();
     filterAndRenderProjects();
 }
 
@@ -348,6 +374,8 @@ function handleClearSearch() {
         elements.searchInput.value = '';
         state.searchQuery = '';
         if (elements.searchBox) elements.searchBox.classList.remove('has-text');
+
+        window.audioManager?.playError(); // Distinct sound for clearing
         filterAndRenderProjects();
     }
 }
@@ -365,6 +393,14 @@ window.toggleProjectBookmark = function (btn, title, link, category, description
 
     btn.classList.toggle('bookmarked', isNowBookmarked);
     if (icon) icon.className = isNowBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
+
+
+
+    if (isNowBookmarked) {
+        window.audioManager?.playSuccess();
+    } else {
+        window.audioManager?.playClick();
+    }
 
     // Show toast
     showToast(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
