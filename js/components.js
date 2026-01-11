@@ -357,7 +357,9 @@ class ComponentLoader {
     initializeSmoothScrolling() {
         // Smooth scroll for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('mouseenter', () => window.audioManager?.playHover());
             anchor.addEventListener('click', function (e) {
+                window.audioManager?.playClick();
                 const targetId = this.getAttribute('href');
                 if (targetId === '#') return;
 
@@ -373,6 +375,12 @@ class ComponentLoader {
                     });
                 }
             });
+        });
+
+        // Add hover/click sounds to other interactive elements
+        document.querySelectorAll('button, .nav-link, .btn').forEach(el => {
+            el.addEventListener('mouseenter', () => window.audioManager?.playHover());
+            el.addEventListener('click', () => window.audioManager?.playClick());
         });
     }
 }
