@@ -1,4 +1,4 @@
-# 🎮 OpenPlayground
+# 🎮 OpenPlayground   
 
 > **Build. Share. Explore.** A community-driven platform where developers showcase their creativity through interactive web projects.
 
