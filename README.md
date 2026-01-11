@@ -18,6 +18,7 @@ OpenPlayground is where creativity meets code! Whether you're building your firs
 
 ### ✨ Why Choose OpenPlayground?
 
+
 | Feature | Description |
 |---------|-------------|
 | 🎯 **Learn by Building** | Practice your skills with real-world projects |
