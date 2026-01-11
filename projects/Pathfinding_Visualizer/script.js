@@ -5,6 +5,11 @@ const clearPathBtn = document.getElementById('clear-path-btn');
 const generateMazeBtn = document.getElementById('generate-maze-btn');
 const algoSelect = document.getElementById('algorithm-select');
 const speedRange = document.getElementById('speed-range');
+const latencyRange = document.getElementById('latency-range');
+const latencyValue = document.getElementById('latency-value');
+const networkStatus = document.getElementById('network-status');
+const packetsCount = document.getElementById('packets-count');
+const deliveryTime = document.getElementById('delivery-time');
 
 // Config
 const ROWS = 25; // Adjustable grid size
@@ -183,6 +188,12 @@ async function visualize() {
     isRunning = true;
     clearPath();
 
+    // Reset stats
+    networkStatus.textContent = "Transmitting...";
+    networkStatus.style.color = "#f59e0b"; // Warning/Active color
+    packetsCount.textContent = "0";
+    deliveryTime.textContent = "--";
+
     const algorithm = algoSelect.value;
     const start = grid[startNode.row][startNode.col];
     const target = grid[targetNode.row][targetNode.col];
@@ -201,6 +212,8 @@ async function visualize() {
 
     await animateAlgorithm(visitedNodesInOrder, target);
     isRunning = false;
+    networkStatus.textContent = "Data Received";
+    networkStatus.style.color = "#22c55e"; // Success color
 }
 
 // Dijkstra's Algorithm
@@ -380,6 +393,10 @@ function getNodesInShortestPathOrder(finishNode) {
 function animateAlgorithm(visitedNodesInOrder, finishNode) {
     return new Promise((resolve) => {
         const speedValue = parseInt(speedRange.value);
+        const latency = parseInt(latencyRange.value);
+
+        let startTime = Date.now();
+
         // Speed Mapping:
         // Low value (1) -> Slow animation (1 node per few frames)
         // High value (100) -> Fast animation (multiple nodes per frame)
@@ -397,15 +414,25 @@ function animateAlgorithm(visitedNodesInOrder, finishNode) {
 
         let i = 0;
 
-        function step() {
+        async function step() {
             if (!isRunning) {
                 resolve();
                 return;
             }
 
+            // Artificial Latency Delay
+            if (latency > 0) {
+                await new Promise(r => setTimeout(r, latency));
+            }
+
             // Process a batch of nodes
-            for (let j = 0; j < nodesPerFrame; j++) {
+            // If latency is high, we force nodesPerFrame to 1 to visualize the delay better
+            const effectiveNodesPerFrame = latency > 0 ? 1 : nodesPerFrame;
+
+            for (let j = 0; j < effectiveNodesPerFrame; j++) {
                 if (i >= visitedNodesInOrder.length) {
+                    const duration = Date.now() - startTime;
+                    deliveryTime.textContent = `${duration}ms`;
                     animateShortestPath(getNodesInShortestPathOrder(finishNode)).then(resolve);
                     return;
                 }
@@ -419,11 +446,12 @@ function animateAlgorithm(visitedNodesInOrder, finishNode) {
                         node.element.classList.add('visited');
                     }
                 }
+                packetsCount.textContent = i + 1;
                 i++;
             }
 
             // Loop
-            if (speedValue < 30) {
+            if (speedValue < 30 && latency === 0) {
                 setTimeout(() => requestAnimationFrame(step), (30 - speedValue) * 2);
             } else {
                 requestAnimationFrame(step);
@@ -471,5 +499,8 @@ visualizeBtn.addEventListener('click', visualize);
 clearBoardBtn.addEventListener('click', clearBoard);
 clearPathBtn.addEventListener('click', handleClearPath);
 generateMazeBtn.addEventListener('click', generateRandomMaze);
+latencyRange.addEventListener('input', (e) => {
+    latencyValue.textContent = `${e.target.value}ms`;
+});
 window.onload = initGrid;
 window.addEventListener('mouseup', handleMouseUp); // Global mouse up
