@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Open Source Readiness Checker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#22c55e",
+            accent: "#4ade80",
+            dark: "#020617"
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-dark text-gray-200 min-h-screen">
+
+<!-- HEADER -->
+<header class="border-b border-gray-800 sticky top-0 bg-dark z-50">
+  <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-primary">Open Source Readiness Checker</h1>
+    <span class="text-sm text-gray-400">Interactive OSS Self-Assessment</span>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="max-w-7xl mx-auto px-6 py-10 space-y-16">
+
+<!-- INTRO -->
+<section class="space-y-4">
+  <h2 class="text-3xl font-semibold">Measure your Open Source readiness</h2>
+  <p class="text-gray-400 max-w-3xl">
+    This tool evaluates your skills, repository hygiene, and contribution habits
+    using weighted logic and live simulations.
+  </p>
+</section>
+
+<!-- SKILLS -->
+<section class="bg-slate-900 rounded-xl p-6">
+  <h3 class="text-xl font-semibold mb-6 text-primary">Skill Assessment</h3>
+
+  <div class="grid md:grid-cols-2 gap-6" id="skillsContainer"></div>
+</section>
+
+<!-- REPO SIMULATOR -->
+<section class="bg-slate-900 rounded-xl p-6">
+  <h3 class="text-xl font-semibold mb-6 text-primary">Repository Hygiene Simulator</h3>
+
+  <div class="space-y-6">
+    <div>
+      <label class="block mb-1">README Quality</label>
+      <input type="range" min="0" max="100" value="40" id="readme" class="w-full">
+    </div>
+
+    <div>
+      <label class="block mb-1">Days since last commit</label>
+      <input type="range" min="0" max="90" value="30" id="commitDays" class="w-full">
+    </div>
+
+    <div class="flex items-center justify-between">
+      <span>Contribution Guidelines</span>
+      <input type="checkbox" id="contribGuide" class="scale-125">
+    </div>
+
+    <div class="flex items-center justify-between">
+      <span>Issue & PR Templates</span>
+      <input type="checkbox" id="templates" class="scale-125">
+    </div>
+  </div>
+</section>
+
+<!-- SCORES -->
+<section class="grid md:grid-cols-3 gap-6">
+  <div class="bg-slate-900 p-6 rounded-xl">
+    <p class="mb-2">Skill Score</p>
+    <div class="h-3 bg-gray-700 rounded-full">
+      <div id="skillBar" class="h-3 bg-primary rounded-full transition-all"></div>
+    </div>
+    <p class="mt-2"><span id="skillScore">0</span>%</p>
+  </div>
+
+  <div class="bg-slate-900 p-6 rounded-xl">
+    <p class="mb-2">Repo Hygiene</p>
+    <div class="h-3 bg-gray-700 rounded-full">
+      <div id="repoBar" class="h-3 bg-primary rounded-full transition-all"></div>
+    </div>
+    <p class="mt-2"><span id="repoScore">0</span>%</p>
+  </div>
+
+  <div class="bg-slate-900 p-6 rounded-xl">
+    <p class="mb-2 font-semibold">Contribution Readiness</p>
+    <div class="h-3 bg-gray-700 rounded-full">
+      <div id="overallBar" class="h-3 bg-primary rounded-full transition-all"></div>
+    </div>
+    <p class="mt-2 text-primary font-bold text-xl">
+      <span id="overallScore">0</span>%
+    </p>
+    <p id="stage" class="text-sm text-gray-400 mt-1"></p>
+  </div>
+</section>
+
+<!-- ADVICE -->
+<section class="bg-slate-900 rounded-xl p-6">
+  <h3 class="text-xl font-semibold mb-4 text-primary">Personalized Advice</h3>
+  <ul id="advice" class="list-disc list-inside space-y-2 text-gray-300"></ul>
+</section>
+
+</main>
+
+<footer class="border-t border-gray-800 py-6 text-center text-sm text-gray-500">
+  Data saved locally • No backend • OSS-friendly
+</footer>
+
+<script>
+/* =========================
+   SKILL ENGINE
+========================= */
+const skills = [
+  { name: "Git & GitHub", level: 1 },
+  { name: "JavaScript", level: 1 },
+  { name: "HTML & CSS", level: 1 },
+  { name: "Debugging", level: 1 },
+  { name: "Open Source Workflow", level: 1 },
+  { name: "Reading Docs", level: 1 }
+];
+
+const skillsContainer = document.getElementById("skillsContainer");
+
+skills.forEach((skill, i) => {
+  const div = document.createElement("div");
+  div.className = "bg-slate-800 p-4 rounded-lg space-y-2";
+  div.innerHTML = `
+    <p class="font-semibold">${skill.name}</p>
+    <select class="w-full bg-slate-900 p-2 rounded">
+      <option value="1">Beginner</option>
+      <option value="2">Intermediate</option>
+      <option value="3">Advanced</option>
+    </select>
+  `;
+  const select = div.querySelector("select");
+  select.addEventListener("change", e => {
+    skill.level = +e.target.value;
+    updateScores();
+  });
+  skillsContainer.appendChild(div);
+});
+
+/* =========================
+   SCORE LOGIC
+========================= */
+function updateScores() {
+  const skillScore = Math.round(
+    skills.reduce((a, b) => a + b.level, 0) / (skills.length * 3) * 100
+  );
+
+  let repoScore = 0;
+  repoScore += +readme.value * 0.4;
+  repoScore += (90 - commitDays.value) * 0.3;
+  repoScore += contribGuide.checked ? 15 : 0;
+  repoScore += templates.checked ? 15 : 0;
+  repoScore = Math.min(100, Math.round(repoScore));
+
+  const overall = Math.round((skillScore + repoScore) / 2);
+
+  skillBar.style.width = skillScore + "%";
+  repoBar.style.width = repoScore + "%";
+  overallBar.style.width = overall + "%";
+
+  skillScoreEl.textContent = skillScore;
+  repoScoreEl.textContent = repoScore;
+  overallScoreEl.textContent = overall;
+
+  stage.textContent =
+    overall < 30 ? "Just Starting"
+    : overall < 60 ? "Learning Phase"
+    : overall < 80 ? "OSS Ready Soon"
+    : "Open Source Ready 🚀";
+
+  advice.innerHTML = "";
+  if (skillScore < 50) advice.innerHTML += "<li>Strengthen fundamentals before heavy contributions.</li>";
+  if (repoScore < 50) advice.innerHTML += "<li>Improve repository hygiene to attract maintainers.</li>";
+  if (overall > 80) advice.innerHTML += "<li>Start contributing to beginner-friendly issues now.</li>";
+}
+
+/* =========================
+   ELEMENT REFERENCES
+========================= */
+const readme = document.getElementById("readme");
+const commitDays = document.getElementById("commitDays");
+const contribGuide = document.getElementById("contribGuide");
+const templates = document.getElementById("templates");
+
+const skillBar = document.getElementById("skillBar");
+const repoBar = document.getElementById("repoBar");
+const overallBar = document.getElementById("overallBar");
+
+const skillScoreEl = document.getElementById("skillScore");
+const repoScoreEl = document.getElementById("repoScore");
+const overallScoreEl = document.getElementById("overallScore");
+const stage = document.getElementById("stage");
+const advice = document.getElementById("advice");
+
+document.querySelectorAll("input, select").forEach(el =>
+  el.addEventListener("input", updateScores)
+);
+
+updateScores();
+</script>
+
+</body>
+</html>

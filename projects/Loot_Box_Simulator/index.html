@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loot Box Simulator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ffd700, #ff9500, #ff5e00);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+        }
+        
+        .left-panel, .right-panel {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .panel-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #ffd700;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        /* Loot box styling */
+        .loot-box-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+        }
+        
+        .loot-box {
+            width: 280px;
+            height: 280px;
+            background: linear-gradient(135deg, #4a2c2a 0%, #8b4513 50%, #4a2c2a 100%);
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+            transition: transform 0.3s, box-shadow 0.3s;
+            overflow: hidden;
+            border: 8px solid #5d4037;
+        }
+        
+        .loot-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.9);
+        }
+        
+        .loot-box:active {
+            transform: translateY(2px);
+        }
+        
+        .loot-box::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+            top: 0;
+            left: -100%;
+            transition: left 0.7s;
+        }
+        
+        .loot-box:hover::before {
+            left: 100%;
+        }
+        
+        .loot-box-lid {
+            position: absolute;
+            top: -5px;
+            width: 100%;
+            height: 40px;
+            background: linear-gradient(to bottom, #8b4513, #5d4037);
+            border-radius: 10px 10px 0 0;
+            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        
+        .loot-box.open .loot-box-lid {
+            transform: rotateX(120deg);
+            transform-origin: top;
+        }
+        
+        .box-label {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+            letter-spacing: 2px;
+        }
+        
+        .box-glow {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+            z-index: 1;
+        }
+        
+        .open-button {
+            background: linear-gradient(90deg, #ff9500, #ff5e00);
+            border: none;
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(255, 94, 0, 0.4);
+            letter-spacing: 1px;
+        }
+        
+        .open-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 94, 0, 0.6);
+        }
+        
+        .open-button:active {
+            transform: translateY(1px);
+            box-shadow: 0 3px 10px rgba(255, 94, 0, 0.4);
+        }
+        
+        .open-button:disabled {
+            background: linear-gradient(90deg, #555, #777);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* Item display */
+        .item-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+            min-height: 300px;
+        }
+        
+        .item-card {
+            width: 100%;
+            background: rgba(30, 30, 46, 0.8);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            border-left: 5px solid #aaa;
+            transition: transform 0.3s, border-color 0.3s;
+        }
+        
+        .item-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .item-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .item-rarity {
+            font-size: 1.3rem;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .rarity-common {
+            color: #a0a0a0;
+            border: 2px solid #a0a0a0;
+            background: rgba(160, 160, 160, 0.1);
+        }
+        
+        .rarity-rare {
+            color: #2e8bff;
+            border: 2px solid #2e8bff;
+            background: rgba(46, 139, 255, 0.1);
+        }
+        
+        .rarity-epic {
+            color: #9b30ff;
+            border: 2px solid #9b30ff;
+            background: rgba(155, 48, 255, 0.1);
+        }
+        
+        .rarity-legendary {
+            color: #ffd700;
+            border: 2px solid #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+        
+        .item-icon {
+            font-size: 4rem;
+            margin: 10px 0;
+        }
+        
+        .rarity-glow-common { text-shadow: 0 0 5px #a0a0a0; }
+        .rarity-glow-rare { text-shadow: 0 0 10px #2e8bff; }
+        .rarity-glow-epic { text-shadow: 0 0 15px #9b30ff; }
+        .rarity-glow-legendary { 
+            text-shadow: 0 0 20px #ffd700;
+            animation: pulse-gold 2s infinite alternate;
+        }
+        
+        @keyframes pulse-gold {
+            from { filter: brightness(1); }
+            to { filter: brightness(1.3); }
+        }
+        
+        /* History panel */
+        .history-container {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .history-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .history-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .history-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #ff9500, #ff5e00);
+            border-radius: 10px;
+        }
+        
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background: rgba(30, 30, 46, 0.8);
+            border-radius: 8px;
+            border-left: 4px solid #aaa;
+            transition: all 0.3s;
+        }
+        
+        .history-item:hover {
+            background: rgba(40, 40, 56, 0.9);
+            transform: translateX(5px);
+        }
+        
+        .history-item-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .history-item-rarity {
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        .history-item-time {
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+        
+        /* Stats panel */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-box {
+            background: rgba(30, 30, 46, 0.8);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        
+        /* Rarity info */
+        .rarity-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .rarity-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .rarity-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+        
+        .color-common { background-color: #a0a0a0; }
+        .color-rare { background-color: #2e8bff; }
+        .color-epic { background-color: #9b30ff; }
+        .color-legendary { background-color: #ffd700; }
+        
+        /* Animations */
+        @keyframes openBox {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .box-opening {
+            animation: openBox 0.5s ease-in-out;
+        }
+        
+        @keyframes itemReveal {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .item-reveal {
+            animation: itemReveal 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        @keyframes glowLegendary {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.8); }
+        }
+        
+        .legendary-glow {
+            animation: glowLegendary 1.5s infinite alternate;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .left-panel, .right-panel {
+                min-width: 100%;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .loot-box {
+                width: 250px;
+                height: 250px;
+            }
+        }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #777;
+            font-size: 0.9rem;
+            padding: 20px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-gem"></i> LOOT BOX SIMULATOR</h1>
+            <p class="subtitle">Click the treasure box to open and discover rare items!</p>
+            
+            <div class="rarity-info">
+                <div class="rarity-tag">
+                    <div class="rarity-color color-common"></div>
+                    <span>Common (60%)</span>
+                </div>
+                <div class="rarity-tag">
+                    <div class="rarity-color color-rare"></div>
+                    <span>Rare (25%)</span>
+                </div>
+                <div class="rarity-tag">
+                    <div class="rarity-color color-epic"></div>
+                    <span>Epic (10%)</span>
+                </div>
+                <div class="rarity-tag">
+                    <div class="rarity-color color-legendary"></div>
+                    <span>Legendary (5%)</span>
+                </div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="left-panel">
+                <h2 class="panel-title">LOOT BOX</h2>
+                
+                <div class="loot-box-container">
+                    <div class="loot-box" id="lootBox">
+                        <div class="loot-box-lid"></div>
+                        <div class="box-glow"></div>
+                        <div class="box-label">TREASURE</div>
+                    </div>
+                    
+                    <button class="open-button" id="openButton">
+                        <i class="fas fa-lock-open"></i> OPEN LOOT BOX
+                    </button>
+                    
+                    <div class="item-display" id="itemDisplay">
+                        <div class="item-card" id="currentItemCard" style="display: none;">
+                            <div class="item-icon" id="itemIcon"></div>
+                            <div class="item-name" id="itemName">Item Name</div>
+                            <div class="item-rarity" id="itemRarity">Common</div>
+                            <div class="item-description" id="itemDescription">Item description goes here</div>
+                        </div>
+                        
+                        <div class="stats-container">
+                            <div class="stat-box">
+                                <div class="stat-value" id="totalOpened">0</div>
+                                <div class="stat-label">Boxes Opened</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value" id="totalItems">0</div>
+                                <div class="stat-label">Items Found</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value" id="commonCount">0</div>
+                                <div class="stat-label">Common Items</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value" id="legendaryCount">0</div>
+                                <div class="stat-label">Legendary Items</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <h2 class="panel-title">ITEM HISTORY</h2>
+                
+                <div class="history-container" id="historyContainer">
+                    <!-- History items will be added here by JavaScript -->
+                    <div class="empty-history" id="emptyHistory">
+                        <p style="text-align: center; color: #777; padding: 30px;">
+                            No items opened yet. Click the loot box to get your first item!
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Loot Box Simulator | All items are virtual | Created with HTML, CSS & JavaScript</p>
+        </footer>
+    </div>
+
+    <script>
+        // Item database with different rarities
+        const items = {
+            common: [
+                { name: "Copper Coin", icon: "fas fa-coins", description: "A simple copper coin, not very valuable." },
+                { name: "Wooden Sword", icon: "fas fa-gavel", description: "A basic sword made of wood. Better than nothing." },
+                { name: "Leather Cap", icon: "fas fa-hat-cowboy", description: "Simple head protection made from leather." },
+                { name: "Minor Health Potion", icon: "fas fa-wine-bottle", description: "Restores a small amount of health." },
+                { name: "Rusty Key", icon: "fas fa-key", description: "An old key that might open something." },
+                { name: "Torch", icon: "fas fa-fire", description: "Provides light in dark places." },
+                { name: "Rope", icon: "fas fa-link", description: "Useful for climbing or tying things." },
+                { name: "Iron Ore", icon: "fas fa-mountain", description: "A chunk of unrefined iron." }
+            ],
+            rare: [
+                { name: "Silver Ring", icon: "fas fa-ring", description: "A finely crafted ring made of silver." },
+                { name: "Steel Sword", icon: "fas fa-sword", description: "A reliable sword made of hardened steel." },
+                { name: "Magic Scroll", icon: "fas fa-scroll", description: "A scroll with a magical inscription." },
+                { name: "Health Potion", icon: "fas fa-wine-bottle", description: "Restores a moderate amount of health." },
+                { name: "Enchanted Amulet", icon: "fas fa-gem", description: "Provides minor magical protection." },
+                { name: "Iron Shield", icon: "fas fa-shield-alt", description: "A sturdy shield for defense." },
+                { name: "Gold Coin", icon: "fas fa-coins", description: "A valuable gold coin." }
+            ],
+            epic: [
+                { name: "Dragon Scale", icon: "fas fa-dragon", description: "A rare scale from a mythical dragon." },
+                { name: "Crystal Staff", icon: "fas fa-staff-snake", description: "A staff infused with magical crystals." },
+                { name: "Elven Bow", icon: "fas fa-bow-arrow", description: "A beautifully crafted bow with excellent range." },
+                { name: "Greater Health Potion", icon: "fas fa-flask", description: "Restores a large amount of health." },
+                { name: "Royal Crown", icon: "fas fa-crown", description: "A crown fit for royalty." },
+                { name: "Phoenix Feather", icon: "fas fa-feather-alt", description: "A rare feather with magical properties." }
+            ],
+            legendary: [
+                { name: "Excalibur", icon: "fas fa-crown", description: "The legendary sword of kings." },
+                { name: "Holy Grail", icon: "fas fa-wine-glass-alt", description: "A sacred artifact of immense power." },
+                { name: "Dragon Slayer", icon: "fas fa-dragon", description: "A sword specifically forged to slay dragons." },
+                { name: "Philosopher's Stone", icon: "fas fa-atom", description: "Can turn base metals into gold and grant immortality." },
+                { name: "Thor's Hammer", icon: "fas fa-hammer", description: "The mighty hammer of the thunder god." }
+            ]
+        };
+
+        // Rarity probabilities (must add up to 100)
+        const rarityProbabilities = {
+            common: 60,
+            rare: 25,
+            epic: 10,
+            legendary: 5
+        };
+
+        // Rarity colors
+        const rarityColors = {
+            common: "#a0a0a0",
+            rare: "#2e8bff",
+            epic: "#9b30ff",
+            legendary: "#ffd700"
+        };
+
+        // Rarity display names
+        const rarityNames = {
+            common: "Common",
+            rare: "Rare",
+            epic: "Epic",
+            legendary: "Legendary"
+        };
+
+        // DOM Elements
+        const lootBox = document.getElementById('lootBox');
+        const openButton = document.getElementById('openButton');
+        const currentItemCard = document.getElementById('currentItemCard');
+        const itemIcon = document.getElementById('itemIcon');
+        const itemName = document.getElementById('itemName');
+        const itemRarity = document.getElementById('itemRarity');
+        const itemDescription = document.getElementById('itemDescription');
+        const historyContainer = document.getElementById('historyContainer');
+        const emptyHistory = document.getElementById('emptyHistory');
+        
+        // Stats elements
+        const totalOpened = document.getElementById('totalOpened');
+        const totalItems = document.getElementById('totalItems');
+        const commonCount = document.getElementById('commonCount');
+        const legendaryCount = document.getElementById('legendaryCount');
+        
+        // Game state
+        let stats = {
+            totalOpened: 0,
+            common: 0,
+            rare: 0,
+            epic: 0,
+            legendary: 0
+        };
+        
+        let history = [];
+        
+        // Initialize the app
+        function init() {
+            // Load saved data from localStorage if available
+            const savedStats = localStorage.getItem('lootBoxStats');
+            const savedHistory = localStorage.getItem('lootBoxHistory');
+            
+            if (savedStats) {
+                stats = JSON.parse(savedStats);
+                updateStatsDisplay();
+            }
+            
+            if (savedHistory) {
+                history = JSON.parse(savedHistory);
+                updateHistoryDisplay();
+            }
+            
+            // Add event listeners
+            lootBox.addEventListener('click', openLootBox);
+            openButton.addEventListener('click', openLootBox);
+            
+            // Show a welcome message if no items have been opened yet
+            if (stats.totalOpened === 0) {
+                showWelcomeMessage();
+            }
+        }
+        
+        // Show a welcome message in the item display
+        function showWelcomeMessage() {
+            currentItemCard.style.display = "flex";
+            itemIcon.className = "item-icon fas fa-box-open";
+            itemName.textContent = "Welcome to Loot Box Simulator!";
+            itemRarity.textContent = "Click the treasure box to begin!";
+            itemRarity.className = "item-rarity rarity-common";
+            itemDescription.textContent = "Each loot box contains a random item of varying rarity. Try to collect them all!";
+            
+            // Add rarity glow
+            itemIcon.className += " rarity-glow-common";
+        }
+        
+        // Main function to open a loot box
+        function openLootBox() {
+            // Prevent multiple clicks while animation is running
+            if (openButton.disabled) return;
+            
+            // Disable the button during animation
+            openButton.disabled = true;
+            openButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> OPENING...';
+            
+            // Reset loot box class
+            lootBox.classList.remove('open');
+            lootBox.classList.remove('box-opening');
+            lootBox.classList.remove('legendary-glow');
+            
+            // Hide current item during animation
+            currentItemCard.style.display = "none";
+            
+            // Trigger box opening animation
+            setTimeout(() => {
+                lootBox.classList.add('box-opening');
+                lootBox.classList.add('open');
+                
+                // After animation, reveal the item
+                setTimeout(() => {
+                    const item = generateRandomItem();
+                    revealItem(item);
+                    
+                    // Re-enable the button
+                    openButton.disabled = false;
+                    openButton.innerHTML = '<i class="fas fa-lock-open"></i> OPEN LOOT BOX';
+                }, 800);
+            }, 100);
+        }
+        
+        // Generate a random item based on probabilities
+        function generateRandomItem() {
+            // Increment total opened count
+            stats.totalOpened++;
+            
+            // Determine rarity based on probabilities
+            const randomNum = Math.random() * 100;
+            let selectedRarity = 'common';
+            let cumulativeProbability = 0;
+            
+            for (const [rarity, probability] of Object.entries(rarityProbabilities)) {
+                cumulativeProbability += probability;
+                if (randomNum <= cumulativeProbability) {
+                    selectedRarity = rarity;
+                    break;
+                }
+            }
+            
+            // Update stats for the selected rarity
+            stats[selectedRarity]++;
+            
+            // Select a random item from the chosen rarity
+            const itemPool = items[selectedRarity];
+            const randomIndex = Math.floor(Math.random() * itemPool.length);
+            const selectedItem = {...itemPool[randomIndex]};
+            
+            // Add rarity info to the item
+            selectedItem.rarity = selectedRarity;
+            selectedItem.color = rarityColors[selectedRarity];
+            selectedItem.rarityName = rarityNames[selectedRarity];
+            
+            // Add timestamp
+            selectedItem.timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            // Add to history
+            history.unshift(selectedItem);
+            
+            // Keep only the last 20 items in history
+            if (history.length > 20) {
+                history = history.slice(0, 20);
+            }
+            
+            // Save to localStorage
+            saveGameState();
+            
+            return selectedItem;
+        }
+        
+        // Reveal the item with animation
+        function revealItem(item) {
+            // Update the item display
+            itemIcon.className = `item-icon ${item.icon}`;
+            itemName.textContent = item.name;
+            itemRarity.textContent = item.rarityName;
+            itemDescription.textContent = item.description;
+            
+            // Set rarity-specific styles
+            itemRarity.className = `item-rarity rarity-${item.rarity}`;
+            
+            // Remove previous rarity glows
+            itemIcon.className = itemIcon.className.replace(/\brarity-glow-\w+\b/g, '');
+            currentItemCard.style.borderLeftColor = item.color;
+            
+            // Add appropriate glow effect
+            itemIcon.className += ` rarity-glow-${item.rarity}`;
+            
+            // Add special glow for legendary items
+            if (item.rarity === 'legendary') {
+                lootBox.classList.add('legendary-glow');
+            }
+            
+            // Show the item card with animation
+            currentItemCard.style.display = "flex";
+            currentItemCard.classList.add('item-reveal');
+            
+            // Remove animation class after it completes
+            setTimeout(() => {
+                currentItemCard.classList.remove('item-reveal');
+            }, 700);
+            
+            // Update stats and history displays
+            updateStatsDisplay();
+            updateHistoryDisplay();
+        }
+        
+        // Update the stats display
+        function updateStatsDisplay() {
+            totalOpened.textContent = stats.totalOpened;
+            totalItems.textContent = stats.common + stats.rare + stats.epic + stats.legendary;
+            commonCount.textContent = stats.common;
+            legendaryCount.textContent = stats.legendary;
+        }
+        
+        // Update the history display
+        function updateHistoryDisplay() {
+            // Hide the empty history message
+            emptyHistory.style.display = "none";
+            
+            // Clear current history display
+            historyContainer.innerHTML = '';
+            
+            // Add each history item
+            history.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.style.borderLeftColor = item.color;
+                
+                historyItem.innerHTML = `
+                    <div class="history-item-name">${item.name}</div>
+                    <div class="history-item-rarity rarity-${item.rarity}">${item.rarityName}</div>
+                    <div class="history-item-time">${item.timestamp}</div>
+                `;
+                
+                historyContainer.appendChild(historyItem);
+            });
+        }
+        
+        // Save game state to localStorage
+        function saveGameState() {
+            localStorage.setItem('lootBoxStats', JSON.stringify(stats));
+            localStorage.setItem('lootBoxHistory', JSON.stringify(history));
+        }
+        
+        // Reset game data (for testing or if needed)
+        function resetGameData() {
+            if (confirm("Are you sure you want to reset all game data? This will clear your stats and history.")) {
+                stats = {
+                    totalOpened: 0,
+                    common: 0,
+                    rare: 0,
+                    epic: 0,
+                    legendary: 0
+                };
+                history = [];
+                
+                localStorage.removeItem('lootBoxStats');
+                localStorage.removeItem('lootBoxHistory');
+                
+                updateStatsDisplay();
+                updateHistoryDisplay();
+                showWelcomeMessage();
+                
+                // Reset loot box appearance
+                lootBox.classList.remove('legendary-glow');
+                lootBox.classList.remove('open');
+            }
+        }
+        
+        // Add reset functionality to Ctrl+R (for testing)
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'r') {
+                e.preventDefault();
+                resetGameData();
+            }
+        });
+        
+        // Add a secret reset button in the footer (for testing)
+        document.querySelector('footer').addEventListener('dblclick', resetGameData);
+        
+        // Initialize the app when the page loads
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
