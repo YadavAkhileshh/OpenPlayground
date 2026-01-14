@@ -8,7 +8,7 @@
 [![Contributors](https://img.shields.io/github/contributors/YadavAkhileshh/OpenPlayground)](https://github.com/YadavAkhileshh/OpenPlayground/graphs/contributors)
 [![Stars](https://img.shields.io/github/stars/YadavAkhileshh/OpenPlayground?style=social)](https://github.com/YadavAkhileshh/OpenPlayground/stargazers)
 
-**🌐 [View Live Website](https://open-playground-seven.vercel.app/) | 📖 [Contributing Guide](CONTRIBUTING.md) | 💬 [Discussions](https://github.com/YadavAkhileshh/OpenPlayground/discussions)**
+**🌐 [View Live Website](https://open-playground-seven.vercel.app/) | 📖 [Contributing Guide](CONTRIBUTING.md) | 🐛 [Debugging Guide](DEBUGGING_GUIDE.md) | 💬 [Discussions](https://github.com/YadavAkhileshh/OpenPlayground/discussions)**
 
 ---
 
@@ -151,6 +151,8 @@ OpenPlayground/
 
 **📖 [Read the full contributing guide →](CONTRIBUTING.md)**
 
+**🐛 Running into issues? [Check the debugging guide →](DEBUGGING_GUIDE.md)**
+
 ---
 
 ## 🏆 Our Amazing Contributors
@@ -187,6 +189,7 @@ A huge thank you to all the talented developers who have contributed!
 ## 🌟 Community & Support
 
 - 📜 **Code of Conduct:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)  
+- 🐛 **Debugging Guide:** [DEBUGGING_GUIDE.md](DEBUGGING_GUIDE.md) - Troubleshoot common issues
 - 🐛 **Bug Reports:** [Create an Issue](https://github.com/YadavAkhileshh/OpenPlayground/issues/new)  
 - 💡 **Feature Requests:** [Discussions](https://github.com/YadavAkhileshh/OpenPlayground/discussions)  
 - 🔄 **Pull Requests:** [View PRs](https://github.com/YadavAkhileshh/OpenPlayground/pulls)
