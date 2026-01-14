@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Physics Gravity Sandbox</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.2.0/remixicon.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header Section -->
+        <header class="physics-header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="ri-planet-line"></i>
+                    <h1>Gravity Sandbox</h1>
+                </div>
+                <div class="header-stats">
+                    <div class="stat">
+                        <i class="ri-cube-line"></i>
+                        <span>Objects: <strong id="objectCount">0</strong></span>
+                    </div>
+                    <div class="stat">
+                        <i class="ri-speed-up-line"></i>
+                        <span>FPS: <strong id="fpsCounter">60</strong></span>
+                    </div>
+                </div>
+                <button id="mobileMenuBtn" class="mobile-only icon-btn">
+                    <i class="ri-menu-4-line"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <main class="physics-layout">
+            
+            <!-- Left Panel: Tools & Creation -->
+            <aside class="sidebar left-sidebar" id="leftSidebar">
+                <div class="sidebar-header mobile-only">
+                    <h3>Tools</h3>
+                    <button class="close-sidebar" id="closeLeftSidebar"><i class="ri-close-line"></i></button>
+                </div>
+                
+                <div class="scrollable-content">
+                    <div class="panel-section">
+                        <h3><i class="ri-tools-line"></i> Tools</h3>
+                        <div class="interaction-buttons">
+                            <button class="interaction-btn active" data-mode="create" title="Create">
+                                <i class="ri-add-circle-line"></i>
+                                <span>Create</span>
+                            </button>
+                            <button class="interaction-btn" data-mode="grab" title="Grab">
+                                <i class="ri-hand-grab-line"></i>
+                                <span>Grab</span>
+                            </button>
+                            <button class="interaction-btn" data-mode="connect" title="Connect">
+                                <i class="ri-link-m"></i>
+                                <span>Connect</span>
+                            </button>
+                            <button class="interaction-btn" data-mode="delete" title="Delete">
+                                <i class="ri-delete-bin-line"></i>
+                                <span>Delete</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h3><i class="ri-shapes-line"></i> Objects</h3>
+                        <div class="object-type-grid">
+                            <button class="object-type-btn active" data-type="ball">
+                                <i class="ri-circle-line"></i>
+                                <span>Ball</span>
+                            </button>
+                            <button class="object-type-btn" data-type="box">
+                                <i class="ri-square-line"></i>
+                                <span>Box</span>
+                            </button>
+                            <button class="object-type-btn" data-type="polygon">
+                                <i class="ri-triangle-line"></i>
+                                <span>Poly</span>
+                            </button>
+                            <button class="object-type-btn" data-type="star">
+                                <i class="ri-star-line"></i>
+                                <span>Star</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h3><i class="ri-equalizer-line"></i> Properties</h3>
+                        
+                        <div class="control-group">
+                            <label>Size: <span id="sizeValue">30</span>px</label>
+                            <input type="range" id="sizeSlider" min="10" max="100" value="30">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Density: <span id="densityValue">1.0</span></label>
+                            <input type="range" id="densitySlider" min="0.1" max="5" step="0.1" value="1">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Bounciness: <span id="restitutionValue">0.8</span></label>
+                            <input type="range" id="restitutionSlider" min="0" max="1" step="0.1" value="0.8">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Friction: <span id="frictionValue">0.1</span></label>
+                            <input type="range" id="frictionSlider" min="0" max="1" step="0.1" value="0.1">
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h3><i class="ri-palette-line"></i> Color</h3>
+                        <div class="color-picker">
+                            <button class="color-btn" style="--c: #ef4444;" data-color="#ef4444"></button>
+                            <button class="color-btn" style="--c: #f59e0b;" data-color="#f59e0b"></button>
+                            <button class="color-btn" style="--c: #10b981;" data-color="#10b981"></button>
+                            <button class="color-btn active" style="--c: #3b82f6;" data-color="#3b82f6"></button>
+                            <button class="color-btn" style="--c: #8b5cf6;" data-color="#8b5cf6"></button>
+                            <button class="color-btn" style="--c: #ec4899;" data-color="#ec4899"></button>
+                            <button class="color-btn" style="--c: #6b7280;" data-color="#6b7280"></button>
+                            <button class="color-btn gradient-btn" data-color="gradient"></button>
+                        </div>
+                         <div id="currentColorDisplay" style="display:none;"></div> <!-- Hidden ref for JS compat if needed -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Center Panel: Canvas -->
+            <section class="canvas-area">
+                <div class="canvas-toolbar">
+                    <div class="toolbar-left">
+                        <button id="playBtn" class="toolbar-btn primary" title="Play">
+                            <i class="ri-play-fill"></i>
+                        </button>
+                        <button id="pauseBtn" class="toolbar-btn" title="Pause">
+                            <i class="ri-pause-fill"></i>
+                        </button>
+                        <button id="clearBtn" class="toolbar-btn danger" title="Clear All">
+                            <i class="ri-delete-bin-line"></i>
+                        </button>
+                         <button id="randomObjectBtn" class="toolbar-btn" title="Random Object">
+                            <i class="ri-shuffle-line"></i>
+                        </button>
+                    </div>
+                    <div class="toolbar-right">
+                         <button id="showTrailsBtn" class="toolbar-btn active toggle-btn" title="Toggle Trails">
+                            <i class="ri-road-map-line"></i>
+                        </button>
+                        <button id="showGridBtn" class="toolbar-btn toggle-btn" title="Toggle Grid">
+                            <i class="ri-grid-line"></i>
+                        </button>
+                        <button id="showVectorsBtn" class="toolbar-btn toggle-btn" title="Toggle Vectors">
+                            <i class="ri-arrow-up-line"></i>
+                        </button>
+                        <button id="toggleSettingsBtn" class="toolbar-btn mobile-only">
+                            <i class="ri-settings-3-line"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="canvas-wrapper">
+                    <canvas id="physicsCanvas"></canvas>
+                    <canvas id="trailCanvas"></canvas>
+                    <div id="inspectorOverlay" class="inspector-overlay hidden"></div>
+                    <!-- Previews -->
+                    <div class="drag-preview" id="dragPreview"></div>
+                    <div class="velocity-preview" id="velocityPreview"></div>
+                </div>
+
+                <div class="scenario-bar">
+                    <button class="scenario-pill" data-scenario="solar">Solar System</button>
+                    <button class="scenario-pill" data-scenario="pendulum">Pendulum</button>
+                    <button class="scenario-pill" data-scenario="chain">Chain</button>
+                    <button class="scenario-pill" data-scenario="tower">Tower</button>
+                    <button class="scenario-pill" data-scenario="collision">Collision</button>
+                    <button class="scenario-pill" data-scenario="chaos">Chaos</button>
+                </div>
+            </section>
+
+            <!-- Right Panel: Global Settings & Physics -->
+            <aside class="sidebar right-sidebar" id="rightSidebar">
+                 <div class="sidebar-header mobile-only">
+                    <h3>Settings</h3>
+                    <button class="close-sidebar" id="closeRightSidebar"><i class="ri-close-line"></i></button>
+                </div>
+
+                <div class="scrollable-content">
+                    <div class="panel-section">
+                        <h3><i class="ri-earth-line"></i> World Physics</h3>
+                        
+                        <div class="control-group">
+                            <div class="flex-between">
+                                <label>Gravity</label>
+                                <span id="gravityValue">9.8</span>
+                            </div>
+                            <input type="range" id="gravityStrength" min="0" max="20" step="0.1" value="9.8">
+                            
+                            <div class="gravity-compass">
+                                <button class="compass-btn direction-btn" data-angle="270" title="Down"><i class="ri-arrow-down-line"></i></button>
+                                <button class="compass-btn direction-btn" data-angle="90" title="Up"><i class="ri-arrow-up-line"></i></button>
+                                <button class="compass-btn direction-btn" data-angle="180" title="Left"><i class="ri-arrow-left-line"></i></button>
+                                <button class="compass-btn direction-btn" data-angle="0" title="Right"><i class="ri-arrow-right-line"></i></button>
+                                <button id="reverseGravityBtn" class="compass-btn" title="Reverse"><i class="ri-refresh-line"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <label>Air Resistance: <span id="airFrictionValue">0.01</span></label>
+                             <input type="range" id="airFriction" min="0" max="0.1" step="0.001" value="0.01">
+                        </div>
+
+                        <div class="control-group">
+                            <label>Time Scale: <span id="timeScaleValue">1.0</span></label>
+                            <input type="range" id="timeScale" min="0.1" max="3" step="0.1" value="1.0">
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h3><i class="ri-toggle-line"></i> Toggles</h3>
+                        <div class="toggles-grid">
+                            <button id="toggleGravityBtn" class="toggle-pill active">Gravity</button>
+                            <button id="toggleFrictionBtn" class="toggle-pill active">Friction</button>
+                            <button id="toggleCollisionsBtn" class="toggle-pill active">Collisions</button>
+                            <!-- Note: Added IDs to match JS expected elements or will update JS -->
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h3><i class="ri-search-eye-line"></i> Inspector</h3>
+                        <div id="inspectorContent">
+                            <h4 id="inspectedName" class="hidden">Object</h4>
+                            <div class="inspector-stats">
+                                <p>Mass: <strong id="inspectedMass">-</strong></p>
+                                <p>Speed: <strong id="inspectedSpeed">-</strong></p>
+                                <p>Pos: <strong id="inspectedPosition">-</strong></p>
+                                <p class="hidden">Vel: <strong id="inspectedVelocity">-</strong></p>
+                                <p class="hidden">Rot: <strong id="inspectedRotation">-</strong></p>
+                                <p class="hidden">Ang: <strong id="inspectedAngular">-</strong></p>
+                                <div id="inspectedIcon" class="hidden"></div> 
+                            </div>
+                            <p id="inspectorPlaceholder" class="empty-state">Select an object</p>
+                        </div>
+                        <div class="inspector-actions" id="inspectorActions">
+                            <button id="freezeObjectBtn" class="btn-sm">Freeze</button>
+                            <button id="deleteObjectBtn" class="btn-sm danger">Delete</button>
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                         <button id="themeToggle" class="btn-block">
+                            <i class="ri-moon-line"></i> Toggle Theme
+                        </button>
+                        <button id="helpBtn" class="btn-block mt-2">
+                             <i class="ri-question-line"></i> Help
+                        </button>
+                         <button id="resetAllBtn" class="btn-block mt-2 danger">
+                             <i class="ri-restart-line"></i> Reset All
+                        </button>
+                         <!-- Hidden buttons for JS compatibility if needed, though better to remove listeners in JS or update JS -->
+                         <button id="spawnGroupBtn" style="display:none"></button>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Hidden elements for potential JS errors during refactor -->
+    <div style="display:none">
+        <div id="inspectorPlaceholder"></div>
+        <div id="scenarioModal"></div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

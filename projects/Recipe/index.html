@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Smart Recipe Book</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-<!-- Lucide Icons CDN (vanilla JS) -->
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -107,13 +106,58 @@ const IMAGE_CONFIG = {
 };
 
 let recipes = JSON.parse(localStorage.getItem('recipes')) || [
- {id:1,title:'Veg Biryani',img:'https://images.unsplash.com/photo-1600628422019-8a0b8e7c7d5d',ingredients:['Rice','Vegetables','Spices'],steps:['Cook rice','Prepare masala','Mix & steam'],time:900,requiresPNG:true},
- {id:2,title:'Margherita Pizza',img:'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3',ingredients:['Flour','Cheese','Tomato Sauce'],steps:['Prepare dough','Add toppings','Bake'],time:800},
- {id:3,title:'Pancakes',img:'https://images.unsplash.com/photo-1587732019718-4a4e7f5b6a2d',ingredients:['Flour','Milk','Eggs'],steps:['Make batter','Cook on pan','Serve hot'],time:400,requiresPNG:true},
- {id:4,title:'Caesar Salad',img:'https://images.unsplash.com/photo-1568605114967-8130f3a36994',ingredients:['Lettuce','Croutons','Dressing'],steps:['Chop','Mix','Serve'],time:300},
- {id:5,title:'Chocolate Brownies',img:'https://images.unsplash.com/photo-1599785209707-a456fc1337bb',ingredients:['Cocoa','Butter','Sugar','Flour'],steps:['Mix ingredients','Bake','Cool & slice'],time:700},
- {id:6,title:'Masala Dosa',img:'https://images.unsplash.com/photo-1626776876729-bab4360a7b19',ingredients:['Rice batter','Potato','Spices'],steps:['Prepare filling','Spread batter','Cook & fold'],time:600}
+  {
+    id: 1,
+    title: 'Veg Biryani',
+    img: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=600&q=80',
+    ingredients: ['Rice','Vegetables','Spices'],
+    steps: ['Cook rice','Prepare masala','Mix & steam'],
+    time: 900,
+    requiresPNG: true
+  },
+  {
+    id: 2,
+    title: 'Margherita Pizza',
+    img: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?auto=format&fit=crop&w=600&q=80',
+    ingredients: ['Flour','Cheese','Tomato Sauce'],
+    steps: ['Prepare dough','Add toppings','Bake'],
+    time: 800
+  },
+  {
+    id: 3,
+    title: 'Pancakes',
+    img: 'img/img.png',
+    ingredients: ['Flour','Milk','Eggs'],
+    steps: ['Make batter','Cook on pan','Serve hot'],
+    time: 400,
+    requiresPNG: true
+  },
+  {
+    id: 4,
+    title: 'Caesar Salad',
+    img: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=600&q=80',
+    ingredients: ['Lettuce','Croutons','Dressing'],
+    steps: ['Chop','Mix','Serve'],
+    time: 300
+  },
+  {
+    id: 5,
+    title: 'Chocolate Brownies',
+    img: 'https://images.unsplash.com/photo-1495214783159-3503fd1b572d?auto=format&fit=crop&w=600&q=80',
+    ingredients: ['Cocoa','Butter','Sugar','Flour'],
+    steps: ['Mix ingredients','Bake','Cool & slice'],
+    time: 700
+  },
+  {
+    id: 6,
+    title: 'Masala Dosa',
+    img: 'https://images.pexels.com/photos/5560763/pexels-photo-5560763.jpeg?auto=compress&cs=tinysrgb&w=600',
+    ingredients: ['Rice batter','Potato','Spices'],
+    steps: ['Prepare filling','Spread batter','Cook & fold'],
+    time: 600
+  }
 ];
+
 let favs = JSON.parse(localStorage.getItem('favs')) || [];
 
 function save(){localStorage.setItem('recipes',JSON.stringify(recipes));localStorage.setItem('favs',JSON.stringify(favs));}
@@ -317,7 +361,18 @@ function openAdd(){
      • <strong>Recommendation:</strong> Use local PNG files for transparency requirements
    </div>
    <input id="t" placeholder="Recipe Title (e.g., 'Fluffy Pancakes')">
-   <input id="i" placeholder="Image URL (https://...)">
+    <div style="display:grid;grid-template-columns:1fr;gap:10px">
+      <input id="i" placeholder="Image URL (https://...)">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label class="btn secondary" style="margin:0" for="fileInput"><i data-lucide="image-up" class="icon"></i> Upload Image</label>
+        <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none">
+        <div id="uploadInfo" style="font-size:12px;color:#666"></div>
+      </div>
+      <div id="imagePreviewWrap" style="display:none">
+        <div style="font-size:12px;color:#666;margin-bottom:6px;display:flex;align-items:center;gap:6px"><i data-lucide="eye" class="icon" style="width:14px;height:14px"></i>Preview</div>
+        <img id="imagePreview" alt="Preview" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;border:1px solid rgba(0,0,0,.08)">
+      </div>
+    </div>
    <div style="margin:10px 0;">
      <label style="display:flex;align-items:center;gap:8px;">
        <input type="checkbox" id="pngRequired"> 
@@ -332,11 +387,51 @@ function openAdd(){
      <button class="btn secondary" onclick="closeModal()" style="margin-left:10px;"><i data-lucide="ban" class="icon"></i>Cancel</button>
    </div>
  </div>`
+
+  // Initialize icons for newly injected content
+  if (window.lucide && window.lucide.createIcons) { window.lucide.createIcons(); }
+
+  // Wire up file upload
+  const fileInput = document.getElementById('fileInput');
+  const uploadInfo = document.getElementById('uploadInfo');
+  const imagePreview = document.getElementById('imagePreview');
+  const imagePreviewWrap = document.getElementById('imagePreviewWrap');
+
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const allowed = ['image/png','image/jpeg','image/webp','image/svg+xml'];
+    if (!allowed.includes(file.type)) {
+      uploadInfo.style.color = '#b00020';
+      uploadInfo.textContent = `Unsupported type: ${file.type}. Allowed: PNG, JPEG, WebP, SVG.`;
+      fileInput.value = '';
+      imagePreviewWrap.style.display = 'none';
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      uploadInfo.style.color = '#b00020';
+      uploadInfo.textContent = `File too large (${(file.size/1024/1024).toFixed(2)}MB). Max 2MB.`;
+      fileInput.value = '';
+      imagePreviewWrap.style.display = 'none';
+      return;
+    }
+    uploadInfo.style.color = '#666';
+    uploadInfo.textContent = `${file.name} • ${(file.size/1024).toFixed(0)} KB • ${file.type}`;
+    const reader = new FileReader();
+    reader.onload = () => {
+      imagePreview.src = reader.result;
+      imagePreviewWrap.style.display = 'block';
+      // Store temporarily on window for retrieval in addRecipe
+      window.__uploadedImageDataURL = reader.result;
+      window.__uploadedImageType = file.type;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function addRecipe(){
  const title = document.getElementById('t').value;
- const img = document.getElementById('i').value;
+ const imgUrlInput = document.getElementById('i').value;
  const ingredients = document.getElementById('ing').value.split(',').map(i => i.trim()).filter(i => i);
  const steps = document.getElementById('st').value.split(',').map(s => s.trim()).filter(s => s);
  const time = parseInt(document.getElementById('time').value) || 600;
@@ -350,7 +445,7 @@ function addRecipe(){
  // Validate image URL format
  const validImageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.svg'];
  const hasValidExtension = validImageExtensions.some(ext => 
-   img.toLowerCase().includes(ext) || img.includes('unsplash.com') || img.includes('images.')
+   imgUrlInput.toLowerCase().includes(ext) || imgUrlInput.includes('unsplash.com') || imgUrlInput.includes('images.')
  );
  
  if (!hasValidExtension) {
@@ -359,15 +454,28 @@ function addRecipe(){
  }
  
  // Warning for PNG requirement with external URLs
- if (requiresPNG && (img.includes('unsplash.com') || img.includes('picsum.photos'))) {
+ if (requiresPNG && (imgUrlInput.includes('unsplash.com') || imgUrlInput.includes('picsum.photos'))) {
    const proceed = confirm('⚠️ Warning: You\'ve marked this recipe as requiring PNG format, but you\'re using an external image source that typically serves JPEG. This may cause format inconsistency. Continue anyway?');
    if (!proceed) return;
  }
  
+ // Prefer uploaded file if present, otherwise use URL
+ let finalImg = imgUrlInput;
+ let finalImgType = 'url';
+ if (window.__uploadedImageDataURL) {
+   finalImg = window.__uploadedImageDataURL;
+   finalImgType = window.__uploadedImageType || 'data';
+   // If PNG is required but uploaded type isn't PNG, warn
+   if (requiresPNG && finalImgType !== 'image/png') {
+     const proceed = confirm(`⚠️ PNG required but uploaded file type is ${finalImgType}. Transparency may not be supported. Continue?`);
+     if (!proceed) return;
+   }
+ }
+
  const newRecipe = {
    id: Date.now(),
    title,
-   img,
+   img: finalImg,
    ingredients,
    steps,
    time,
