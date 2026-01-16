@@ -95,11 +95,15 @@ function editTask(index) {
     const todo = todos[index];
     const newText = prompt("Edit task title:", todo.text);
     const newDueDate = prompt("Edit due date (YYYY-MM-DD):", todo.dueDate || '');
+    const newPriority = prompt("Edit priority (low, medium, high):", todo.priority || 'low');
     if (newText !== null && newText.trim() !== '') {
         todo.text = newText.trim();
     }
     if (newDueDate !== null) {
         todo.dueDate = newDueDate.trim() || null;
+    }
+    if (newPriority && ['low', 'medium', 'high'].includes(newPriority.toLowerCase())) {
+        todo.priority = newPriority.toLowerCase();
     }
     saveTodos();
     renderTodos();
