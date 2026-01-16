@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Perception Experiment</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --accent: #f72585;
+            --success: #4cc9f0;
+            --warning: #f8961e;
+            --danger: #f94144;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--dark);
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        .subtitle {
+            color: var(--gray);
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .phase {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .phase.active {
+            display: block;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            margin: 10px;
+            min-width: 200px;
+        }
+
+        .btn:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        .experiment-area {
+            margin: 40px 0;
+            padding: 30px;
+            background: var(--light);
+            border-radius: 15px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 3s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .timer-display {
+            font-size: 5rem;
+            font-weight: 300;
+            color: var(--dark);
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            animation: fadeIn 0.8s ease;
+        }
+
+        .result-value {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .result-difference {
+            font-size: 1.8rem;
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: inline-block;
+            margin: 15px 0;
+        }
+
+        .early {
+            background: rgba(248, 150, 30, 0.1);
+            color: var(--warning);
+        }
+
+        .accurate {
+            background: rgba(76, 201, 240, 0.1);
+            color: var(--success);
+        }
+
+        .late {
+            background: rgba(249, 65, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .insight {
+            font-style: italic;
+            color: var(--gray);
+            margin: 25px 0;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            padding: 20px;
+            background: var(--light);
+            border-radius: 10px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .history {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid var(--light);
+        }
+
+        .history-title {
+            color: var(--gray);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .history-items {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .history-item {
+            padding: 10px 20px;
+            background: var(--light);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            min-width: 100px;
+        }
+
+        .history-time {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-top: 5px;
+        }
+
+        .instructions {
+            background: var(--light);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .instructions h3 {
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+            color: var(--gray);
+        }
+
+        .instructions li {
+            margin: 8px 0;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .timer-display {
+                font-size: 3.5rem;
+            }
+            
+            .btn {
+                width: 100%;
+                margin: 10px 0;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .particle, .btn, .result-card {
+                animation: none !important;
+                transition: none !important;
+            }
+            
+            .phase {
+                animation: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⏳ Time Perception Experiment</h1>
+        <p class="subtitle">Test how accurately you can perceive one minute without a timer</p>
+        
+        <!-- Phase 1: Introduction -->
+        <div class="phase active" id="phase-intro">
+            <div class="instructions">
+                <h3>How it works:</h3>
+                <ul>
+                    <li>Click "Start Experiment" when you're ready</li>
+                    <li>Wait until you think exactly 60 seconds have passed</li>
+                    <li>Click "I think 1 minute has passed"</li>
+                    <li>See your results and insights about your time perception</li>
+                </ul>
+            </div>
+            <button class="btn" id="startBtn">Start Experiment</button>
+            <p style="margin-top: 20px; color: var(--gray);">
+                Try to avoid looking at any clocks or timers!
+            </p>
+        </div>
+        
+        <!-- Phase 2: Experiment Running -->
+        <div class="phase" id="phase-experiment">
+            <div class="experiment-area">
+                <div class="particles" id="particles"></div>
+                <h2>⏱️ Experiment Running</h2>
+                <p style="color: var(--gray); margin: 20px 0;">
+                    Focus on your internal sense of time.<br>
+                    Click when you believe 60 seconds have passed.
+                </p>
+                <div class="timer-display" id="elapsedDisplay">0.0s</div>
+                <button class="btn btn-danger" id="stopBtn">
+                    ⏸️ I think 1 minute has passed
+                </button>
+                <p style="margin-top: 20px; color: var(--gray); font-size: 0.9rem;">
+                    No visible timer - rely on your internal clock!
+                </p>
+            </div>
+        </div>
+        
+        <!-- Phase 3: Results -->
+        <div class="phase" id="phase-results">
+            <div class="result-card">
+                <h2>📊 Your Results</h2>
+                
+                <div style="margin: 30px 0;">
+                    <div style="color: var(--gray);">Perceived Time:</div>
+                    <div class="result-value" id="perceivedTime">60.0s</div>
+                    
+                    <div style="color: var(--gray); margin-top: 30px;">Actual Time:</div>
+                    <div class="result-value" id="actualTime">0.0s</div>
+                </div>
+                
+                <div style="color: var(--gray);">Difference:</div>
+                <div class="result-difference" id="differenceDisplay">0.0s</div>
+                
+                <div class="insight" id="insightText">
+                    Loading your insight...
+                </div>
+                
+                <div class="history">
+                    <div class="history-title">Recent Attempts</div>
+                    <div class="history-items" id="historyItems">
+                        <!-- History items will be added here -->
+                    </div>
+                </div>
+                
+                <div style="margin-top: 30px;">
+                    <button class="btn btn-success" id="retryBtn">
+                        🔄 Try Again
+                    </button>
+                    <button class="btn" id="newSessionBtn">
+                        🆕 New Session
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TimePerceptionExperiment {
+            constructor() {
+                this.state = {
+                    startTime: null,
+                    endTime: null,
+                    isRunning: false,
+                    history: JSON.parse(localStorage.getItem('timePerceptionHistory')) || [],
+                    sessionId: Date.now()
+                };
+                
+                this.elements = {
+                    startBtn: document.getElementById('startBtn'),
+                    stopBtn: document.getElementById('stopBtn'),
+                    retryBtn: document.getElementById('retryBtn'),
+                    newSessionBtn: document.getElementById('newSessionBtn'),
+                    phases: document.querySelectorAll('.phase'),
+                    elapsedDisplay: document.getElementById('elapsedDisplay'),
+                    perceivedTime: document.getElementById('perceivedTime'),
+                    actualTime: document.getElementById('actualTime'),
+                    differenceDisplay: document.getElementById('differenceDisplay'),
+                    insightText: document.getElementById('insightText'),
+                    historyItems: document.getElementById('historyItems'),
+                    particles: document.getElementById('particles')
+                };
+                
+                this.insights = {
+                    early: [
+                        "You tend to underestimate time when focused. This is common during engaging activities!",
+                        "Your internal clock runs fast! This could indicate high focus or anticipation.",
+                        "Time flies when you're having fun... or when you're just really focused!",
+                        "Early estimation often occurs during periods of high concentration."
+                    ],
+                    accurate: [
+                        "Excellent time perception! You have a well-calibrated internal clock.",
+                        "Impressive accuracy! Your sense of time is remarkably precise.",
+                        "Perfect timing! You maintain good awareness of time passing.",
+                        "Spot on! Your internal clock is well-synchronized with real time."
+                    ],
+                    late: [
+                        "You tend to overestimate time. This is common during waiting periods!",
+                        "Your internal clock runs slow. This happens when deeply focused or relaxed.",
+                        "Time seemed to pass slower for you - a sign of patience or deep concentration!",
+                        "Overestimation often occurs during periods of relaxation or meditation."
+                    ]
+                };
+                
+                this.init();
+            }
+            
+            init() {
+                this.createParticles();
+                this.bindEvents();
+                this.renderHistory();
+                this.setupAnimationFrame();
+            }
+            
+            createParticles() {
+                const particles = this.elements.particles;
+                const particleCount = 30;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = `${Math.random() * 100}%`;
+                    particle.style.top = `${Math.random() * 100}%`;
+                    particle.style.animationDelay = `${Math.random() * 2}s`;
+                    particle.style.animationDuration = `${2 + Math.random() * 3}s`;
+                    particle.style.opacity = 0.2 + Math.random() * 0.3;
+                    particle.style.width = particle.style.height = `${2 + Math.random() * 3}px`;
+                    particle.style.background = i % 3 === 0 ? '#4361ee' : i % 3 === 1 ? '#f72585' : '#4cc9f0';
+                    particles.appendChild(particle);
+                }
+            }
+            
+            bindEvents() {
+                this.elements.startBtn.addEventListener('click', () => this.startExperiment());
+                this.elements.stopBtn.addEventListener('click', () => this.stopExperiment());
+                this.elements.retryBtn.addEventListener('click', () => this.retryExperiment());
+                this.elements.newSessionBtn.addEventListener('click', () => this.newSession());
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space' && this.state.isRunning) {
+                        this.stopExperiment();
+                    }
+                    if (e.code === 'Escape' && this.state.isRunning) {
+                        this.switchPhase('intro');
+                        this.state.isRunning = false;
+                    }
+                });
+            }
+            
+            setupAnimationFrame() {
+                const updateTimer = () => {
+                    if (this.state.isRunning && this.state.startTime) {
+                        const elapsed = performance.now() - this.state.startTime;
+                        this.elements.elapsedDisplay.textContent = `${(elapsed / 1000).toFixed(1)}s`;
+                    }
+                    requestAnimationFrame(updateTimer);
+                };
+                updateTimer();
+            }
+            
+            startExperiment() {
+                this.state.startTime = performance.now();
+                this.state.isRunning = true;
+                this.switchPhase('experiment');
+                
+                // Accessibility announcement
+                this.announce("Experiment started. Press spacebar when you think one minute has passed.");
+            }
+            
+            stopExperiment() {
+                if (!this.state.isRunning || !this.state.startTime) return;
+                
+                this.state.endTime = performance.now();
+                this.state.isRunning = false;
+                
+                const elapsed = this.state.endTime - this.state.startTime;
+                const elapsedSeconds = elapsed / 1000;
+                
+                // Calculate difference
+                const difference = elapsedSeconds - 60;
+                const absDifference = Math.abs(difference);
+                
+                // Store in history (keep only last 3)
+                const result = {
+                    time: elapsedSeconds,
+                    difference: difference,
+                    date: new Date().toLocaleTimeString(),
+                    session: this.state.sessionId
+                };
+                
+                this.state.history.unshift(result);
+                if (this.state.history.length > 3) {
+                    this.state.history = this.state.history.slice(0, 3);
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('timePerceptionHistory', JSON.stringify(this.state.history));
+                
+                // Display results
+                this.displayResults(elapsedSeconds, difference, absDifference);
+                this.switchPhase('results');
+            }
+            
+            displayResults(elapsedSeconds, difference, absDifference) {
+                // Update displays
+                this.elements.perceivedTime.textContent = '60.0s';
+                this.elements.actualTime.textContent = `${elapsedSeconds.toFixed(1)}s`;
+                this.elements.differenceDisplay.textContent = `${difference > 0 ? '+' : ''}${difference.toFixed(1)}s`;
+                
+                // Determine category and set color
+                let category = 'accurate';
+                if (absDifference < 5) {
+                    category = 'accurate';
+                } else if (difference > 0) {
+                    category = 'late';
+                } else {
+                    category = 'early';
+                }
+                
+                // Update difference display style
+                this.elements.differenceDisplay.className = 'result-difference ' + category;
+                
+                // Get random insight
+                const insightList = this.insights[category];
+                const insight = insightList[Math.floor(Math.random() * insightList.length)];
+                this.elements.insightText.textContent = insight;
+                
+                // Update history display
+                this.renderHistory();
+                
+                // Accessibility announcement
+                this.announce(`Results: ${elapsedSeconds.toFixed(1)} seconds elapsed. ${difference > 0 ? 'Over' : 'Under'} by ${absDifference.toFixed(1)} seconds. ${insight}`);
+            }
+            
+            renderHistory() {
+                const historyItems = this.elements.historyItems;
+                historyItems.innerHTML = '';
+                
+                this.state.history.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    
+                    const category = Math.abs(item.difference) < 5 ? 'accurate' : 
+                                   item.difference > 0 ? 'late' : 'early';
+                    
+                    div.innerHTML = `
+                        <div>Attempt ${index + 1}</div>
+                        <div class="history-time" style="color: ${this.getColorForCategory(category)}">
+                            ${item.time.toFixed(1)}s
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--gray);">
+                            ${item.difference > 0 ? '+' : ''}${item.difference.toFixed(1)}s
+                        </div>
+                    `;
+                    
+                    historyItems.appendChild(div);
+                });
+            }
+            
+            getColorForCategory(category) {
+                const colors = {
+                    early: '#f8961e',
+                    accurate: '#4cc9f0',
+                    late: '#f94144'
+                };
+                return colors[category] || '#6c757d';
+            }
+            
+            retryExperiment() {
+                this.switchPhase('intro');
+            }
+            
+            newSession() {
+                this.state.history = [];
+                localStorage.removeItem('timePerceptionHistory');
+                this.state.sessionId = Date.now();
+                this.renderHistory();
+                this.switchPhase('intro');
+            }
+            
+            switchPhase(phaseName) {
+                this.elements.phases.forEach(phase => {
+                    phase.classList.remove('active');
+                });
+                
+                const phaseMap = {
+                    'intro': 'phase-intro',
+                    'experiment': 'phase-experiment',
+                    'results': 'phase-results'
+                };
+                
+                document.getElementById(phaseMap[phaseName]).classList.add('active');
+            }
+            
+            announce(message) {
+                // Create aria-live region for screen readers
+                let announcer = document.getElementById('aria-announcer');
+                if (!announcer) {
+                    announcer = document.createElement('div');
+                    announcer.id = 'aria-announcer';
+                    announcer.setAttribute('aria-live', 'polite');
+                    announcer.setAttribute('aria-atomic', 'true');
+                    announcer.style.position = 'absolute';
+                    announcer.style.left = '-9999px';
+                    document.body.appendChild(announcer);
+                }
+                
+                announcer.textContent = message;
+            }
+        }
+        
+        // Initialize the experiment when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new TimePerceptionExperiment();
+        });
+    </script>
+</body>
+</html>
