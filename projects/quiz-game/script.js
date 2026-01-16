@@ -1167,6 +1167,14 @@ function useHint() {
 
 function startTimer() {
   timeLeft = selectedTime;
+
+  // Immediately set timer bar to full without transition
+  timerFill.style.transition = 'none';
+  timerFill.style.width = '100%';
+  setTimeout(() => {
+    timerFill.style.transition = '';
+  }, 0);
+
   updateTimerDisplay();
 
   timerInterval = setInterval(() => {
