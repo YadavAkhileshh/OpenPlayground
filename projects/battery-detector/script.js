@@ -10,6 +10,22 @@ function formatTime(seconds) {
   const minutes = Math.floor((seconds % 3600) / 60);
   return `${hours}h ${minutes}m`;
 }
+const themeToggle = document.getElementById("themeToggle");
+
+// Load saved theme
+if (localStorage.getItem("theme") === "dark") {
+  document.body.classList.add("dark");
+  themeToggle.checked = true;
+}
+
+// Toggle theme
+themeToggle.addEventListener("change", () => {
+  document.body.classList.toggle("dark");
+
+  const theme = document.body.classList.contains("dark") ? "dark" : "light";
+  localStorage.setItem("theme", theme);
+});
+
 
 function updateBatteryInfo(battery) {
   const levelPercent = Math.round(battery.level * 100);

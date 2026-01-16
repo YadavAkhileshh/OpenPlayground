@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌙 Smart Recipe Book</title>
+<title>Smart Recipe Book</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
@@ -13,28 +14,87 @@
 body.dark{
   --bg:#121212;--card:#1f1f1f;--text:#f5f5f5;--primary:#ffab91
 }
-body{margin:0;font-family:Poppins;background:var(--bg);color:var(--text);transition:.3s}
-header{display:flex;justify-content:space-between;align-items:center;padding:25px}
-button{border:none;border-radius:20px;padding:10px 16px;cursor:pointer;background:var(--primary);color:#fff}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:25px;padding:25px}
-.card{background:var(--card);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;transition:.3s}
-.card:hover{transform:translateY(-6px)}
-.card img{width:100%;height:160px;object-fit:cover}
-.card .info{padding:15px}
+body{margin:0;font-family:Poppins, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;background:var(--bg);color:var(--text);transition:.3s}
+header{display:flex;justify-content:space-between;align-items:center;padding:24px 28px;position:sticky;top:0;background:linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0));backdrop-filter:saturate(140%) blur(6px);z-index:10}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .logo{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg, var(--primary), #ff8a65);color:white;box-shadow:0 10px 25px rgba(0,0,0,0.15)}
+.brand h1{margin:0;font-size:1.25rem;letter-spacing:.2px}
+.actions{display:flex;align-items:center;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;border:none;border-radius:12px;padding:10px 14px;cursor:pointer;background:var(--primary);color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.12);transition:transform .15s ease, box-shadow .15s ease}
+.btn:hover{transform:translateY(-1px);box-shadow:0 12px 24px rgba(0,0,0,.18)}
+.btn.secondary{background:transparent;color:var(--text);border:1px solid rgba(0,0,0,.12)}
+.btn .icon{width:18px;height:18px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px;padding:24px}
+.card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;transition:.25s ease;display:flex;flex-direction:column}
+.card:hover{transform:translateY(-4px)}
+.card .image-wrap{position:relative;overflow:hidden}
+.card img{width:100%;height:180px;object-fit:cover;transition:transform .25s ease}
+.card:hover img{transform:scale(1.03)}
+.card .info{padding:16px;display:flex;flex-direction:column;gap:12px}
+.card .title-row{display:flex;justify-content:space-between;align-items:center}
+.title{font-size:1rem;margin:0;display:flex;align-items:center;gap:8px}
 .modal{position:fixed;inset:0;display:none;background:rgba(0,0,0,.6);align-items:center;justify-content:center}
-.modal-content{background:var(--card);padding:25px;border-radius:20px;width:90%;max-width:650px;max-height:85vh;overflow:auto}
-input,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid #ccc;margin:6px 0}
+.modal-content{background:var(--card);padding:22px;border-radius:18px;width:92%;max-width:720px;max-height:85vh;overflow:auto;box-shadow:0 30px 60px rgba(0,0,0,.25)}
+input,textarea{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);margin:6px 0;background:transparent;color:var(--text)}
 .timer{font-size:1.2rem;margin:10px 0}
 .favorite{font-size:1.3rem;cursor:pointer}
+.badge{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.55);color:#fff;padding:6px 10px;border-radius:999px;font-size:.75rem;display:flex;align-items:center;gap:6px}
+.meta{display:flex;gap:10px;color:#666;font-size:.85rem}
+.button-row{display:flex;gap:10px;flex-wrap:wrap}
+.button-row .btn{padding:8px 12px;border-radius:10px}
+.divider{height:1px;background:rgba(0,0,0,.08);margin:8px 0}
+.format-badge{
+  position:absolute;top:5px;right:5px;background:rgba(76,175,80,0.9);
+  color:white;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;
+}
+.format-warning{
+  background:#fff3cd;border:1px solid #ffeaa7;padding:8px;border-radius:5px;
+  margin:10px 0;font-size:12px;color:#856404;
+}
+.format-info{
+  background:#e3f2fd;border:1px solid #2196f3;padding:10px;border-radius:5px;
+  margin:10px 0;font-size:12px;color:#1565c0;
+}
+.btn-small{font-size:11px;padding:4px 8px;margin-left:5px;border-radius:4px;}
+.image-container{position:relative;overflow:hidden;}
+.image-container img{transition:transform 0.2s ease;}
+.image-container:hover img{transform:scale(1.02);}
+/* Accessibility focus styles */
+.btn:focus-visible, button:focus-visible, [role="button"]:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 3px solid color-mix(in oklab, var(--primary), white 35%);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+  .card:hover img, .image-container:hover img { transform: none !important; }
+}
+/* Empty state and image error feedback */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:60px;border:1px dashed rgba(0,0,0,.15);border-radius:16px;color:#666;background:rgba(0,0,0,.02);margin:24px}
+.empty-state .title{font-weight:700;font-size:1.2rem;color:var(--text)}
+.img-error{display:none;color:#b00020;font-size:12px;margin-top:6px}
 </style>
 </head>
 <body>
 <header>
-<h1>🍲 Smart Recipe Book</h1>
-<div>
-<button onclick="toggleTheme()">🌙 Toggle</button>
-<button onclick="openAdd()">➕ Add</button>
-</div>
+  <div class="brand">
+    <div class="logo" aria-hidden="true">
+      <i data-lucide="chef-hat" class="icon"></i>
+    </div>
+    <h1>Smart Recipe Book</h1>
+  </div>
+  <div class="actions">
+    <button class="btn secondary" onclick="toggleTheme()" aria-label="Toggle theme">
+      <i data-lucide="moon" class="icon"></i>
+      Toggle
+    </button>
+    <button class="btn" onclick="openAdd()" aria-label="Add recipe">
+      <i data-lucide="plus" class="icon"></i>
+      Add Recipe
+    </button>
+  </div>
 </header>
 
 <div class="grid" id="recipes"></div>
@@ -43,35 +103,261 @@ input,textarea{width:100%;padding:10px;border-radius:12px;border:1px solid #ccc;
 
 <script>
 const { jsPDF } = window.jspdf;
+
+// Image format configuration
+const IMAGE_CONFIG = {
+  // Local PNG fallbacks for recipes that require PNG format
+  localFallbacks: {
+    'Pancakes': 'assets/images/pancakes-placeholder.svg',
+    'Veg Biryani': 'assets/images/biryani-placeholder.svg',
+    'Margherita Pizza': 'assets/images/pizza-placeholder.svg'
+  },
+  // Define which recipes require PNG format
+  pngRequired: ['Pancakes', 'Veg Biryani'],
+  // Supported formats
+  supportedFormats: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'],
+  // Default fallback
+  defaultFallback: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzZiNzI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='
+};
+
 let recipes = JSON.parse(localStorage.getItem('recipes')) || [
- {id:1,title:'Veg Biryani',img:'https://images.unsplash.com/photo-1600628422019-8a0b8e7c7d5d',ingredients:['Rice','Vegetables','Spices'],steps:['Cook rice','Prepare masala','Mix & steam'],time:900},
- {id:2,title:'Margherita Pizza',img:'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3',ingredients:['Flour','Cheese','Tomato Sauce'],steps:['Prepare dough','Add toppings','Bake'],time:800},
- {id:3,title:'Pancakes',img:'https://images.unsplash.com/photo-1587732019718-4a4e7f5b6a2d',ingredients:['Flour','Milk','Eggs'],steps:['Make batter','Cook on pan','Serve hot'],time:400},
- {id:4,title:'Caesar Salad',img:'https://images.unsplash.com/photo-1568605114967-8130f3a36994',ingredients:['Lettuce','Croutons','Dressing'],steps:['Chop','Mix','Serve'],time:300},
- {id:5,title:'Chocolate Brownies',img:'https://images.unsplash.com/photo-1599785209707-a456fc1337bb',ingredients:['Cocoa','Butter','Sugar','Flour'],steps:['Mix ingredients','Bake','Cool & slice'],time:700},
- {id:6,title:'Masala Dosa',img:'https://images.unsplash.com/photo-1626776876729-bab4360a7b19',ingredients:['Rice batter','Potato','Spices'],steps:['Prepare filling','Spread batter','Cook & fold'],time:600}
+  {
+    id: 1,
+    title: 'Veg Biryani',
+    img: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=600&q=80',
+    ingredients: ['Rice','Vegetables','Spices'],
+    steps: ['Cook rice','Prepare masala','Mix & steam'],
+    time: 900,
+    requiresPNG: true
+  },
+  {
+    id: 2,
+    title: 'Margherita Pizza',
+    img: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?auto=format&fit=crop&w=600&q=80',
+    ingredients: ['Flour','Cheese','Tomato Sauce'],
+    steps: ['Prepare dough','Add toppings','Bake'],
+    time: 800
+  },
+  {
+    id: 3,
+    title: 'Pancakes',
+    img: 'img/img.png',
+    ingredients: ['Flour','Milk','Eggs'],
+    steps: ['Make batter','Cook on pan','Serve hot'],
+    time: 400,
+    requiresPNG: true
+  },
+  {
+    id: 4,
+    title: 'Caesar Salad',
+    img: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=600&q=80',
+    ingredients: ['Lettuce','Croutons','Dressing'],
+    steps: ['Chop','Mix','Serve'],
+    time: 300
+  },
+  {
+    id: 5,
+    title: 'Chocolate Brownies',
+    img: 'https://images.unsplash.com/photo-1495214783159-3503fd1b572d?auto=format&fit=crop&w=600&q=80',
+    ingredients: ['Cocoa','Butter','Sugar','Flour'],
+    steps: ['Mix ingredients','Bake','Cool & slice'],
+    time: 700
+  },
+  {
+    id: 6,
+    title: 'Masala Dosa',
+    img: 'https://images.pexels.com/photos/5560763/pexels-photo-5560763.jpeg?auto=compress&cs=tinysrgb&w=600',
+    ingredients: ['Rice batter','Potato','Spices'],
+    steps: ['Prepare filling','Spread batter','Cook & fold'],
+    time: 600
+  }
 ];
+
 let favs = JSON.parse(localStorage.getItem('favs')) || [];
 
 function save(){localStorage.setItem('recipes',JSON.stringify(recipes));localStorage.setItem('favs',JSON.stringify(favs));}
 
 function toggleTheme(){document.body.classList.toggle('dark')}
 
+// Image format detection and handling
+function detectImageFormat(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 1;
+      canvas.height = 1;
+      
+      try {
+        ctx.drawImage(img, 0, 0, 1, 1);
+        const imageData = ctx.getImageData(0, 0, 1, 1);
+        // Simple heuristic: if alpha channel is used, likely supports transparency
+        const hasTransparency = imageData.data[3] < 255;
+        
+        // Check if URL suggests PNG but image doesn't support transparency
+        const urlSuggestsPNG = url.toLowerCase().includes('.png');
+        const actualFormat = hasTransparency ? 'PNG-like' : 'JPEG-like';
+        
+        resolve({
+          hasTransparency,
+          urlSuggestsPNG,
+          actualFormat,
+          formatMismatch: urlSuggestsPNG && !hasTransparency
+        });
+      } catch (e) {
+        // CORS error or other issue - assume external JPEG
+        resolve({
+          hasTransparency: false,
+          urlSuggestsPNG: url.toLowerCase().includes('.png'),
+          actualFormat: 'JPEG (external)',
+          formatMismatch: url.toLowerCase().includes('.png')
+        });
+      }
+    };
+    
+    img.onerror = () => {
+      resolve({
+        hasTransparency: false,
+        urlSuggestsPNG: false,
+        actualFormat: 'Error loading',
+        formatMismatch: false
+      });
+    };
+    
+    img.src = url;
+  });
+}
+
+// Get the appropriate image URL with format handling
+function getImageUrl(recipe) {
+  // If recipe requires PNG and has a local fallback, use it
+  if (recipe.requiresPNG && IMAGE_CONFIG.localFallbacks[recipe.title]) {
+    return IMAGE_CONFIG.localFallbacks[recipe.title];
+  }
+  
+  // For external URLs that might not support PNG, add format indicators
+  if (recipe.img && recipe.img.includes('unsplash.com')) {
+    // Unsplash always serves JPEG, so add format parameter to make it explicit
+    return recipe.img + (recipe.img.includes('?') ? '&' : '?') + 'fm=jpg&q=80';
+  }
+  
+  return recipe.img || IMAGE_CONFIG.defaultFallback;
+}
+
+// Enhanced render function with format validation
 function render(){
  const el=document.getElementById('recipes');el.innerHTML='';
+ if (!recipes || recipes.length === 0) {
+  el.innerHTML = `
+    <div class="empty-state" role="status" aria-live="polite">
+      <i data-lucide="utensils-crossed" class="icon" aria-hidden="true"></i>
+      <div class="title">No recipes yet</div>
+      <p>Add your first recipe to get started.</p>
+      <button class="btn" onclick="openAdd()" aria-label="Add your first recipe"><i data-lucide="plus" class="icon" aria-hidden="true"></i> Add Recipe</button>
+    </div>`;
+  if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+  return;
+ }
  recipes.forEach(r=>{
   const fav=favs.includes(r.id)?'❤️':'🤍';
-  el.innerHTML+=`<div class="card"><img src="${r.img}"><div class="info"><h3>${r.title} <span class="favorite" onclick="favToggle(${r.id})">${fav}</span></h3><button onclick="openRecipe(${r.id})">View</button></div></div>`
+  const imgUrl = getImageUrl(r);
+  const formatBadge = r.requiresPNG ? '<div class="format-badge">🖼️ PNG</div>' : '';
+  
+  el.innerHTML+=`<div class="card" aria-label="Recipe card: ${r.title}">
+    <div class="image-wrap">
+      <img src="${imgUrl}" alt="${r.title}" onerror="imageError(this, ${r.id})">
+      ${formatBadge}
+    </div>
+    <div class="info">
+      <div class="title-row">
+        <h3 class="title"><i data-lucide="utensils" class="icon"></i>${r.title}</h3>
+        <button class="favorite" aria-label="Toggle favorite for ${r.title}" aria-pressed="${favs.includes(r.id)}" onclick="favToggle(${r.id})">${fav}</button>
+      </div>
+      <div class="meta">
+        <span><i data-lucide="timer" class="icon" style="width:16px;height:16px"></i> ${Math.round((r.time||600)/60)} min</span>
+        <span><i data-lucide="list" class="icon" style="width:16px;height:16px"></i> ${r.ingredients.length} items</span>
+      </div>
+      <div class="divider"></div>
+      <div id="img-error-${r.id}" class="img-error" role="status" aria-live="polite"></div>
+      <div class="button-row">
+        <button class="btn" onclick="openRecipe(${r.id})" aria-label="View recipe ${r.title}"><i data-lucide="book-open" class="icon"></i>View</button>
+        ${r.requiresPNG ? '<button class="btn secondary" onclick="checkImageFormat(' + r.id + ')" aria-label="Check image format for ' + r.title + '"><i data-lucide="scan" class="icon"></i>Check Format</button>' : ''}
+      </div>
+    </div>
+  </div>`
  })
 }
 
 function favToggle(id){favs.includes(id)?favs=favs.filter(f=>f!==id):favs.push(id);save();render()}
 
+// Check and display image format information
+async function checkImageFormat(id) {
+  const recipe = recipes.find(x => x.id === id);
+  if (!recipe) return;
+  
+  const originalUrl = recipe.img;
+  const currentUrl = getImageUrl(recipe);
+  
+  try {
+    const formatInfo = await detectImageFormat(originalUrl);
+    
+    let message = `📷 Image Format Analysis for "${recipe.title}"\n\n`;
+    message += `Original URL: ${originalUrl}\n`;
+    message += `Current URL: ${currentUrl}\n`;
+    message += `Detected Format: ${formatInfo.actualFormat}\n`;
+    message += `Has Transparency: ${formatInfo.hasTransparency ? 'Yes' : 'No'}\n`;
+    message += `PNG Expected: ${recipe.requiresPNG ? 'Yes' : 'No'}\n\n`;
+    
+    if (formatInfo.formatMismatch) {
+      message += `⚠️ FORMAT MISMATCH DETECTED!\n`;
+      message += `This recipe expects PNG format but the image is served as JPEG.\n`;
+      message += `Using local PNG fallback: ${IMAGE_CONFIG.localFallbacks[recipe.title] || 'Not available'}\n\n`;
+    }
+    
+    if (originalUrl.includes('unsplash.com')) {
+      message += `ℹ️ Note: Unsplash always serves images in JPEG format, regardless of the URL extension.\n`;
+      message += `For PNG support, local assets or PNG-compatible sources should be used.`;
+    }
+    
+    alert(message);
+  } catch (error) {
+    alert(`Error analyzing image format: ${error.message}`);
+  }
+}
+
 function openRecipe(id){
  const r=recipes.find(x=>x.id===id);
  let t=r.time;
+ const imgUrl = getImageUrl(r);
+ const formatWarning = r.requiresPNG && r.img && r.img.includes('unsplash.com') ? 
+   '<div class="format-warning">⚠️ <strong>Format Notice:</strong> This recipe requires PNG format for transparency support. External image served as JPEG. Using local PNG fallback for optimal display.</div>' : '';
+   
  document.getElementById('modal').style.display='flex';
- document.getElementById('modal').innerHTML=`<div class="modal-content"><button onclick="closeModal()">✖</button><h2>${r.title}</h2><p><b>Ingredients</b></p><ul>${r.ingredients.map(i=>`<li>${i}</li>`).join('')}</ul><p><b>Steps</b></p><ol>${r.steps.map(s=>`<li>${s}</li>`).join('')}</ol><div class="timer" id="timer">${t}s</div><button onclick="startTimer(${t})">🔥 Start Timer</button><button onclick="exportPDF(${id})">📄 Export PDF</button><button onclick="aiSuggest()">🧠 AI Suggest</button></div>`
+ document.getElementById('modal').innerHTML=`<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="recipe-title-${id}" tabindex="-1">
+   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+     <h2 id="recipe-title-${id}" style="margin:0;display:flex;align-items:center;gap:10px"><i data-lucide="salad" class="icon" aria-hidden="true"></i>${r.title}${r.requiresPNG ? ' <span class=\"badge\"><i data-lucide=\"image\" class=\"icon\" aria-hidden=\"true\"></i>PNG</span>' : ''}</h2>
+     <button class="btn secondary" onclick="closeModal()" aria-label="Close dialog"><i data-lucide="x" class="icon" aria-hidden="true"></i>Close</button>
+   </div>
+   <div class="image-wrap" style="margin:10px 0;">
+     <img src="${imgUrl}" alt="${r.title}" style="width:100%;max-height:280px;object-fit:cover;border-radius:10px;" onerror="this.src='${IMAGE_CONFIG.defaultFallback}'">
+   </div>
+   ${formatWarning}
+   <h3 style="margin-bottom:6px;display:flex;align-items:center;gap:8px"><i data-lucide="clipboard-list" class="icon"></i>Ingredients</h3>
+   <ul>${r.ingredients.map(i=>`<li>${i}</li>`).join('')}</ul>
+   <h3 style="margin:10px 0 6px;display:flex;align-items:center;gap:8px"><i data-lucide="chef-hat" class="icon"></i>Steps</h3>
+   <ol>${r.steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+   <div class="timer" id="timer" style="display:flex;align-items:center;gap:8px"><i data-lucide="alarm-clock" class="icon"></i>${t}s</div>
+   <div class="button-row">
+     <button class="btn" onclick="startTimer(${t})"><i data-lucide="flame" class="icon"></i>Start Timer</button>
+     <button class="btn secondary" onclick="exportPDF(${id})"><i data-lucide="file-down" class="icon"></i>Export PDF</button>
+     <button class="btn secondary" onclick="aiSuggest()"><i data-lucide="brain" class="icon"></i>AI Suggest</button>
+     ${r.requiresPNG ? '<button class="btn" onclick="checkImageFormat(' + id + ')"><i data-lucide="scan" class="icon"></i>Check Format</button>' : ''}
+   </div>
+ </div>`
+ setupModalA11y();
 }
 
 function startTimer(sec){
@@ -90,13 +376,204 @@ function aiSuggest(){alert('🧠 AI Suggestion: Try adding herbs & olive oil for
 
 function openAdd(){
  document.getElementById('modal').style.display='flex';
- document.getElementById('modal').innerHTML=`<div class="modal-content"><button onclick="closeModal()">✖</button><h2>Add Recipe</h2><input id="t" placeholder="Title"><input id="i" placeholder="Image URL"><textarea id="ing" placeholder="Ingredients comma separated"></textarea><textarea id="st" placeholder="Steps comma separated"></textarea><button onclick="addRecipe()">Save</button></div>`
+ document.getElementById('modal').innerHTML=`<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="add-title" tabindex="-1">
+   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+     <h2 id="add-title" style="margin:0;display:flex;align-items:center;gap:10px"><i data-lucide="plus" class="icon" aria-hidden="true"></i>Add New Recipe</h2>
+     <button class="btn secondary" onclick="closeModal()" aria-label="Close dialog"><i data-lucide="x" class="icon" aria-hidden="true"></i>Close</button>
+   </div>
+   <div class="format-info">
+     <strong>📝 Image Format Guidelines:</strong><br>
+     • <strong>PNG Format:</strong> Required for recipes needing transparency support<br>
+     • <strong>External Sources:</strong> Unsplash/Picsum serve JPEG regardless of URL extension<br>
+     • <strong>Supported:</strong> JPEG, PNG, WebP, SVG • <strong>Max Size:</strong> 2MB<br>
+     • <strong>Recommendation:</strong> Use local PNG files for transparency requirements
+   </div>
+   <input id="t" placeholder="Recipe Title (e.g., 'Fluffy Pancakes')">
+    <div style="display:grid;grid-template-columns:1fr;gap:10px">
+      <input id="i" placeholder="Image URL (https://...)">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label class="btn secondary" style="margin:0" for="fileInput"><i data-lucide="image-up" class="icon"></i> Upload Image</label>
+        <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none">
+        <div id="uploadInfo" style="font-size:12px;color:#666"></div>
+      </div>
+      <div id="imagePreviewWrap" style="display:none">
+        <div style="font-size:12px;color:#666;margin-bottom:6px;display:flex;align-items:center;gap:6px"><i data-lucide="eye" class="icon" style="width:14px;height:14px"></i>Preview</div>
+        <img id="imagePreview" alt="Preview" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;border:1px solid rgba(0,0,0,.08)">
+      </div>
+    </div>
+   <div style="margin:10px 0;">
+     <label style="display:flex;align-items:center;gap:8px;">
+       <input type="checkbox" id="pngRequired"> 
+       <span>🖼️ This recipe requires PNG format (transparency/alpha channel support)</span>
+     </label>
+   </div>
+   <textarea id="ing" placeholder="Ingredients (comma separated)&#10;e.g., Flour, Milk, Eggs, Baking Powder"></textarea>
+   <textarea id="st" placeholder="Cooking Steps (comma separated)&#10;e.g., Mix dry ingredients, Add wet ingredients, Cook on pan"></textarea>
+   <input id="time" type="number" placeholder="Cooking time in seconds" value="600" min="60" max="7200">
+   <div style="margin-top:15px;">
+     <button class="btn" onclick="addRecipe()"><i data-lucide="save" class="icon"></i>Save Recipe</button>
+     <button class="btn secondary" onclick="closeModal()" style="margin-left:10px;"><i data-lucide="ban" class="icon"></i>Cancel</button>
+   </div>
+ </div>`
+
+  // Initialize icons for newly injected content
+  if (window.lucide && window.lucide.createIcons) { window.lucide.createIcons(); }
+  setupModalA11y();
+
+  // Wire up file upload
+  const fileInput = document.getElementById('fileInput');
+  const uploadInfo = document.getElementById('uploadInfo');
+  const imagePreview = document.getElementById('imagePreview');
+  const imagePreviewWrap = document.getElementById('imagePreviewWrap');
+
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const allowed = ['image/png','image/jpeg','image/webp','image/svg+xml'];
+    if (!allowed.includes(file.type)) {
+      uploadInfo.style.color = '#b00020';
+      uploadInfo.textContent = `Unsupported type: ${file.type}. Allowed: PNG, JPEG, WebP, SVG.`;
+      fileInput.value = '';
+      imagePreviewWrap.style.display = 'none';
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      uploadInfo.style.color = '#b00020';
+      uploadInfo.textContent = `File too large (${(file.size/1024/1024).toFixed(2)}MB). Max 2MB.`;
+      fileInput.value = '';
+      imagePreviewWrap.style.display = 'none';
+      return;
+    }
+    uploadInfo.style.color = '#666';
+    uploadInfo.textContent = `${file.name} • ${(file.size/1024).toFixed(0)} KB • ${file.type}`;
+    const reader = new FileReader();
+    reader.onload = () => {
+      imagePreview.src = reader.result;
+      imagePreviewWrap.style.display = 'block';
+      // Store temporarily on window for retrieval in addRecipe
+      window.__uploadedImageDataURL = reader.result;
+      window.__uploadedImageType = file.type;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function addRecipe(){
- recipes.push({id:Date.now(),title:t.value,img:i.value,ingredients:ing.value.split(','),steps:st.value.split(','),time:600});save();closeModal();render();}
+ const title = document.getElementById('t').value;
+ const imgUrlInput = document.getElementById('i').value;
+ const ingredients = document.getElementById('ing').value.split(',').map(i => i.trim()).filter(i => i);
+ const steps = document.getElementById('st').value.split(',').map(s => s.trim()).filter(s => s);
+ const time = parseInt(document.getElementById('time').value) || 600;
+ const requiresPNG = document.getElementById('pngRequired').checked;
+ 
+ const hasImage = Boolean(window.__uploadedImageDataURL) || Boolean(imgUrlInput);
+ if (!title || !hasImage || ingredients.length === 0 || steps.length === 0) {
+   alert('Please fill in all required fields');
+   return;
+ }
+ 
+ // Validate image URL format
+ const validImageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.svg'];
+ const hasValidExtension = validImageExtensions.some(ext => 
+   imgUrlInput.toLowerCase().includes(ext) || imgUrlInput.includes('unsplash.com') || imgUrlInput.includes('images.')
+ );
+ 
+ if (!hasValidExtension) {
+   const proceed = confirm('Image URL doesn\'t appear to be a valid image. Continue anyway?');
+   if (!proceed) return;
+ }
+ 
+ // Warning for PNG requirement with external URLs
+ if (requiresPNG && (imgUrlInput.includes('unsplash.com') || imgUrlInput.includes('picsum.photos'))) {
+   const proceed = confirm('⚠️ Warning: You\'ve marked this recipe as requiring PNG format, but you\'re using an external image source that typically serves JPEG. This may cause format inconsistency. Continue anyway?');
+   if (!proceed) return;
+ }
+ 
+ // Prefer uploaded file if present, otherwise use URL
+ let finalImg = imgUrlInput;
+ let finalImgType = 'url';
+ if (window.__uploadedImageDataURL) {
+   finalImg = window.__uploadedImageDataURL;
+   finalImgType = window.__uploadedImageType || 'data';
+   // If PNG is required but uploaded type isn't PNG, warn
+   if (requiresPNG && finalImgType !== 'image/png') {
+     const proceed = confirm(`⚠️ PNG required but uploaded file type is ${finalImgType}. Transparency may not be supported. Continue?`);
+     if (!proceed) return;
+   }
+ }
+
+ const newRecipe = {
+   id: Date.now(),
+   title,
+   img: finalImg,
+   ingredients,
+   steps,
+   time,
+   requiresPNG
+ };
+ 
+ recipes.push(newRecipe);
+ save();
+ closeModal();
+ render();
+ 
+ // Show success message with format info
+ const formatNote = requiresPNG ? ' (PNG format required - consider using local images for transparency support)' : '';
+ alert(`✅ Recipe "${title}" added successfully!${formatNote}`);
+}
+// Inline image error feedback
+function imageError(imgEl, id){
+  imgEl.src = IMAGE_CONFIG.defaultFallback;
+  const msg = document.getElementById('img-error-'+id);
+  if (msg){
+    msg.textContent = 'Image failed to load. Showing placeholder.';
+    msg.style.display = 'block';
+  }
+}
+
+// Modal accessibility: focus trap + Esc to close
+let __modalKeyHandler = null;
+function setupModalA11y(){
+  const overlay = document.getElementById('modal');
+  const dialog = overlay && overlay.querySelector('.modal-content');
+  if (!overlay || !dialog) return;
+  const focusable = dialog.querySelectorAll('button, [href], input, textarea, [tabindex]:not([tabindex="-1"])');
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  dialog.focus();
+  dialog.addEventListener('keydown', (e)=>{
+    if (e.key === 'Tab'){
+      if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+    }
+  });
+  __modalKeyHandler = (e)=>{ if (e.key === 'Escape') closeModal(); };
+  document.addEventListener('keydown', __modalKeyHandler);
+}
+
+function closeModal(){
+  const overlay = document.getElementById('modal');
+  if (overlay) overlay.style.display='none';
+  if (__modalKeyHandler){ document.removeEventListener('keydown', __modalKeyHandler); __modalKeyHandler = null; }
+}
 function closeModal(){document.getElementById('modal').style.display='none'}
 render();
+
+// Initialize Lucide icons after DOM updates
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.lucide && window.lucide.createIcons) {
+    window.lucide.createIcons();
+  }
+});
+// Recreate icons on dynamic content updates
+const _render = render;
+render = function(){
+  _render();
+  if (window.lucide && window.lucide.createIcons) {
+    window.lucide.createIcons();
+  }
+}
 </script>
 </body>
 </html>

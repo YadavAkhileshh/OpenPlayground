@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Control Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0c1a2d 0%, #1a3a5f 100%);
+            color: #e0f0ff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a0c8ff;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .panel-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        @media (max-width: 900px) {
+            .panel-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .control-panel {
+            background: rgba(10, 25, 47, 0.85);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(64, 156, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .panel-title {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            color: #6eb6ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel-title i {
+            color: #4facfe;
+        }
+        
+        .switches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .switch-container {
+            background: rgba(18, 40, 70, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(64, 156, 255, 0.1);
+        }
+        
+        .switch-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 100, 255, 0.2);
+        }
+        
+        .switch-label {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #b3d9ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 80px;
+            height: 40px;
+            display: inline-block;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #2a4365;
+            border-radius: 34px;
+            transition: .4s;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 32px;
+            width: 32px;
+            left: 4px;
+            bottom: 4px;
+            background-color: #cbd5e0;
+            border-radius: 50%;
+            transition: .4s;
+        }
+        
+        input:checked + .slider {
+            background-color: #2b6cb0;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(40px);
+            background-color: #bee3f8;
+        }
+        
+        input:disabled + .slider {
+            background-color: #1a202c;
+            cursor: not-allowed;
+        }
+        
+        input:disabled + .slider:before {
+            background-color: #4a5568;
+        }
+        
+        .status-panel {
+            background: rgba(10, 25, 47, 0.85);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(64, 156, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .indicators-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .indicator {
+            background: rgba(18, 40, 70, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .indicator:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 100, 255, 0.2);
+        }
+        
+        .indicator-label {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #b3d9ff;
+        }
+        
+        .indicator-light {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 15px;
+            background-color: #2a4365;
+            color: #718096;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+            transition: all 0.5s ease;
+        }
+        
+        .indicator-light.on {
+            background-color: #38a169;
+            color: #c6f6d5;
+            box-shadow: 0 0 30px rgba(72, 187, 120, 0.7);
+        }
+        
+        .indicator-light.off {
+            background-color: #2a4365;
+            color: #718096;
+        }
+        
+        .indicator-light.warning {
+            background-color: #d69e2e;
+            color: #fefcbf;
+            box-shadow: 0 0 30px rgba(214, 158, 46, 0.7);
+        }
+        
+        .indicator-status {
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+        
+        .status-on {
+            color: #68d391;
+        }
+        
+        .status-off {
+            color: #a0aec0;
+        }
+        
+        .status-warning {
+            color: #ecc94b;
+        }
+        
+        .dependency-note {
+            font-style: italic;
+            color: #90cdf4;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(64, 156, 255, 0.2);
+            font-size: 0.95rem;
+        }
+        
+        .controls-footer {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        
+        .reset-btn {
+            background: linear-gradient(to right, #2b6cb0, #4c51bf);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 1.3rem;
+            border-radius: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(43, 108, 176, 0.4);
+        }
+        
+        .reset-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(43, 108, 176, 0.6);
+            background: linear-gradient(to right, #3182ce, #553c9a);
+        }
+        
+        .reset-btn:active {
+            transform: translateY(-2px);
+        }
+        
+        .system-log {
+            background: rgba(10, 25, 47, 0.85);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(64, 156, 255, 0.2);
+        }
+        
+        .log-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #6eb6ff;
+        }
+        
+        .log-container {
+            background-color: rgba(18, 40, 70, 0.7);
+            border-radius: 10px;
+            padding: 20px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+        }
+        
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(64, 156, 255, 0.1);
+            color: #cbd5e0;
+        }
+        
+        .log-time {
+            color: #90cdf4;
+            margin-right: 15px;
+        }
+        
+        .log-message {
+            color: #e2e8f0;
+        }
+        
+        .log-warning {
+            color: #ecc94b;
+        }
+        
+        .log-error {
+            color: #fc8181;
+        }
+        
+        .log-success {
+            color: #68d391;
+        }
+        
+        .instructions {
+            background: rgba(10, 25, 47, 0.85);
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 30px;
+            border: 1px solid rgba(64, 156, 255, 0.2);
+        }
+        
+        .instructions h3 {
+            color: #6eb6ff;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #90cdf4;
+            font-size: 0.9rem;
+            padding: 20px;
+            width: 100%;
+            border-top: 1px solid rgba(64, 156, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-sliders-h"></i> Virtual Control Panel</h1>
+            <p class="subtitle">Interactive system dashboard simulation with toggle switches, status indicators, and dependency logic. Toggle switches to observe system state changes and visual feedback.</p>
+        </header>
+        
+        <div class="panel-container">
+            <div class="control-panel">
+                <h2 class="panel-title"><i class="fas fa-cogs"></i> Control Switches</h2>
+                <div class="switches-grid">
+                    <div class="switch-container">
+                        <div class="switch-label">
+                            <span>Main Power</span>
+                            <span id="power-status" class="status-off">OFF</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="power-switch">
+                            <span class="slider"></span>
+                        </label>
+                        <p class="dependency-note">Turning off power disables all other controls</p>
+                    </div>
+                    
+                    <div class="switch-container">
+                        <div class="switch-label">
+                            <span>Operation Mode</span>
+                            <span id="mode-status" class="status-off">AUTO</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="mode-switch" disabled>
+                            <span class="slider"></span>
+                        </label>
+                        <p class="dependency-note">Switch between AUTO and MANUAL modes</p>
+                    </div>
+                    
+                    <div class="switch-container">
+                        <div class="switch-label">
+                            <span>Safety System</span>
+                            <span id="safety-status" class="status-off">DISABLED</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="safety-switch" disabled>
+                            <span class="slider"></span>
+                        </label>
+                        <p class="dependency-note">Enabled only when Power is ON</p>
+                    </div>
+                    
+                    <div class="switch-container">
+                        <div class="switch-label">
+                            <span>Cooling System</span>
+                            <span id="cooling-status" class="status-off">STANDBY</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="cooling-switch" disabled>
+                            <span class="slider"></span>
+                        </label>
+                        <p class="dependency-note">Requires Power and Safety ON</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status-panel">
+                <h2 class="panel-title"><i class="fas fa-chart-line"></i> System Status</h2>
+                <div class="indicators-grid">
+                    <div class="indicator">
+                        <div class="indicator-label">Power Status</div>
+                        <div class="indicator-light off" id="power-light">
+                            <i class="fas fa-power-off"></i>
+                        </div>
+                        <div class="indicator-status status-off" id="power-indicator">OFFLINE</div>
+                    </div>
+                    
+                    <div class="indicator">
+                        <div class="indicator-label">System Mode</div>
+                        <div class="indicator-light off" id="mode-light">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div class="indicator-status status-off" id="mode-indicator">AUTO</div>
+                    </div>
+                    
+                    <div class="indicator">
+                        <div class="indicator-label">Safety Status</div>
+                        <div class="indicator-light off" id="safety-light">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="indicator-status status-off" id="safety-indicator">DISABLED</div>
+                    </div>
+                    
+                    <div class="indicator">
+                        <div class="indicator-label">Cooling Status</div>
+                        <div class="indicator-light off" id="cooling-light">
+                            <i class="fas fa-snowflake"></i>
+                        </div>
+                        <div class="indicator-status status-off" id="cooling-indicator">STANDBY</div>
+                    </div>
+                </div>
+                
+                <div class="dependency-note">
+                    <i class="fas fa-info-circle"></i> Indicators show real-time system status. Green = ON, Yellow = WARNING, Gray = OFF.
+                </div>
+            </div>
+        </div>
+        
+        <div class="system-log">
+            <h2 class="log-title"><i class="fas fa-clipboard-list"></i> System Log</h2>
+            <div class="log-container" id="log-container">
+                <!-- Log entries will be added here dynamically -->
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle"></i> How to Use the Control Panel</h3>
+            <ul>
+                <li><strong>Toggle switches</strong> to change system states. Observe how controls and indicators react.</li>
+                <li><strong>Main Power</strong> must be ON to enable other controls. Turning it off will disable all other switches.</li>
+                <li><strong>Safety System</strong> must be enabled before activating the Cooling System.</li>
+                <li><strong>System Mode</strong> toggles between AUTO (system-controlled) and MANUAL (user-controlled) operation.</li>
+                <li>Use the <strong>Reset Panel</strong> button to restore all controls to their default state.</li>
+            </ul>
+        </div>
+        
+        <div class="controls-footer">
+            <button class="reset-btn" id="reset-btn">
+                <i class="fas fa-redo-alt"></i> Reset Control Panel
+            </button>
+        </div>
+        
+        <footer>
+            <p>Virtual Control Panel Simulation | Created with HTML, CSS, and JavaScript</p>
+            <p>Toggle switches to observe system state changes and dependency logic</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const powerSwitch = document.getElementById('power-switch');
+        const modeSwitch = document.getElementById('mode-switch');
+        const safetySwitch = document.getElementById('safety-switch');
+        const coolingSwitch = document.getElementById('cooling-switch');
+        
+        const powerStatus = document.getElementById('power-status');
+        const modeStatus = document.getElementById('mode-status');
+        const safetyStatus = document.getElementById('safety-status');
+        const coolingStatus = document.getElementById('cooling-status');
+        
+        const powerLight = document.getElementById('power-light');
+        const modeLight = document.getElementById('mode-light');
+        const safetyLight = document.getElementById('safety-light');
+        const coolingLight = document.getElementById('cooling-light');
+        
+        const powerIndicator = document.getElementById('power-indicator');
+        const modeIndicator = document.getElementById('mode-indicator');
+        const safetyIndicator = document.getElementById('safety-indicator');
+        const coolingIndicator = document.getElementById('cooling-indicator');
+        
+        const resetBtn = document.getElementById('reset-btn');
+        const logContainer = document.getElementById('log-container');
+        
+        // System state
+        const systemState = {
+            power: false,
+            mode: false, // false = AUTO, true = MANUAL
+            safety: false,
+            cooling: false,
+            logEntries: []
+        };
+        
+        // Initialize the system
+        function initSystem() {
+            // Add initial log entry
+            addLogEntry("System initialized. All controls are OFF.", "system");
+            
+            // Set up event listeners
+            powerSwitch.addEventListener('change', togglePower);
+            modeSwitch.addEventListener('change', toggleMode);
+            safetySwitch.addEventListener('change', toggleSafety);
+            coolingSwitch.addEventListener('change', toggleCooling);
+            resetBtn.addEventListener('click', resetPanel);
+            
+            // Initialize visual state
+            updateVisualState();
+        }
+        
+        // Power toggle handler
+        function togglePower() {
+            systemState.power = powerSwitch.checked;
+            
+            if (systemState.power) {
+                addLogEntry("Main Power turned ON. System booting up...", "success");
+                
+                // Enable mode and safety switches
+                modeSwitch.disabled = false;
+                safetySwitch.disabled = false;
+                
+                // Update status
+                powerStatus.textContent = "ON";
+                powerStatus.className = "status-on";
+                
+                // If safety is on, enable cooling switch
+                if (systemState.safety) {
+                    coolingSwitch.disabled = false;
+                }
+            } else {
+                addLogEntry("Main Power turned OFF. All systems shutting down.", "warning");
+                
+                // Disable all other switches
+                modeSwitch.disabled = true;
+                safetySwitch.disabled = true;
+                coolingSwitch.disabled = true;
+                
+                // Turn off all other systems
+                modeSwitch.checked = false;
+                safetySwitch.checked = false;
+                coolingSwitch.checked = false;
+                
+                // Update system state
+                systemState.mode = false;
+                systemState.safety = false;
+                systemState.cooling = false;
+                
+                // Update status displays
+                powerStatus.textContent = "OFF";
+                powerStatus.className = "status-off";
+                modeStatus.textContent = "AUTO";
+                modeStatus.className = "status-off";
+                safetyStatus.textContent = "DISABLED";
+                safetyStatus.className = "status-off";
+                coolingStatus.textContent = "STANDBY";
+                coolingStatus.className = "status-off";
+            }
+            
+            updateVisualState();
+        }
+        
+        // Mode toggle handler
+        function toggleMode() {
+            systemState.mode = modeSwitch.checked;
+            
+            if (systemState.mode) {
+                addLogEntry("Operation Mode changed to MANUAL.", "system");
+                modeStatus.textContent = "MANUAL";
+                modeStatus.className = "status-warning";
+            } else {
+                addLogEntry("Operation Mode changed to AUTO.", "system");
+                modeStatus.textContent = "AUTO";
+                modeStatus.className = "status-on";
+            }
+            
+            updateVisualState();
+        }
+        
+        // Safety toggle handler
+        function toggleSafety() {
+            systemState.safety = safetySwitch.checked;
+            
+            if (systemState.safety) {
+                addLogEntry("Safety System activated.", "success");
+                safetyStatus.textContent = "ENABLED";
+                safetyStatus.className = "status-on";
+                
+                // Enable cooling switch if power is on
+                if (systemState.power) {
+                    coolingSwitch.disabled = false;
+                }
+            } else {
+                addLogEntry("Safety System deactivated.", "warning");
+                safetyStatus.textContent = "DISABLED";
+                safetyStatus.className = "status-off";
+                
+                // Disable and turn off cooling
+                coolingSwitch.disabled = true;
+                coolingSwitch.checked = false;
+                systemState.cooling = false;
+                coolingStatus.textContent = "STANDBY";
+                coolingStatus.className = "status-off";
+                addLogEntry("Cooling System disabled. Safety System must be ON.", "error");
+            }
+            
+            updateVisualState();
+        }
+        
+        // Cooling toggle handler
+        function toggleCooling() {
+            systemState.cooling = coolingSwitch.checked;
+            
+            if (systemState.cooling) {
+                addLogEntry("Cooling System activated.", "success");
+                coolingStatus.textContent = "ACTIVE";
+                coolingStatus.className = "status-on";
+            } else {
+                addLogEntry("Cooling System deactivated.", "warning");
+                coolingStatus.textContent = "STANDBY";
+                coolingStatus.className = "status-off";
+            }
+            
+            updateVisualState();
+        }
+        
+        // Update all visual indicators based on system state
+        function updateVisualState() {
+            // Update power indicator
+            if (systemState.power) {
+                powerLight.className = "indicator-light on";
+                powerIndicator.textContent = "ONLINE";
+                powerIndicator.className = "indicator-status status-on";
+            } else {
+                powerLight.className = "indicator-light off";
+                powerIndicator.textContent = "OFFLINE";
+                powerIndicator.className = "indicator-status status-off";
+            }
+            
+            // Update mode indicator
+            if (systemState.power) {
+                if (systemState.mode) {
+                    modeLight.className = "indicator-light warning";
+                    modeIndicator.textContent = "MANUAL";
+                    modeIndicator.className = "indicator-status status-warning";
+                } else {
+                    modeLight.className = "indicator-light on";
+                    modeIndicator.textContent = "AUTO";
+                    modeIndicator.className = "indicator-status status-on";
+                }
+            } else {
+                modeLight.className = "indicator-light off";
+                modeIndicator.textContent = "AUTO";
+                modeIndicator.className = "indicator-status status-off";
+            }
+            
+            // Update safety indicator
+            if (systemState.safety && systemState.power) {
+                safetyLight.className = "indicator-light on";
+                safetyIndicator.textContent = "ENABLED";
+                safetyIndicator.className = "indicator-status status-on";
+            } else {
+                safetyLight.className = "indicator-light off";
+                safetyIndicator.textContent = "DISABLED";
+                safetyIndicator.className = "indicator-status status-off";
+            }
+            
+            // Update cooling indicator
+            if (systemState.cooling && systemState.safety && systemState.power) {
+                coolingLight.className = "indicator-light on";
+                coolingIndicator.textContent = "ACTIVE";
+                coolingIndicator.className = "indicator-status status-on";
+            } else if (systemState.power && systemState.safety) {
+                coolingLight.className = "indicator-light off";
+                coolingIndicator.textContent = "STANDBY";
+                coolingIndicator.className = "indicator-status status-off";
+            } else {
+                coolingLight.className = "indicator-light off";
+                coolingIndicator.textContent = "STANDBY";
+                coolingIndicator.className = "indicator-status status-off";
+            }
+            
+            // Special warning if cooling is requested but safety is off
+            if (coolingSwitch.checked && !systemState.safety) {
+                addLogEntry("Warning: Cooling cannot activate without Safety System.", "error");
+                coolingSwitch.checked = false;
+                systemState.cooling = false;
+            }
+        }
+        
+        // Add entry to system log
+        function addLogEntry(message, type = "system") {
+            const time = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            let typeClass = '';
+            if (type === "warning") typeClass = "log-warning";
+            else if (type === "error") typeClass = "log-error";
+            else if (type === "success") typeClass = "log-success";
+            
+            logEntry.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="log-message ${typeClass}">${message}</span>
+            `;
+            
+            logContainer.appendChild(logEntry);
+            
+            // Keep log to a reasonable length
+            if (logContainer.children.length > 15) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+            
+            // Auto-scroll to bottom
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Store in state
+            systemState.logEntries.push({time, message, type});
+        }
+        
+        // Reset panel to initial state
+        function resetPanel() {
+            // Reset all switches
+            powerSwitch.checked = false;
+            modeSwitch.checked = false;
+            safetySwitch.checked = false;
+            coolingSwitch.checked = false;
+            
+            // Reset all switch states
+            modeSwitch.disabled = true;
+            safetySwitch.disabled = true;
+            coolingSwitch.disabled = true;
+            
+            // Reset system state
+            systemState.power = false;
+            systemState.mode = false;
+            systemState.safety = false;
+            systemState.cooling = false;
+            
+            // Reset status displays
+            powerStatus.textContent = "OFF";
+            powerStatus.className = "status-off";
+            modeStatus.textContent = "AUTO";
+            modeStatus.className = "status-off";
+            safetyStatus.textContent = "DISABLED";
+            safetyStatus.className = "status-off";
+            coolingStatus.textContent = "STANDBY";
+            coolingStatus.className = "status-off";
+            
+            // Update visual state
+            updateVisualState();
+            
+            // Add log entry
+            addLogEntry("System reset to default state.", "system");
+            
+            // Visual feedback for reset
+            resetBtn.innerHTML = '<i class="fas fa-check"></i> Panel Reset!';
+            resetBtn.style.background = "linear-gradient(to right, #38a169, #2f855a)";
+            
+            setTimeout(() => {
+                resetBtn.innerHTML = '<i class="fas fa-redo-alt"></i> Reset Control Panel';
+                resetBtn.style.background = "linear-gradient(to right, #2b6cb0, #4c51bf)";
+            }, 1500);
+        }
+        
+        // Initialize the control panel when page loads
+        document.addEventListener('DOMContentLoaded', initSystem);
+    </script>
+</body>
+</html>
