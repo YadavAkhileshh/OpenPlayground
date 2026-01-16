@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow Dodge | Survival Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a2a, #1a1a40);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        h1 {
+            font-size: 3.2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, #ff8a00, #e52e71);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 15px rgba(229, 46, 113, 0.3);
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            color: #a0a0ff;
+            margin-bottom: 25px;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+        }
+        
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            background: rgba(10, 10, 40, 0.7);
+            border-radius: 15px;
+            padding: 15px 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 138, 0, 0.2);
+        }
+        
+        .stat-box {
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #a0a0ff;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .game-area {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background: #0c0c2e;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 138, 0, 0.3);
+        }
+        
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .light-source {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffcc00 0%, #ff9900 30%, transparent 70%);
+            box-shadow: 0 0 40px 20px rgba(255, 204, 0, 0.7);
+            z-index: 2;
+            transition: transform 0.1s;
+        }
+        
+        .player {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #00aaff 0%, #0066cc 70%);
+            box-shadow: 0 0 15px 5px rgba(0, 170, 255, 0.7);
+            z-index: 3;
+            transition: transform 0.05s;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            background: linear-gradient(to right, #ff8a00, #e52e71);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(229, 46, 113, 0.4);
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(229, 46, 113, 0.6);
+        }
+        
+        .control-btn:active {
+            transform: translateY(1px);
+        }
+        
+        .control-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .difficulty-selector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 10px;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .difficulty-label {
+            margin-bottom: 10px;
+            color: #a0a0ff;
+            font-size: 1.1rem;
+        }
+        
+        .difficulty-options {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .diff-btn {
+            padding: 8px 20px;
+            background: rgba(10, 10, 40, 0.7);
+            color: #a0a0ff;
+            border: 1px solid #4444aa;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .diff-btn.active {
+            background: linear-gradient(to right, #ff8a00, #e52e71);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .instructions {
+            background: rgba(10, 10, 40, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 138, 0, 0.2);
+        }
+        
+        .instructions h2 {
+            color: #ff8a00;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .instruction-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+        }
+        
+        .instruction-icon {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 138, 0, 0.2);
+            border-radius: 50%;
+            margin-right: 15px;
+            color: #ff8a00;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 15px;
+            display: none;
+        }
+        
+        .game-over h2 {
+            font-size: 3.5rem;
+            color: #e52e71;
+            margin-bottom: 20px;
+        }
+        
+        .game-over p {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+        }
+        
+        .controls-info {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .key {
+            display: inline-block;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            font-family: monospace;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            padding: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .game-area {
+                height: 400px;
+            }
+            
+            .stats-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .control-btn {
+                width: 200px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Shadow Dodge</h1>
+        <p class="tagline">Survive the darkness. Avoid the shadows. Stay in the light.</p>
+    </div>
+    
+    <div class="game-container">
+        <div class="stats-container">
+            <div class="stat-box">
+                <div class="stat-label">Survival Time</div>
+                <div class="stat-value" id="timer">00:00.00</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Best Score</div>
+                <div class="stat-value" id="best-score">00:00.00</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Difficulty</div>
+                <div class="stat-value" id="difficulty-level">Normal</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Shadows Active</div>
+                <div class="stat-value" id="shadow-count">0</div>
+            </div>
+        </div>
+        
+        <div class="game-area">
+            <canvas id="game-canvas"></canvas>
+            <div class="light-source" id="light-source"></div>
+            <div class="player" id="player"></div>
+            
+            <div class="game-over" id="game-over">
+                <h2>GAME OVER</h2>
+                <p>You survived for <span id="final-time">00:00.00</span></p>
+                <p>Best: <span id="final-best">00:00.00</span></p>
+                <button class="control-btn" id="restart-btn">
+                    <i class="fas fa-redo"></i> Play Again
+                </button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="control-btn" id="start-btn">
+                <i class="fas fa-play"></i> Start Game
+            </button>
+            <button class="control-btn" id="pause-btn" disabled>
+                <i class="fas fa-pause"></i> Pause
+            </button>
+            <button class="control-btn" id="reset-btn">
+                <i class="fas fa-stop"></i> Reset
+            </button>
+            <button class="control-btn" id="mouse-toggle">
+                <i class="fas fa-mouse-pointer"></i> Mouse Control
+            </button>
+        </div>
+        
+        <div class="difficulty-selector">
+            <div class="difficulty-label">Select Difficulty:</div>
+            <div class="difficulty-options">
+                <button class="diff-btn active" data-difficulty="easy">Easy</button>
+                <button class="diff-btn" data-difficulty="normal">Normal</button>
+                <button class="diff-btn" data-difficulty="hard">Hard</button>
+                <button class="diff-btn" data-difficulty="insane">Insane</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h2>How to Play</h2>
+        <div class="instruction-item">
+            <div class="instruction-icon"><i class="fas fa-user"></i></div>
+            <div>Control the blue player character with <span class="key">WASD</span> or <span class="key">Arrow Keys</span> (or mouse if enabled)</div>
+        </div>
+        <div class="instruction-item">
+            <div class="instruction-icon"><i class="fas fa-sun"></i></div>
+            <div>Stay in the light! The yellow light source moves randomly, creating dynamic shadows</div>
+        </div>
+        <div class="instruction-item">
+            <div class="instruction-icon"><i class="fas fa-moon"></i></div>
+            <div>Avoid the dark shadow zones that appear and expand over time</div>
+        </div>
+        <div class="instruction-item">
+            <div class="instruction-icon"><i class="fas fa-tachometer-alt"></i></div>
+            <div>Difficulty increases over time - light moves faster and more shadows appear</div>
+        </div>
+        
+        <div class="controls-info">
+            <div><span class="key">W</span> / <span class="key">↑</span> = Move Up</div>
+            <div><span class="key">S</span> / <span class="key">↓</span> = Move Down</div>
+            <div><span class="key">A</span> / <span class="key">←</span> = Move Left</div>
+            <div><span class="key">D</span> / <span class="key">→</span> = Move Right</div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Shadow Dodge | Survival Game | Created with HTML, CSS & JavaScript</p>
+        <p>Move the player to avoid shadows. The longer you survive, the higher your score!</p>
+    </footer>
+
+    <script>
+        // Game elements
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const lightSource = document.getElementById('light-source');
+        const player = document.getElementById('player');
+        const timerElement = document.getElementById('timer');
+        const bestScoreElement = document.getElementById('best-score');
+        const difficultyElement = document.getElementById('difficulty-level');
+        const shadowCountElement = document.getElementById('shadow-count');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalTimeElement = document.getElementById('final-time');
+        const finalBestElement = document.getElementById('final-best');
+        
+        // Control buttons
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const mouseToggle = document.getElementById('mouse-toggle');
+        const diffButtons = document.querySelectorAll('.diff-btn');
+        
+        // Game variables
+        let gameRunning = false;
+        let gamePaused = false;
+        let useMouseControl = false;
+        let startTime = 0;
+        let currentTime = 0;
+        let bestTime = 0;
+        let animationId = null;
+        let difficulty = 'normal';
+        
+        // Game objects
+        const gameState = {
+            player: {
+                x: 400,
+                y: 250,
+                radius: 15,
+                speed: 5
+            },
+            light: {
+                x: 300,
+                y: 200,
+                radius: 30,
+                speed: 1,
+                targetX: 300,
+                targetY: 200
+            },
+            shadows: [],
+            shadowZones: [],
+            keys: {},
+            mouse: {
+                x: 400,
+                y: 250
+            },
+            difficultyMultiplier: 1
+        };
+        
+        // Initialize canvas
+        function initCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        
+        // Load best score from localStorage
+        function loadBestScore() {
+            const savedBest = localStorage.getItem('shadowDodgeBest');
+            if (savedBest) {
+                bestTime = parseFloat(savedBest);
+                bestScoreElement.textContent = formatTime(bestTime);
+            }
+        }
+        
+        // Save best score to localStorage
+        function saveBestScore() {
+            if (currentTime > bestTime) {
+                bestTime = currentTime;
+                localStorage.setItem('shadowDodgeBest', bestTime.toString());
+                bestScoreElement.textContent = formatTime(bestTime);
+            }
+        }
+        
+        // Format time for display
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            const ms = Math.floor((seconds % 1) * 100);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+        }
+        
+        // Update timer display
+        function updateTimer() {
+            if (gameRunning && !gamePaused) {
+                currentTime = (Date.now() - startTime) / 1000;
+                timerElement.textContent = formatTime(currentTime);
+                
+                // Increase difficulty over time
+                const difficultyTime = Math.floor(currentTime / 10); // Increase every 10 seconds
+                gameState.difficultyMultiplier = 1 + (difficultyTime * 0.2);
+                
+                // Update difficulty display
+                if (difficultyTime > 3) {
+                    difficultyElement.textContent = "Extreme";
+                } else if (difficultyTime > 2) {
+                    difficultyElement.textContent = "Hard";
+                } else if (difficultyTime > 1) {
+                    difficultyElement.textContent = "Medium";
+                }
+            }
+        }
+        
+        // Set difficulty
+        function setDifficulty(level) {
+            difficulty = level;
+            difficultyElement.textContent = level.charAt(0).toUpperCase() + level.slice(1);
+            
+            // Update active button
+            diffButtons.forEach(btn => {
+                if (btn.dataset.difficulty === level) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Set game parameters based on difficulty
+            switch(level) {
+                case 'easy':
+                    gameState.light.speed = 0.8;
+                    gameState.player.speed = 4;
+                    break;
+                case 'normal':
+                    gameState.light.speed = 1;
+                    gameState.player.speed = 5;
+                    break;
+                case 'hard':
+                    gameState.light.speed = 1.3;
+                    gameState.player.speed = 6;
+                    break;
+                case 'insane':
+                    gameState.light.speed = 1.8;
+                    gameState.player.speed = 7;
+                    break;
+            }
+        }
+        
+        // Initialize game
+        function initGame() {
+            // Reset game state
+            gameState.player.x = canvas.width / 2;
+            gameState.player.y = canvas.height / 2;
+            gameState.light.x = canvas.width / 3;
+            gameState.light.y = canvas.height / 3;
+            gameState.light.targetX = gameState.light.x;
+            gameState.light.targetY = gameState.light.y;
+            gameState.shadows = [];
+            gameState.shadowZones = [];
+            gameState.difficultyMultiplier = 1;
+            
+            // Reset UI
+            timerElement.textContent = "00:00.00";
+            difficultyElement.textContent = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+            shadowCountElement.textContent = "0";
+            
+            // Position player and light elements
+            player.style.left = `${gameState.player.x - 15}px`;
+            player.style.top = `${gameState.player.y - 15}px`;
+            lightSource.style.left = `${gameState.light.x - 30}px`;
+            lightSource.style.top = `${gameState.light.y - 30}px`;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Hide game over screen
+            gameOverScreen.style.display = 'none';
+        }
+        
+        // Create a new shadow zone
+        function createShadowZone() {
+            const zone = {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: 20,
+                growthRate: 0.5 + Math.random() * 1.5,
+                maxRadius: 80 + Math.random() * 120
+            };
+            gameState.shadowZones.push(zone);
+            shadowCountElement.textContent = gameState.shadowZones.length;
+        }
+        
+        // Update shadow zones
+        function updateShadowZones() {
+            for (let i = gameState.shadowZones.length - 1; i >= 0; i--) {
+                const zone = gameState.shadowZones[i];
+                zone.radius += zone.growthRate * gameState.difficultyMultiplier;
+                
+                // Remove if too big
+                if (zone.radius > zone.maxRadius) {
+                    gameState.shadowZones.splice(i, 1);
+                    shadowCountElement.textContent = gameState.shadowZones.length;
+                }
+            }
+        }
+        
+        // Draw shadow zones
+        function drawShadowZones() {
+            gameState.shadowZones.forEach(zone => {
+                // Create shadow gradient
+                const gradient = ctx.createRadialGradient(
+                    zone.x, zone.y, 0,
+                    zone.x, zone.y, zone.radius
+                );
+                
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 0.8)');
+                gradient.addColorStop(0.7, 'rgba(0, 0, 0, 0.5)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(zone.x, zone.y, zone.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        
+        // Calculate dynamic shadows
+        function calculateShadows() {
+            // Clear previous shadows
+            gameState.shadows = [];
+            
+            // Create shadows based on light position and obstacles
+            // For simplicity, we'll create some random shadow patterns
+            // In a more advanced version, this would use ray casting
+            for (let i = 0; i < 5; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 100 + Math.random() * 200;
+                const shadow = {
+                    x: gameState.light.x + Math.cos(angle) * distance,
+                    y: gameState.light.y + Math.sin(angle) * distance,
+                    width: 40 + Math.random() * 80,
+                    height: 40 + Math.random() * 80,
+                    rotation: Math.random() * Math.PI
+                };
+                gameState.shadows.push(shadow);
+            }
+        }
+        
+        // Draw shadows
+        function drawShadows() {
+            gameState.shadows.forEach(shadow => {
+                ctx.save();
+                ctx.translate(shadow.x, shadow.y);
+                ctx.rotate(shadow.rotation);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(-shadow.width/2, -shadow.height/2, shadow.width, shadow.height);
+                ctx.restore();
+            });
+        }
+        
+        // Move light source
+        function moveLight() {
+            // Update light position toward target
+            const dx = gameState.light.targetX - gameState.light.x;
+            const dy = gameState.light.targetY - gameState.light.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 5) {
+                gameState.light.x += (dx / distance) * gameState.light.speed * gameState.difficultyMultiplier;
+                gameState.light.y += (dy / distance) * gameState.light.speed * gameState.difficultyMultiplier;
+            } else {
+                // Set new random target
+                gameState.light.targetX = 50 + Math.random() * (canvas.width - 100);
+                gameState.light.targetY = 50 + Math.random() * (canvas.height - 100);
+            }
+            
+            // Update light source position in DOM
+            lightSource.style.left = `${gameState.light.x - 30}px`;
+            lightSource.style.top = `${gameState.light.y - 30}px`;
+        }
+        
+        // Move player with keyboard
+        function movePlayer() {
+            if (useMouseControl) {
+                // Move toward mouse position
+                const dx = gameState.mouse.x - gameState.player.x;
+                const dy = gameState.mouse.y - gameState.player.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 5) {
+                    gameState.player.x += (dx / distance) * gameState.player.speed;
+                    gameState.player.y += (dy / distance) * gameState.player.speed;
+                }
+            } else {
+                // Keyboard movement
+                if (gameState.keys['ArrowUp'] || gameState.keys['w'] || gameState.keys['W']) {
+                    gameState.player.y -= gameState.player.speed;
+                }
+                if (gameState.keys['ArrowDown'] || gameState.keys['s'] || gameState.keys['S']) {
+                    gameState.player.y += gameState.player.speed;
+                }
+                if (gameState.keys['ArrowLeft'] || gameState.keys['a'] || gameState.keys['A']) {
+                    gameState.player.x -= gameState.player.speed;
+                }
+                if (gameState.keys['ArrowRight'] || gameState.keys['d'] || gameState.keys['D']) {
+                    gameState.player.x += gameState.player.speed;
+                }
+            }
+            
+            // Keep player within bounds
+            gameState.player.x = Math.max(gameState.player.radius, Math.min(canvas.width - gameState.player.radius, gameState.player.x));
+            gameState.player.y = Math.max(gameState.player.radius, Math.min(canvas.height - gameState.player.radius, gameState.player.y));
+            
+            // Update player position in DOM
+            player.style.left = `${gameState.player.x - 15}px`;
+            player.style.top = `${gameState.player.y - 15}px`;
+        }
+        
+        // Check for collisions
+        function checkCollisions() {
+            // Check collision with shadow zones
+            for (const zone of gameState.shadowZones) {
+                const dx = gameState.player.x - zone.x;
+                const dy = gameState.player.y - zone.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < zone.radius + gameState.player.radius) {
+                    return true; // Collision detected
+                }
+            }
+            
+            // Check if player is in light
+            const lightDx = gameState.player.x - gameState.light.x;
+            const lightDy = gameState.player.y - gameState.light.y;
+            const lightDistance = Math.sqrt(lightDx * lightDx + lightDy * lightDy);
+            
+            // Player is safe if close to light
+            if (lightDistance < 150) {
+                return false;
+            }
+            
+            // Check collision with shadows
+            for (const shadow of gameState.shadows) {
+                // Simplified collision with rotated rectangle
+                // In a real game, you'd use proper rotated rectangle collision detection
+                const dx = Math.abs(gameState.player.x - shadow.x);
+                const dy = Math.abs(gameState.player.y - shadow.y);
+                
+                if (dx < 60 && dy < 60) {
+                    return true; // Collision detected
+                }
+            }
+            
+            return false;
+        }
+        
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            cancelAnimationFrame(animationId);
+            
+            // Update final time
+            finalTimeElement.textContent = formatTime(currentTime);
+            finalBestElement.textContent = formatTime(bestTime);
+            
+            // Save best score
+            saveBestScore();
+            
+            // Show game over screen
+            gameOverScreen.style.display = 'flex';
+            
+            // Update buttons
+            startBtn.disabled = false;
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Start Game';
+            pauseBtn.disabled = true;
+        }
+        
+        // Main game loop
+        function gameLoop() {
+            if (!gameRunning || gamePaused) return;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update game state
+            moveLight();
+            movePlayer();
+            updateShadowZones();
+            calculateShadows();
+            
+            // Draw game elements
+            drawShadowZones();
+            drawShadows();
+            
+            // Check for collisions
+            if (checkCollisions()) {
+                gameOver();
+                return;
+            }
+            
+            // Update timer
+            updateTimer();
+            
+            // Continue game loop
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        // Start game
+        function startGame() {
+            if (gameRunning) return;
+            
+            initGame();
+            gameRunning = true;
+            gamePaused = false;
+            startTime = Date.now() - (currentTime * 1000);
+            
+            // Update buttons
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Game Running';
+            pauseBtn.disabled = false;
+            
+            // Start game loop
+            gameLoop();
+            
+            // Start shadow zone creation interval
+            shadowInterval = setInterval(() => {
+                if (gameRunning && !gamePaused) {
+                    createShadowZone();
+                    
+                    // Increase creation rate over time
+                    if (shadowInterval) {
+                        clearInterval(shadowInterval);
+                        const interval = Math.max(500, 2000 - (currentTime * 10));
+                        shadowInterval = setInterval(() => {
+                            if (gameRunning && !gamePaused) createShadowZone();
+                        }, interval);
+                    }
+                }
+            }, 2000);
+        }
+        
+        // Pause game
+        function pauseGame() {
+            if (!gameRunning) return;
+            
+            gamePaused = !gamePaused;
+            
+            if (gamePaused) {
+                pauseBtn.innerHTML = '<i class="fas fa-play"></i> Resume';
+            } else {
+                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+                gameLoop();
+            }
+        }
+        
+        // Reset game
+        function resetGame() {
+            gameRunning = false;
+            gamePaused = false;
+            currentTime = 0;
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            
+            if (shadowInterval) {
+                clearInterval(shadowInterval);
+            }
+            
+            initGame();
+            
+            // Update buttons
+            startBtn.disabled = false;
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Start Game';
+            pauseBtn.disabled = true;
+            pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+        }
+        
+        // Toggle mouse control
+        function toggleMouseControl() {
+            useMouseControl = !useMouseControl;
+            
+            if (useMouseControl) {
+                mouseToggle.innerHTML = '<i class="fas fa-keyboard"></i> Keyboard Control';
+                mouseToggle.style.background = 'linear-gradient(to right, #00aaff, #0066cc)';
+            } else {
+                mouseToggle.innerHTML = '<i class="fas fa-mouse-pointer"></i> Mouse Control';
+                mouseToggle.style.background = 'linear-gradient(to right, #ff8a00, #e52e71)';
+            }
+        }
+        
+        // Event listeners
+        window.addEventListener('load', () => {
+            initCanvas();
+            loadBestScore();
+            initGame();
+        });
+        
+        window.addEventListener('resize', () => {
+            initCanvas();
+            if (gameRunning) {
+                // Adjust player and light positions to stay within new bounds
+                gameState.player.x = Math.min(canvas.width - gameState.player.radius, gameState.player.x);
+                gameState.player.y = Math.min(canvas.height - gameState.player.radius, gameState.player.y);
+                gameState.light.x = Math.min(canvas.width - 50, gameState.light.x);
+                gameState.light.y = Math.min(canvas.height - 50, gameState.light.y);
+            }
+        });
+        
+        // Keyboard controls
+        window.addEventListener('keydown', (e) => {
+            gameState.keys[e.key] = true;
+            
+            // Prevent arrow keys from scrolling the page
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            gameState.keys[e.key] = false;
+        });
+        
+        // Mouse controls
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            gameState.mouse.x = e.clientX - rect.left;
+            gameState.mouse.y = e.clientY - rect.top;
+        });
+        
+        // Button event listeners
+        startBtn.addEventListener('click', startGame);
+        pauseBtn.addEventListener('click', pauseGame);
+        resetBtn.addEventListener('click', resetGame);
+        restartBtn.addEventListener('click', () => {
+            resetGame();
+            startGame();
+        });
+        mouseToggle.addEventListener('click', toggleMouseControl);
+        
+        // Difficulty buttons
+        diffButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                setDifficulty(btn.dataset.difficulty);
+                if (gameRunning) {
+                    // Update game speed based on new difficulty
+                    setDifficulty(difficulty);
+                }
+            });
+        });
+        
+        // Prevent context menu on game area
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>
