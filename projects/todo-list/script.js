@@ -44,6 +44,9 @@ function renderTodos() {
                     <button class="complete-btn" onclick="toggleComplete(${index})">
                         <i class="ri-check-line"></i>
                     </button>
+                    <button class="edit-btn" onclick="editTask(${index})">
+                        <i class="ri-edit-line"></i>
+                    </button>
                     <button class="delete-btn" onclick="deleteTodo(${index})">
                         <i class="ri-delete-bin-line"></i>
                     </button>
@@ -81,15 +84,18 @@ function addTodo() {
     addModal.classList.add('hidden');
 
 }
-function editTask(button, taskId) {
-    let task = button.parentElement;
-    let newTitle = prompt("Edit task title:", task.querySelector("strong").textContent);
-    let newDescription = prompt("Edit task description:", task.querySelector("p").textContent);
-    let newDueDate = prompt("Edit due date (YYYY-MM-DD):", task.querySelector(".due-date").textContent);
-    if (newTitle) task.querySelector("strong").textContent = newTitle;
-    if (newDescription) task.querySelector("p").textContent = newDescription;
-    if (newDueDate) task.querySelector(".due-date").textContent = newDueDate;
-    saveTasks();
+function editTask(index) {
+    const todo = todos[index];
+    const newText = prompt("Edit task title:", todo.text);
+    const newDueDate = prompt("Edit due date (YYYY-MM-DD):", todo.dueDate || '');
+    if (newText !== null && newText.trim() !== '') {
+        todo.text = newText.trim();
+    }
+    if (newDueDate !== null) {
+        todo.dueDate = newDueDate.trim() || null;
+    }
+    saveTodos();
+    renderTodos();
 }
 function addComment(taskId) {
     let comment = prompt("Enter your comment:");
@@ -97,7 +103,13 @@ function addComment(taskId) {
         let commentDiv = document.createElement("p");
         commentDiv.textContent = comment;
         document.getElementById("comments-" + taskId).appendChild(commentDiv);
-        saveTasks();
+        saveTodos();
+    }
+}
+
+
+
+
 
 
 function toggleComplete(index) {
