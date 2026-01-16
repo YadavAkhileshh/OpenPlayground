@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Keyboard Piano</title>
+<style>
+    body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: radial-gradient(circle at top, #222, #000);
+        font-family: Arial, sans-serif;
+        color: #fff;
+    }
+
+    .container {
+        text-align: center;
+    }
+
+    h1 {
+        margin-bottom: 10px;
+        letter-spacing: 2px;
+    }
+
+    .piano {
+        position: relative;
+        display: flex;
+        user-select: none;
+    }
+
+    .key {
+        width: 70px;
+        height: 260px;
+        border: 1px solid #000;
+        background: linear-gradient(to bottom, #fff, #ddd);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        font-weight: bold;
+        color: #000;
+        cursor: pointer;
+        box-shadow: inset 0 -4px 6px rgba(0,0,0,0.3);
+    }
+
+    .key:active,
+    .key.active {
+        background: linear-gradient(to bottom, #ccc, #aaa);
+    }
+
+    .black {
+        position: absolute;
+        width: 45px;
+        height: 160px;
+        background: linear-gradient(to bottom, #111, #333);
+        color: #fff;
+        z-index: 2;
+        top: 0;
+        box-shadow: inset 0 -4px 6px rgba(255,255,255,0.1);
+    }
+
+    .black.active {
+        background: linear-gradient(to bottom, #444, #222);
+    }
+
+    .black span {
+        position: absolute;
+        bottom: 10px;
+        font-size: 12px;
+    }
+
+    .key span {
+        margin-bottom: 10px;
+    }
+
+    /* Black key positioning */
+    .w { left: 45px; }
+    .e { left: 115px; }
+    .t { left: 255px; }
+    .y { left: 325px; }
+    .u { left: 395px; }
+
+    .instructions {
+        margin-top: 15px;
+        font-size: 14px;
+        opacity: 0.8;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎹 Keyboard Piano</h1>
+
+    <div class="piano">
+        <!-- White keys -->
+        <div class="key" data-note="C" data-key="a"><span>A</span></div>
+        <div class="key" data-note="D" data-key="s"><span>S</span></div>
+        <div class="key" data-note="E" data-key="d"><span>D</span></div>
+        <div class="key" data-note="F" data-key="f"><span>F</span></div>
+        <div class="key" data-note="G" data-key="g"><span>G</span></div>
+        <div class="key" data-note="A" data-key="h"><span>H</span></div>
+        <div class="key" data-note="B" data-key="j"><span>J</span></div>
+
+        <!-- Black keys -->
+        <div class="key black w" data-note="C#" data-key="w"><span>W</span></div>
+        <div class="key black e" data-note="D#" data-key="e"><span>E</span></div>
+        <div class="key black t" data-note="F#" data-key="t"><span>T</span></div>
+        <div class="key black y" data-note="G#" data-key="y"><span>Y</span></div>
+        <div class="key black u" data-note="A#" data-key="u"><span>U</span></div>
+    </div>
+
+    <div class="instructions">
+        Use your keyboard to play 🎶
+    </div>
+</div>
+
+<script>
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+
+    const frequencies = {
+        "C": 261.63,
+        "C#": 277.18,
+        "D": 293.66,
+        "D#": 311.13,
+        "E": 329.63,
+        "F": 349.23,
+        "F#": 369.99,
+        "G": 392.00,
+        "G#": 415.30,
+        "A": 440.00,
+        "A#": 466.16,
+        "B": 493.88
+    };
+
+    function playNote(note) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.value = frequencies[note];
+
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioCtx.currentTime + 1
+        );
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 1);
+    }
+
+    function activateKey(key) {
+        const el = document.querySelector(`[data-key="${key}"]`);
+        if (!el) return;
+
+        playNote(el.dataset.note);
+        el.classList.add("active");
+
+        setTimeout(() => el.classList.remove("active"), 150);
+    }
+
+    document.addEventListener("keydown", (e) => {
+        activateKey(e.key.toLowerCase());
+    });
+
+    document.querySelectorAll(".key").forEach(key => {
+        key.addEventListener("mousedown", () => {
+            playNote(key.dataset.note);
+            key.classList.add("active");
+        });
+
+        key.addEventListener("mouseup", () => {
+            key.classList.remove("active");
+        });
+
+        key.addEventListener("mouseleave", () => {
+            key.classList.remove("active");
+        });
+    });
+</script>
+
+</body>
+</html>

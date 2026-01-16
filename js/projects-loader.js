@@ -204,13 +204,21 @@ class ProjectsLoader {
         card.dataset.category = (project.category || '').toLowerCase();
         
         const techTags = project.tech.map(t => `<span>${this.highlightText(t, this.currentSearch)}</span>`).join('');
+        const difficulty = (project.difficulty || "Beginner").toLowerCase();
+const difficultyLabel = this.capitalizeFirst(difficulty);
+
+
         const rating = this.getProjectRating(project.title);
         const stars = this.generateStars(rating.average);
         
         card.innerHTML = `
             <div class="card-cover" style="${project.coverStyle}">
-                <i class="${project.icon}" aria-hidden="true"></i>
-            </div>
+    <span class="difficulty-badge ${difficulty.toLowerCase()}">
+        ${difficulty}
+    </span>
+    <i class="${project.icon}" aria-hidden="true"></i>
+</div>
+
             <div class="card-content">
                 <div class="card-header-flex">
                     <h3 class="card-heading">${this.highlightText(project.title, this.currentSearch)}</h3>

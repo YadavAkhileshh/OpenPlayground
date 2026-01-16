@@ -1,0 +1,448 @@
+/* ========================================
+   REFLEX PULSE - STYLES
+   One-Button Reflex Game
+   ======================================== */
+
+/* CSS Custom Properties */
+:root {
+    --bg-primary: #0d0d12;
+    --bg-secondary: #13131a;
+    --bg-accent: #1a1a24;
+    
+    --ring-color: rgba(255, 255, 255, 0.85);
+    --pulse-color: rgba(120, 180, 255, 0.7);
+    --success-color: #4ade80;
+    --fail-color: #f87171;
+    
+    --text-color: #f4f4f5;
+    --text-muted: rgba(244, 244, 245, 0.5);
+    --text-subtle: rgba(244, 244, 245, 0.3);
+    
+    /* Use vmin so wide desktop layouts don't oversize the arena */
+    --ring-size: min(62vmin, 320px);
+    --ring-thickness: 3px;
+
+    --hud-pad-top: clamp(6.5rem, 16vh, 9.5rem);
+    --hud-pad-bottom: clamp(5.5rem, 14vh, 9rem);
+    
+    --transition-smooth: 0.3s ease-in-out;
+    --transition-fast: 0.15s ease-out;
+}
+
+/* Reset & Base */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-color);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+/* Game Container - Subtle radial gradient background */
+.game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 2rem;
+    padding-top: calc(var(--hud-pad-top) + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(var(--hud-pad-bottom) + env(safe-area-inset-bottom, 0px));
+    cursor: pointer;
+    position: relative;
+    
+    /* Subtle layered background */
+    background: 
+        radial-gradient(ellipse 80% 50% at 50% 120%, var(--bg-accent) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 50% -10%, var(--bg-secondary) 0%, transparent 40%),
+        var(--bg-primary);
+}
+
+/* Subtle grid pattern overlay */
+.game-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+        linear-gradient(var(--bg-secondary) 1px, transparent 1px),
+        linear-gradient(90deg, var(--bg-secondary) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.18;
+    pointer-events: none;
+}
+
+/* Soft vignette effect */
+.game-container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, var(--bg-primary) 100%);
+    pointer-events: none;
+}
+
+/* Game Title */
+.game-title {
+    position: absolute;
+    top: calc(4vh + env(safe-area-inset-top, 0px));
+    font-size: clamp(1.2rem, 4vw, 1.8rem);
+    font-weight: 400;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+    opacity: 1;
+    transition: opacity var(--transition-smooth);
+    z-index: 10;
+}
+
+.game-title.hidden {
+    opacity: 0;
+}
+
+/* Score Display */
+.score-display {
+    position: absolute;
+    top: calc(1.25rem + env(safe-area-inset-top, 0px));
+    left: calc(1.25rem + env(safe-area-inset-left, 0px));
+    transform: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.45rem;
+    opacity: 0;
+    transition: opacity var(--transition-smooth);
+    z-index: 10;
+
+    padding: 0.9rem 1.2rem;
+    border-radius: 999px;
+    background: rgba(12, 12, 18, 0.55);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(10px);
+}
+
+.score-display.visible {
+    opacity: 1;
+}
+
+.score-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.score-value {
+    font-size: clamp(1.8rem, 5vw, 3.2rem);
+    font-weight: 200;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--text-color);
+}
+
+/* Game Arena */
+.arena {
+    position: relative;
+    width: var(--ring-size);
+    height: var(--ring-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+/* Target Ring (Fixed) */
+.target-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: var(--ring-thickness) solid var(--ring-color);
+    border-radius: 50%;
+    transition: 
+        border-color var(--transition-smooth),
+        box-shadow var(--transition-smooth),
+        transform var(--transition-fast);
+}
+
+/* Subtle ambient glow on ring */
+.target-ring::before {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.target-ring.success {
+    border-color: var(--success-color);
+    box-shadow: 
+        0 0 40px rgba(74, 222, 128, 0.4),
+        0 0 80px rgba(74, 222, 128, 0.15),
+        inset 0 0 40px rgba(74, 222, 128, 0.08);
+}
+
+.target-ring.fail {
+    border-color: var(--fail-color);
+    box-shadow: 
+        0 0 40px rgba(248, 113, 113, 0.4),
+        0 0 60px rgba(248, 113, 113, 0.15);
+}
+
+/* Expanding Pulse Circle */
+.pulse-circle {
+    position: absolute;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, var(--pulse-color) 0%, transparent 70%);
+    border: 2px solid var(--pulse-color);
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-out;
+}
+
+.pulse-circle.active {
+    opacity: 1;
+}
+
+.pulse-circle.success {
+    border-color: var(--success-color);
+    background: radial-gradient(circle, rgba(74, 222, 128, 0.35) 0%, transparent 70%);
+}
+
+.pulse-circle.fail {
+    border-color: var(--fail-color);
+    background: radial-gradient(circle, rgba(248, 113, 113, 0.35) 0%, transparent 70%);
+}
+
+/* Message Display */
+.message {
+    position: absolute;
+    bottom: max(1rem, calc(2.25vh + env(safe-area-inset-bottom, 0px)));
+    text-align: center;
+    opacity: 1;
+    transition: opacity var(--transition-smooth);
+    z-index: 10;
+    padding: 0 1.5rem;
+    max-width: min(92vw, 520px);
+}
+
+.message.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.message-text {
+    font-size: clamp(1rem, 3.5vw, 1.25rem);
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    line-height: 1.6;
+
+    display: inline-block;
+    padding: 0.7rem 1.1rem;
+    border-radius: 999px;
+    background: rgba(12, 12, 18, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.message-text.success {
+    color: var(--success-color);
+    text-shadow: 0 0 30px rgba(74, 222, 128, 0.5);
+    font-weight: 500;
+}
+
+.message-text.fail {
+    color: var(--fail-color);
+    font-weight: 500;
+}
+
+/* Countdown Display */
+.countdown {
+    position: absolute;
+    font-size: clamp(5rem, 18vw, 10rem);
+    font-weight: 100;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: 
+        opacity 0.25s ease-out, 
+        transform 0.25s ease-out;
+    pointer-events: none;
+    z-index: 15;
+    color: var(--text-color);
+    text-shadow: 0 0 60px rgba(255, 255, 255, 0.15);
+}
+
+.countdown.visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Screen Shake Animation */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+
+.game-container.shake {
+    animation: shake 0.35s ease-out;
+}
+
+/* Success Pulse Animation */
+@keyframes successPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+.arena.success-pulse {
+    animation: successPulse 0.35s ease-out;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .pulse-circle {
+        transition: none;
+    }
+}
+
+/* Tablet & Small Desktop */
+@media (min-width: 768px) {
+    :root {
+        --ring-size: min(48vmin, 290px);
+        /* Desktop: keep the arena higher and leave more room for the bottom message */
+        --hud-pad-top: clamp(3.5rem, 8vh, 5.5rem);
+        --hud-pad-bottom: clamp(9rem, 22vh, 14rem);
+    }
+    
+    .game-title {
+        top: 10vh;
+    }
+    
+    .score-display {
+        top: calc(1.5rem + env(safe-area-inset-top, 0px));
+        left: calc(1.5rem + env(safe-area-inset-left, 0px));
+    }
+    
+    .message {
+        bottom: 1.25rem;
+    }
+}
+
+/* Mobile Portrait */
+@media (max-width: 480px) {
+    .game-container {
+        padding: 1.5rem;
+        padding-top: calc(var(--hud-pad-top) + env(safe-area-inset-top, 0px));
+        padding-bottom: calc(var(--hud-pad-bottom) + env(safe-area-inset-bottom, 0px));
+    }
+    
+    .game-title {
+        top: 6vh;
+        letter-spacing: 0.3em;
+    }
+    
+    .score-display {
+        top: calc(1rem + env(safe-area-inset-top, 0px));
+        left: calc(1rem + env(safe-area-inset-left, 0px));
+    }
+    
+    .message {
+        bottom: calc(4vh + env(safe-area-inset-bottom, 0px));
+    }
+    
+    :root {
+        --ring-size: min(62vmin, 290px);
+    }
+}
+
+/* Landscape Mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .game-title {
+        display: none;
+    }
+    
+    .score-display {
+        top: calc(0.75rem + env(safe-area-inset-top, 0px));
+        right: calc(0.75rem + env(safe-area-inset-right, 0px));
+        left: auto;
+        flex-direction: row;
+        align-items: baseline;
+        gap: 0.75rem;
+    }
+    
+    .score-label {
+        font-size: 0.65rem;
+    }
+    
+    .score-value {
+        font-size: clamp(1.8rem, 6vw, 2.5rem);
+    }
+    
+    .message {
+        bottom: calc(3vh + env(safe-area-inset-bottom, 0px));
+    }
+    
+    .countdown {
+        font-size: clamp(3rem, 12vw, 6rem);
+    }
+    
+    :root {
+        --ring-size: min(52vmin, 240px);
+    }
+    
+    .game-container::before {
+        display: none;
+    }
+}
+
+/* Large screens */
+@media (min-width: 1200px) {
+    :root {
+        --ring-size: min(45vmin, 320px);
+    }
+    
+    .game-title {
+        top: 12vh;
+    }
+    
+    .score-display {
+        top: 12vh;
+    }
+    
+    .message {
+        bottom: 1.5rem;
+    }
+}

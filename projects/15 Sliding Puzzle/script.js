@@ -1,6 +1,14 @@
+
 const puzzleElement = document.getElementById('puzzle');
 const message = document.getElementById('message');
 const restartBtn = document.getElementById('restart');
+const moveCounterEl = document.getElementById('move-counter');
+const timerEl = document.getElementById('timer');
+
+let moveCount = 0;
+let timer = 0;
+let timerInterval = null;
+let timerRunning = false;
 
 let tiles = [];
 const SIZE = 4; // 4x4 grid
@@ -30,6 +38,13 @@ function initPuzzle() {
   }
 
   emptyIndex = tiles.indexOf(null);
+
+  moveCount = 0;
+  updateMoveCounter();
+  stopTimer();
+  timer = 0;
+  updateTimerDisplay();
+  timerRunning = false;
 
   renderTiles();
 }
@@ -63,6 +78,15 @@ function moveTile(index) {
   [tiles[emptyIndex], tiles[index]] = [tiles[index], tiles[emptyIndex]];
   emptyIndex = index;
 
+  // Start timer on first move
+  if (!timerRunning) {
+    startTimer();
+    timerRunning = true;
+  }
+
+  moveCount++;
+  updateMoveCounter();
+
   renderTiles();
   checkWin();
 }
@@ -73,6 +97,36 @@ function checkWin() {
     if (tiles[i] !== i + 1) return;
   }
   message.textContent = '🎉 Puzzle Solved! 🎉';
+  stopTimer();
+}
+
+function updateMoveCounter() {
+  if (moveCounterEl) {
+    moveCounterEl.innerHTML = '<span class="material-icons" style="font-size:1.1em;vertical-align:middle;">swap_horiz</span> Moves: ' + moveCount;
+  }
+}
+
+function updateTimerDisplay() {
+  if (timerEl) {
+    const min = String(Math.floor(timer / 60)).padStart(2, '0');
+    const sec = String(timer % 60).padStart(2, '0');
+    timerEl.innerHTML = '<span class="material-icons" style="font-size:1.1em;vertical-align:middle;">timer</span> ' + min + ':' + sec;
+  }
+}
+
+function startTimer() {
+  stopTimer();
+  timerInterval = setInterval(() => {
+    timer++;
+    updateTimerDisplay();
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
 }
 
 // Check solvable puzzle
