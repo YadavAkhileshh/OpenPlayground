@@ -41,6 +41,9 @@ class ProjectManager {
         this.setupEventListeners();
         await this.fetchProjects();
 
+        // Initialize visibility engine with projects
+        this.state.visibilityEngine = new ProjectVisibilityEngine(this.state.allProjects);
+
         this.state.initialized = true;
         console.log("✅ ProjectManager: Ready.");
     }
@@ -56,6 +59,8 @@ class ProjectManager {
             searchInput: document.getElementById('project-search'),
             sortSelect: document.getElementById('project-sort'),
             filterBtns: document.querySelectorAll('.filter-btn'),
+            techFilter: document.getElementById('tech-filter'),
+            difficultyFilter: document.getElementById('difficulty-filter'),
             cardViewBtn: document.getElementById('card-view-btn'),
             listViewBtn: document.getElementById('list-view-btn'),
             emptyState: document.getElementById('empty-state'),
@@ -130,6 +135,22 @@ class ProjectManager {
                     this.state.currentPage = 1;
                     this.render();
                 });
+            });
+        }
+
+        if (el.techFilter) {
+            el.techFilter.addEventListener('change', (e) => {
+                this.state.visibilityEngine.setTech(e.target.value);
+                this.state.currentPage = 1;
+                this.render();
+            });
+        }
+
+        if (el.difficultyFilter) {
+            el.difficultyFilter.addEventListener('change', (e) => {
+                this.state.visibilityEngine.setDifficulty(e.target.value);
+                this.state.currentPage = 1;
+                this.render();
             });
         }
 
