@@ -21,6 +21,28 @@
     <link rel="stylesheet" href="./css/contributor-cards.css">
     <link rel="stylesheet" href="./css/bookmarks.css">
     <link rel="stylesheet" href="./css/footer.css">
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Firebase configuration - Replace with your actual config
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
+
+        // Initialize Firebase
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getAuth } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+        window.firebaseApp = initializeApp(firebaseConfig);
+        window.auth = getAuth(window.firebaseApp);
+        window.db = getFirestore(window.firebaseApp);
+    </script>
 </head>
 
 <body>
@@ -39,7 +61,34 @@
                 <a href="https://github.com/YadavAkhileshh/OpenPlayground" target="_blank" class="nav-link">
                     <i class="ri-github-fill"></i> GitHub
                 </a>
-                
+
+                <!-- Authentication Buttons -->
+                <div class="auth-buttons" id="authButtons">
+                    <button class="auth-btn login-btn" id="loginBtn">
+                        <i class="ri-login-circle-line"></i> Login
+                    </button>
+                    <button class="auth-btn signup-btn" id="signupBtn">
+                        <i class="ri-user-add-line"></i> Sign Up
+                    </button>
+                </div>
+
+                <!-- User Menu (shown when logged in) -->
+                <div class="user-menu" id="userMenu" style="display: none;">
+                    <button class="user-btn" id="userBtn">
+                        <i class="ri-user-line"></i>
+                        <span id="userDisplayName">User</span>
+                        <i class="ri-arrow-down-s-line"></i>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="#" id="dashboardLink">
+                            <i class="ri-dashboard-line"></i> My Dashboard
+                        </a>
+                        <a href="#" id="logoutBtn">
+                            <i class="ri-logout-box-line"></i> Logout
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Enhanced Theme Toggle -->
                 <div class="theme-toggle-container">
                     <span class="theme-label">Theme</span>
@@ -251,7 +300,7 @@
         <!-- Projects Grid -->
         <div class="projects-container">
             <!-- Habit Tracker -->
-            <a href="./projects/habit-tracker/index.html" class="card" data-category="utility">
+            <a href="./projects/habit-tracker/index.html" class="card" data-category="utility" data-project-id="habit-tracker">
                 <div class="card-cover" style="background:#22c55e; color:white">
                     <i class="ri-calendar-check-line"></i>
                 </div>
@@ -263,6 +312,14 @@
                     <p class="card-description">Track daily habits and build consistency with streaks.</p>
                     <div class="card-tech">
                         <span>HTML</span><span>CSS</span><span>JS</span>
+                    </div>
+                    <div class="card-actions" id="actions-habit-tracker">
+                        <button class="action-btn save-btn" data-project="habit-tracker">
+                            <i class="ri-bookmark-line"></i> Save
+                        </button>
+                        <button class="action-btn complete-btn" data-project="habit-tracker">
+                            <i class="ri-check-line"></i> Completed
+                        </button>
                     </div>
                 </div>
             </a>
@@ -1681,6 +1738,83 @@
     document.documentElement.style.transition = 'background-color 0.3s ease, color 0.3s ease';
 </script>
 
+    <!-- Authentication Modals -->
+    <div id="authModal" class="auth-modal-overlay" style="display: none;">
+        <div class="auth-modal">
+            <div class="auth-modal-header">
+                <h3 id="authModalTitle">Login</h3>
+                <button id="authModalClose" class="auth-modal-close">&times;</button>
+            </div>
+            <div class="auth-modal-body">
+                <!-- Login Form -->
+                <form id="loginForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="auth-submit-btn">Login</button>
+                </form>
+
+                <!-- Signup Form -->
+                <form id="signupForm" class="auth-form" style="display: none;">
+                    <div class="form-group">
+                        <label for="signupName">Display Name</label>
+                        <input type="text" id="signupName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupEmail">Email</label>
+                        <input type="email" id="signupEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupPassword">Password</label>
+                        <input type="password" id="signupPassword" required minlength="6">
+                    </div>
+                    <button type="submit" class="auth-submit-btn">Sign Up</button>
+                </form>
+
+                <div class="auth-toggle">
+                    <p id="authToggleText">Don't have an account? <a href="#" id="authToggleLink">Sign up</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Modal -->
+    <div id="dashboardModal" class="dashboard-modal-overlay" style="display: none;">
+        <div class="dashboard-modal">
+            <div class="dashboard-modal-header">
+                <h3>My Dashboard</h3>
+                <button id="dashboardModalClose" class="dashboard-modal-close">&times;</button>
+            </div>
+            <div class="dashboard-modal-body">
+                <div class="dashboard-tabs">
+                    <button class="dashboard-tab active" data-tab="saved">Saved Projects</button>
+                    <button class="dashboard-tab" data-tab="completed">Completed Projects</button>
+                </div>
+                <div class="dashboard-content">
+                    <div id="savedProjects" class="dashboard-projects">
+                        <div class="dashboard-empty">
+                            <i class="ri-bookmark-line"></i>
+                            <p>No saved projects yet</p>
+                        </div>
+                    </div>
+                    <div id="completedProjects" class="dashboard-projects" style="display: none;">
+                        <div class="dashboard-empty">
+                            <i class="ri-check-circle-line"></i>
+                            <p>No completed projects yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./js/auth.js"></script>
+    <script src="./js/dashboard.js"></script>
     <script src="./js/app.js"></script>
 </body>
 

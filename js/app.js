@@ -44,6 +44,14 @@ class ProjectManager {
         // Initialize visibility engine with projects
         this.state.visibilityEngine = new ProjectVisibilityEngine(this.state.allProjects);
 
+        // Add project action buttons
+        this.addProjectActions();
+
+        // Listen for auth state changes to update actions
+        document.addEventListener('authStateChanged', () => {
+            setTimeout(() => this.addProjectActions(), 100);
+        });
+
         this.state.initialized = true;
         console.log("✅ ProjectManager: Ready.");
     }
@@ -304,6 +312,62 @@ class ProjectManager {
         path = path.replace(/\/index\.html$/, '').replace(/^index\.html$/, '');
 
         return `https://github.com/YadavAkhileshh/OpenPlayground/tree/main/${path}`;
+    }
+
+    /* ----------------------------------------------------------- */
+    /* Project Actions (Save/Complete) */
+    /* ----------------------------------------------------------- */
+    addProjectActions() {
+        // Add action buttons to all project cards
+        document.querySelectorAll('.card').forEach(card => {
+            const projectId = card.dataset.projectId || this.generateProjectId(card);
+            card.setAttribute('data-project-id', projectId);
+
+            // Check if actions already exist
+            if (card.querySelector('.card-actions')) return;
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'card-actions';
+            actionsDiv.innerHTML = `
+                <button class="action-btn save-btn" data-project="${projectId}">
+                    <i class="ri-bookmark-line"></i> Save
+                </button>
+                <button class="action-btn complete-btn" data-project="${projectId}">
+                    <i class="ri-check-line"></i> Completed
+                </button>
+            `;
+
+            // Add event listeners
+            const saveBtn = actionsDiv.querySelector('.save-btn');
+            const completeBtn = actionsDiv.querySelector('.complete-btn');
+
+            saveBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.DashboardManager?.saveProject(projectId);
+            });
+
+            completeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.DashboardManager?.completeProject(projectId);
+            });
+
+            // Insert actions before the card content ends
+            const cardContent = card.querySelector('.card-content');
+            if (cardContent) {
+                cardContent.appendChild(actionsDiv);
+            }
+        });
+    }
+
+    generateProjectId(card) {
+        // Generate a project ID from the card's title
+        const titleElement = card.querySelector('.card-heading');
+        if (titleElement) {
+            return titleElement.textContent.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        }
+        return 'unknown-project';
     }
 }
 
