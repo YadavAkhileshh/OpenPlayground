@@ -8,7 +8,9 @@
 [![Contributors](https://img.shields.io/github/contributors/YadavAkhileshh/OpenPlayground)](https://github.com/YadavAkhileshh/OpenPlayground/graphs/contributors)
 [![Stars](https://img.shields.io/github/stars/YadavAkhileshh/OpenPlayground?style=social)](https://github.com/YadavAkhileshh/OpenPlayground/stargazers)
 
-**🌐 [View Live Website](https://open-playground-seven.vercel.app/) | 📖 [Contributing Guide](CONTRIBUTING.md) | 💬 [Discussions](https://github.com/YadavAkhileshh/OpenPlayground/discussions)**
+**🌐 [View Live Website](https://open-playground-seven.vercel.app/) | 📖 [Contributing Guide](CONTRIBUTING.md) | 🐛 [Debugging Guide](DEBUGGING_GUIDE.md) | 💬 [Discussions](https://github.com/YadavAkhileshh/OpenPlayground/discussions)**
+
+• Project spotlight: Recipe – [Landing Page Preview](./projects/Recipe/landing.html)
 
 ---
 
@@ -18,13 +20,13 @@ OpenPlayground is where creativity meets code! Whether you're building your firs
 
 ### ✨ Why Choose OpenPlayground?
 
-| Feature | Description |
-|---------|-------------|
-| 🎯 **Learn by Building** | Practice your skills with real-world projects |
-| 🌟 **Get Discovered** | Showcase your work to the global developer community |
-| 💡 **Inspire Others** | Your project might spark someone's next breakthrough |
-| 🤝 **Beginner Friendly** | Perfect for developers at any skill level |
-| 🔓 **Open Source** | Contribute to something meaningful and lasting |
+| Feature                  | Description                                          |
+| ------------------------ | ---------------------------------------------------- |
+| 🎯 **Learn by Building** | Practice your skills with real-world projects        |
+| 🌟 **Get Discovered**    | Showcase your work to the global developer community |
+| 💡 **Inspire Others**    | Your project might spark someone's next breakthrough |
+| 🤝 **Beginner Friendly** | Perfect for developers at any skill level            |
+| 🔓 **Open Source**       | Contribute to something meaningful and lasting       |
 
 **⭐ Love what we're building? [Star this repository](https://github.com/YadavAkhileshh/OpenPlayground) to show your support!**
 
@@ -45,6 +47,7 @@ OpenPlayground is where creativity meets code! Whether you're building your firs
 ## 🚀 Quick Start Guide
 
 ### 👀 For Visitors
+
 Simply visit our [live website](https://open-playground-seven.vercel.app/) and start exploring!
 
 ### 👨‍💻 For Contributors
@@ -52,21 +55,25 @@ Simply visit our [live website](https://open-playground-seven.vercel.app/) and s
 Ready to add your project? Follow these simple steps:
 
 #### 1️⃣ **Fork & Clone**
+
 ```bash
 git clone https://github.com/YOUR_USERNAME/OpenPlayground.git
 cd OpenPlayground
 ```
 
 #### 2️⃣ **Create Your Project Folder**
+
 ```bash
 mkdir projects/my-awesome-project
 cd projects/my-awesome-project
 ```
 
 #### 3️⃣ **Build Your Project**
+
 Create these files in your project folder:
+
 - `index.html` - Your main project file
-- `style.css` - Your styles  
+- `style.css` - Your styles
 - `script.js` - Your JavaScript logic
 
 #### 4️⃣ **Add to projects.json** ⚠️ **IMPORTANT!**
@@ -90,6 +97,7 @@ Open `projects.json` in the root folder and add your project entry:
 **Icons:** Use any icon from [RemixIcon](https://remixicon.com/) (e.g., `ri-gamepad-line`, `ri-calculator-line`)
 
 #### 5️⃣ **Submit Your Contribution**
+
 ```bash
 git add .
 git commit -m "Add: Your Project Name - Brief description"
@@ -110,7 +118,7 @@ OpenPlayground/
 │   └── 📂 your-project/      # 🚀 Your project goes here!
 ├── 📂 components/            # Reusable HTML components
 ├── 📂 css/                   # Global website styles
-├── 📂 js/                    # Global website scripts  
+├── 📂 js/                    # Global website scripts
 ├── 📄 index.html             # Main website entry
 ├── 📄 projects.json          # ⭐ Project registry (add your project here!)
 ├── 📄 README.md              # This file
@@ -121,20 +129,21 @@ OpenPlayground/
 
 ## 🎯 Project Categories
 
-| Category | Icon | Description |
-|----------|------|-------------|
-| **Utility** | 🛠️ | Tools, calculators, converters |
-| **Game** | 🎮 | Interactive games and entertainment |
-| **Puzzle** | 🧩 | Brain teasers and logic games |
-| **Fun** | 🎉 | Jokes, quotes, creative projects |
-| **Productivity** | 📊 | Planners, trackers, organizers |
-| **Experimental** | 🔬 | Unique concepts and demos |
+| Category         | Icon | Description                         |
+| ---------------- | ---- | ----------------------------------- |
+| **Utility**      | 🛠️   | Tools, calculators, converters      |
+| **Game**         | 🎮   | Interactive games and entertainment |
+| **Puzzle**       | 🧩   | Brain teasers and logic games       |
+| **Fun**          | 🎉   | Jokes, quotes, creative projects    |
+| **Productivity** | 📊   | Planners, trackers, organizers      |
+| **Experimental** | 🔬   | Unique concepts and demos           |
 
 ---
 
 ## 🤝 Contributing Guidelines
 
 ### ✅ Project Requirements
+
 - Use vanilla HTML, CSS, and JavaScript
 - Include `index.html` as the entry point
 - Make it responsive and accessible
@@ -143,6 +152,7 @@ OpenPlayground/
 - Keep content family-friendly
 
 ### 💡 Best Practices
+
 - Add meaningful comments to your code
 - Use semantic HTML elements
 - Follow consistent naming conventions
@@ -150,6 +160,8 @@ OpenPlayground/
 - Include error handling where appropriate
 
 **📖 [Read the full contributing guide →](CONTRIBUTING.md)**
+
+**🐛 Running into issues? [Check the debugging guide →](DEBUGGING_GUIDE.md)**
 
 ---
 
@@ -167,11 +179,11 @@ A huge thank you to all the talented developers who have contributed!
 
 ## 💡 Project Ideas
 
-| Difficulty | Ideas |
-|------------|-------|
-| **Beginner** | Quote generator, color picker, countdown timer, password generator |
-| **Intermediate** | Weather app, expense tracker, memory game, markdown editor |
-| **Advanced** | Code editor, music visualizer, real-time chat, multiplayer game |
+| Difficulty       | Ideas                                                              |
+| ---------------- | ------------------------------------------------------------------ |
+| **Beginner**     | Quote generator, color picker, countdown timer, password generator |
+| **Intermediate** | Weather app, expense tracker, memory game, markdown editor         |
+| **Advanced**     | Code editor, music visualizer, real-time chat, multiplayer game    |
 
 ---
 
@@ -186,9 +198,9 @@ A huge thank you to all the talented developers who have contributed!
 
 ## 🌟 Community & Support
 
-- 📜 **Code of Conduct:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)  
-- 🐛 **Bug Reports:** [Create an Issue](https://github.com/YadavAkhileshh/OpenPlayground/issues/new)  
-- 💡 **Feature Requests:** [Discussions](https://github.com/YadavAkhileshh/OpenPlayground/discussions)  
+- 📜 **Code of Conduct:** [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- 🐛 **Bug Reports:** [Create an Issue](https://github.com/YadavAkhileshh/OpenPlayground/issues/new)
+- 💡 **Feature Requests:** [Discussions](https://github.com/YadavAkhileshh/OpenPlayground/discussions)
 - 🔄 **Pull Requests:** [View PRs](https://github.com/YadavAkhileshh/OpenPlayground/pulls)
 
 ---
@@ -203,7 +215,7 @@ This project is licensed under the **MIT License** - see [LICENSE](LICENSE) for 
 
 **Made with ❤️ by the OpenPlayground Community**
 
-*Building the future of web development, one project at a time.*
+_Building the future of web development, one project at a time._
 
 ⭐ **Don't forget to star this repo if you found it helpful!** ⭐
 
