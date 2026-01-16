@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Countdown</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        h1 {
+            font-weight: 300;
+            font-size: 2.5rem;
+            color: #4a6fa5;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            color: #888;
+            font-weight: 300;
+            font-size: 1.1rem;
+        }
+        
+        .countdown-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            gap: 30px;
+        }
+        
+        .visual-display {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+        }
+        
+        .time-shape {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            transition: all 1s ease;
+        }
+        
+        #outer-circle {
+            width: 280px;
+            height: 280px;
+            background: linear-gradient(135deg, #dbe9ff 0%, #c2d6f0 100%);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #middle-circle {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(135deg, #e8f2ff 0%, #d4e3f7 100%);
+            box-shadow: inset 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        #inner-circle {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #f0f7ff 0%, #e8f2ff 100%);
+            box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .progress-ring {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        
+        .progress-ring-circle {
+            fill: none;
+            stroke-width: 6;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s linear;
+        }
+        
+        #hour-ring {
+            stroke: #4a6fa5;
+        }
+        
+        #minute-ring {
+            stroke: #6a93cb;
+        }
+        
+        #second-ring {
+            stroke: #8fb8e6;
+        }
+        
+        .time-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .indicator-shape {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+        
+        .hours-indicator {
+            background-color: #4a6fa5;
+        }
+        
+        .minutes-indicator {
+            background-color: #6a93cb;
+        }
+        
+        .seconds-indicator {
+            background-color: #8fb8e6;
+        }
+        
+        .indicator-label {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .time-inputs {
+            display: flex;
+            gap: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 10px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .input-group label {
+            font-size: 0.8rem;
+            color: #777;
+        }
+        
+        .input-group input {
+            width: 70px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1rem;
+            transition: border 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #6a93cb;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        #start-btn {
+            background: linear-gradient(135deg, #4a6fa5 0%, #6a93cb 100%);
+            color: white;
+        }
+        
+        #start-btn:hover {
+            background: linear-gradient(135deg, #3d5c8a 0%, #5a7fb8 100%);
+            transform: translateY(-2px);
+        }
+        
+        #pause-btn {
+            background: linear-gradient(135deg, #ffb347 0%, #ffcc33 100%);
+            color: #333;
+        }
+        
+        #pause-btn:hover {
+            background: linear-gradient(135deg, #e6a03e 0%, #e6b82e 100%);
+            transform: translateY(-2px);
+        }
+        
+        #reset-btn {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            color: #4a6fa5;
+            border: 1px solid #d1dbe9;
+        }
+        
+        #reset-btn:hover {
+            background: linear-gradient(135deg, #e8edf5 0%, #d4dfed 100%);
+            transform: translateY(-2px);
+        }
+        
+        .status {
+            margin-top: 5px;
+            font-size: 1.1rem;
+            color: #4a6fa5;
+            font-weight: 500;
+            height: 27px;
+            text-align: center;
+        }
+        
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #999;
+            font-size: 0.9rem;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            width: 100%;
+        }
+        
+        @media (max-width: 600px) {
+            .visual-display {
+                width: 250px;
+                height: 250px;
+            }
+            
+            #outer-circle {
+                width: 230px;
+                height: 230px;
+            }
+            
+            #middle-circle {
+                width: 160px;
+                height: 160px;
+            }
+            
+            #inner-circle {
+                width: 90px;
+                height: 90px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .time-inputs {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Minimal Countdown</h1>
+            <p class="subtitle">Time visualized through shapes and progress indicators</p>
+        </header>
+        
+        <div class="countdown-container">
+            <div class="visual-display">
+                <svg class="progress-ring" width="300" height="300">
+                    <circle class="progress-ring-circle" id="hour-ring" cx="150" cy="150" r="140"></circle>
+                    <circle class="progress-ring-circle" id="minute-ring" cx="150" cy="150" r="110"></circle>
+                    <circle class="progress-ring-circle" id="second-ring" cx="150" cy="150" r="80"></circle>
+                </svg>
+                
+                <div class="time-shape" id="outer-circle">
+                    <div class="time-shape" id="middle-circle">
+                        <div class="time-shape" id="inner-circle"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="time-indicators">
+                <div class="indicator">
+                    <div class="indicator-shape hours-indicator"></div>
+                    <span class="indicator-label">Hours</span>
+                </div>
+                <div class="indicator">
+                    <div class="indicator-shape minutes-indicator"></div>
+                    <span class="indicator-label">Minutes</span>
+                </div>
+                <div class="indicator">
+                    <div class="indicator-shape seconds-indicator"></div>
+                    <span class="indicator-label">Seconds</span>
+                </div>
+            </div>
+            
+            <div class="status" id="status">Set your time and begin</div>
+            
+            <div class="time-inputs">
+                <div class="input-group">
+                    <label for="hours">Hours</label>
+                    <input type="number" id="hours" min="0" max="99" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="minutes">Minutes</label>
+                    <input type="number" id="minutes" min="0" max="59" value="5">
+                </div>
+                <div class="input-group">
+                    <label for="seconds">Seconds</label>
+                    <input type="number" id="seconds" min="0" max="59" value="0">
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="start-btn">
+                    <i class="fas fa-play"></i> Start
+                </button>
+                <button id="pause-btn">
+                    <i class="fas fa-pause"></i> Pause
+                </button>
+                <button id="reset-btn">
+                    <i class="fas fa-redo"></i> Reset
+                </button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Minimal Countdown Experience • Visual Time Representation</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const hoursInput = document.getElementById('hours');
+            const minutesInput = document.getElementById('minutes');
+            const secondsInput = document.getElementById('seconds');
+            const startBtn = document.getElementById('start-btn');
+            const pauseBtn = document.getElementById('pause-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const statusEl = document.getElementById('status');
+            const hourRing = document.getElementById('hour-ring');
+            const minuteRing = document.getElementById('minute-ring');
+            const secondRing = document.getElementById('second-ring');
+            const outerCircle = document.getElementById('outer-circle');
+            const middleCircle = document.getElementById('middle-circle');
+            const innerCircle = document.getElementById('inner-circle');
+            
+            // Countdown variables
+            let totalSeconds = 0;
+            let remainingSeconds = 0;
+            let countdownInterval = null;
+            let isRunning = false;
+            let isPaused = false;
+            
+            // Initialize progress rings
+            function initProgressRings() {
+                const hourCircumference = 2 * Math.PI * 140;
+                const minuteCircumference = 2 * Math.PI * 110;
+                const secondCircumference = 2 * Math.PI * 80;
+                
+                hourRing.style.strokeDasharray = `${hourCircumference} ${hourCircumference}`;
+                hourRing.style.strokeDashoffset = hourCircumference;
+                
+                minuteRing.style.strokeDasharray = `${minuteCircumference} ${minuteCircumference}`;
+                minuteRing.style.strokeDashoffset = minuteCircumference;
+                
+                secondRing.style.strokeDasharray = `${secondCircumference} ${secondCircumference}`;
+                secondRing.style.strokeDashoffset = secondCircumference;
+            }
+            
+            // Update the visual progress rings
+            function updateProgressRings() {
+                if (totalSeconds === 0) return;
+                
+                const hours = Math.floor(remainingSeconds / 3600);
+                const minutes = Math.floor((remainingSeconds % 3600) / 60);
+                const seconds = remainingSeconds % 60;
+                
+                const totalHours = Math.floor(totalSeconds / 3600);
+                const totalMinutes = Math.floor((totalSeconds % 3600) / 60);
+                const totalSecondsOnly = totalSeconds % 60;
+                
+                // Calculate progress percentages
+                const hourProgress = totalHours > 0 ? hours / totalHours : 0;
+                const minuteProgress = totalMinutes > 0 ? minutes / totalMinutes : 0;
+                const secondProgress = totalSecondsOnly > 0 ? seconds / totalSecondsOnly : 0;
+                
+                // Update ring dash offsets
+                const hourCircumference = 2 * Math.PI * 140;
+                const minuteCircumference = 2 * Math.PI * 110;
+                const secondCircumference = 2 * Math.PI * 80;
+                
+                hourRing.style.strokeDashoffset = hourCircumference - (hourProgress * hourCircumference);
+                minuteRing.style.strokeDashoffset = minuteCircumference - (minuteProgress * minuteCircumference);
+                secondRing.style.strokeDashoffset = secondCircumference - (secondProgress * secondCircumference);
+                
+                // Update circle sizes based on progress
+                const overallProgress = remainingSeconds / totalSeconds;
+                const maxOuterSize = 280;
+                const maxMiddleSize = 200;
+                const maxInnerSize = 120;
+                
+                outerCircle.style.width = `${maxOuterSize * overallProgress}px`;
+                outerCircle.style.height = `${maxOuterSize * overallProgress}px`;
+                
+                middleCircle.style.width = `${maxMiddleSize * overallProgress}px`;
+                middleCircle.style.height = `${maxMiddleSize * overallProgress}px`;
+                
+                innerCircle.style.width = `${maxInnerSize * overallProgress}px`;
+                innerCircle.style.height = `${maxInnerSize * overallProgress}px`;
+                
+                // Update status text
+                if (remainingSeconds > 0) {
+                    statusEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} remaining`;
+                } else {
+                    statusEl.textContent = "Countdown completed!";
+                }
+            }
+            
+            // Start the countdown
+            function startCountdown() {
+                if (isRunning && !isPaused) return;
+                
+                if (!isRunning) {
+                    const hours = parseInt(hoursInput.value) || 0;
+                    const minutes = parseInt(minutesInput.value) || 0;
+                    const seconds = parseInt(secondsInput.value) || 0;
+                    
+                    totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                    
+                    if (totalSeconds <= 0) {
+                        statusEl.textContent = "Please set a valid time";
+                        return;
+                    }
+                    
+                    remainingSeconds = totalSeconds;
+                    isRunning = true;
+                }
+                
+                isPaused = false;
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                statusEl.textContent = "Countdown running...";
+                
+                // Start the countdown interval
+                countdownInterval = setInterval(() => {
+                    if (remainingSeconds <= 0) {
+                        clearInterval(countdownInterval);
+                        isRunning = false;
+                        startBtn.disabled = false;
+                        pauseBtn.disabled = true;
+                        statusEl.textContent = "Countdown completed!";
+                        
+                        // Visual completion effect
+                        document.body.style.backgroundColor = "#e8f4e8";
+                        setTimeout(() => {
+                            document.body.style.backgroundColor = "";
+                        }, 500);
+                        
+                        return;
+                    }
+                    
+                    remainingSeconds--;
+                    updateProgressRings();
+                }, 1000);
+                
+                updateProgressRings();
+            }
+            
+            // Pause the countdown
+            function pauseCountdown() {
+                if (!isRunning || isPaused) return;
+                
+                clearInterval(countdownInterval);
+                isPaused = true;
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                statusEl.textContent = "Countdown paused";
+            }
+            
+            // Reset the countdown
+            function resetCountdown() {
+                clearInterval(countdownInterval);
+                isRunning = false;
+                isPaused = false;
+                remainingSeconds = 0;
+                totalSeconds = 0;
+                
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                
+                // Reset inputs to default
+                hoursInput.value = 0;
+                minutesInput.value = 5;
+                secondsInput.value = 0;
+                
+                // Reset visual elements
+                initProgressRings();
+                
+                // Reset circle sizes
+                outerCircle.style.width = "280px";
+                outerCircle.style.height = "280px";
+                middleCircle.style.width = "200px";
+                middleCircle.style.height = "200px";
+                innerCircle.style.width = "120px";
+                innerCircle.style.height = "120px";
+                
+                statusEl.textContent = "Set your time and begin";
+            }
+            
+            // Validate input fields
+            function validateInput(input, max) {
+                let value = parseInt(input.value) || 0;
+                
+                if (value < 0) {
+                    value = 0;
+                } else if (value > max) {
+                    value = max;
+                }
+                
+                input.value = value;
+            }
+            
+            // Event listeners
+            startBtn.addEventListener('click', startCountdown);
+            pauseBtn.addEventListener('click', pauseCountdown);
+            resetBtn.addEventListener('click', resetCountdown);
+            
+            hoursInput.addEventListener('change', () => validateInput(hoursInput, 99));
+            minutesInput.addEventListener('change', () => validateInput(minutesInput, 59));
+            secondsInput.addEventListener('change', () => validateInput(secondsInput, 59));
+            
+            // Initialize the app
+            initProgressRings();
+            pauseBtn.disabled = true;
+            
+            // Add some initial visual interest
+            setTimeout(() => {
+                outerCircle.style.transition = "all 1.5s ease";
+                middleCircle.style.transition = "all 1.2s ease";
+                innerCircle.style.transition = "all 0.9s ease";
+            }, 100);
+        });
+    </script>
+</body>
+</html>

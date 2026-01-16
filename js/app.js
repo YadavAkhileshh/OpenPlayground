@@ -20,10 +20,12 @@ class ProjectManager {
         this.state = {
             allProjects: [],
             visibilityEngine: null,
-            viewMode: 'card', // 'card' or 'list'
+            viewMode: 'card',
             currentPage: 1,
             initialized: false
         };
+
+        this.elements = null;
 
         window.projectManagerInstance = this;
     }
@@ -33,7 +35,9 @@ class ProjectManager {
 
         console.log("🚀 ProjectManager: Initializing...");
 
-        // Initial setup
+        // Cache DOM elements once
+        this.elements = this.getElements();
+
         this.setupEventListeners();
         await this.fetchProjects();
 
@@ -42,7 +46,7 @@ class ProjectManager {
     }
 
     /* -----------------------------------------------------------
-     * DOM Element Selection
+     * DOM Element Selection (cached once)
      * ----------------------------------------------------------- */
     getElements() {
         return {
@@ -69,7 +73,6 @@ class ProjectManager {
 
             const data = await response.json();
 
-            // Deduplicate and validate
             const seen = new Set();
             this.state.allProjects = data.filter(project => {
                 if (!project.title || !project.link) return false;
@@ -79,13 +82,10 @@ class ProjectManager {
                 return true;
             });
 
-            // Update UI count
-            const elements = this.getElements();
-            if (elements.projectCount) {
-                elements.projectCount.textContent = `${this.state.allProjects.length}+`;
+            if (this.elements.projectCount) {
+                this.elements.projectCount.textContent = `${this.state.allProjects.length}+`;
             }
 
-            // Initialize Visibility Engine
             this.state.visibilityEngine = new ProjectVisibilityEngine(this.state.allProjects);
             this.state.visibilityEngine.state.itemsPerPage = this.config.ITEMS_PER_PAGE;
 
@@ -94,9 +94,9 @@ class ProjectManager {
 
         } catch (error) {
             console.error('❌ ProjectManager Error:', error);
-            const elements = this.getElements();
-            if (elements.projectsGrid) {
-                elements.projectsGrid.innerHTML = `<div class="error-msg">Failed to load projects.</div>`;
+            if (this.elements.projectsGrid) {
+                this.elements.projectsGrid.innerHTML =
+                    `<div class="error-msg">Failed to load projects.</div>`;
             }
         }
     }
@@ -105,54 +105,46 @@ class ProjectManager {
      * Event Handling
      * ----------------------------------------------------------- */
     setupEventListeners() {
-        const elements = this.getElements();
+        const el = this.elements;
 
-        // Search
-        if (elements.searchInput) {
-            elements.searchInput.addEventListener('input', (e) => {
+        if (el.searchInput) {
+            el.searchInput.addEventListener('input', (e) => {
                 this.state.visibilityEngine.setSearchQuery(e.target.value);
                 this.state.currentPage = 1;
                 this.render();
             });
         }
 
-        // Sort
-        if (elements.sortSelect) {
-            elements.sortSelect.addEventListener('change', (e) => {
+        if (el.sortSelect) {
+            el.sortSelect.addEventListener('change', () => {
                 this.state.currentPage = 1;
                 this.render();
             });
         }
 
-        // Category Filters
-        if (elements.filterBtns) {
-            elements.filterBtns.forEach(btn => {
+        if (el.filterBtns) {
+            el.filterBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const category = btn.dataset.filter;
-
-                    // Update active class
-                    elements.filterBtns.forEach(b => b.classList.toggle('active', b === btn));
-
-                    this.state.visibilityEngine.setCategory(category);
+                    el.filterBtns.forEach(b => b.classList.toggle('active', b === btn));
+                    this.state.visibilityEngine.setCategory(btn.dataset.filter);
                     this.state.currentPage = 1;
                     this.render();
                 });
             });
         }
 
-        // View Toggles
-        if (elements.cardViewBtn && elements.listViewBtn) {
-            elements.cardViewBtn.addEventListener('click', () => this.setViewMode('card'));
-            elements.listViewBtn.addEventListener('click', () => this.setViewMode('list'));
+        if (el.cardViewBtn && el.listViewBtn) {
+            el.cardViewBtn.addEventListener('click', () => this.setViewMode('card'));
+            el.listViewBtn.addEventListener('click', () => this.setViewMode('list'));
         }
     }
 
     setViewMode(mode) {
         this.state.viewMode = mode;
-        const elements = this.getElements();
+        const el = this.elements;
 
-        if (elements.cardViewBtn) elements.cardViewBtn.classList.toggle('active', mode === 'card');
-        if (elements.listViewBtn) elements.listViewBtn.classList.toggle('active', mode === 'list');
+        el.cardViewBtn?.classList.toggle('active', mode === 'card');
+        el.listViewBtn?.classList.toggle('active', mode === 'list');
 
         this.render();
     }
@@ -161,63 +153,55 @@ class ProjectManager {
      * Rendering Logic
      * ----------------------------------------------------------- */
     render() {
-        const elements = this.getElements();
         if (!this.state.visibilityEngine) return;
 
-        // Sync visibility engine page
-        this.state.visibilityEngine.setPage(this.state.currentPage);
+        const el = this.elements;
 
+        this.state.visibilityEngine.setPage(this.state.currentPage);
         let filtered = this.state.visibilityEngine.getVisibleProjects();
 
-        // Sorting
-        const sortMode = elements.sortSelect?.value || 'default';
+        const sortMode = el.sortSelect?.value || 'default';
         if (sortMode === 'az') filtered.sort((a, b) => a.title.localeCompare(b.title));
         else if (sortMode === 'za') filtered.sort((a, b) => b.title.localeCompare(a.title));
         else if (sortMode === 'newest') filtered.reverse();
 
-        // Pagination Calculations
         const totalPages = Math.ceil(filtered.length / this.config.ITEMS_PER_PAGE);
         const start = (this.state.currentPage - 1) * this.config.ITEMS_PER_PAGE;
         const pageItems = filtered.slice(start, start + this.config.ITEMS_PER_PAGE);
 
-        // Grid/List visibility management
-        if (elements.projectsGrid) {
-            elements.projectsGrid.style.display = this.state.viewMode === 'card' ? 'grid' : 'none';
-            if (this.state.viewMode !== 'card') elements.projectsGrid.innerHTML = '';
+        if (el.projectsGrid) {
+            el.projectsGrid.style.display = this.state.viewMode === 'card' ? 'grid' : 'none';
+            el.projectsGrid.innerHTML = '';
         }
-        if (elements.projectsList) {
-            elements.projectsList.style.display = this.state.viewMode === 'list' ? 'flex' : 'none';
-            if (this.state.viewMode !== 'list') elements.projectsList.innerHTML = '';
+        if (el.projectsList) {
+            el.projectsList.style.display = this.state.viewMode === 'list' ? 'flex' : 'none';
+            el.projectsList.innerHTML = '';
         }
 
-        // Handle empty state
         if (pageItems.length === 0) {
-            if (elements.emptyState) elements.emptyState.style.display = 'block';
-            if (elements.projectsGrid) elements.projectsGrid.innerHTML = '';
-            if (elements.projectsList) elements.projectsList.innerHTML = '';
+            if (el.emptyState) el.emptyState.style.display = 'block';
             this.renderPagination(0);
             return;
         }
 
-        if (elements.emptyState) elements.emptyState.style.display = 'none';
+        if (el.emptyState) el.emptyState.style.display = 'none';
 
-        // Render appropriate view
         if (this.state.viewMode === 'card') {
-            this.renderCardView(elements.projectsGrid, pageItems);
+            this.renderCardView(el.projectsGrid, pageItems);
         } else {
-            this.renderListView(elements.projectsList, pageItems);
+            this.renderListView(el.projectsList, pageItems);
         }
 
         this.renderPagination(totalPages);
     }
 
     renderCardView(container, projects) {
-        container.innerHTML = projects.map((project) => {
+        if (!container) return;
+        container.innerHTML = projects.map(project => {
             const isBookmarked = window.bookmarksManager?.isBookmarked(project.title);
             const techHtml = project.tech?.map(t => `<span>${this.escapeHtml(t)}</span>`).join('') || '';
             const coverStyle = project.coverStyle || '';
             const coverClass = project.coverClass || '';
-
             const sourceUrl = this.getSourceCodeUrl(project.link);
 
             return `
@@ -254,6 +238,7 @@ class ProjectManager {
     }
 
     renderListView(container, projects) {
+        if (!container) return;
         container.innerHTML = projects.map(project => {
             const isBookmarked = window.bookmarksManager?.isBookmarked(project.title);
             const coverStyle = project.coverStyle || '';
@@ -289,7 +274,7 @@ class ProjectManager {
     }
 
     renderPagination(totalPages) {
-        const container = this.getElements().paginationContainer;
+        const container = this.elements.paginationContainer;
         if (!container || totalPages <= 1) {
             if (container) container.innerHTML = '';
             return;
@@ -297,12 +282,10 @@ class ProjectManager {
 
         let html = '';
 
-        // Prev button
         html += `<button class="pagination-btn" ${this.state.currentPage === 1 ? 'disabled' : ''} id="pagination-prev">
                     <i class="ri-arrow-left-s-line"></i>
                  </button>`;
 
-        // Page numbers
         for (let i = 1; i <= totalPages; i++) {
             if (i === 1 || i === totalPages || (i >= this.state.currentPage - 1 && i <= this.state.currentPage + 1)) {
                 html += `<button class="pagination-btn ${i === this.state.currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
@@ -311,14 +294,12 @@ class ProjectManager {
             }
         }
 
-        // Next button
         html += `<button class="pagination-btn" ${this.state.currentPage === totalPages ? 'disabled' : ''} id="pagination-next">
                     <i class="ri-arrow-right-s-line"></i>
                  </button>`;
 
         container.innerHTML = html;
 
-        // Events
         container.querySelectorAll('[data-page]').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.state.currentPage = parseInt(btn.dataset.page);
@@ -327,42 +308,38 @@ class ProjectManager {
             });
         });
 
-        const prev = container.querySelector('#pagination-prev');
-        if (prev && !prev.disabled) {
-            prev.addEventListener('click', () => {
+        container.querySelector('#pagination-prev')?.addEventListener('click', () => {
+            if (this.state.currentPage > 1) {
                 this.state.currentPage--;
                 this.render();
                 this.scrollToTop();
-            });
-        }
+            }
+        });
 
-        const next = container.querySelector('#pagination-next');
-        if (next && !next.disabled) {
-            next.addEventListener('click', () => {
+        container.querySelector('#pagination-next')?.addEventListener('click', () => {
+            if (this.state.currentPage < totalPages) {
                 this.state.currentPage++;
                 this.render();
                 this.scrollToTop();
-            });
-        }
+            }
+        });
     }
 
     scrollToTop() {
         const section = document.getElementById('projects');
-        if (section) {
-            const navbarHeight = 75;
-            window.scrollTo({
-                top: section.offsetTop - navbarHeight,
-                behavior: 'smooth'
-            });
-        }
+        if (!section) return;
+
+        window.scrollTo({
+            top: section.offsetTop - 75,
+            behavior: 'smooth'
+        });
     }
 
     /* -----------------------------------------------------------
      * Utilities
      * ----------------------------------------------------------- */
     capitalize(str) {
-        if (!str) return '';
-        return str.charAt(0).toUpperCase() + str.slice(1);
+        return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
     }
 
     escapeHtml(str) {
@@ -375,12 +352,7 @@ class ProjectManager {
     getSourceCodeUrl(link) {
         if (!link) return 'https://github.com/YadavAkhileshh/OpenPlayground';
 
-        let path = link;
-        // Remove leading ./
-        if (path.startsWith('./')) {
-            path = path.slice(2);
-        }
-        // Remove trailing /index.html or index.html
+        let path = link.startsWith('./') ? link.slice(2) : link;
         path = path.replace(/\/index\.html$/, '').replace(/^index\.html$/, '');
 
         return `https://github.com/YadavAkhileshh/OpenPlayground/tree/main/${path}`;
@@ -400,7 +372,6 @@ async function fetchContributors() {
 
         const contributors = await response.json();
 
-        // Update count if exists
         const count = document.getElementById('contributor-count');
         if (count) count.textContent = `${contributors.length}+`;
 
@@ -436,12 +407,10 @@ window.toggleProjectBookmark = function (btn, title, link, category, description
     const project = { title, link, category, description };
     const isNowBookmarked = window.bookmarksManager.toggleBookmark(project);
 
-    // Update button icon
     const icon = btn.querySelector('i');
     btn.classList.toggle('bookmarked', isNowBookmarked);
     if (icon) icon.className = isNowBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
 
-    // Show toast
     showToast(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
 };
 
@@ -465,7 +434,6 @@ function showToast(message) {
 // Global Initialization
 // ===============================
 
-// Expose to global scope for components.js compatibility
 window.ProjectManager = ProjectManager;
 window.fetchContributors = fetchContributors;
 
