@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conway's Game of Life</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.2.0/remixicon.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <header class="game-header">
+            <div class="header-content">
+                <h1><i class="ri-grid-line"></i> Conway's Game of Life</h1>
+                <p class="subtitle">A cellular automaton with simple rules leading to complex patterns</p>
+            </div>
+            <div class="header-stats">
+                <div class="stat">
+                    <i class="ri-cellphone-line"></i>
+                    <span>Generation: <strong id="generation">0</strong></span>
+                </div>
+                <div class="stat">
+                    <i class="ri-heart-3-line"></i>
+                    <span>Living Cells: <strong id="livingCells">0</strong></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Game Container -->
+        <div class="game-container">
+            <!-- Left Panel - Controls -->
+            <div class="control-panel">
+                <div class="panel-section">
+                    <h3><i class="ri-play-circle-line"></i> Simulation Controls</h3>
+                    <div class="button-group">
+                        <button id="startBtn" class="btn-success">
+                            <i class="ri-play-fill"></i> Start
+                        </button>
+                        <button id="pauseBtn" class="btn-warning">
+                            <i class="ri-pause-fill"></i> Pause
+                        </button>
+                        <button id="resetBtn" class="btn-secondary">
+                            <i class="ri-restart-line"></i> Reset
+                        </button>
+                        <button id="clearBtn" class="btn-danger">
+                            <i class="ri-delete-bin-line"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-speed-up-line"></i> Simulation Speed</h3>
+                    <div class="slider-container">
+                        <span>Slow</span>
+                        <input type="range" id="speedSlider" min="1" max="100" value="50">
+                        <span>Fast</span>
+                    </div>
+                    <div class="speed-display">
+                        <span id="speedValue">50 ms</span>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-brush-line"></i> Drawing Tools</h3>
+                    <div class="tool-buttons">
+                        <button id="drawMode" class="tool-btn active" data-mode="draw">
+                            <i class="ri-pencil-line"></i> Draw
+                        </button>
+                        <button id="eraseMode" class="tool-btn" data-mode="erase">
+                            <i class="ri-eraser-line"></i> Erase
+                        </button>
+                        <button id="selectMode" class="tool-btn" data-mode="select">
+                            <i class="ri-cursor-line"></i> Select
+                        </button>
+                    </div>
+                    <div class="cell-size-control">
+                        <label for="cellSize">Cell Size: <span id="cellSizeValue">10</span>px</label>
+                        <input type="range" id="cellSize" min="5" max="20" value="10">
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-shapes-line"></i> Preset Patterns</h3>
+                    <div class="patterns-grid">
+                        <button class="pattern-btn" data-pattern="glider">
+                            <div class="pattern-preview glider-pattern"></div>
+                            <span>Glider</span>
+                        </button>
+                        <button class="pattern-btn" data-pattern="spaceship">
+                            <div class="pattern-preview spaceship-pattern"></div>
+                            <span>Lightweight Spaceship</span>
+                        </button>
+                        <button class="pattern-btn" data-pattern="pulsar">
+                            <div class="pattern-preview pulsar-pattern"></div>
+                            <span>Pulsar</span>
+                        </button>
+                        <button class="pattern-btn" data-pattern="gosper">
+                            <div class="pattern-preview gosper-pattern"></div>
+                            <span>Gosper Glider Gun</span>
+                        </button>
+                        <button class="pattern-btn" data-pattern="beehive">
+                            <div class="pattern-preview beehive-pattern"></div>
+                            <span>Beehive</span>
+                        </button>
+                        <button class="pattern-btn" data-pattern="blinker">
+                            <div class="pattern-preview blinker-pattern"></div>
+                            <span>Blinker</span>
+                        </button>
+                        <button class="pattern-btn" data-pattern="toad">
+                            <div class="pattern-preview toad-pattern"></div>
+                            <span>Toad</span>
+                        </button>
+                        <button class="pattern-btn" data-pattern="random">
+                            <div class="pattern-preview random-pattern">
+                                <i class="ri-shuffle-line"></i>
+                            </div>
+                            <span>Random Fill</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-information-line"></i> Game Rules</h3>
+                    <div class="rules-list">
+                        <div class="rule">
+                            <div class="rule-icon birth"></div>
+                            <div class="rule-text">
+                                <strong>Birth:</strong> A dead cell with exactly 3 live neighbors becomes alive
+                            </div>
+                        </div>
+                        <div class="rule">
+                            <div class="rule-icon survival"></div>
+                            <div class="rule-text">
+                                <strong>Survival:</strong> A live cell with 2 or 3 live neighbors stays alive
+                            </div>
+                        </div>
+                        <div class="rule">
+                            <div class="rule-icon death"></div>
+                            <div class="rule-text">
+                                <strong>Death:</strong> A live cell with fewer than 2 or more than 3 neighbors dies
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel - Game Canvas -->
+            <div class="game-panel">
+                <div class="canvas-container">
+                    <div class="canvas-header">
+                        <h3><i class="ri-grid-fill"></i> Cellular Universe</h3>
+                        <div class="canvas-stats">
+                            <span>Grid: <strong id="gridSize">80×60</strong></span>
+                            <button id="fullscreenBtn" class="icon-btn">
+                                <i class="ri-fullscreen-line"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="canvas-wrapper">
+                        <canvas id="gameCanvas"></canvas>
+                        <div class="canvas-overlay" id="patternPreview"></div>
+                    </div>
+                    <div class="canvas-controls">
+                        <button id="stepBtn" class="btn-secondary">
+                            <i class="ri-skip-forward-line"></i> Step Forward
+                        </button>
+                        <div class="grid-controls">
+                            <button id="zoomInBtn" class="icon-btn">
+                                <i class="ri-zoom-in-line"></i>
+                            </button>
+                            <button id="zoomOutBtn" class="icon-btn">
+                                <i class="ri-zoom-out-line"></i>
+                            </button>
+                            <button id="centerBtn" class="icon-btn">
+                                <i class="ri-center-align"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pattern Library -->
+                <div class="pattern-library">
+                    <h4><i class="ri-gallery-line"></i> Pattern Library</h4>
+                    <div class="pattern-scroll">
+                        <div class="pattern-item" data-type="still">
+                            <h5>Still Lifes</h5>
+                            <div class="pattern-examples">
+                                <div class="pattern-example" data-pattern="block">Block</div>
+                                <div class="pattern-example" data-pattern="beehive">Beehive</div>
+                                <div class="pattern-example" data-pattern="loaf">Loaf</div>
+                                <div class="pattern-example" data-pattern="boat">Boat</div>
+                            </div>
+                        </div>
+                        <div class="pattern-item" data-type="oscillator">
+                            <h5>Oscillators</h5>
+                            <div class="pattern-examples">
+                                <div class="pattern-example" data-pattern="blinker">Blinker</div>
+                                <div class="pattern-example" data-pattern="toad">Toad</div>
+                                <div class="pattern-example" data-pattern="beacon">Beacon</div>
+                                <div class="pattern-example" data-pattern="pulsar">Pulsar</div>
+                            </div>
+                        </div>
+                        <div class="pattern-item" data-type="spaceship">
+                            <h5>Spaceships</h5>
+                            <div class="pattern-examples">
+                                <div class="pattern-example" data-pattern="glider">Glider</div>
+                                <div class="pattern-example" data-pattern="lwss">LWSS</div>
+                                <div class="pattern-example" data-pattern="mwss">MWSS</div>
+                                <div class="pattern-example" data-pattern="hwss">HWSS</div>
+                            </div>
+                        </div>
+                        <div class="pattern-item" data-type="gun">
+                            <h5>Guns</h5>
+                            <div class="pattern-examples">
+                                <div class="pattern-example" data-pattern="gosper">Gosper Glider Gun</div>
+                                <div class="pattern-example" data-pattern="simking">Simkin Glider Gun</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Information -->
+            <div class="info-panel">
+                <div class="panel-section">
+                    <h3><i class="ri-history-line"></i> History</h3>
+                    <div class="history-container">
+                        <div id="historyList"></div>
+                    </div>
+                    <button id="clearHistoryBtn" class="btn-secondary">
+                        <i class="ri-delete-bin-line"></i> Clear History
+                    </button>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-bar-chart-2-line"></i> Statistics</h3>
+                    <div class="stats-container">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="ri-time-line"></i>
+                            </div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="simulationTime">0s</div>
+                                <div class="stat-label">Simulation Time</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="ri-pulse-line"></i>
+                            </div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="generationRate">0/s</div>
+                                <div class="stat-label">Generation Rate</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="ri-line-chart-line"></i>
+                            </div>
+                            <div class="stat-info">
+                                <div class="stat-value" id="populationChange">+0</div>
+                                <div class="stat-label">Population Change</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-settings-3-line"></i> Settings</h3>
+                    <div class="settings-list">
+                        <div class="setting">
+                            <label class="switch">
+                                <input type="checkbox" id="wrapEdges" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Wrap Edges</span>
+                        </div>
+                        <div class="setting">
+                            <label class="switch">
+                                <input type="checkbox" id="showGrid" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Show Grid</span>
+                        </div>
+                        <div class="setting">
+                            <label class="switch">
+                                <input type="checkbox" id="showNeighbors">
+                                <span class="slider"></span>
+                            </label>
+                            <span>Show Neighbor Count</span>
+                        </div>
+                        <div class="setting">
+                            <label class="switch">
+                                <input type="checkbox" id="colorfulCells">
+                                <span class="slider"></span>
+                            </label>
+                            <span>Colorful Cells</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-share-line"></i> Export & Import</h3>
+                    <div class="export-buttons">
+                        <button id="exportBtn" class="btn-secondary">
+                            <i class="ri-download-line"></i> Export Pattern
+                        </button>
+                        <button id="importBtn" class="btn-secondary">
+                            <i class="ri-upload-line"></i> Import Pattern
+                        </button>
+                        <button id="saveImageBtn" class="btn-secondary">
+                            <i class="ri-image-line"></i> Save as Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="game-footer">
+            <p>
+                <i class="ri-information-line"></i> 
+                Conway's Game of Life • 
+                <strong>Rules:</strong> 
+                <span class="rule-desc">Birth (3 neighbors)</span> • 
+                <span class="rule-desc">Survival (2-3 neighbors)</span> • 
+                <span class="rule-desc">Death (otherwise)</span>
+            </p>
+            <div class="footer-links">
+                <button id="themeToggle" class="footer-link">
+                    <i class="ri-moon-line"></i> Theme
+                </button>
+                <button id="helpBtn" class="footer-link">
+                    <i class="ri-question-line"></i> Help
+                </button>
+                <button id="aboutBtn" class="footer-link">
+                    <i class="ri-information-line"></i> About
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Pattern Preview Modal -->
+    <div id="patternModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="ri-shapes-line"></i> Pattern Preview</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalPatternPreview"></div>
+                <div class="pattern-info">
+                    <h4 id="patternName">Pattern Name</h4>
+                    <p id="patternDescription">Pattern description will appear here</p>
+                    <div class="pattern-stats">
+                        <span><strong>Size:</strong> <span id="patternSize">0×0</span></span>
+                        <span><strong>Type:</strong> <span id="patternType">Still Life</span></span>
+                        <span><strong>Period:</strong> <span id="patternPeriod">1</span></span>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="placePatternBtn" class="btn-primary">
+                        <i class="ri-add-circle-line"></i> Place on Grid
+                    </button>
+                    <button id="cancelPatternBtn" class="btn-secondary">
+                        <i class="ri-close-line"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3><i class="ri-question-line"></i> How to Use</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="help-sections">
+                    <div class="help-section">
+                        <h4><i class="ri-brush-line"></i> Drawing</h4>
+                        <ul>
+                            <li><strong>Click</strong> to place cells</li>
+                            <li><strong>Click + Drag</strong> to draw multiple cells</li>
+                            <li>Use <strong>Eraser</strong> tool to remove cells</li>
+                            <li>Adjust <strong>Cell Size</strong> for precision</li>
+                        </ul>
+                    </div>
+                    <div class="help-section">
+                        <h4><i class="ri-shapes-line"></i> Patterns</h4>
+                        <ul>
+                            <li>Click any pattern to preview it</li>
+                            <li>Drag preview to desired location</li>
+                            <li>Click to place the pattern</li>
+                            <li>Use <strong>Select</strong> tool to move patterns</li>
+                        </ul>
+                    </div>
+                    <div class="help-section">
+                        <h4><i class="ri-play-circle-line"></i> Simulation</h4>
+                        <ul>
+                            <li><strong>Start/Pause</strong> to control simulation</li>
+                            <li><strong>Step Forward</strong> to advance one generation</li>
+                            <li>Adjust <strong>Speed</strong> slider for faster/slower evolution</li>
+                            <li>Use <strong>Reset</strong> to clear everything</li>
+                        </ul>
+                    </div>
+                    <div class="help-section">
+                        <h4><i class="ri-keyboard-line"></i> Keyboard Shortcuts</h4>
+                        <ul>
+                            <li><strong>Space</strong> - Start/Pause simulation</li>
+                            <li><strong>R</strong> - Reset to initial state</li>
+                            <li><strong>C</strong> - Clear grid</li>
+                            <li><strong>S</strong> - Step forward one generation</li>
+                            <li><strong>D/E</strong> - Switch between Draw/Eraser</li>
+                            <li><strong>+/-</strong> - Zoom in/out</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

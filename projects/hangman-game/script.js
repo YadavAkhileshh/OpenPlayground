@@ -49,7 +49,8 @@ function renderWord() {
     wordEl.appendChild(span);
   });
 
-  if (selectedWord.split("").every(l => guessedLetters.includes(l))) {
+  // Win condition: all letters guessed AND lives > 0
+  if (selectedWord.split("").every(l => guessedLetters.includes(l)) && lives > 0) {
     messageEl.textContent = "🎉 You Win!";
     messageEl.classList.add("win");
     disableKeyboard();
@@ -82,8 +83,9 @@ function handleGuess(letter, button) {
       document.getElementById(hangmanParts[partIndex]).style.display = "block";
     }
 
+    // Lose condition
     if(lives === 0){
-      messageEl.textContent = `❌ Game Over! Word was "${selectedWord}"`;
+      messageEl.textContent = `❌ You Lose! The word was "${selectedWord}"`;
       messageEl.classList.add("lose");
       revealWord();
       disableKeyboard();

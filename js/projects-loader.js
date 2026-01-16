@@ -201,20 +201,28 @@ class ProjectsLoader {
         const card = document.createElement('a');
         card.href = project.link;
         card.className = 'card';
-        card.dataset.category = project.category;
+        card.dataset.category = (project.category || '').toLowerCase();
         
         const techTags = project.tech.map(t => `<span>${this.highlightText(t, this.currentSearch)}</span>`).join('');
+        const difficulty = (project.difficulty || "Beginner").toLowerCase();
+const difficultyLabel = this.capitalizeFirst(difficulty);
+
+
         const rating = this.getProjectRating(project.title);
         const stars = this.generateStars(rating.average);
         
         card.innerHTML = `
             <div class="card-cover" style="${project.coverStyle}">
-                <i class="${project.icon}" aria-hidden="true"></i>
-            </div>
+    <span class="difficulty-badge ${difficulty.toLowerCase()}">
+        ${difficulty}
+    </span>
+    <i class="${project.icon}" aria-hidden="true"></i>
+</div>
+
             <div class="card-content">
                 <div class="card-header-flex">
                     <h3 class="card-heading">${this.highlightText(project.title, this.currentSearch)}</h3>
-                    <span class="category-tag">${this.capitalizeFirst(this.highlightText(project.category, this.currentSearch))}</span>
+                    <span class="category-tag">${this.capitalizeFirst(this.highlightText(project.category || '', this.currentSearch))}</span>
                 </div>
                 <p class="card-description">${this.highlightText(project.description, this.currentSearch)}</p>
                 <div class="card-rating">
@@ -240,6 +248,11 @@ class ProjectsLoader {
         if (!searchTerm) return text;
         const regex = new RegExp(`(${searchTerm})`, 'gi');
         return text.replace(regex, '<mark>$1</mark>');
+    }
+
+    capitalizeFirst(str) {
+        if (!str) return '';
+        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
     renderProjects() {
@@ -269,6 +282,7 @@ class ProjectsLoader {
     }
 
     applyFilters() {
+        // console.log('[ProjectsLoader] applyFilters', { filter: this.currentFilter, search: this.currentSearch });
         let filtered = [...this.projects];
         
         // Apply search
@@ -276,15 +290,15 @@ class ProjectsLoader {
             const searchLower = this.currentSearch.toLowerCase();
             filtered = filtered.filter(p => 
                 p.title.toLowerCase().includes(searchLower) ||
-                p.description.toLowerCase().includes(searchLower) ||
-                p.category.toLowerCase().includes(searchLower) ||
-                p.tech.some(t => t.toLowerCase().includes(searchLower))
+                (p.description || '').toLowerCase().includes(searchLower) ||
+                (p.category || '').toLowerCase().includes(searchLower) ||
+                p.tech.some(t => (t || '').toLowerCase().includes(searchLower))
             );
         }
         
         // Apply category filter
         if (this.currentFilter !== 'all') {
-            filtered = filtered.filter(p => p.category === this.currentFilter);
+            filtered = filtered.filter(p => (p.category || '').toLowerCase() === this.currentFilter);
         }
         
         // Apply sorting
@@ -366,8 +380,13 @@ class ProjectsLoader {
             btn.addEventListener('click', () => {
                 filterButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                this.currentFilter = btn.dataset.filter;
-                this.applyFilters();
+                this.currentFilter = (btn.dataset.filter || '').toLowerCase();
+                // console.log('[ProjectsLoader] filter clicked ->', this.currentFilter);
+                try {
+                    this.applyFilters();
+                } catch (err) {
+                    console.error('[ProjectsLoader] applyFilters error:', err);
+                }
             });
         });
         
@@ -455,7 +474,20 @@ class ProjectsLoader {
     }
 }
 
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    new ProjectsLoader();
-});
+// Initialize ProjectsLoader. If the script is injected after DOMContentLoaded
+// we need to init immediately. Otherwise wait for DOMContentLoaded.
+function initProjectsLoader() {
+    try {
+        new ProjectsLoader();
+        // console.log('[ProjectsLoader] initialized');
+    } catch (err) {
+        console.error('[ProjectsLoader] initialization error:', err);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProjectsLoader);
+} else {
+    // DOM already ready
+    initProjectsLoader();
+}
