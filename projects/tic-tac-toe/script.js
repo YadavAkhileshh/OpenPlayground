@@ -646,26 +646,38 @@ function getShareUrl() {
 function shareToTwitter() {
   const text = encodeURIComponent(getShareText());
   const url = encodeURIComponent(getShareUrl());
-  window.open(
+  const popup = window.open(
     `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
     "_blank"
   );
+  if (!popup) {
+    showToast("Popup blocked! Please allow popups to share.");
+  }
 }
 
 function shareToWhatsApp() {
   const text = encodeURIComponent(`${getShareText()} ${getShareUrl()}`);
-  window.open(`https://wa.me/?text=${text}`, "_blank");
+  const popup = window.open(`https://wa.me/?text=${text}`, "_blank");
+  if (!popup) {
+    showToast("Popup blocked! Please allow popups to share.");
+  }
 }
 
 function shareToFacebook() {
   const url = encodeURIComponent(getShareUrl());
-  window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank");
+  const popup = window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank");
+  if (!popup) {
+    showToast("Popup blocked! Please allow popups to share.");
+  }
 }
 
 function shareToTelegram() {
   const text = encodeURIComponent(getShareText());
   const url = encodeURIComponent(getShareUrl());
-  window.open(`https://t.me/share/url?url=${url}&text=${text}`, "_blank");
+  const popup = window.open(`https://t.me/share/url?url=${url}&text=${text}`, "_blank");
+  if (!popup) {
+    showToast("Popup blocked! Please allow popups to share.");
+  }
 }
 
 function copyShareLink() {

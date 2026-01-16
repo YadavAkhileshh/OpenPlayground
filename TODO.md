@@ -1,3 +1,8 @@
-- [x] Add edit button to renderTodos function in script.js
-- [x] Update editTask function to take index, update todos array, save to localStorage, and re-render
-- [x] Test the edit functionality
+# Tic-Tac-Toe Share Buttons Bug Fix
+
+## Tasks
+- [x] Modify shareToTwitter to handle popup blocking
+- [x] Modify shareToWhatsApp to handle popup blocking
+- [x] Modify shareToFacebook to handle popup blocking
+- [x] Modify shareToTelegram to handle popup blocking
+- [x] Test the changes
