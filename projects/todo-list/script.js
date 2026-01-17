@@ -3,6 +3,8 @@
 ========================= */
 
 const themeToggle = document.getElementById("themeToggle");
+let todos = [];
+const todoList = document.getElementById('todo-list');
 
 document.addEventListener("DOMContentLoaded", () => {
   // Load theme
@@ -15,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   loadTasks();
+  loadTodos();
   updateProgress();
   updateLeaderboard();
 });
@@ -35,8 +38,36 @@ function allowDrop(e) {
   e.preventDefault();
 }
 
-function drag(e) {
-  e.dataTransfer.setData("text", e.target.id);
+function renderTodos() {
+    todoList.innerHTML = '';
+    todos.forEach((todo, index) => {
+        const li = document.createElement('li');
+        const priority = todo.priority || 'low';
+        li.className = `todo-item ${todo.completed ? 'completed' : ''} ${priority}`;
+        li.innerHTML = `
+                <div>
+                    <span class="todo-text">${todo.text}</span>
+                    ${todo.dueDate ? `<small>Due: ${todo.dueDate}</small>` : ''}
+                </div>
+                <div class="todo-actions">
+                    <button class="complete-btn" onclick="toggleComplete(${index})">
+                        <i class="ri-check-line"></i>
+                    </button>
+                    <button class="edit-btn" onclick="editTask(${index})">
+                        <i class="ri-edit-line"></i>
+                    </button>
+                    <button class="delete-btn" onclick="deleteTodo(${index})">
+                        <i class="ri-delete-bin-line"></i>
+                    </button>
+                </div>
+        `;
+
+
+        todoList.appendChild(li);
+
+    });
+    updateProgress();
+
 }
 
 function drop(e) {
@@ -45,14 +76,61 @@ function drop(e) {
   const task = document.getElementById(id);
   const column = e.target.closest(".column");
 
-  if (column && task) {
-    column.querySelector(".task-list").appendChild(task);
-    applyTaskColor(task, column.id);
-    saveTasks();
-    updateProgress();
-    updateLeaderboard();
-    checkDueDates();
-  }
+    if (text) {
+        todos.push({
+            text,
+            completed: false,
+            dueDate,
+            priority
+        });
+
+        todoInput.value = '';
+        dueDateInput.value = '';
+        priorityInput.value = 'low';
+
+        saveTodos();
+        renderTodos();
+    }
+    addModal.classList.add('hidden');
+
+}
+function editTask(index) {
+    const todo = todos[index];
+    const newText = prompt("Edit task title:", todo.text);
+    const newDueDate = prompt("Edit due date (YYYY-MM-DD):", todo.dueDate || '');
+    const newPriority = prompt("Edit priority (low, medium, high):", todo.priority || 'low');
+    if (newText !== null && newText.trim() !== '') {
+        todo.text = newText.trim();
+    }
+    if (newDueDate !== null) {
+        todo.dueDate = newDueDate.trim() || null;
+    }
+    if (newPriority && ['low', 'medium', 'high'].includes(newPriority.toLowerCase())) {
+        todo.priority = newPriority.toLowerCase();
+    }
+    saveTodos();
+    renderTodos();
+}
+
+function toggleComplete(index) {
+    todos[index].completed = !todos[index].completed;
+    saveTodos();
+    renderTodos();
+}
+
+function deleteTodo(index) {
+    todos.splice(index, 1);
+    saveTodos();
+    renderTodos();
+}
+
+function saveTodos() {
+    localStorage.setItem('todos', JSON.stringify(todos));
+}
+
+function loadTodos() {
+    todos = JSON.parse(localStorage.getItem('todos')) || [];
+    renderTodos();
 }
 
 /* =========================
@@ -134,14 +212,13 @@ function deleteTask(btn) {
 }
 
 function addComment(taskId) {
-  const text = prompt("Enter comment:");
-  if (!text) return;
-
-  const p = document.createElement("p");
-  p.textContent = text;
-  document.getElementById(`comments-${taskId}`).appendChild(p);
-
-  saveTasks();
+    let comment = prompt("Enter your comment:");
+    if (comment) {
+        let commentDiv = document.createElement("p");
+        commentDiv.textContent = comment;
+        document.getElementById("comments-" + taskId).appendChild(commentDiv);
+        saveTodos();
+    }
 }
 
 /* =========================

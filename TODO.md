@@ -1,0 +1,3 @@
+- [x] Add edit button to renderTodos function in script.js
+- [x] Update editTask function to take index, update todos array, save to localStorage, and re-render
+- [x] Test the edit functionality
