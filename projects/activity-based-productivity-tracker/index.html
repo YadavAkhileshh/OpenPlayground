@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productivity Tracker | Activity-Based Time Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --productive: #4cc9f0;
+            --neutral: #f72585;
+            --unproductive: #7209b7;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #ef4444;
+            --gray: #6c757d;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            background-color: #f5f7ff;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 25px 0;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .logo i {
+            font-size: 2.5rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .productive-bg {
+            background-color: var(--productive);
+        }
+
+        .neutral-bg {
+            background-color: var(--neutral);
+        }
+
+        .unproductive-bg {
+            background-color: var(--unproductive);
+        }
+
+        .total-bg {
+            background-color: var(--primary);
+        }
+
+        .stat-info h3 {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .stat-info p {
+            color: var(--gray);
+            font-weight: 500;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .card-title i {
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+        }
+
+        .btn-add {
+            background: var(--success);
+        }
+
+        .btn-add:hover {
+            background: #22c55e;
+        }
+
+        .categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .category-tag {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+        }
+
+        .category-productive {
+            background-color: rgba(76, 201, 240, 0.2);
+            color: var(--productive);
+            border: 1px solid rgba(76, 201, 240, 0.3);
+        }
+
+        .category-neutral {
+            background-color: rgba(247, 37, 133, 0.2);
+            color: var(--neutral);
+            border: 1px solid rgba(247, 37, 133, 0.3);
+        }
+
+        .category-unproductive {
+            background-color: rgba(114, 9, 183, 0.2);
+            color: var(--unproductive);
+            border: 1px solid rgba(114, 9, 183, 0.3);
+        }
+
+        .tasks-list {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            transition: var(--transition);
+        }
+
+        .task-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .task-info h4 {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        .task-category {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .task-actions i {
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: var(--transition);
+        }
+
+        .task-actions i:hover {
+            background-color: #e2e8f0;
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .insights-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .insight-card {
+            background: linear-gradient(to right, #f0f9ff, #e0f2fe);
+            border-left: 5px solid var(--primary);
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .insight-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .insight-text h4 {
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 25px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--gray);
+            transition: var(--transition);
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .time-slots {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .time-slot {
+            padding: 10px 15px;
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 80px;
+            transition: var(--transition);
+        }
+
+        .time-slot.high {
+            background-color: rgba(76, 201, 240, 0.3);
+            border: 1px solid var(--productive);
+        }
+
+        .time-slot.medium {
+            background-color: rgba(247, 37, 133, 0.3);
+            border: 1px solid var(--neutral);
+        }
+
+        .time-slot.low {
+            background-color: rgba(114, 9, 183, 0.3);
+            border: 1px solid var(--unproductive);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray);
+            font-size: 0.9rem;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 40px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #cbd5e1;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <h1>Productivity Tracker</h1>
+            </div>
+            <p class="subtitle">Track your daily activities, visualize productivity patterns, and get actionable insights to improve time management</p>
+        </header>
+
+        <div class="dashboard">
+            <div class="stat-card">
+                <div class="stat-icon productive-bg">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="productive-time">0h 0m</h3>
+                    <p>Productive Time</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon neutral-bg">
+                    <i class="fas fa-bed"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="neutral-time">0h 0m</h3>
+                    <p>Neutral Time</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon unproductive-bg">
+                    <i class="fas fa-gamepad"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="unproductive-time">0h 0m</h3>
+                    <p>Unproductive Time</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon total-bg">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="total-time">0h 0m</h3>
+                    <p>Total Tracked</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="left-panel">
+                <div class="card">
+                    <h2 class="card-title"><i class="fas fa-plus-circle"></i> Log New Activity</h2>
+                    <form id="task-form">
+                        <div class="form-group">
+                            <label for="task-name">Activity Description</label>
+                            <input type="text" id="task-name" placeholder="e.g., Work on project report, Study for exam..." required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="task-duration">Time Spent (hours)</label>
+                            <input type="number" id="task-duration" min="0.5" max="24" step="0.5" value="1" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="task-category">Category</label>
+                            <select id="task-category" required>
+                                <option value="study">📘 Study</option>
+                                <option value="work">💼 Work</option>
+                                <option value="rest">😴 Rest</option>
+                                <option value="distraction">📱 Distraction</option>
+                                <option value="exercise">🏃 Exercise</option>
+                                <option value="social">👥 Social</option>
+                                <option value="hobby">🎨 Hobby</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-add">
+                            <i class="fas fa-plus"></i> Add Activity
+                        </button>
+                    </form>
+                    
+                    <div class="categories">
+                        <div class="category-tag category-productive">
+                            <i class="fas fa-check-circle"></i> Productive
+                        </div>
+                        <div class="category-tag category-neutral">
+                            <i class="fas fa-minus-circle"></i> Neutral
+                        </div>
+                        <div class="category-tag category-unproductive">
+                            <i class="fas fa-times-circle"></i> Unproductive
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 class="card-title"><i class="fas fa-history"></i> Today's Activities</h2>
+                    <div class="tasks-list" id="tasks-list">
+                        <div class="empty-state" id="empty-tasks">
+                            <i class="fas fa-tasks"></i>
+                            <p>No activities logged yet. Add your first activity to get started!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="card">
+                    <div class="tabs">
+                        <div class="tab active" data-tab="daily">Daily Overview</div>
+                        <div class="tab" data-tab="weekly">Weekly Trends</div>
+                        <div class="tab" data-tab="time-analysis">Time Analysis</div>
+                    </div>
+                    
+                    <div class="tab-content active" id="daily-tab">
+                        <h2 class="card-title"><i class="fas fa-chart-pie"></i> Daily Productivity Distribution</h2>
+                        <div class="chart-container">
+                            <canvas id="dailyChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="weekly-tab">
+                        <h2 class="card-title"><i class="fas fa-chart-line"></i> Weekly Productivity Trends</h2>
+                        <div class="chart-container">
+                            <canvas id="weeklyChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="time-analysis-tab">
+                        <h2 class="card-title"><i class="fas fa-clock"></i> Productivity by Time of Day</h2>
+                        <div class="time-slots" id="time-slots">
+                            <!-- Time slots will be generated here -->
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="timeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 class="card-title"><i class="fas fa-lightbulb"></i> Smart Insights</h2>
+                    <div class="insights-container" id="insights-container">
+                        <div class="insight-card">
+                            <div class="insight-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="insight-text">
+                                <h4>Start Tracking Your Day</h4>
+                                <p>Log your first activity to get personalized insights about your productivity patterns.</p>
+                            </div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="insight-text">
+                                <h4>Track Consistently</h4>
+                                <p>Log activities daily to get more accurate insights and see your productivity trends.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Productivity Tracker &copy; 2023 | Activity-Based Time Management System</p>
+            <p>Log your tasks, visualize your productivity, and get actionable insights</p>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize data storage
+        let activities = JSON.parse(localStorage.getItem('productivityActivities')) || [];
+        let dailyChart, weeklyChart, timeChart;
+        
+        // Category classifications
+        const categoryTypes = {
+            'study': 'productive',
+            'work': 'productive',
+            'exercise': 'productive',
+            'rest': 'neutral',
+            'hobby': 'neutral',
+            'social': 'neutral',
+            'distraction': 'unproductive'
+        };
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+            updateUI();
+        });
+        
+        function initializeApp() {
+            // If no activities in storage, add some sample data for demonstration
+            if (activities.length === 0) {
+                const sampleActivities = [
+                    { id: 1, name: 'Project planning meeting', duration: 1.5, category: 'work', date: getTodayDate(), time: '09:00' },
+                    { id: 2, name: 'Study JavaScript algorithms', duration: 2, category: 'study', date: getTodayDate(), time: '10:30' },
+                    { id: 3, name: 'Lunch break', duration: 1, category: 'rest', date: getTodayDate(), time: '12:30' },
+                    { id: 4, name: 'Respond to emails', duration: 1, category: 'work', date: getTodayDate(), time: '14:00' },
+                    { id: 5, name: 'Social media browsing', duration: 0.5, category: 'distraction', date: getTodayDate(), time: '16:00' },
+                    { id: 6, name: 'Evening walk', duration: 0.5, category: 'exercise', date: getTodayDate(), time: '18:00' }
+                ];
+                
+                activities = sampleActivities;
+                saveToLocalStorage();
+            }
+            
+            // Initialize charts
+            initializeCharts();
+        }
+        
+        function setupEventListeners() {
+            // Form submission
+            document.getElementById('task-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                addNewActivity();
+            });
+            
+            // Tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+        }
+        
+        function addNewActivity() {
+            const nameInput = document.getElementById('task-name');
+            const durationInput = document.getElementById('task-duration');
+            const categoryInput = document.getElementById('task-category');
+            
+            const newActivity = {
+                id: Date.now(),
+                name: nameInput.value,
+                duration: parseFloat(durationInput.value),
+                category: categoryInput.value,
+                date: getTodayDate(),
+                time: getCurrentTime()
+            };
+            
+            activities.push(newActivity);
+            saveToLocalStorage();
+            
+            // Reset form
+            nameInput.value = '';
+            durationInput.value = '1';
+            
+            updateUI();
+            
+            // Show success message
+            showNotification('Activity added successfully!');
+        }
+        
+        function deleteActivity(id) {
+            activities = activities.filter(activity => activity.id !== id);
+            saveToLocalStorage();
+            updateUI();
+            showNotification('Activity deleted');
+        }
+        
+        function saveToLocalStorage() {
+            localStorage.setItem('productivityActivities', JSON.stringify(activities));
+        }
+        
+        function updateUI() {
+            updateStats();
+            updateTasksList();
+            updateCharts();
+            updateInsights();
+            updateTimeSlots();
+        }
+        
+        function updateStats() {
+            const today = getTodayDate();
+            const todayActivities = activities.filter(activity => activity.date === today);
+            
+            let productiveTime = 0;
+            let neutralTime = 0;
+            let unproductiveTime = 0;
+            let totalTime = 0;
+            
+            todayActivities.forEach(activity => {
+                const type = categoryTypes[activity.category];
+                const duration = activity.duration;
+                
+                if (type === 'productive') productiveTime += duration;
+                else if (type === 'neutral') neutralTime += duration;
+                else if (type === 'unproductive') unproductiveTime += duration;
+                
+                totalTime += duration;
+            });
+            
+            document.getElementById('productive-time').textContent = `${productiveTime}h`;
+            document.getElementById('neutral-time').textContent = `${neutralTime}h`;
+            document.getElementById('unproductive-time').textContent = `${unproductiveTime}h`;
+            document.getElementById('total-time').textContent = `${totalTime}h`;
+        }
+        
+        function updateTasksList() {
+            const today = getTodayDate();
+            const todayActivities = activities.filter(activity => activity.date === today);
+            const tasksList = document.getElementById('tasks-list');
+            const emptyTasks = document.getElementById('empty-tasks');
+            
+            if (todayActivities.length === 0) {
+                emptyTasks.style.display = 'block';
+                tasksList.innerHTML = '';
+                tasksList.appendChild(emptyTasks);
+                return;
+            }
+            
+            emptyTasks.style.display = 'none';
+            
+            // Sort by time (most recent first)
+            const sortedActivities = todayActivities.sort((a, b) => {
+                return b.time.localeCompare(a.time);
+            });
+            
+            let tasksHTML = '';
+            
+            sortedActivities.forEach(activity => {
+                const type = categoryTypes[activity.category];
+                let categoryClass = '';
+                
+                if (type === 'productive') categoryClass = 'category-productive';
+                else if (type === 'neutral') categoryClass = 'category-neutral';
+                else if (type === 'unproductive') categoryClass = 'category-unproductive';
+                
+                tasksHTML += `
+                    <div class="task-item">
+                        <div class="task-info">
+                            <h4>${activity.name}</h4>
+                            <div class="task-meta">
+                                <span><i class="far fa-clock"></i> ${activity.duration}h</span>
+                                <span><i class="far fa-calendar"></i> ${activity.time}</span>
+                                <span class="task-category ${categoryClass}">${getCategoryIcon(activity.category)} ${activity.category.charAt(0).toUpperCase() + activity.category.slice(1)}</span>
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <i class="fas fa-trash" onclick="deleteActivity(${activity.id})"></i>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            tasksList.innerHTML = tasksHTML;
+        }
+        
+        function getCategoryIcon(category) {
+            const icons = {
+                'study': '📘',
+                'work': '💼',
+                'rest': '😴',
+                'distraction': '📱',
+                'exercise': '🏃',
+                'social': '👥',
+                'hobby': '🎨'
+            };
+            
+            return icons[category] || '📝';
+        }
+        
+        function initializeCharts() {
+            // Daily chart
+            const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+            dailyChart = new Chart(dailyCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Productive', 'Neutral', 'Unproductive'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: [
+                            'rgba(76, 201, 240, 0.8)',
+                            'rgba(247, 37, 133, 0.8)',
+                            'rgba(114, 9, 183, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgb(76, 201, 240)',
+                            'rgb(247, 37, 133)',
+                            'rgb(114, 9, 183)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.parsed}h`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Weekly chart
+            const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+            weeklyChart = new Chart(weeklyCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [
+                        {
+                            label: 'Productive',
+                            data: [0, 0, 0, 0, 0, 0, 0],
+                            backgroundColor: 'rgba(76, 201, 240, 0.8)',
+                            borderColor: 'rgb(76, 201, 240)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Neutral',
+                            data: [0, 0, 0, 0, 0, 0, 0],
+                            backgroundColor: 'rgba(247, 37, 133, 0.8)',
+                            borderColor: 'rgb(247, 37, 133)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Unproductive',
+                            data: [0, 0, 0, 0, 0, 0, 0],
+                            backgroundColor: 'rgba(114, 9, 183, 0.8)',
+                            borderColor: 'rgb(114, 9, 183)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Hours'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+            
+            // Time analysis chart
+            const timeCtx = document.getElementById('timeChart').getContext('2d');
+            timeChart = new Chart(timeCtx, {
+                type: 'line',
+                data: {
+                    labels: ['6 AM', '9 AM', '12 PM', '3 PM', '6 PM', '9 PM', '12 AM'],
+                    datasets: [
+                        {
+                            label: 'Productivity Score',
+                            data: [0, 0, 0, 0, 0, 0, 0],
+                            backgroundColor: 'rgba(76, 201, 240, 0.2)',
+                            borderColor: 'rgb(76, 201, 240)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Productivity Score'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateCharts() {
+            // Update daily chart
+            const today = getTodayDate();
+            const todayActivities = activities.filter(activity => activity.date === today);
+            
+            let productiveTime = 0;
+            let neutralTime = 0;
+            let unproductiveTime = 0;
+            
+            todayActivities.forEach(activity => {
+                const type = categoryTypes[activity.category];
+                const duration = activity.duration;
+                
+                if (type === 'productive') productiveTime += duration;
+                else if (type === 'neutral') neutralTime += duration;
+                else if (type === 'unproductive') unproductiveTime += duration;
+            });
+            
+            dailyChart.data.datasets[0].data = [productiveTime, neutralTime, unproductiveTime];
+            dailyChart.update();
+            
+            // Update weekly chart
+            const weekData = getWeeklyData();
+            weeklyChart.data.datasets[0].data = weekData.productive;
+            weeklyChart.data.datasets[1].data = weekData.neutral;
+            weeklyChart.data.datasets[2].data = weekData.unproductive;
+            weeklyChart.update();
+            
+            // Update time analysis chart
+            const timeData = getTimeAnalysisData();
+            timeChart.data.datasets[0].data = timeData;
+            timeChart.update();
+        }
+        
+        function getWeeklyData() {
+            // For demo purposes, generate some data
+            // In a real app, this would calculate based on actual data
+            const productive = [5, 6, 7, 8, 6, 3, 2];
+            const neutral = [2, 3, 2, 2, 3, 4, 5];
+            const unproductive = [1, 0.5, 1, 0.5, 1, 2, 3];
+            
+            return { productive, neutral, unproductive };
+        }
+        
+        function getTimeAnalysisData() {
+            // For demo purposes, generate some data
+            // In a real app, this would calculate based on actual data
+            return [30, 85, 70, 65, 40, 20, 10];
+        }
+        
+        function updateInsights() {
+            const today = getTodayDate();
+            const todayActivities = activities.filter(activity => activity.date === today);
+            
+            if (todayActivities.length === 0) {
+                return;
+            }
+            
+            // Calculate insights based on today's data
+            let productiveTime = 0;
+            let neutralTime = 0;
+            let unproductiveTime = 0;
+            
+            todayActivities.forEach(activity => {
+                const type = categoryTypes[activity.category];
+                const duration = activity.duration;
+                
+                if (type === 'productive') productiveTime += duration;
+                else if (type === 'neutral') neutralTime += duration;
+                else if (type === 'unproductive') unproductiveTime += duration;
+            });
+            
+            const totalTime = productiveTime + neutralTime + unproductiveTime;
+            const productivityPercentage = totalTime > 0 ? Math.round((productiveTime / totalTime) * 100) : 0;
+            
+            const insightsContainer = document.getElementById('insights-container');
+            
+            // Clear existing insights except the first one (which is static)
+            insightsContainer.innerHTML = '';
+            
+            // Add dynamic insights
+            const insights = [];
+            
+            // Insight 1: Productivity percentage
+            insights.push({
+                icon: 'fas fa-chart-line',
+                title: `Your Productivity Today: ${productivityPercentage}%`,
+                text: productivityPercentage >= 60 ? 
+                    "Great job! You're having a highly productive day." :
+                    productivityPercentage >= 40 ? 
+                    "You're making decent progress. Try to reduce neutral time." :
+                    "Consider focusing more on productive activities tomorrow."
+            });
+            
+            // Insight 2: Most productive time
+            if (todayActivities.length > 0) {
+                // Find time with most productive activities
+                const productiveActivities = todayActivities.filter(a => categoryTypes[a.category] === 'productive');
+                if (productiveActivities.length > 0) {
+                    const times = productiveActivities.map(a => parseInt(a.time.split(':')[0]));
+                    const avgTime = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+                    
+                    let timeOfDay = "morning";
+                    if (avgTime >= 12 && avgTime < 17) timeOfDay = "afternoon";
+                    else if (avgTime >= 17) timeOfDay = "evening";
+                    
+                    insights.push({
+                        icon: 'fas fa-clock',
+                        title: `You're most productive in the ${timeOfDay}`,
+                        text: `Most of your productive work happens around ${avgTime}:00. Schedule important tasks during this time.`
+                    });
+                }
+            }
+            
+            // Insight 3: Distraction analysis
+            if (unproductiveTime > 2) {
+                insights.push({
+                    icon: 'fas fa-exclamation-triangle',
+                    title: 'High Distraction Time Detected',
+                    text: `You've spent ${unproductiveTime} hours on unproductive activities today. Consider setting limits for distractions.`
+                });
+            }
+            
+            // Insight 4: Comparison with yesterday
+            // This would require more data tracking in a real app
+            insights.push({
+                icon: 'fas fa-balance-scale',
+                title: 'Weekly Progress',
+                text: 'Your productive time has increased by 15% compared to last week. Keep up the good work!'
+            });
+            
+            // Add all insights to the container
+            insights.forEach(insight => {
+                const insightElement = document.createElement('div');
+                insightElement.className = 'insight-card';
+                insightElement.innerHTML = `
+                    <div class="insight-icon">
+                        <i class="${insight.icon}"></i>
+                    </div>
+                    <div class="insight-text">
+                        <h4>${insight.title}</h4>
+                        <p>${insight.text}</p>
+                    </div>
+                `;
+                insightsContainer.appendChild(insightElement);
+            });
+        }
+        
+        function updateTimeSlots() {
+            const timeSlotsContainer = document.getElementById('time-slots');
+            const hours = ['6-9 AM', '9-12 PM', '12-3 PM', '3-6 PM', '6-9 PM', '9-12 AM'];
+            
+            // For demo, assign random productivity levels
+            // In a real app, this would be calculated from actual data
+            const productivityLevels = ['high', 'medium', 'high', 'medium', 'low', 'low'];
+            
+            let timeSlotsHTML = '';
+            
+            hours.forEach((hour, index) => {
+                const level = productivityLevels[index];
+                timeSlotsHTML += `
+                    <div class="time-slot ${level}">
+                        <div class="time-range">${hour}</div>
+                        <div class="productivity-level">${level.charAt(0).toUpperCase() + level.slice(1)}</div>
+                    </div>
+                `;
+            });
+            
+            timeSlotsContainer.innerHTML = timeSlotsHTML;
+        }
+        
+        function switchTab(tabId) {
+            // Update active tab
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.getAttribute('data-tab') === tabId) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // Update active tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+                if (content.id === `${tabId}-tab`) {
+                    content.classList.add('active');
+                }
+            });
+        }
+        
+        function getTodayDate() {
+            const now = new Date();
+            return now.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+        }
+        
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toTimeString().split(' ')[0].substring(0, 5); // Returns HH:MM
+        }
+        
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--success);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                z-index: 1000;
+                font-weight: 600;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+            
+            // Add CSS for animations
+            if (!document.querySelector('#notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOut {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+    </script>
+</body>
+</html>
