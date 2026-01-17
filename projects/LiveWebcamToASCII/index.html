@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Webcam ASCII Art Converter</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;400;500;600;700&family=Roboto+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📷</text></svg>">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo">
+                    <i class="fas fa-camera"></i>
+                    <h1>Live ASCII Webcam</h1>
+                </div>
+                <p class="tagline">Transform your webcam feed into real-time ASCII art</p>
+            </div>
+            <div class="header-right">
+                <div class="connection-status" id="connectionStatus">
+                    <span class="status-indicator offline"></span>
+                    <span class="status-text">Webcam Offline</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Left Panel: Webcam Preview -->
+            <div class="webcam-panel">
+                <div class="panel-header">
+                    <h2><i class="fas fa-video"></i> Webcam Preview</h2>
+                    <div class="fps-counter" id="fpsCounter">
+                        <i class="fas fa-tachometer-alt"></i> 
+                        <span id="fpsValue">0</span> FPS
+                    </div>
+                </div>
+                
+                <div class="preview-container">
+                    <!-- Webcam Feed -->
+                    <div class="video-wrapper" id="videoWrapper">
+                        <video id="webcamVideo" autoplay muted playsinline></video>
+                        <div class="video-overlay" id="videoOverlay">
+                            <div class="overlay-message">
+                                <i class="fas fa-camera"></i>
+                                <p>Allow camera access to begin</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ASCII Output -->
+                    <div class="ascii-container" id="asciiContainer">
+                        <div class="ascii-display" id="asciiDisplay">
+                            <pre id="asciiArt">Waiting for webcam access...</pre>
+                        </div>
+                        <div class="ascii-overlay" id="asciiOverlay">
+                            <div class="overlay-message">
+                                <i class="fas fa-keyboard"></i>
+                                <p>ASCII output will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Webcam Controls -->
+                <div class="webcam-controls">
+                    <button class="btn-primary" id="startWebcamBtn">
+                        <i class="fas fa-play"></i> Start Webcam
+                    </button>
+                    <button class="btn-secondary" id="stopWebcamBtn" disabled>
+                        <i class="fas fa-stop"></i> Stop
+                    </button>
+                    <button class="btn-secondary" id="snapshotBtn" disabled>
+                        <i class="fas fa-camera-retro"></i> Take Snapshot
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Controls & Output -->
+            <div class="controls-panel">
+                <!-- Settings -->
+                <div class="settings-section">
+                    <h2><i class="fas fa-sliders-h"></i> ASCII Settings</h2>
+                    
+                    <div class="setting-group">
+                        <label for="resolutionSlider">
+                            <i class="fas fa-font"></i> Character Resolution
+                            <span class="value-display" id="resolutionValue">12px</span>
+                        </label>
+                        <input type="range" id="resolutionSlider" min="4" max="24" value="12" step="1">
+                        <div class="slider-labels">
+                            <span>Low Detail</span>
+                            <span>High Detail</span>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="brightnessSlider">
+                            <i class="fas fa-sun"></i> Brightness
+                            <span class="value-display" id="brightnessValue">1.0</span>
+                        </label>
+                        <input type="range" id="brightnessSlider" min="0.1" max="2.0" value="1.0" step="0.1">
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="contrastSlider">
+                            <i class="fas fa-adjust"></i> Contrast
+                            <span class="value-display" id="contrastValue">1.0</span>
+                        </label>
+                        <input type="range" id="contrastSlider" min="0.1" max="3.0" value="1.0" step="0.1">
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label for="densitySlider">
+                            <i class="fas fa-th"></i> Character Density
+                            <span class="value-display" id="densityValue">Medium</span>
+                        </label>
+                        <input type="range" id="densitySlider" min="1" max="3" value="2" step="1">
+                        <div class="slider-labels">
+                            <span>Sparse</span>
+                            <span>Medium</span>
+                            <span>Dense</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style Toggle -->
+                <div class="style-section">
+                    <h2><i class="fas fa-palette"></i> Visual Style</h2>
+                    <div class="style-options">
+                        <button class="style-option active" id="styleDefault" data-style="default">
+                            <div class="style-preview default">
+                                <span>A</span>
+                            </div>
+                            <span>Black & White</span>
+                        </button>
+                        <button class="style-option" id="styleMatrix" data-style="matrix">
+                            <div class="style-preview matrix">
+                                <span>A</span>
+                            </div>
+                            <span>Matrix Green</span>
+                        </button>
+                        <button class="style-option" id="styleInverted" data-style="inverted">
+                            <div class="style-preview inverted">
+                                <span>A</span>
+                            </div>
+                            <span>Inverted</span>
+                        </button>
+                        <button class="style-option" id="styleColor" data-style="color">
+                            <div class="style-preview color">
+                                <span>A</span>
+                            </div>
+                            <span>Color Preserved</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Character Set -->
+                <div class="charset-section">
+                    <h2><i class="fas fa-keyboard"></i> Character Set</h2>
+                    <div class="charset-options">
+                        <select id="charsetSelect">
+                            <option value="simple">Simple: .:-=+*#%@</option>
+                            <option value="complex">Complex: ░▒▓█</option>
+                            <option value="extended">Extended: .'`^",:;Il!i><~+_-?][}{1)(|\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$</option>
+                            <option value="blocks">Blocks: ▁▂▃▄▅▆▇█</option>
+                            <option value="binary">Binary: 01</option>
+                            <option value="emoji">Emoji: ▪◼⬛😀😃😄😁😆</option>
+                        </select>
+                    </div>
+                    <div class="charset-preview" id="charsetPreview">
+                        Current: .:-=+*#%@
+                    </div>
+                </div>
+
+                <!-- Snapshot Gallery -->
+                <div class="snapshot-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-images"></i> Snapshots</h2>
+                        <button class="btn-text" id="clearSnapshotsBtn">
+                            <i class="fas fa-trash"></i> Clear All
+                        </button>
+                    </div>
+                    <div class="snapshot-gallery" id="snapshotGallery">
+                        <div class="empty-snapshots">
+                            <i class="fas fa-camera-retro"></i>
+                            <p>No snapshots yet</p>
+                            <p class="hint">Take snapshots with the camera button</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Options -->
+                <div class="export-section">
+                    <h2><i class="fas fa-download"></i> Export</h2>
+                    <div class="export-options">
+                        <button class="btn-secondary" id="exportTextBtn" disabled>
+                            <i class="fas fa-file-alt"></i> Export as Text
+                        </button>
+                        <button class="btn-secondary" id="exportImageBtn" disabled>
+                            <i class="fas fa-file-image"></i> Export as Image
+                        </button>
+                        <button class="btn-secondary" id="copyTextBtn" disabled>
+                            <i class="fas fa-copy"></i> Copy ASCII
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="footer-left">
+                <p>Live ASCII Webcam v1.0 • Experimental Web Technology</p>
+            </div>
+            <div class="footer-right">
+                <p id="infoMessage">Allow camera access to begin conversion</p>
+                <button class="btn-text" id="fullscreenBtn">
+                    <i class="fas fa-expand"></i> Fullscreen
+                </button>
+            </div>
+        </footer>
+
+        <!-- Snapshot Modal -->
+        <div class="modal" id="snapshotModal">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h2>ASCII Art Snapshot</h2>
+                    <button class="modal-close" id="closeSnapshotModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="snapshot-preview" id="snapshotPreview">
+                        <!-- Snapshot preview will appear here -->
+                    </div>
+                    <div class="snapshot-actions">
+                        <button class="btn-primary" id="downloadSnapshotBtn">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                        <button class="btn-secondary" id="shareSnapshotBtn">
+                            <i class="fas fa-share-alt"></i> Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
