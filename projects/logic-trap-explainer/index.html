@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logic Trap Question Analyzer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .question-panel, .explanation-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .panel-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+            color: #2d3748;
+        }
+        
+        .panel-title i {
+            margin-right: 10px;
+            color: #4f46e5;
+        }
+        
+        .question-container {
+            margin-bottom: 25px;
+        }
+        
+        .question-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2d3748;
+            line-height: 1.5;
+        }
+        
+        .options-container {
+            margin: 20px 0;
+        }
+        
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 12px;
+            background-color: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .option:hover {
+            background-color: #edf2f7;
+            transform: translateY(-2px);
+        }
+        
+        .option.selected {
+            border-color: #4f46e5;
+            background-color: #eef2ff;
+        }
+        
+        .option.correct {
+            border-color: #10b981;
+            background-color: #d1fae5;
+        }
+        
+        .option.incorrect {
+            border-color: #ef4444;
+            background-color: #fee2e2;
+        }
+        
+        .option input {
+            margin-right: 12px;
+            transform: scale(1.2);
+        }
+        
+        .option-label {
+            font-weight: 600;
+            margin-right: 10px;
+            width: 30px;
+            text-align: center;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        #submit-btn {
+            background-color: #4f46e5;
+            color: white;
+            flex-grow: 1;
+            margin-right: 15px;
+        }
+        
+        #submit-btn:hover:not(:disabled) {
+            background-color: #4338ca;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+        }
+        
+        #submit-btn:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+        
+        #next-btn {
+            background-color: #10b981;
+            color: white;
+        }
+        
+        #next-btn:hover {
+            background-color: #0da271;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+        }
+        
+        #next-btn.hidden {
+            display: none;
+        }
+        
+        .feedback-section {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+        
+        .feedback-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+        
+        .feedback-box {
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .correct-feedback {
+            background-color: #d1fae5;
+            border-left: 5px solid #10b981;
+        }
+        
+        .incorrect-feedback {
+            background-color: #fee2e2;
+            border-left: 5px solid #ef4444;
+        }
+        
+        .logic-trap-box {
+            background-color: #fef3c7;
+            border-left: 5px solid #f59e0b;
+            margin-bottom: 20px;
+        }
+        
+        .step-by-step-box {
+            background-color: #dbeafe;
+            border-left: 5px solid #3b82f6;
+            margin-bottom: 20px;
+        }
+        
+        .why-wrong-box {
+            background-color: #ede9fe;
+            border-left: 5px solid #8b5cf6;
+        }
+        
+        .box-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .box-title i {
+            margin-right: 10px;
+        }
+        
+        .progress-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .progress-text {
+            font-weight: 600;
+            color: #4f46e5;
+        }
+        
+        .progress-bar {
+            flex-grow: 1;
+            height: 10px;
+            background-color: #e2e8f0;
+            border-radius: 5px;
+            margin: 0 20px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: 600;
+            color: #856404;
+        }
+        
+        .logic-trap {
+            color: #d97706;
+            font-weight: 600;
+        }
+        
+        .fallacy {
+            color: #dc2626;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-brain"></i> Logic Trap Question Analyzer</h1>
+        <p>Improve critical thinking by identifying hidden assumptions, logical fallacies, and mental shortcuts that lead to incorrect answers.</p>
+    </div>
+    
+    <div class="container">
+        <div class="question-panel">
+            <div class="panel-title">
+                <i class="fas fa-question-circle"></i>
+                <h2>Logic Trap Question</h2>
+            </div>
+            
+            <div class="question-container">
+                <div class="question-text" id="question-text">
+                    <!-- Question will be inserted by JavaScript -->
+                </div>
+                
+                <div class="options-container" id="options-container">
+                    <!-- Options will be inserted by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="submit-btn" disabled>Submit Answer</button>
+                <button id="next-btn" class="hidden">Next Question</button>
+            </div>
+            
+            <div class="feedback-section">
+                <div class="feedback-box correct-feedback" id="correct-feedback">
+                    <div class="box-title">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>Correct Answer!</h3>
+                    </div>
+                    <p id="correct-message"></p>
+                </div>
+                
+                <div class="feedback-box incorrect-feedback" id="incorrect-feedback">
+                    <div class="box-title">
+                        <i class="fas fa-times-circle"></i>
+                        <h3>Incorrect Answer</h3>
+                    </div>
+                    <p id="incorrect-message"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="explanation-panel">
+            <div class="panel-title">
+                <i class="fas fa-lightbulb"></i>
+                <h2>Analysis & Explanation</h2>
+            </div>
+            
+            <div class="logic-trap-box feedback-box" id="logic-trap-box">
+                <div class="box-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Logic Trap Identified</h3>
+                </div>
+                <p id="logic-trap-text"></p>
+            </div>
+            
+            <div class="step-by-step-box feedback-box" id="step-by-step-box">
+                <div class="box-title">
+                    <i class="fas fa-list-ol"></i>
+                    <h3>Step-by-Step Solution</h3>
+                </div>
+                <div id="step-by-step-text"></div>
+            </div>
+            
+            <div class="why-wrong-box feedback-box" id="why-wrong-box">
+                <div class="box-title">
+                    <i class="fas fa-users"></i>
+                    <h3>Why Most People Get This Wrong</h3>
+                </div>
+                <p id="why-wrong-text"></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="progress-container">
+        <div class="progress-text">Question <span id="current-q">1</span> of <span id="total-q">3</span></div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="progress-text">Score: <span id="score">0</span>/<span id="total-score">3</span></div>
+    </div>
+    
+    <footer>
+        <p>Logic Trap Question Analyzer • Designed to improve critical thinking skills • Complete all questions to see your final score</p>
+    </footer>
+
+    <script>
+        // Questions database
+        const questions = [
+            {
+                id: 1,
+                question: "A bat and a ball cost $1.10 in total. The bat costs $1.00 more than the ball. How much does the ball cost?",
+                options: [
+                    "$0.05",
+                    "$0.10", 
+                    "$0.15",
+                    "$1.00"
+                ],
+                correctAnswer: 0,
+                logicTrap: "The <span class='logic-trap'>intuitive leap to round numbers</span> makes people think in terms of simple subtraction ($1.10 - $1.00 = $0.10) without considering the relationship constraint ('more than').",
+                stepByStep: `
+                    <ol>
+                        <li>Let ball cost = <span class="highlight">x</span></li>
+                        <li>Then bat costs = <span class="highlight">x + $1.00</span></li>
+                        <li>Total cost: <span class="highlight">x + (x + $1.00) = $1.10</span></li>
+                        <li>Simplify: <span class="highlight">2x + $1.00 = $1.10</span></li>
+                        <li>Subtract $1.00: <span class="highlight">2x = $0.10</span></li>
+                        <li>Divide by 2: <span class="highlight">x = $0.05</span> (ball price)</li>
+                        <li>Check: Ball = $0.05, Bat = $1.05, Total = $1.10 ✓</li>
+                    </ol>
+                `,
+                whyWrong: "Our brains prefer simple, round numbers and often skip the algebraic reasoning. The <span class='fallacy'>subtraction fallacy</span> assumes the $1.00 difference is the entire bat price, not the price difference.",
+                userAnswer: null,
+                answered: false
+            },
+            {
+                id: 2,
+                question: "If it takes 5 machines 5 minutes to make 5 widgets, how long would it take 100 machines to make 100 widgets?",
+                options: [
+                    "5 minutes",
+                    "20 minutes",
+                    "100 minutes",
+                    "500 minutes"
+                ],
+                correctAnswer: 0,
+                logicTrap: "The <span class='logic-trap'>misleading ratio assumption</span> makes people think time scales with the number of machines or widgets, ignoring the constant rate per machine.",
+                stepByStep: `
+                    <ol>
+                        <li>5 machines make 5 widgets in 5 minutes</li>
+                        <li>So <span class="highlight">1 machine makes 1 widget in 5 minutes</span></li>
+                        <li>Each machine works independently at the same rate</li>
+                        <li>100 machines would each make 1 widget in the same 5 minutes</li>
+                        <li>Therefore, <span class="highlight">100 machines make 100 widgets in 5 minutes</span></li>
+                    </ol>
+                `,
+                whyWrong: "People often apply <span class='fallacy'>proportional reasoning incorrectly</span>, assuming that more machines automatically mean less time, or that more widgets automatically require more time.",
+                userAnswer: null,
+                answered: false
+            },
+            {
+                id: 3,
+                question: "In a lake, there is a patch of lily pads. Every day, the patch doubles in size. If it takes 48 days for the patch to cover the entire lake, how long would it take for the patch to cover half of the lake?",
+                options: [
+                    "24 days",
+                    "47 days",
+                    "36 days",
+                    "42 days"
+                ],
+                correctAnswer: 1,
+                logicTrap: "The <span class='logic-trap'>linear thinking trap</span> assumes growth is linear rather than exponential, leading to the intuitive but incorrect answer of half the time (24 days).",
+                stepByStep: `
+                    <ol>
+                        <li>The patch <span class="highlight">doubles</span> in size each day</li>
+                        <li>On day 48, the patch covers the <span class="highlight">entire</span> lake</li>
+                        <li>Since it doubles each day, the day before it must have been <span class="highlight">half</span> the size</li>
+                        <li>Therefore, on day 47, the patch covers <span class="highlight">half</span> the lake</li>
+                        <li>Check: Day 47 = half, Day 48 = doubles to full ✓</li>
+                    </ol>
+                `,
+                whyWrong: "Our brains default to <span class='fallacy'>linear extrapolation</span> even when dealing with exponential growth. We divide the total time by 2 (48/2=24) instead of thinking backwards from the doubling pattern.",
+                userAnswer: null,
+                answered: false
+            }
+        ];
+
+        // DOM Elements
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const submitBtn = document.getElementById('submit-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const correctFeedback = document.getElementById('correct-feedback');
+        const incorrectFeedback = document.getElementById('incorrect-feedback');
+        const correctMessage = document.getElementById('correct-message');
+        const incorrectMessage = document.getElementById('incorrect-message');
+        const logicTrapBox = document.getElementById('logic-trap-box');
+        const logicTrapText = document.getElementById('logic-trap-text');
+        const stepByStepBox = document.getElementById('step-by-step-box');
+        const stepByStepText = document.getElementById('step-by-step-text');
+        const whyWrongBox = document.getElementById('why-wrong-box');
+        const whyWrongText = document.getElementById('why-wrong-text');
+        const currentQElement = document.getElementById('current-q');
+        const totalQElement = document.getElementById('total-q');
+        const progressFill = document.getElementById('progress-fill');
+        const scoreElement = document.getElementById('score');
+        const totalScoreElement = document.getElementById('total-score');
+
+        // State variables
+        let currentQuestionIndex = 0;
+        let selectedOption = null;
+        let score = 0;
+
+        // Initialize the quiz
+        function init() {
+            totalQElement.textContent = questions.length;
+            totalScoreElement.textContent = questions.length;
+            updateProgress();
+            loadQuestion(currentQuestionIndex);
+            
+            // Add event listeners
+            submitBtn.addEventListener('click', submitAnswer);
+            nextBtn.addEventListener('click', nextQuestion);
+        }
+
+        // Load a question
+        function loadQuestion(index) {
+            const question = questions[index];
+            
+            // Reset UI state
+            selectedOption = null;
+            submitBtn.disabled = true;
+            nextBtn.classList.add('hidden');
+            correctFeedback.style.display = 'none';
+            incorrectFeedback.style.display = 'none';
+            logicTrapBox.style.display = 'none';
+            stepByStepBox.style.display = 'none';
+            whyWrongBox.style.display = 'none';
+            
+            // Update question text
+            questionText.textContent = question.question;
+            
+            // Update question counter
+            currentQElement.textContent = index + 1;
+            
+            // Clear and populate options
+            optionsContainer.innerHTML = '';
+            question.options.forEach((option, i) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                optionElement.innerHTML = `
+                    <div class="option-label">${String.fromCharCode(65 + i)}</div>
+                    <input type="radio" id="option-${i}" name="option" value="${i}">
+                    <label for="option-${i}">${option}</label>
+                `;
+                
+                optionElement.addEventListener('click', () => selectOption(i, optionElement));
+                optionsContainer.appendChild(optionElement);
+            });
+        }
+
+        // Select an option
+        function selectOption(index, element) {
+            // Reset all options
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Select clicked option
+            element.classList.add('selected');
+            selectedOption = index;
+            submitBtn.disabled = false;
+            
+            // Update radio button
+            document.getElementById(`option-${index}`).checked = true;
+        }
+
+        // Submit answer
+        function submitAnswer() {
+            if (selectedOption === null) return;
+            
+            const question = questions[currentQuestionIndex];
+            question.userAnswer = selectedOption;
+            question.answered = true;
+            
+            // Check if answer is correct
+            const isCorrect = selectedOption === question.correctAnswer;
+            
+            // Update score
+            if (isCorrect) {
+                score++;
+                scoreElement.textContent = score;
+            }
+            
+            // Show feedback
+            showFeedback(isCorrect, question);
+            
+            // Update UI
+            submitBtn.disabled = true;
+            nextBtn.classList.remove('hidden');
+            
+            // Mark options as correct/incorrect
+            document.querySelectorAll('.option').forEach((opt, i) => {
+                if (i === question.correctAnswer) {
+                    opt.classList.add('correct');
+                } else if (i === selectedOption && !isCorrect) {
+                    opt.classList.add('incorrect');
+                }
+            });
+        }
+
+        // Show feedback sections
+        function showFeedback(isCorrect, question) {
+            // Show correct/incorrect feedback
+            if (isCorrect) {
+                correctMessage.textContent = `You correctly selected option ${String.fromCharCode(65 + question.correctAnswer)}: "${question.options[question.correctAnswer]}".`;
+                correctFeedback.style.display = 'block';
+            } else {
+                incorrectMessage.textContent = `You selected option ${String.fromCharCode(65 + selectedOption)}: "${question.options[selectedOption]}". The correct answer is option ${String.fromCharCode(65 + question.correctAnswer)}: "${question.options[question.correctAnswer]}".`;
+                incorrectFeedback.style.display = 'block';
+            }
+            
+            // Show analysis sections
+            logicTrapText.innerHTML = question.logicTrap;
+            logicTrapBox.style.display = 'block';
+            
+            stepByStepText.innerHTML = question.stepByStep;
+            stepByStepBox.style.display = 'block';
+            
+            whyWrongText.innerHTML = question.whyWrong;
+            whyWrongBox.style.display = 'block';
+        }
+
+        // Load next question
+        function nextQuestion() {
+            currentQuestionIndex++;
+            
+            if (currentQuestionIndex < questions.length) {
+                loadQuestion(currentQuestionIndex);
+                updateProgress();
+            } else {
+                // Quiz completed
+                showResults();
+            }
+        }
+
+        // Update progress bar
+        function updateProgress() {
+            const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+            progressFill.style.width = `${progress}%`;
+        }
+
+        // Show final results
+        function showResults() {
+            questionText.textContent = `Quiz Complete! Your Score: ${score}/${questions.length}`;
+            optionsContainer.innerHTML = `
+                <div style="text-align: center; padding: 30px;">
+                    <h3 style="color: #4f46e5; margin-bottom: 20px;">Quiz Summary</h3>
+                    <div style="font-size: 4rem; color: #10b981; margin: 20px 0;">${score}/${questions.length}</div>
+                    <p style="margin-bottom: 20px;">You've completed the Logic Trap Question Analyzer activity.</p>
+                    <p style="margin-bottom: 20px;">Your critical thinking skills are improving!</p>
+                    <button id="restart-btn" style="background-color: #4f46e5; color: white; padding: 12px 30px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 10px;">Restart Quiz</button>
+                </div>
+            `;
+            
+            // Hide unnecessary elements
+            submitBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+            document.querySelector('.feedback-section').style.display = 'none';
+            document.querySelector('.explanation-panel').innerHTML = `
+                <div class="panel-title">
+                    <i class="fas fa-chart-bar"></i>
+                    <h2>Performance Analysis</h2>
+                </div>
+                <div style="padding: 20px;">
+                    <h3 style="margin-bottom: 15px; color: #2d3748;">What You've Learned</h3>
+                    <ul style="margin-left: 20px; margin-bottom: 20px;">
+                        <li style="margin-bottom: 10px;">Recognized common logical fallacies like the subtraction fallacy and proportional reasoning errors</li>
+                        <li style="margin-bottom: 10px;">Understood how misleading assumptions can lead to incorrect answers</li>
+                        <li style="margin-bottom: 10px;">Practiced step-by-step analytical thinking to avoid logic traps</li>
+                        <li>Learned why intuitive answers are often wrong in logic-based problems</li>
+                    </ul>
+                    <p>Continue practicing to strengthen your critical thinking skills!</p>
+                </div>
+            `;
+            
+            // Add event listener for restart button
+            document.getElementById('restart-btn').addEventListener('click', restartQuiz);
+        }
+
+        // Restart the quiz
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            scoreElement.textContent = score;
+            
+            // Reset questions
+            questions.forEach(q => {
+                q.userAnswer = null;
+                q.answered = false;
+            });
+            
+            // Reset UI
+            submitBtn.style.display = 'block';
+            nextBtn.style.display = 'block';
+            nextBtn.classList.add('hidden');
+            document.querySelector('.feedback-section').style.display = 'block';
+            
+            // Reload first question
+            loadQuestion(currentQuestionIndex);
+            updateProgress();
+            
+            // Reload explanation panel
+            document.querySelector('.explanation-panel').innerHTML = `
+                <div class="panel-title">
+                    <i class="fas fa-lightbulb"></i>
+                    <h2>Analysis & Explanation</h2>
+                </div>
+                
+                <div class="logic-trap-box feedback-box" id="logic-trap-box">
+                    <div class="box-title">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Logic Trap Identified</h3>
+                    </div>
+                    <p id="logic-trap-text"></p>
+                </div>
+                
+                <div class="step-by-step-box feedback-box" id="step-by-step-box">
+                    <div class="box-title">
+                        <i class="fas fa-list-ol"></i>
+                        <h3>Step-by-Step Solution</h3>
+                    </div>
+                    <div id="step-by-step-text"></div>
+                </div>
+                
+                <div class="why-wrong-box feedback-box" id="why-wrong-box">
+                    <div class="box-title">
+                        <i class="fas fa-users"></i>
+                        <h3>Why Most People Get This Wrong</h3>
+                    </div>
+                    <p id="why-wrong-text"></p>
+                </div>
+            `;
+            
+            // Reassign DOM elements
+            logicTrapBox = document.getElementById('logic-trap-box');
+            logicTrapText = document.getElementById('logic-trap-text');
+            stepByStepBox = document.getElementById('step-by-step-box');
+            stepByStepText = document.getElementById('step-by-step-text');
+            whyWrongBox = document.getElementById('why-wrong-box');
+            whyWrongText = document.getElementById('why-wrong-text');
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
