@@ -24,40 +24,55 @@
 </head>
 
 <body>
-<!-- NAVBAR -->
-<nav class="navbar" id="navbar">
-    <div class="nav-container">
-        <a href="#" class="nav-logo">
-            <i class="ri-code-box-fill" aria-hidden="true"></i>
-            <span>OpenPlayground</span>
-        </a>
-
-        <div class="nav-links" id="navLinks">
-            <a href="/index.html#projects" class="nav-link">Projects</a>
-            <a href="/index.html#contribute" class="nav-link">Contribute</a>
-            <a href="about.html" class="nav-link">About</a>
-            <a href="bookmarks.html" class="nav-link">
-                <i class="ri-bookmark-line" aria-hidden="true"></i> Bookmarks
-            </a>
-            <a href="https://github.com/YadavAkhileshh/OpenPlayground" target="_blank" class="nav-link">
-                <i class="ri-github-fill" aria-hidden="true"></i> GitHub
+    <!-- NAVBAR -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <i class="ri-code-box-fill" aria-hidden="true"></i>
+                <span>OpenPlayground</span>
             </a>
 
-            <!-- Enhanced Theme Toggle -->
-            <div class="theme-toggle-container">
-                <div class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-                    <span class="theme-toggle-icon sun">☀️</span>
-                    <span class="theme-toggle-icon moon">🌙</span>
-                    <div class="theme-toggle-slider"></div>
+            <div class="nav-links" id="navLinks">
+                <a href="/index.html#projects" class="nav-link">Projects</a>
+                <a href="/index.html#contribute" class="nav-link">Contribute</a>
+                <a href="about.html" class="nav-link">About</a>
+                <a href="bookmarks.html" class="nav-link">
+                    <i class="ri-bookmark-line" aria-hidden="true"></i> Bookmarks
+                </a>
+                <a href="https://github.com/YadavAkhileshh/OpenPlayground" target="_blank" class="nav-link">
+                    <i class="ri-github-fill" aria-hidden="true"></i> GitHub
+                </a>
+
+                <!-- Enhanced Theme Toggle -->
+                <div class="theme-toggle-container">
+                    <button class="theme-toggle" type="button" id="themeToggle" title="Toggle theme"
+                        aria-label="Toggle theme">
+                        <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <mask id="moon-mask">
+                                <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                                <circle class="moon-bite" cx="14" cy="9" r="14" fill="black" />
+                            </mask>
+                            <circle class="sun-core" cx="12" cy="12" r="7" fill="currentColor" mask="url(#moon-mask)" />
+                            <g class="sun-rays" stroke="currentColor">
+                                <line x1="12" y1="1" x2="12" y2="3" />
+                                <line x1="12" y1="21" x2="12" y2="23" />
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                                <line x1="1" y1="12" x2="3" y2="12" />
+                                <line x1="21" y1="12" x2="23" y2="12" />
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                            </g>
+                        </svg>
+                    </button>
                 </div>
-            </div>
-        </div>
 
-        <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
-            <i class="ri-menu-3-line" aria-hidden="true"></i>
-        </button>
-    </div>
-</nav>
+                <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+                    <i class="ri-menu-3-line" aria-hidden="true"></i>
+                </button>
+            </div>
+    </nav>
 
     <!-- Bookmarks Section -->
     <section id="bookmarks" class="bookmarks-section">
@@ -105,12 +120,74 @@
 
     <!-- Bookmarks Manager -->
     <script src="./js/bookmarks.js"></script>
-    
+
     <!-- Component Loader -->
     <script src="./js/components.js"></script>
 
     <!-- Bookmarks Page Script -->
     <script src="./js/bookmarks-page.js"></script>
 </body>
+
+<script>
+    // Theme toggle functionality
+    (function () {
+        const STORAGE_KEY = 'theme';
+        let isInitialized = false;
+
+        function getInitialTheme() {
+            const savedTheme = localStorage.getItem(STORAGE_KEY);
+            if (savedTheme) return savedTheme;
+
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem(STORAGE_KEY, theme);
+
+            const button = document.getElementById('themeToggle');
+            if (button) {
+                const newLabel = theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode';
+                button.setAttribute('aria-label', newLabel);
+                button.setAttribute('title', newLabel);
+            }
+        }
+
+        function toggleTheme(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            setTheme(newTheme);
+        }
+
+        // Initialize theme immediately (before DOM loads to prevent flash)
+        const initialTheme = getInitialTheme();
+        document.documentElement.setAttribute('data-theme', initialTheme);
+
+        // Setup toggle button after DOM loads
+        document.addEventListener('DOMContentLoaded', function () {
+            if (isInitialized) return; // Prevent double initialization
+
+            setTheme(initialTheme); // Ensure button labels are set
+
+            const button = document.getElementById('themeToggle');
+            if (button) {
+                // Remove existing event listeners by replacing with a new reference
+                button.removeEventListener('click', toggleTheme);
+                button.addEventListener('click', toggleTheme, { once: false });
+                isInitialized = true;
+            }
+        });
+
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+            if (!localStorage.getItem(STORAGE_KEY)) {
+                setTheme(e.matches ? 'dark' : 'light');
+            }
+        });
+    })();
+</script>
 
 </html>
