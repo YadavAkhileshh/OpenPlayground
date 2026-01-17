@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SubTrack - Subscription Finance Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header with theme toggle -->
+        <header>
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <h1>SubTrack</h1>
+                </div>
+                <p class="subtitle">Your personal subscription finance dashboard</p>
+            </div>
+            <div class="header-controls">
+                <div class="theme-toggle">
+                    <span>Light</span>
+                    <label class="switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                    <span>Dark</span>
+                </div>
+                <button class="btn" id="add-subscription">
+                    <i class="fas fa-plus"></i> Add Subscription
+                </button>
+            </div>
+        </header>
+
+        <!-- Summary Cards -->
+        <section class="summary-cards">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-calendar-day"></i> This Month</h3>
+                </div>
+                <div class="card-body">
+                    <h2 id="monthly-total">$0.00</h2>
+                    <p class="card-info">Total recurring payments</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-calendar-alt"></i> This Year</h3>
+                </div>
+                <div class="card-body">
+                    <h2 id="yearly-total">$0.00</h2>
+                    <p class="card-info">Projected annual spend</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Upcoming</h3>
+                </div>
+                <div class="card-body">
+                    <h2 id="upcoming-count">0</h2>
+                    <p class="card-info">Renewals in next 7 days</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-box-open"></i> Active Subs</h3>
+                </div>
+                <div class="card-body">
+                    <h2 id="active-count">0</h2>
+                    <p class="card-info">Active subscriptions</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content -->
+        <main class="dashboard-content">
+            <!-- Left Column: Charts and Timeline -->
+            <div class="left-column">
+                <!-- Chart Section -->
+                <section class="chart-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-chart-pie"></i> Spending Distribution</h2>
+                        <div class="view-toggle">
+                            <button class="toggle-btn active" id="monthly-view">Monthly</button>
+                            <button class="toggle-btn" id="yearly-view">Yearly</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="spendingChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- Timeline Section -->
+                <section class="timeline-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-stream"></i> Upcoming Renewals (30 Days)</h2>
+                    </div>
+                    <div class="timeline-container" id="timeline">
+                        <!-- Timeline items will be added here by JavaScript -->
+                        <div class="timeline-empty">
+                            <i class="fas fa-calendar-plus"></i>
+                            <p>No upcoming renewals in the next 30 days</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column: Subscriptions List -->
+            <div class="right-column">
+                <section class="subscriptions-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-list"></i> All Subscriptions</h2>
+                        <div class="sort-controls">
+                            <select id="sort-by">
+                                <option value="name">Name A-Z</option>
+                                <option value="cost">Cost (Low to High)</option>
+                                <option value="cost-desc">Cost (High to Low)</option>
+                                <option value="date">Next Renewal</option>
+                                <option value="category">Category</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="subscriptions-container" id="subscriptions-list">
+                        <!-- Subscription items will be added here by JavaScript -->
+                        <div class="empty-state">
+                            <i class="fas fa-box-open"></i>
+                            <h3>No subscriptions added yet</h3>
+                            <p>Click "Add Subscription" to start tracking your recurring expenses</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <p>SubTrack helps you visualize and manage your recurring payments. Avoid subscription fatigue!</p>
+            <p class="footer-note">Data is stored locally in your browser. No data is sent to any server.</p>
+        </footer>
+    </div>
+
+    <!-- Add/Edit Subscription Modal -->
+    <div class="modal" id="subscription-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Add New Subscription</h2>
+                <button class="close-modal" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="subscription-form">
+                    <div class="form-group">
+                        <label for="sub-name">Service Name *</label>
+                        <input type="text" id="sub-name" required placeholder="e.g., Netflix, Spotify, Gym Membership">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sub-cost">Monthly Cost *</label>
+                            <div class="input-with-icon">
+                                <span class="input-icon">$</span>
+                                <input type="number" id="sub-cost" step="0.01" min="0" required placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="sub-category">Category *</label>
+                            <select id="sub-category" required>
+                                <option value="">Select a category</option>
+                                <option value="Entertainment">Entertainment</option>
+                                <option value="Software">Software</option>
+                                <option value="Gym">Gym & Fitness</option>
+                                <option value="Productivity">Productivity</option>
+                                <option value="Cloud">Cloud Services</option>
+                                <option value="News">News & Media</option>
+                                <option value="Education">Education</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sub-renewal">Next Renewal Date *</label>
+                            <input type="date" id="sub-renewal" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sub-cycle">Billing Cycle</label>
+                            <select id="sub-cycle">
+                                <option value="monthly">Monthly</option>
+                                <option value="yearly">Yearly</option>
+                                <option value="quarterly">Quarterly</option>
+                                <option value="weekly">Weekly</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="sub-url">Cancellation URL (Optional)</label>
+                        <input type="url" id="sub-url" placeholder="https://example.com/cancel">
+                    </div>
+                    <div class="form-group">
+                        <label for="sub-notes">Notes (Optional)</label>
+                        <textarea id="sub-notes" rows="2" placeholder="Any additional details about this subscription"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancel-subscription">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="save-subscription">Save Subscription</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Toast -->
+    <div class="toast" id="alert-toast">
+        <div class="toast-content">
+            <i class="fas fa-exclamation-circle"></i>
+            <div class="toast-message"></div>
+            <button class="toast-close">&times;</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
