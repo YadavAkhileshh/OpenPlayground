@@ -68,7 +68,11 @@ class ProjectManager {
      * ----------------------------------------------------------- */
     async fetchProjects() {
         try {
+            // Show skeleton loading cards while fetching
+            this.showSkeletonCards();
+
             // Try new modular system first (project-manifest.json)
+            let projects = await this.fetchFromManifest();
             let projects = await this.fetchFromManifest();
 
             // Fallback to legacy projects.json if manifest fails
@@ -222,6 +226,42 @@ class ProjectManager {
         window.location.href = randomProject.link;
     }
 
+    showSkeletonCards() {
+        const el = this.elements;
+        if (!el.projectsGrid) return;
+
+        el.projectsGrid.innerHTML = '';
+        el.projectsGrid.style.display = this.state.viewMode === 'card' ? 'grid' : 'none';
+
+        // Create skeleton cards
+        for (let i = 0; i < this.config.ITEMS_PER_PAGE; i++) {
+            const skeletonCard = this.createSkeletonCard();
+            el.projectsGrid.appendChild(skeletonCard);
+        }
+    }
+
+    createSkeletonCard() {
+        const card = document.createElement('div');
+        card.className = 'card skeleton-card';
+        card.innerHTML = `
+            <div class="card-cover skeleton"></div>
+            <div class="card-content">
+                <div class="card-header-flex">
+                    <div class="skeleton skeleton-title"></div>
+                    <div class="skeleton skeleton-category"></div>
+                </div>
+                <div class="skeleton skeleton-description"></div>
+                <div class="skeleton skeleton-rating"></div>
+                <div class="card-tech">
+                    <span class="skeleton skeleton-tech"></span>
+                    <span class="skeleton skeleton-tech"></span>
+                    <span class="skeleton skeleton-tech"></span>
+                </div>
+            </div>
+        `;
+        return card;
+    }
+
     /* -----------------------------------------------------------
      * Rendering Logic
      * ----------------------------------------------------------- */
@@ -247,7 +287,23 @@ class ProjectManager {
         // Grid/List display management
         if (el.projectsGrid) {
             el.projectsGrid.style.display = this.state.viewMode === 'card' ? 'grid' : 'none';
-            el.projectsGrid.innerHTML = '';
+            
+            // Check if skeleton cards are present
+            const skeletonCards = el.projectsGrid.querySelectorAll('.skeleton-card');
+            if (skeletonCards.length > 0) {
+                // Fade out skeleton cards and fade in real cards
+                skeletonCards.forEach(card => {
+                    card.style.opacity = '0';
+                    setTimeout(() => card.remove(), 300);
+                });
+                
+                // Add real cards with fade-in effect
+                setTimeout(() => {
+                    this.renderCardView(el.projectsGrid, pageItems);
+                }, 150);
+            } else {
+                this.renderCardView(el.projectsGrid, pageItems);
+            }
         }
         if (el.projectsList) {
             el.projectsList.style.display = this.state.viewMode === 'list' ? 'flex' : 'none';
@@ -263,7 +319,10 @@ class ProjectManager {
         if (el.emptyState) el.emptyState.style.display = 'none';
 
         if (this.state.viewMode === 'card' && el.projectsGrid) {
-            this.renderCardView(el.projectsGrid, pageItems);
+            // For initial load with skeleton cards, the cards are already rendered above
+            if (!el.projectsGrid.querySelector('.skeleton-card')) {
+                this.renderCardView(el.projectsGrid, pageItems);
+            }
         } else if (this.state.viewMode === 'list' && el.projectsList) {
             this.renderListView(el.projectsList, pageItems);
         }
@@ -280,7 +339,7 @@ class ProjectManager {
             const sourceUrl = this.getSourceCodeUrl(project.link);
 
             return `
-                <div class="card" data-category="${this.escapeHtml(project.category)}" onclick="window.location.href='${this.escapeHtml(project.link)}'; event.stopPropagation();">
+                <div class="card fade-in" data-category="${this.escapeHtml(project.category)}" onclick="window.location.href='${this.escapeHtml(project.link)}'; event.stopPropagation();">
                     <div class="card-actions">
                         <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
                                 data-project-title="${this.escapeHtml(project.title)}" 
