@@ -3,6 +3,8 @@
 ========================= */
 
 const themeToggle = document.getElementById("themeToggle");
+let todos = [];
+const todoList = document.getElementById('todo-list');
 
 document.addEventListener("DOMContentLoaded", () => {
   // Load theme
@@ -15,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   loadTasks();
+  loadTodos();
   updateProgress();
   updateLeaderboard();
 });
@@ -109,6 +112,27 @@ function editTask(index) {
     renderTodos();
 }
 
+function toggleComplete(index) {
+    todos[index].completed = !todos[index].completed;
+    saveTodos();
+    renderTodos();
+}
+
+function deleteTodo(index) {
+    todos.splice(index, 1);
+    saveTodos();
+    renderTodos();
+}
+
+function saveTodos() {
+    localStorage.setItem('todos', JSON.stringify(todos));
+}
+
+function loadTodos() {
+    todos = JSON.parse(localStorage.getItem('todos')) || [];
+    renderTodos();
+}
+
 /* =========================
    TASK CRUD
 ========================= */
@@ -195,17 +219,6 @@ function addComment(taskId) {
         document.getElementById("comments-" + taskId).appendChild(commentDiv);
         saveTodos();
     }
-}
-
-
-
-
-
-  const p = document.createElement("p");
-  p.textContent = text;
-  document.getElementById(`comments-${taskId}`).appendChild(p);
-
-  saveTasks();
 }
 
 /* =========================
