@@ -2,6 +2,21 @@
 
 > **Build. Share. Explore.** A community-driven platform where developers showcase their creativity through interactive web projects.
 
+## ⚠️ Important: Run Using a Local Server
+
+OpenPlayground will not work correctly if opened directly using the `file://` protocol.
+
+This happens because modern browsers restrict JavaScript module loading and certain APIs for security reasons.
+
+### ✅ Correct way to run the project
+
+Please run the project using a local development server, such as:
+
+- VS Code Live Server extension
+- Python:
+  ```bash
+  python -m http.server
+
 [![ECWOC 2026](https://img.shields.io/badge/ECWOC-2026-orange?style=for-the-badge&logo=opensourceinitiative)](https://ecwoc.tech)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
