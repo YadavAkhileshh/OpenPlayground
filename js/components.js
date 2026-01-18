@@ -14,7 +14,36 @@ class ComponentLoader {
             'footer': './components/footer.html',
             'chatbot': './components/chatbot.html'
         };
+        this.loadPomodoroTool();
         this.loadedComponents = new Set();
+    }
+
+    async loadPomodoroTool() {
+        try {
+            if (!document.getElementById('pomodoro-container')) {
+                const container = document.createElement('div');
+                container.id = 'pomodoro-container';
+                document.body.appendChild(container);
+            }
+
+            const response = await fetch('./components/pomodoro.html');
+            if (!response.ok) throw new Error('Failed to load Pomodoro HTML');
+            const html = await response.text();
+            document.getElementById('pomodoro-container').innerHTML = html;
+
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = './css/pomodoro.css';
+            document.head.appendChild(link);
+
+            const script = document.createElement('script');
+            script.src = './js/pomodoro.js';
+            document.body.appendChild(script);
+
+            console.log("🍅 Pomodoro Timer Loaded Successfully");
+        } catch (error) {
+            console.error("Error loading Pomodoro tool:", error);
+        }
     }
 
     async loadComponent(name, targetSelector) {
