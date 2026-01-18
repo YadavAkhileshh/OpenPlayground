@@ -109,7 +109,7 @@ class BlockchainVisualizer {
     setupEventListeners() {
         // Control sliders
         this.elements.blockTimeSlider.addEventListener('input', (e) => {
-            this.config.blockTime = parseInt(e.target.value);
+            this.config.blockTime = parseInt(e.target.value) * 1000;
             this.elements.blockTimeValue.textContent = `${this.config.blockTime / 1000}s`;
         });
 
