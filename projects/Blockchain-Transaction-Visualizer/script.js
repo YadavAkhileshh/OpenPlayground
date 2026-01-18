@@ -379,7 +379,6 @@ class BlockchainVisualizer {
                             this.state.stats.confirmedTxCount++;
 
                             // Update balances
-                            const fromWallet = this.state.wallets.find(w => w.id === tx.from);
                             const toWallet = this.state.wallets.find(w => w.id === tx.to);
                             
                             if (toWallet) {
