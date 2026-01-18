@@ -418,11 +418,11 @@ class BlockchainVisualizer {
         
         // Set optimal settings for demo
         this.config.blockTime = 3000;
-        this.config.transactionRate = 1500;
+        this.config.transactionRate = 2000;
         this.elements.blockTimeSlider.value = 3;
         this.elements.blockTimeValue.textContent = '3s';
-        this.elements.txRateSlider.value = 1.5;
-        this.elements.txRateValue.textContent = '1.5s';
+        this.elements.txRateSlider.value = 2;
+        this.elements.txRateValue.textContent = '2s';
         
         // Start the network
         this.start();
