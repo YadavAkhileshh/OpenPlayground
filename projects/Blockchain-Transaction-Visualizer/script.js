@@ -392,6 +392,12 @@ class BlockchainVisualizer {
                     const minerWallet = this.state.wallets.find(w => w.name.toLowerCase() === selectedMiner.name.toLowerCase());
                     if (minerWallet) {
                         minerWallet.balance += totalGasFees;
+                    } else {
+                        // Fallback: track miner rewards directly on the miner object
+                        if (typeof selectedMiner.balance !== 'number') {
+                            selectedMiner.balance = 0;
+                        }
+                        selectedMiner.balance += totalGasFees;
                     }
 
                     selectedMiner.status = 'idle';
