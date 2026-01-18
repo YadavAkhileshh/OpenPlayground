@@ -489,6 +489,7 @@ class BlockchainVisualizer {
             
             setTimeout(() => {
                 this.elements.demoBtn.innerHTML = originalText;
+                this.elements.demoBtn.style.background = '';
             }, 3000);
         }, 30000);
     }
