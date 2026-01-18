@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Transaction Flow Visualizer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>⛓️ Blockchain Transaction Visualizer</h1>
+                <p class="subtitle">Understand how transactions flow through a blockchain network</p>
+            </div>
+            <div class="network-status">
+                <span class="status-dot"></span>
+                <span id="networkStatus">Network Idle</span>
+            </div>
+        </header>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="control-section">
+                <h3>🎮 Simulation Controls</h3>
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <label>Block Time (s)</label>
+                        <input type="range" id="blockTime" min="2" max="10" value="5" step="1">
+                        <span id="blockTimeValue">5s</span>
+                    </div>
+                    <div class="control-group">
+                        <label>Transaction Rate</label>
+                        <input type="range" id="txRate" min="1" max="10" value="3" step="1">
+                        <span id="txRateValue">3/s</span>
+                    </div>
+                    <div class="control-group">
+                        <label>Gas Price Priority</label>
+                        <select id="gasPriority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="demoBtn" style="background: linear-gradient(135deg, #10b981, #059669); font-weight: 700;">🎬 Start Demo</button>
+                    <button class="btn btn-primary" id="startBtn">▶️ Start Network</button>
+                    <button class="btn btn-secondary" id="pauseBtn">⏸️ Pause Network</button>
+                    <button class="btn btn-primary" id="createTxBtn">💸 Create Transaction</button>
+                    <button class="btn btn-secondary" id="clearMempoolBtn">🗑️ Clear Mempool</button>
+                    <button class="btn btn-secondary" id="simulateForkBtn">🔀 Simulate Fork</button>
+                    <button class="btn btn-danger" id="resetBtn">🔄 Reset</button>
+                </div>
+            </div>
+
+            <div class="stats-panel">
+                <h3>📊 Network Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📦</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Blocks Mined</span>
+                            <span class="stat-value" id="blocksMined">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Pending TXs</span>
+                            <span class="stat-value" id="pendingTx">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Confirmed</span>
+                            <span class="stat-value" id="confirmedTx">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⛏️</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Hash Rate</span>
+                            <span class="stat-value" id="hashrate">0 H/s</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Visualization Area -->
+        <div class="visualization-area">
+            <!-- Wallets Section -->
+            <div class="network-layer wallets-layer">
+                <h3 class="layer-title">👛 Wallets</h3>
+                <div class="wallets-container" id="walletsContainer">
+                    <div class="wallet" data-wallet-id="1">
+                        <div class="wallet-icon">👤</div>
+                        <div class="wallet-info">
+                            <span class="wallet-name">Alice</span>
+                            <span class="wallet-balance">10.5 ETH</span>
+                        </div>
+                    </div>
+                    <div class="wallet" data-wallet-id="2">
+                        <div class="wallet-icon">👤</div>
+                        <div class="wallet-info">
+                            <span class="wallet-name">Bob</span>
+                            <span class="wallet-balance">8.3 ETH</span>
+                        </div>
+                    </div>
+                    <div class="wallet" data-wallet-id="3">
+                        <div class="wallet-icon">👤</div>
+                        <div class="wallet-info">
+                            <span class="wallet-name">Charlie</span>
+                            <span class="wallet-balance">15.7 ETH</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mempool Section -->
+            <div class="network-layer mempool-layer">
+                <h3 class="layer-title">🔄 Mempool <span class="layer-badge" id="mempoolBadge">0</span></h3>
+                <div class="mempool-container" id="mempoolContainer">
+                    <div class="mempool-queue" id="mempoolQueue"></div>
+                    <div class="mempool-info">
+                        <span>Transactions waiting for confirmation</span>
+                        <div class="priority-legend">
+                            <span class="priority-item"><span class="dot high"></span>High</span>
+                            <span class="priority-item"><span class="dot medium"></span>Medium</span>
+                            <span class="priority-item"><span class="dot low"></span>Low</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Miners Section -->
+            <div class="network-layer miners-layer">
+                <h3 class="layer-title">⛏️ Miners / Validators</h3>
+                <div class="miners-container" id="minersContainer">
+                    <div class="miner" data-miner-id="1">
+                        <div class="miner-icon">🖥️</div>
+                        <div class="miner-info">
+                            <span class="miner-name">Miner 1</span>
+                            <span class="miner-status">Idle</span>
+                            <div class="mining-progress" id="miningProgress1">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="miner" data-miner-id="2">
+                        <div class="miner-icon">🖥️</div>
+                        <div class="miner-info">
+                            <span class="miner-name">Miner 2</span>
+                            <span class="miner-status">Idle</span>
+                            <div class="mining-progress" id="miningProgress2">
+                                <div class="progress-bar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blockchain Section -->
+            <div class="network-layer blockchain-layer">
+                <h3 class="layer-title">📦 Blockchain</h3>
+                <div class="blockchain-container">
+                    <div class="blockchain-scroll" id="blockchainScroll">
+                        <!-- Blocks will be added dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction Details Panel -->
+        <div class="details-panel" id="detailsPanel">
+            <div class="panel-header">
+                <h3>📄 Transaction Details</h3>
+                <button class="close-btn" id="closePanel">×</button>
+            </div>
+            <div class="panel-content" id="panelContent">
+                <p class="no-selection">Select a transaction to view details</p>
+            </div>
+        </div>
+
+        <!-- Fork Visualization Overlay -->
+        <div class="fork-overlay" id="forkOverlay">
+            <div class="fork-visualization">
+                <h3>🔀 Blockchain Fork Detected</h3>
+                <div class="fork-chains">
+                    <div class="chain-branch" id="chainA">
+                        <span class="chain-label">Chain A (Longer)</span>
+                        <div class="fork-blocks"></div>
+                    </div>
+                    <div class="chain-branch" id="chainB">
+                        <span class="chain-label">Chain B (Orphaned)</span>
+                        <div class="fork-blocks"></div>
+                    </div>
+                </div>
+                <p class="fork-explanation">The network will follow the longest chain. Chain B will be orphaned.</p>
+                <button class="btn btn-primary" id="closeFork">Resolve Fork</button>
+            </div>
+        </div>
+
+        <!-- Animated Particles (for visual effects) -->
+        <canvas id="particleCanvas" class="particle-canvas"></canvas>
+
+        <!-- Tutorial Tooltip -->
+        <div class="tutorial-tooltip" id="tutorialTooltip">
+            <div class="tooltip-content">
+                <h4>💡 How It Works</h4>
+                <ol>
+                    <li>Create transactions from wallets</li>
+                    <li>Watch them enter the mempool</li>
+                    <li>Miners select and validate transactions</li>
+                    <li>New blocks are added to the chain</li>
+                    <li>Transactions get confirmed</li>
+                </ol>
+                <button class="btn btn-small btn-primary" id="gotItBtn">Got it!</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
