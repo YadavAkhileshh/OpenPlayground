@@ -56,6 +56,7 @@ class ProjectManager {
             filterBtns: document.querySelectorAll('.filter-btn'),
             cardViewBtn: document.getElementById('card-view-btn'),
             listViewBtn: document.getElementById('list-view-btn'),
+            randomProjectBtn: document.getElementById('random-project-btn'),
             emptyState: document.getElementById('empty-state'),
             projectCount: document.getElementById('project-count')
         };
@@ -195,6 +196,10 @@ class ProjectManager {
             el.cardViewBtn.addEventListener('click', () => this.setViewMode('card'));
             el.listViewBtn.addEventListener('click', () => this.setViewMode('list'));
         }
+
+        if (el.randomProjectBtn) {
+            el.randomProjectBtn.addEventListener('click', () => this.openRandomProject());
+        }
     }
 
     setViewMode(mode) {
@@ -205,6 +210,16 @@ class ProjectManager {
         el.listViewBtn?.classList.toggle('active', mode === 'list');
 
         this.render();
+    }
+
+    openRandomProject() {
+        if (this.state.allProjects.length === 0) return;
+        
+        const randomIndex = Math.floor(Math.random() * this.state.allProjects.length);
+        const randomProject = this.state.allProjects[randomIndex];
+        
+        // Navigate to the project
+        window.location.href = randomProject.link;
     }
 
     /* -----------------------------------------------------------
