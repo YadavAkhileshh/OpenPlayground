@@ -232,13 +232,17 @@ document.addEventListener("componentLoaded", (e) => {
       const div = document.createElement("div");
       div.className = "bot-message";
       messages.appendChild(div);
+      text = text.replace(/\n/g, "<br>");
 
       let i = 0;
       const typing = setInterval(() => {
-        div.textContent += text.charAt(i);
+        div.innerHTML = text.slice(0, i);
         i++;
         messages.scrollTop = messages.scrollHeight;
-        if (i === text.length) clearInterval(typing);
+        if (i >= text.length) {
+          div.innerHTML = text; // ensure last char is shown
+          clearInterval(typing);
+        }
       }, 20);
     }
 
