@@ -537,29 +537,68 @@
   </div>
 
   <script>
-    // Fetch data from GitHub repository
-    fetch('https://api.github.com/repos/YadavAkhileshh/OpenPlayground/contents/index.html')
-      .then(response => response.json())
-      .then(data => {
-        // Decode the base64 content
-        const html = atob(data.content);
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
-
-        const cards = doc.querySelectorAll(".projects-container .card");
-
+    // Fetch data from projects.json
+    fetch('./projects.json')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch projects.json: ${response.status} ${response.statusText}`);
+        }
+        return response.text();
+      })
+      .then(text => {
+        // Remove all types of BOMs (UTF-8, UTF-16, UTF-32)
+        text = text.replace(/^\uFEFF/, ''); // UTF-8 BOM
+        text = text.replace(/^\ufeff/, ''); // Alternative BOM
+        text = text.replace(/^[\uFEFF\uFFFE\u0000\uFFFF]+/, ''); // Any BOM variants
+        
+        // Also strip any leading non-JSON characters until we find '[' or '{'
+        const jsonStart = text.search(/[\[\{]/);
+        if (jsonStart > 0) {
+          console.warn('Stripped', jsonStart, 'invalid leading characters');
+          text = text.substring(jsonStart);
+        }
+        
+        // Try to parse JSON with better error handling
+        let projects;
+        try {
+          projects = JSON.parse(text);
+        } catch (e) {
+          console.error('JSON Parse Error:', e);
+          console.error('Raw response (first 500 chars):', text.substring(0, 500));
+          console.error('Char codes:', Array.from(text.substring(0, 10)).map(c => c.charCodeAt(0)));
+          throw new Error(`Invalid JSON: ${e.message}`);
+        }
+        return projects;
+      })
+      .then(projects => {
+        // Count unique projects and categories
         const seenTitles = new Set();
         const categoryCount = {};
 
-        cards.forEach(card => {
-          const titleEl = card.querySelector(".card-heading");
-          if (!titleEl) return;
+        projects.forEach(project => {
+          // Validate and trim title
+          const title = project.title ? project.title.trim() : '';
+          if (!title || !project.link) return;
+          
+          // Skip duplicates (case-insensitive)
+          const titleKey = title.toLowerCase();
+          if (seenTitles.has(titleKey)) return;
+          seenTitles.add(titleKey);
 
-          const title = titleEl.innerText.trim();
-          if (seenTitles.has(title)) return;
-
-          seenTitles.add(title);
-          const category = card.dataset.category || "other";
+          // Normalize category (handle plurals, lowercase, and spaces)
+          let category = (project.category || 'other')
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, '_');
+          
+          // Normalize plural categories to singular
+          const pluralMap = {
+            'games': 'game',
+            'puzzles': 'puzzle',
+            'utilities': 'utility'
+          };
+          category = pluralMap[category] || category;
+          
           categoryCount[category] = (categoryCount[category] || 0) + 1;
         });
 
@@ -575,7 +614,8 @@
         console.error('Error fetching data:', error);
         document.getElementById('loading').innerHTML = `
           <div style="color: var(--orange-500); font-size: 48px; margin-bottom: 16px;">⚠️</div>
-          <p>Failed to load project data. Please check your internet connection.</p>
+          <p>Failed to load project data. Please try refreshing the page.</p>
+          <p style="font-size: 14px; color: var(--gray-500); margin-top: 8px;">Error: ${error.message}</p>
         `;
       });
 
@@ -592,10 +632,17 @@
         .sort((a, b) => b[1] - a[1]);
 
       const categoryIcons = {
+        utility: 'ri-tools-line',
+        game: 'ri-gamepad-line',
+        puzzle: 'ri-puzzle-line',
+        fun: 'ri-magic-line',
+        communication: 'ri-chat-3-line',
+        educational: 'ri-book-open-line',
+        productivity: 'ri-task-line',
+        creative: 'ri-palette-line',
         web: 'ri-global-line',
         mobile: 'ri-smartphone-line',
         desktop: 'ri-computer-line',
-        game: 'ri-gamepad-line',
         ai: 'ri-cpu-line',
         data: 'ri-database-2-line',
         other: 'ri-folder-3-line'
