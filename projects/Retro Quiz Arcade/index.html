@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Retro Arcade Quiz</title>
+
+<style>
+/* ===== RESET ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Press Start 2P', monospace;
+}
+
+body {
+    min-height: 100vh;
+    background: radial-gradient(circle, #111 0%, #000 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #00ffcc;
+}
+
+/* ===== GAME CONTAINER ===== */
+.game {
+    width: 360px;
+    background: #000;
+    border: 4px solid #00ffcc;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 0 25px #00ffcc;
+}
+
+/* ===== HEADER ===== */
+.header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    margin-bottom: 20px;
+}
+
+/* ===== QUESTION ===== */
+.question {
+    font-size: 12px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+/* ===== OPTIONS ===== */
+.options button {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #111;
+    border: 2px solid #00ffcc;
+    color: #00ffcc;
+    cursor: pointer;
+    font-size: 10px;
+}
+
+.options button:hover {
+    background: #00ffcc;
+    color: #000;
+}
+
+/* ===== TIMER BAR ===== */
+.timer {
+    height: 8px;
+    background: #003333;
+    margin-bottom: 15px;
+}
+
+.timer-bar {
+    height: 100%;
+    width: 100%;
+    background: #00ffcc;
+    transition: width 1s linear;
+}
+
+/* ===== GAME OVER ===== */
+.game-over {
+    display: none;
+}
+
+.game-over h2 {
+    margin-bottom: 15px;
+}
+
+.retry {
+    padding: 10px;
+    background: #00ffcc;
+    color: #000;
+    border: none;
+    cursor: pointer;
+    font-size: 10px;
+}
+
+/* ===== BLINK ===== */
+.blink {
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 50%, 100% { opacity: 1; }
+    25%, 75% { opacity: 0; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="game" id="game">
+    <div class="header">
+        <div>Score: <span id="score">0</span></div>
+        <div>Combo: <span id="combo">0</span></div>
+    </div>
+
+    <div class="timer">
+        <div class="timer-bar" id="timerBar"></div>
+    </div>
+
+    <div class="question" id="question"></div>
+
+    <div class="options" id="options"></div>
+</div>
+
+<div class="game game-over" id="gameOver">
+    <h2 class="blink">GAME OVER</h2>
+    <p>Final Score: <span id="finalScore"></span></p>
+    <br>
+    <button class="retry" onclick="startGame()">RETRY</button>
+</div>
+
+<script>
+/* ===== QUESTIONS ===== */
+const quiz = [
+    {
+        q: "What does HTML stand for?",
+        options: ["Hyper Text Markup Language", "High Tech Machine Language", "Hyperlink Tool"],
+        answer: 0
+    },
+    {
+        q: "Which language runs in browser?",
+        options: ["Python", "JavaScript", "C++"],
+        answer: 1
+    },
+    {
+        q: "CSS is used for?",
+        options: ["Logic", "Styling", "Database"],
+        answer: 1
+    }
+];
+
+let index = 0;
+let score = 0;
+let combo = 0;
+let time = 10;
+let timer;
+
+/* ===== ELEMENTS ===== */
+const questionEl = document.getElementById("question");
+const optionsEl = document.getElementById("options");
+const scoreEl = document.getElementById("score");
+const comboEl = document.getElementById("combo");
+const timerBar = document.getElementById("timerBar");
+const game = document.getElementById("game");
+const gameOver = document.getElementById("gameOver");
+const finalScore = document.getElementById("finalScore");
+
+/* ===== START GAME ===== */
+function startGame() {
+    index = 0;
+    score = 0;
+    combo = 0;
+    game.style.display = "block";
+    gameOver.style.display = "none";
+    loadQuestion();
+}
+
+/* ===== LOAD QUESTION ===== */
+function loadQuestion() {
+    if (index >= quiz.length) {
+        endGame();
+        return;
+    }
+
+    time = 10;
+    updateTimer();
+
+    questionEl.textContent = quiz[index].q;
+    optionsEl.innerHTML = "";
+
+    quiz[index].options.forEach((opt, i) => {
+        const btn = document.createElement("button");
+        btn.textContent = opt;
+        btn.onclick = () => selectAnswer(i);
+        optionsEl.appendChild(btn);
+    });
+
+    timer = setInterval(countDown, 1000);
+}
+
+/* ===== TIMER ===== */
+function countDown() {
+    time--;
+    updateTimer();
+
+    if (time === 0) {
+        clearInterval(timer);
+        combo = 0;
+        index++;
+        loadQuestion();
+    }
+}
+
+function updateTimer() {
+    timerBar.style.width = (time * 10) + "%";
+}
+
+/* ===== ANSWER ===== */
+function selectAnswer(i) {
+    clearInterval(timer);
+
+    if (i === quiz[index].answer) {
+        combo++;
+        score += 10 * combo;
+    } else {
+        combo = 0;
+    }
+
+    scoreEl.textContent = score;
+    comboEl.textContent = combo;
+
+    index++;
+    loadQuestion();
+}
+
+/* ===== GAME OVER ===== */
+function endGame() {
+    game.style.display = "none";
+    gameOver.style.display = "block";
+    finalScore.textContent = score;
+}
+
+startGame();
+</script>
+
+</body>
+</html>
