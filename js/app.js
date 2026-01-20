@@ -3,6 +3,7 @@
 // ===============================
 
 import { ProjectVisibilityEngine } from "./core/projectVisibilityEngine.js";
+import {keyevents} from "./core/Shortcut.js"
 
 class ProjectManager {
     constructor() {
@@ -476,6 +477,7 @@ document.addEventListener('componentLoaded', (e) => {
 
 // Fade-in animation observer
 document.addEventListener('DOMContentLoaded', () => {
+    keyevents();
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
