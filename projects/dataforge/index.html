@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="format-detection" content="telephone=no">
+    <title>DataForge - Dataset Generator</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%232563eb'/><circle cx='90' cy='90' r='40' fill='white'/></svg>">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>DataForge</h1>
+            <p class="description">Create custom datasets to explore how data patterns affect machine learning models. Adjust parameters and see immediate results.</p>
+        </header>
+
+        <div class="layout-grid">
+            <!-- Left Panel: Controls -->
+            <div class="panel controls-panel">
+                <div class="section">
+                    <h2>Choose Dataset Pattern</h2>
+                    <div class="control-group">
+                        <label for="datasetType">
+                            Pattern Type
+                            <span class="hint">What kind of relationship to show in your data</span>
+                        </label>
+                        <select id="datasetType">
+                            <option value="regression">Line Pattern</option>
+                            <option value="classification">Grouped Categories</option>
+                            <option value="clustering">Natural Clusters</option>
+                            <option value="timeseries">Time Changes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Data Settings</h2>
+                    <div class="control-group">
+                        <label for="sampleSize">
+                            Number of Data Points
+                            <span class="hint">More points = clearer patterns but slower</span>
+                        </label>
+                        <input type="number" id="sampleSize" min="50" max="5000" value="300" step="50">
+                        <div class="range-info">50 to 5000 points</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="noiseLevel">
+                            Random Variation
+                            <span class="hint">How scattered the points are from perfect patterns</span>
+                        </label>
+                        <input type="range" id="noiseLevel" min="0" max="1" step="0.05" value="0.2">
+                        <div class="slider-value">
+                            <span id="noiseLevelValue">0.2</span>
+                            <span class="value-label">(<span id="noiseDescription">Moderate scatter</span>)</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group" id="numClassesGroup">
+                        <label for="numClasses">
+                            Number of Groups
+                            <span class="hint">How many different categories to create</span>
+                        </label>
+                        <input type="number" id="numClasses" min="2" max="5" value="2">
+                        <div class="range-info">2 to 5 groups</div>
+                    </div>
+
+                    <div class="control-group" id="numClustersGroup">
+                        <label for="numClusters">
+                            Number of Clusters
+                            <span class="hint">How many natural groups to form</span>
+                        </label>
+                        <input type="number" id="numClusters" min="2" max="6" value="3">
+                        <div class="range-info">2 to 6 clusters</div>
+                    </div>
+
+                    <div class="control-group" id="classBalanceGroup">
+                        <label for="classBalance">
+                            Group Balance
+                            <span class="hint">Whether groups have similar sizes</span>
+                        </label>
+                        <input type="range" id="classBalance" min="0.1" max="1" step="0.1" value="1.0">
+                        <div class="slider-value">
+                            <span id="classBalanceValue">1.0</span>
+                            <span class="value-label">(<span id="balanceDescription">Equal sized groups</span>)</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group" id="featureRangeGroup">
+                        <label>
+                            Data Range
+                            <span class="hint">Minimum and maximum values for features</span>
+                        </label>
+                        <div class="range-inputs">
+                            <div>
+                                <label for="featureMin" class="inline-label">From</label>
+                                <input type="number" id="featureMin" value="-10" step="1">
+                            </div>
+                            <div>
+                                <label for="featureMax" class="inline-label">To</label>
+                                <input type="number" id="featureMax" value="10" step="1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="randomSeed">
+                            Reproducibility Seed
+                            <span class="hint">Same number = exact same dataset</span>
+                        </label>
+                        <input type="number" id="randomSeed" value="42">
+                    </div>
+
+                    <div class="actions">
+                        <button id="generateBtn" class="primary-btn">Create Dataset</button>
+                        <button id="resetBtn" class="secondary-btn">Reset All</button>
+                        <button id="exportBtn" class="success-btn">Download CSV File</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle Panel: Visualization -->
+            <div class="panel visualization-panel">
+                <div class="section">
+                    <h2>Data Visualization</h2>
+                    <div class="visualization-container">
+                        <canvas id="vizCanvas"></canvas>
+                        <div class="viz-overlay" id="vizOverlay">
+                            <p>Create a dataset to see the visualization</p>
+                        </div>
+                    </div>
+                    
+                    <div class="dataset-stats" id="statsContainer">
+                        <div class="stat-placeholder">Dataset statistics will appear here</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Data Preview -->
+            <div class="panel preview-panel">
+                <div class="section">
+                    <h2>Data Table</h2>
+                    <div class="preview-header">
+                        <span id="previewInfo">Configure and create a dataset to preview</span>
+                    </div>
+                    
+                    <div class="info-box" id="featureInfo">
+                        <strong>Tip:</strong> Click column headers to rename them before downloading
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="dataTable">
+                            <thead id="tableHead"></thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="seededRandom.js"></script>
+    <script src="datasetGenerator.js"></script>
+    <script src="visualizer.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
