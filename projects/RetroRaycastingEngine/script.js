@@ -373,7 +373,7 @@ class Engine {
 
                 // Shade side walls darker
                 let finalColor = color;
-                if (side === 1) finalColor = (color >>> 1) & 8355711; // Quick integer divide by 2 for darkening
+                if (side === 1) finalColor = (color >>> 1) & 0x7F7F7F7F; // Quick integer divide by 2 for darkening
 
                 // Depth Shading (Simple linear fog)
                 // If distance is far, blend with black
