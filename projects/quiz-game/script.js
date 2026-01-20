@@ -1057,6 +1057,9 @@ function selectOption(index, element) {
   element.classList.add("selected");
   selectedAnswer = index;
   nextBtn.disabled = false;
+
+  // Stop the timer when answer is selected
+  stopTimer();
 }
 
 function handleNext() {
