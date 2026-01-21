@@ -1,111 +1,76 @@
-:root {
-  --bg:#f4f6f8;
-  --text:#111;
-  --card:#fff;
-  --accent:#4f46e5;
+const input=document.getElementById("codeInput");
+const analyzeBtn=document.getElementById("analyzeBtn");
+const complexityOutput=document.getElementById("complexityOutput");
+const funcCountEl=document.getElementById("funcCount");
+const loopCountEl=document.getElementById("loopCount");
+const nestDepthEl=document.getElementById("nestDepth");
+const recursionEl=document.getElementById("recursion");
+const meterFill=document.getElementById("meterFill");
+const themeToggle=document.getElementById("themeToggle");
+
+themeToggle.onclick=()=>document.body.classList.toggle("dark");
+
+function countMatches(text,regex) {
+  return (text.match(regex)||[]).length;
 }
 
-body.dark {
-  --bg:#0f172a;
-  --text:#f1f5f9;
-  --card:#020617;
-  --accent:#38bdf8;
+function maxNestingDepth(code) {
+  let depth=0;
+  let max=0;
+  for(let char of code) {
+    if(char==="{") {
+      depth++;
+      if(depth>max) max=depth;
+    }
+    if(char==="}") depth--;
+  }
+  return max;
 }
 
-* {
-  box-sizing:border-box;
-  font-family:system-ui,sans-serif;
+function detectRecursion(code) {
+  const funcs=code.match(/function\s+(\w+)/g)||[];
+  for(let f of funcs) {
+    const name=f.split(" ")[1];
+    const body=new RegExp(name+"\\s*\\(","g");
+    if(countMatches(code,body)>1) return true;
+  }
+  return false;
 }
 
-body {
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
+function estimateComplexity(loops,depth,recursion) {
+  if(recursion&&depth>1) return "O(2ⁿ)";
+  if(depth>=3) return "O(n³)";
+  if(depth===2) return "O(n²)";
+  if(loops>0) return "O(n)";
+  return "O(1)";
 }
 
-header {
-  padding:16px 24px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  background:var(--card);
-  box-shadow:0 4px 12px rgba(0,0,0,.1);
-}
-
-main {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:24px;
-  padding:24px;
-}
-
-.editor,.results {
-  background:var(--card);
-  padding:20px;
-  border-radius:12px;
-  box-shadow:0 6px 20px rgba(0,0,0,.1);
-}
-
-textarea {
-  width:100%;
-  height:300px;
-  padding:12px;
-  margin-top:10px;
-  border-radius:8px;
-  border:1px solid #ccc;
-  background:transparent;
-  color:var(--text);
-  resize:none;
-}
-
-button {
-  margin-top:12px;
-  padding:10px 18px;
-  border:none;
-  border-radius:8px;
-  background:var(--accent);
-  color:white;
-  cursor:pointer;
-}
-
-.card {
-  text-align:center;
-  margin-bottom:20px;
-}
-
-.meter {
-  height:20px;
-  background:#ddd;
-  border-radius:20px;
-  overflow:hidden;
-  margin-bottom:16px;
-}
-
-#meterFill {
-  height:100%;
-  width:0%;
-  background:linear-gradient(90deg,#22c55e,#eab308,#ef4444);
-  transition:.4s;
-}
-
-.stats {
-  list-style:none;
-  padding:0;
-}
-
-.stats li {
-  padding:6px 0;
-}
-
-footer {
-  text-align:center;
-  padding:16px;
-  opacity:.6;
-}
-
-@media(max-width:900px) {
-  main {
-    grid-template-columns:1fr;
+function meterValue(bigO) {
+  switch(bigO) {
+    case "O(1)": return 15;
+    case "O(n)": return 40;
+    case "O(n²)": return 65;
+    case "O(n³)": return 85;
+    case "O(2ⁿ)": return 100;
+    default: return 0;
   }
 }
+
+analyzeBtn.onclick=()=>{
+  const code=input.value;
+
+  const functions=countMatches(code,/function\s+\w+/g);
+  const loops=countMatches(code,/for\s*\(|while\s*\(|do\s*\{/g);
+  const depth=maxNestingDepth(code);
+  const recursion=detectRecursion(code);
+
+  const complexity=estimateComplexity(loops,depth,recursion);
+
+  funcCountEl.textContent=functions;
+  loopCountEl.textContent=loops;
+  nestDepthEl.textContent=depth;
+  recursionEl.textContent=recursion?"Yes":"No";
+  complexityOutput.textContent=complexity;
+
+  meterFill.style.width=meterValue(complexity)+"%";
+};
