@@ -629,12 +629,18 @@ function stopCelebration() {
 
 // Share Functions
 function getShareText() {
-  const winnerText =
-    gameMode === "pvc"
-      ? lastWinner === playerSymbol
-        ? "I just won"
-        : "I lost to the computer"
-      : `Player ${lastWinner} won`;
+  let winnerText;
+  if (lastWinner === null) {
+    // It's a draw
+    winnerText = gameMode === "pvc" ? "It's a draw against the computer" : "It's a draw";
+  } else {
+    winnerText =
+      gameMode === "pvc"
+        ? lastWinner === playerSymbol
+          ? "I just won"
+          : "I lost to the computer"
+        : `Player ${lastWinner} won`;
+  }
 
   return `🎮 ${winnerText} at Tic Tac Toe! Can you beat me? Play now! 🏆`;
 }
