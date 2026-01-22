@@ -45,6 +45,10 @@ OpenPlayground is where creativity meets code! Whether you're building your firs
 ---
 
 ## 🚀 Quick Start Guide
+⚠️ Important:
+Do not open index.html directly using the file:// protocol.
+Please run the project using a local development server,
+otherwise some components may fail to load.
 
 ### 👀 For Visitors
 

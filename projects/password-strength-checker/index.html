@@ -1,43 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Password Strength Checker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenPlayground | Enterprise Password Suite</title>
+  <!-- Remix Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-  <div class="card glass">
-    <h2>🔐 Password Strength Checker</h2>
+  <div class="app-container">
+    <!-- Floating Toasts -->
+    <div id="toast-container" class="toast-container"></div>
 
-    <div class="password-field">
-      <input type="password" id="password" placeholder="Enter your password" />
-      <span id="toggle">👁️</span>
+    <div class="card glass main-card">
+      <header class="app-header">
+        <div class="header-content">
+          <div class="header-top">
+            <a href="../../index.html" class="back-home"><i class="ri-arrow-left-line"></i> Back to Home</a>
+            <div class="version-badge">v2.1</div>
+          </div>
+          <h1><i class="ri-shield-keyhole-line"></i> GuardiX <span>Suite</span></h1>
+          <p class="subtitle">Secure Encryption & Security Analytics</p>
+        </div>
+        <div class="tab-scroller">
+          <nav class="tab-group" id="main-tabs">
+            <button class="tab-btn active" data-tab="generator"><i class="ri-refresh-line"></i> Generator</button>
+            <button class="tab-btn" data-tab="analyzer"><i class="ri-pulse-line"></i> Analyzer</button>
+            <button class="tab-btn" data-tab="history"><i class="ri-history-line"></i> History</button>
+          </nav>
+        </div>
+      </header>
+
+      <main class="tab-content-container">
+        <!-- Tab: Generator -->
+        <section class="tab-content active" id="tab-generator">
+          <div class="password-display-card">
+            <div class="password-wrap">
+              <input type="text" id="generated-password" readonly value="G#rdiX-P@ss-2026" />
+              <div class="password-actions">
+                <button id="copy-btn" title="Copy to Clipboard"><i class="ri-clipboard-line"></i></button>
+                <button id="sync-gen-btn" title="Regenerate"><i class="ri-restart-line"></i></button>
+              </div>
+            </div>
+            <div class="entropy-mini-bar">
+              <div id="entropy-lvl" class="lvl-high"></div>
+            </div>
+          </div>
+
+          <div class="generator-controls">
+            <div class="control-group">
+              <label>Password Length: <span id="length-val">16</span></label>
+              <input type="range" id="pass-length" min="8" max="64" value="16" class="ui-slider">
+              <div class="slider-marks">
+                <span>8</span><span>16</span><span>32</span><span>64</span>
+              </div>
+            </div>
+
+            <div class="options-grid">
+              <label class="ui-checkbox">
+                <input type="checkbox" id="include-upper" checked>
+                <span class="checkmark"></span>
+                Uppercase (A-Z)
+              </label>
+              <label class="ui-checkbox">
+                <input type="checkbox" id="include-lower" checked>
+                <span class="checkmark"></span>
+                Lowercase (a-z)
+              </label>
+              <label class="ui-checkbox">
+                <input type="checkbox" id="include-numbers" checked>
+                <span class="checkmark"></span>
+                Numbers (0-9)
+              </label>
+              <label class="ui-checkbox">
+                <input type="checkbox" id="include-symbols" checked>
+                <span class="checkmark"></span>
+                Symbols (!@#$)
+              </label>
+            </div>
+
+            <div class="advanced-toggle">
+              <button id="toggle-algo-settings" class="btn-link">Advanced Algorithm Settings <i
+                  class="ri-arrow-down-s-line"></i></button>
+              <div id="algo-settings" class="collapsible hidden">
+                <div class="control-group">
+                  <label>Generation Algorithm</label>
+                  <select id="gen-method" class="ui-select">
+                    <option value="csprng">Secure Random (CSPRNG)</option>
+                    <option value="diceware">Diceware (Wordlist)</option>
+                    <option value="phonetic">Pronounceable</option>
+                  </select>
+                </div>
+                <label class="ui-checkbox">
+                  <input type="checkbox" id="exclude-similar">
+                  <span class="checkmark"></span>
+                  Exclude Similar (i, l, 1, L, o, 0, O)
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <button id="master-gen-btn" class="primary-btn">
+            <i class="ri-lock-password-line"></i> Generate Secure Password
+          </button>
+        </section>
+
+        <!-- Tab: Analyzer -->
+        <section class="tab-content" id="tab-analyzer">
+          <div class="analysis-input-group">
+            <div class="input-wrap">
+              <input type="password" id="check-password" placeholder="Paste password to analyze..." />
+              <button id="toggle-visibility" class="btn-icon"><i class="ri-eye-line"></i></button>
+            </div>
+          </div>
+
+          <div class="strength-metrics">
+            <div class="metric-card entropy">
+              <div class="metric-label">Entropy Score</div>
+              <div class="metric-value"><span id="metric-entropy">0</span><small>bits</small></div>
+              <div class="metric-visual">
+                <svg viewbox="0 0 36 36" class="circular-chart">
+                  <path class="circle-bg"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  <path id="entropy-circle" class="circle" stroke-dasharray="0, 100"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+              </div>
+            </div>
+            <div class="metric-card crack-time">
+              <div class="metric-label">Est. Crack Time</div>
+              <div class="metric-value" id="metric-crack-time">Instant</div>
+              <p class="metric-hint">Calculated for brute-force @ 10^10 hashes/sec</p>
+            </div>
+          </div>
+
+          <div class="security-checklist">
+            <h3>Security Audit</h3>
+            <ul id="audit-list">
+              <li class="audit-item" data-rule="length"><i class="ri-close-circle-line"></i> 12+ Characters</li>
+              <li class="audit-item" data-rule="mixed"><i class="ri-close-circle-line"></i> Mixed Case</li>
+              <li class="audit-item" data-rule="numbers"><i class="ri-close-circle-line"></i> Digit Inclusion</li>
+              <li class="audit-item" data-rule="symbols"><i class="ri-close-circle-line"></i> Symbol Inclusion</li>
+              <li class="audit-item" data-rule="leaked"><i class="ri-close-circle-line"></i> Known Breach Check</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Tab: History -->
+        <section class="tab-content" id="tab-history">
+          <div class="history-header">
+            <h3>Session History</h3>
+            <button id="clear-history" class="btn-outline-sm">Clear All</button>
+          </div>
+          <div id="history-container" class="history-list">
+            <div class="empty-state">
+              <i class="ri-history-line"></i>
+              <p>No passwords generated yet</p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <div class="security-status">
+          <i class="ri-shield-check-fill"></i> Local Encryption Active
+        </div>
+        <div class="version">v2.1.0-Enterprise</div>
+      </footer>
     </div>
-
-    <button id="generate-btn" class="generate-btn">
-      Generate Strong Password
-    </button>
-
-
-    <div class="strength-bar">
-      <div id="strength-indicator"></div>
-    </div>
-
-    <p id="strength-text"></p>
-
-    <ul class="rules">
-      <li id="length">✔ Minimum 8 characters</li>
-      <li id="uppercase">✔ At least one uppercase letter</li>
-      <li id="lowercase">✔ At least one lowercase letter</li>
-      <li id="number">✔ At least one number</li>
-      <li id="special">✔ At least one special character</li>
-    </ul>
-
-    <div class="suggestion-box" id="suggestions"></div>
   </div>
 
   <script src="script.js"></script>
 </body>
+
 </html>

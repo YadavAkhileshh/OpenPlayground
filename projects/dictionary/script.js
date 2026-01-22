@@ -16,7 +16,8 @@ async function searchWord() {
     return;
   }
 
-  result.innerHTML = "Loading...";
+  result.innerHTML = `<div class="loading">Searching meaning...</div>`;
+
 
   try {
     const res = await fetch(
@@ -29,17 +30,28 @@ async function searchWord() {
 
     const data = await res.json();
     displayResult(data[0]);
-  } catch (err) {
-    showError("No definition found. Try another word.");
+  } 
+  catch (err) {
+  if (err.message === "Word not found") {
+    showError("Word not found. Please check spelling.");
+  } else {
+    showError("Network error. Try again later.");
   }
+}
+
 }
 
 function displayResult(data) {
   const meaning = data.meanings[0];
   const definition = meaning.definitions[0];
 
+  const audioUrl = data.phonetics.find(p => p.audio)?.audio;
+
   result.innerHTML = `
-    <div class="word">${data.word}</div>
+    <div class="word">
+      ${data.word}
+      ${audioUrl ? `<button class="audio-btn" onclick="playAudio('${audioUrl}')">🔊</button>` : ""}
+    </div>
     <div class="part-of-speech">${meaning.partOfSpeech}</div>
     <div class="definition">${definition.definition}</div>
     ${
@@ -48,6 +60,10 @@ function displayResult(data) {
         : ""
     }
   `;
+}
+
+function playAudio(url) {
+  new Audio(url).play();
 }
 
 function showError(message) {
