@@ -289,6 +289,12 @@ class ProjectManager {
             return `
                 <div class="card" data-category="${this.escapeHtml(project.category)}" onclick="window.location.href='${this.escapeHtml(project.link)}'; event.stopPropagation();">
                     <div class="card-actions">
+                        <button class="collection-btn ${isBookmarked ? 'visible' : ''}"
+                                data-project-title="${this.escapeHtml(project.title)}"
+                                onclick="event.preventDefault(); event.stopPropagation(); window.showCollectionDropdown(this, '${this.escapeHtml(project.title)}', '${this.escapeHtml(project.link)}', '${this.escapeHtml(project.category)}', '${this.escapeHtml(project.description || '')}');"
+                                title="Add to Collection">
+                            <i class="ri-folder-add-line"></i>
+                        </button>
                         <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
                                 data-project-title="${this.escapeHtml(project.title)}" 
                                 onclick="event.preventDefault(); event.stopPropagation(); window.toggleProjectBookmark(this, '${this.escapeHtml(project.title)}', '${this.escapeHtml(project.link)}', '${this.escapeHtml(project.category)}', '${this.escapeHtml(project.description || '')}');"
@@ -338,6 +344,11 @@ class ProjectManager {
                         <p class="list-card-description">${this.escapeHtml(project.description || '')}</p>
                     </div>
                     <div class="list-card-actions">
+                        <button class="collection-btn ${isBookmarked ? 'visible' : ''}"
+                                onclick="window.showCollectionDropdown(this, '${this.escapeHtml(project.title)}', '${this.escapeHtml(project.link)}', '${this.escapeHtml(project.category)}', '${this.escapeHtml(project.description || '')}');"
+                                title="Add to Collection">
+                            <i class="ri-folder-add-line"></i>
+                        </button>
                         <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}"
                                 onclick="window.toggleProjectBookmark(this, '${this.escapeHtml(project.title)}', '${this.escapeHtml(project.link)}', '${this.escapeHtml(project.category)}', '${this.escapeHtml(project.description || '')}');"
                                 title="${isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}">
@@ -539,7 +550,150 @@ window.toggleProjectBookmark = function (btn, title, link, category, description
     btn.classList.toggle('bookmarked', isNowBookmarked);
     if (icon) icon.className = isNowBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
 
+    // Update collection button visibility
+    const card = btn.closest('.card, .list-card');
+    if (card) {
+        const collectionBtn = card.querySelector('.collection-btn');
+        if (collectionBtn) {
+            collectionBtn.classList.toggle('visible', isNowBookmarked);
+        }
+    }
+
     notificationManager.success(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
+};
+
+/**
+ * Global Collection Dropdown Function
+ */
+window.showCollectionDropdown = function (btn, title, link, category, description) {
+    if (!window.bookmarksManager) return;
+    
+    // Ensure project is bookmarked first
+    const project = { title, link, category, description };
+    if (!window.bookmarksManager.isBookmarked(title)) {
+        window.bookmarksManager.addBookmark(project);
+        
+        // Update bookmark button state
+        const card = btn.closest('.card, .list-card');
+        if (card) {
+            const bookmarkBtn = card.querySelector('.bookmark-btn');
+            if (bookmarkBtn) {
+                bookmarkBtn.classList.add('bookmarked');
+                const icon = bookmarkBtn.querySelector('i');
+                if (icon) icon.className = 'ri-bookmark-fill';
+            }
+        }
+        
+        notificationManager.success('Added to bookmarks');
+    }
+    
+    // Remove any existing dropdown
+    const existingDropdown = document.querySelector('.collection-dropdown');
+    if (existingDropdown) {
+        existingDropdown.remove();
+    }
+    
+    const collections = window.bookmarksManager.getAllCollections();
+    const projectCollections = window.bookmarksManager.getProjectCollections(title);
+    
+    const dropdown = document.createElement('div');
+    dropdown.className = 'collection-dropdown';
+    
+    const escapeHtml = (str) => {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    };
+    
+    const escapeHtmlAttr = (str) => {
+        if (!str) return '';
+        return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    };
+    
+    let collectionsHtml = collections.map(collection => {
+        const isInCollection = projectCollections.some(c => c.id === collection.id);
+        return `
+            <button class="collection-dropdown-item ${isInCollection ? 'in-collection' : ''}" 
+                    data-collection-id="${collection.id}"
+                    data-project-title="${escapeHtmlAttr(title)}">
+                <i class="${collection.icon}" style="color: ${collection.color}"></i>
+                <span>${escapeHtml(collection.name)}</span>
+                ${isInCollection ? '<i class="ri-check-line check-icon"></i>' : ''}
+            </button>
+        `;
+    }).join('');
+    
+    dropdown.innerHTML = `
+        <div class="collection-dropdown-header">
+            <span>Add to Collection</span>
+        </div>
+        <div class="collection-dropdown-list">
+            ${collectionsHtml}
+        </div>
+        <div class="collection-dropdown-footer">
+            <button class="collection-dropdown-create">
+                <i class="ri-add-line"></i>
+                <span>New Collection</span>
+            </button>
+        </div>
+    `;
+    
+    // Position the dropdown
+    const rect = btn.getBoundingClientRect();
+    dropdown.style.position = 'fixed';
+    dropdown.style.top = `${rect.bottom + 8}px`;
+    dropdown.style.left = `${Math.min(rect.left, window.innerWidth - 220)}px`;
+    dropdown.style.zIndex = '10001';
+    
+    document.body.appendChild(dropdown);
+    
+    // Handle collection item clicks
+    dropdown.querySelectorAll('.collection-dropdown-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const collectionId = item.dataset.collectionId;
+            const projectTitle = item.dataset.projectTitle;
+            
+            if (item.classList.contains('in-collection')) {
+                window.bookmarksManager.removeFromCollection(projectTitle, collectionId);
+                item.classList.remove('in-collection');
+                item.querySelector('.check-icon')?.remove();
+                notificationManager.success('Removed from collection');
+            } else {
+                window.bookmarksManager.addToCollection(projectTitle, collectionId);
+                item.classList.add('in-collection');
+                const checkIcon = document.createElement('i');
+                checkIcon.className = 'ri-check-line check-icon';
+                item.appendChild(checkIcon);
+                notificationManager.success('Added to collection');
+            }
+        });
+    });
+    
+    // Handle create collection button
+    dropdown.querySelector('.collection-dropdown-create').addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropdown.remove();
+        if (window.showCreateCollectionModal) {
+            window.showCreateCollectionModal(title);
+        }
+    });
+    
+    // Close dropdown when clicking outside
+    const closeDropdown = (e) => {
+        if (!dropdown.contains(e.target) && e.target !== btn) {
+            dropdown.remove();
+            document.removeEventListener('click', closeDropdown);
+        }
+    };
+    
+    setTimeout(() => {
+        document.addEventListener('click', closeDropdown);
+    }, 0);
 };
 
 // Toast notifications are now handled by NotificationManager
