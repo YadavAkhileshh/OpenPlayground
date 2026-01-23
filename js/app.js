@@ -96,6 +96,9 @@ class ProjectManager {
             this.state.visibilityEngine = new ProjectVisibilityEngine(this.state.allProjects);
             this.state.visibilityEngine.state.itemsPerPage = this.config.ITEMS_PER_PAGE;
 
+            // Load state from URL after engine is ready
+            this.loadURLState();
+
             console.log(`📦 Loaded ${this.state.allProjects.length} projects.`);
             this.render();
 
@@ -183,12 +186,10 @@ class ProjectManager {
         if (el.filterBtns) {
             el.filterBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    el.filterBtns.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-
                     const filter = btn.dataset.filter;
-                    this.state.visibilityEngine?.setCategory(filter);
+                    this.state.visibilityEngine?.toggleCategory(filter);
                     this.state.currentPage = 1;
+                    this.updateFilterUI();
                     this.render();
                 });
             });
@@ -233,6 +234,10 @@ class ProjectManager {
         const el = this.elements;
 
         this.state.visibilityEngine.setPage(this.state.currentPage);
+
+        // Sync to URL
+        this.syncURLState();
+
         let filtered = this.state.visibilityEngine.getVisibleProjects();
 
         // Sorting
@@ -412,6 +417,86 @@ class ProjectManager {
             return `https://github.com/YadavAkhileshh/OpenPlayground/tree/main/projects/${encodeURIComponent(folderMatch[1])}`;
         }
         return link;
+    }
+
+    /* -----------------------------------------------------------
+     * Multi-Filter and URL Persistence Logic
+     * ----------------------------------------------------------- */
+    updateFilterUI() {
+        const activeCategories = this.state.visibilityEngine.state.categories;
+        const el = this.elements;
+
+        if (!el.filterBtns) return;
+
+        el.filterBtns.forEach(btn => {
+            const filter = btn.dataset.filter.toLowerCase();
+            const isActive = activeCategories.has(filter);
+            btn.classList.toggle('active', isActive);
+        });
+    }
+
+    syncURLState() {
+        const engine = this.state.visibilityEngine;
+        if (!engine) return;
+
+        const params = new URLSearchParams(window.location.search);
+
+        // Search
+        if (engine.state.searchQuery) params.set('search', engine.state.searchQuery);
+        else params.delete('search');
+
+        // Categories
+        const cats = Array.from(engine.state.categories);
+        if (cats.length > 0 && !cats.includes('all')) {
+            params.set('cats', cats.join(','));
+        } else {
+            params.delete('cats');
+        }
+
+        // Page
+        if (this.state.currentPage > 1) params.set('page', this.state.currentPage);
+        else params.delete('page');
+
+        // View Mode
+        if (this.state.viewMode !== 'card') params.set('view', this.state.viewMode);
+        else params.delete('view');
+
+        const newRelativePathQuery = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+        window.history.replaceState({ path: newRelativePathQuery }, '', newRelativePathQuery);
+    }
+
+    loadURLState() {
+        const params = new URLSearchParams(window.location.search);
+        const engine = this.state.visibilityEngine;
+        if (!engine) return;
+
+        // Search
+        const search = params.get('search');
+        if (search) {
+            engine.setSearchQuery(search);
+            if (this.elements.searchInput) this.elements.searchInput.value = search;
+        }
+
+        // Categories
+        const cats = params.get('cats');
+        if (cats) {
+            engine.state.categories.clear();
+            cats.split(',').forEach(c => engine.state.categories.add(c.toLowerCase()));
+            this.updateFilterUI();
+        }
+
+        // Page
+        const page = parseInt(params.get('page'));
+        if (page && !isNaN(page)) this.state.currentPage = page;
+
+        // View Mode
+        const view = params.get('view');
+        if (view === 'list' || view === 'card') {
+            this.state.viewMode = view;
+            const el = this.elements;
+            el.cardViewBtn?.classList.toggle('active', view === 'card');
+            el.listViewBtn?.classList.toggle('active', view === 'list');
+        }
     }
 }
 

@@ -15,7 +15,7 @@ export class ProjectVisibilityEngine {
 
         this.state = {
             searchQuery: "",
-            category: "all",
+            categories: new Set(["all"]),
             page: 1,
             itemsPerPage: 10,
         };
@@ -30,8 +30,22 @@ export class ProjectVisibilityEngine {
         this.state.page = 1;
     }
 
-    setCategory(category) {
-        this.state.category = category.toLowerCase();
+    toggleCategory(category) {
+        const cat = category.toLowerCase();
+        if (cat === "all") {
+            this.state.categories.clear();
+            this.state.categories.add("all");
+        } else {
+            this.state.categories.delete("all");
+            if (this.state.categories.has(cat)) {
+                this.state.categories.delete(cat);
+            } else {
+                this.state.categories.add(cat);
+            }
+            if (this.state.categories.size === 0) {
+                this.state.categories.add("all");
+            }
+        }
         this.state.page = 1;
     }
 
@@ -41,7 +55,7 @@ export class ProjectVisibilityEngine {
 
     reset() {
         this.state.searchQuery = "";
-        this.state.category = "all";
+        this.state.categories = new Set(["all"]);
         this.state.page = 1;
     }
 
@@ -56,8 +70,8 @@ export class ProjectVisibilityEngine {
 
             const projectCat = project.category ? project.category.toLowerCase() : "";
             const matchesCategory =
-                this.state.category === "all" ||
-                projectCat === this.state.category;
+                this.state.categories.has("all") ||
+                this.state.categories.has(projectCat);
 
             return matchesSearch && matchesCategory;
         });
