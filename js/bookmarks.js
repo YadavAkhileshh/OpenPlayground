@@ -76,6 +76,73 @@ class BookmarksManager {
         return [...this.bookmarks];
     }
 
+    // Enhanced search functionality
+    searchBookmarks(query) {
+        if (!query.trim()) return this.getBookmarks();
+        
+        const searchTerm = query.toLowerCase();
+        return this.bookmarks.filter(bookmark => 
+            bookmark.title.toLowerCase().includes(searchTerm) ||
+            bookmark.description.toLowerCase().includes(searchTerm) ||
+            bookmark.category.toLowerCase().includes(searchTerm) ||
+            (bookmark.tech && bookmark.tech.some(tech => tech.toLowerCase().includes(searchTerm)))
+        );
+    }
+
+    // Category-wise organization
+    getBookmarksByCategory() {
+        const categories = {};
+        this.bookmarks.forEach(bookmark => {
+            const category = bookmark.category || 'uncategorized';
+            if (!categories[category]) categories[category] = [];
+            categories[category].push(bookmark);
+        });
+        return categories;
+    }
+
+    // Export bookmarks
+    exportBookmarks() {
+        const data = {
+            bookmarks: this.bookmarks,
+            exportedAt: new Date().toISOString(),
+            version: '1.0'
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `openplayground-bookmarks-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        
+        URL.revokeObjectURL(url);
+    }
+
+    // Bulk actions
+    removeMultipleBookmarks(titles) {
+        const removed = [];
+        titles.forEach(title => {
+            const index = this.bookmarks.findIndex(b => b.title === title);
+            if (index !== -1) {
+                removed.push(this.bookmarks.splice(index, 1)[0]);
+            }
+        });
+        
+        if (removed.length > 0) {
+            this.saveBookmarks();
+            this.dispatchEvent('bookmarksRemoved', removed);
+        }
+        return removed.length;
+    }
+
+    // Recently bookmarked
+    getRecentBookmarks(limit = 5) {
+        return this.bookmarks
+            .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0))
+            .slice(0, limit);
+    }
+
     getBookmarkCount() {
         return this.bookmarks.length;
     }
@@ -209,7 +276,195 @@ document.addEventListener('componentLoaded', (e) => {
 setTimeout(addBookmarkButtonsToCards, 1500);
 setTimeout(addBookmarkButtonsToCards, 3000);
 
-// Export for module usage
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { BookmarksManager };
+// Enhanced Bookmarks Page Functionality
+class BookmarksPageManager {
+    constructor() {
+        this.currentView = 'all';
+        this.selectedBookmarks = new Set();
+        this.init();
+    }
+
+    init() {
+        this.setupSearchFunctionality();
+        this.setupCategoryFilter();
+        this.setupBulkActions();
+        this.renderBookmarks();
+    }
+
+    setupSearchFunctionality() {
+        const searchInput = document.getElementById('bookmark-search');
+        if (!searchInput) return;
+
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.renderBookmarks(e.target.value);
+            }, 300);
+        });
+    }
+
+    setupCategoryFilter() {
+        const categoryFilter = document.getElementById('category-filter');
+        if (!categoryFilter) return;
+
+        categoryFilter.addEventListener('change', (e) => {
+            this.currentView = e.target.value;
+            this.renderBookmarks();
+        });
+    }
+
+    setupBulkActions() {
+        const selectAllBtn = document.getElementById('select-all-bookmarks');
+        const deleteSelectedBtn = document.getElementById('delete-selected');
+        const exportBtn = document.getElementById('export-bookmarks');
+
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', () => this.toggleSelectAll());
+        }
+
+        if (deleteSelectedBtn) {
+            deleteSelectedBtn.addEventListener('click', () => this.deleteSelected());
+        }
+
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                window.bookmarksManager.exportBookmarks();
+            });
+        }
+    }
+
+    renderBookmarks(searchQuery = '') {
+        const container = document.getElementById('bookmarks-container');
+        if (!container) return;
+
+        let bookmarks;
+        if (searchQuery) {
+            bookmarks = window.bookmarksManager.searchBookmarks(searchQuery);
+        } else if (this.currentView === 'recent') {
+            bookmarks = window.bookmarksManager.getRecentBookmarks(10);
+        } else if (this.currentView !== 'all') {
+            const byCategory = window.bookmarksManager.getBookmarksByCategory();
+            bookmarks = byCategory[this.currentView] || [];
+        } else {
+            bookmarks = window.bookmarksManager.getBookmarks();
+        }
+
+        if (bookmarks.length === 0) {
+            container.innerHTML = `
+                <div class="empty-bookmarks">
+                    <i class="ri-bookmark-line"></i>
+                    <h3>No bookmarks found</h3>
+                    <p>Start bookmarking projects to see them here!</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = bookmarks.map(bookmark => this.renderBookmarkCard(bookmark)).join('');
+        this.attachBookmarkEvents();
+    }
+
+    renderBookmarkCard(bookmark) {
+        const isSelected = this.selectedBookmarks.has(bookmark.title);
+        return `
+            <div class="bookmark-card" data-title="${bookmark.title}">
+                <div class="bookmark-checkbox">
+                    <input type="checkbox" ${isSelected ? 'checked' : ''} 
+                           onchange="bookmarksPageManager.toggleSelection('${bookmark.title}')">
+                </div>
+                <div class="bookmark-content" onclick="window.location.href='${bookmark.link}'">
+                    <div class="bookmark-icon ${bookmark.coverClass || ''}" style="${bookmark.coverStyle || ''}">
+                        <i class="${bookmark.icon || 'ri-code-box-line'}"></i>
+                    </div>
+                    <div class="bookmark-info">
+                        <h3>${bookmark.title}</h3>
+                        <p>${bookmark.description || 'No description available'}</p>
+                        <div class="bookmark-meta">
+                            <span class="category">${bookmark.category}</span>
+                            <span class="date">Added ${this.formatDate(bookmark.addedAt)}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bookmark-actions">
+                    <button onclick="bookmarksPageManager.removeBookmark('${bookmark.title}')" 
+                            title="Remove bookmark">
+                        <i class="ri-delete-bin-line"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    toggleSelection(title) {
+        if (this.selectedBookmarks.has(title)) {
+            this.selectedBookmarks.delete(title);
+        } else {
+            this.selectedBookmarks.add(title);
+        }
+        this.updateBulkActionButtons();
+    }
+
+    toggleSelectAll() {
+        const bookmarks = window.bookmarksManager.getBookmarks();
+        if (this.selectedBookmarks.size === bookmarks.length) {
+            this.selectedBookmarks.clear();
+        } else {
+            bookmarks.forEach(b => this.selectedBookmarks.add(b.title));
+        }
+        this.renderBookmarks();
+        this.updateBulkActionButtons();
+    }
+
+    deleteSelected() {
+        if (this.selectedBookmarks.size === 0) return;
+        
+        if (confirm(`Delete ${this.selectedBookmarks.size} selected bookmarks?`)) {
+            const removed = window.bookmarksManager.removeMultipleBookmarks([...this.selectedBookmarks]);
+            this.selectedBookmarks.clear();
+            this.renderBookmarks();
+            this.updateBulkActionButtons();
+            
+            showBookmarkToast(`Removed ${removed} bookmarks`);
+        }
+    }
+
+    removeBookmark(title) {
+        if (confirm('Remove this bookmark?')) {
+            window.bookmarksManager.removeBookmark(title);
+            this.selectedBookmarks.delete(title);
+            this.renderBookmarks();
+            showBookmarkToast('Bookmark removed');
+        }
+    }
+
+    updateBulkActionButtons() {
+        const deleteBtn = document.getElementById('delete-selected');
+        const selectAllBtn = document.getElementById('select-all-bookmarks');
+        
+        if (deleteBtn) {
+            deleteBtn.disabled = this.selectedBookmarks.size === 0;
+            deleteBtn.textContent = `Delete (${this.selectedBookmarks.size})`;
+        }
+        
+        if (selectAllBtn) {
+            const bookmarks = window.bookmarksManager.getBookmarks();
+            selectAllBtn.textContent = this.selectedBookmarks.size === bookmarks.length ? 'Deselect All' : 'Select All';
+        }
+    }
+
+    formatDate(timestamp) {
+        if (!timestamp) return 'Unknown';
+        const date = new Date(timestamp);
+        return date.toLocaleDateString();
+    }
+
+    attachBookmarkEvents() {
+        // Events are handled inline in the HTML for simplicity
+    }
+}
+
+// Initialize bookmarks page manager
+if (document.getElementById('bookmarks-container')) {
+    window.bookmarksPageManager = new BookmarksPageManager();
 }
