@@ -20,6 +20,12 @@ document.addEventListener("componentLoaded", (e) => {
     const backToChatBtn = document.getElementById("backToChat");
     const chatInputArea = document.querySelector(".chatbot-input");
 
+    // Clear History Elements
+    const clearBtn = document.getElementById("chatbot-clear");
+    const clearModal = document.getElementById("clear-history-modal");
+    const cancelClear = document.getElementById("cancel-clear");
+    const confirmClear = document.getElementById("confirm-clear");
+
     // Toggle chatbot visibility
     function toggleChatbot() {
       if (!chatbot) return;
@@ -35,6 +41,28 @@ document.addEventListener("componentLoaded", (e) => {
     if (closeChat) {
       closeChat.addEventListener("click", () => {
         if (chatbot) chatbot.style.display = "none";
+      });
+    }
+
+    // Clear History Functionality
+    if (clearBtn) {
+      clearBtn.addEventListener("click", showClearModal);
+    }
+
+    if (cancelClear) {
+      cancelClear.addEventListener("click", hideClearModal);
+    }
+
+    if (confirmClear) {
+      confirmClear.addEventListener("click", clearChatHistory);
+    }
+
+    // Click outside modal to close
+    if (clearModal) {
+      clearModal.addEventListener("click", (e) => {
+        if (e.target === clearModal) {
+          hideClearModal();
+        }
       });
     }
 
@@ -240,6 +268,42 @@ document.addEventListener("componentLoaded", (e) => {
         messages.scrollTop = messages.scrollHeight;
         if (i === text.length) clearInterval(typing);
       }, 20);
+    }
+
+    // Clear History Functions
+    function showClearModal() {
+      if (clearModal) {
+        clearModal.style.display = "flex";
+      }
+    }
+
+    function hideClearModal() {
+      if (clearModal) {
+        clearModal.style.display = "none";
+      }
+    }
+
+    function clearChatHistory() {
+      if (!messages) return;
+
+      // Clear all messages except the initial greeting
+      const allMessages = messages.querySelectorAll('.bot-message, .user-message');
+      allMessages.forEach(msg => {
+        if (!msg.textContent.includes("Hi 👋 I'm OpenPlayground AI")) {
+          msg.remove();
+        }
+      });
+
+      // Reset bot state
+      currentState = "idle";
+
+      // Hide modal
+      hideClearModal();
+
+      // Optional: Show confirmation message
+      setTimeout(() => {
+        typeMessage("🗑️ Chat history cleared! How can I help you today?");
+      }, 300);
     }
 
     // Expose toggleChatbot globally if needed
