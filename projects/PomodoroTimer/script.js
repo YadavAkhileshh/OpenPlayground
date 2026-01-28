@@ -5,6 +5,15 @@ const resetBtn = document.getElementById('reset-btn');
 const statusMsg = document.getElementById('status-msg');
 const modeBtns = document.querySelectorAll('.mode-btn');
 const sessionCountDisplay = document.getElementById('session-count');
+const settingsBtn = document.getElementById('settings-btn');
+const settingsModal = document.getElementById('settings-modal');
+const closeModalBtn = document.getElementById('close-modal-btn');
+const saveSettingsBtn = document.getElementById('save-settings-btn');
+const bgMusic = document.getElementById('bg-music');
+const soundToggle = document.getElementById('sound-toggle');
+const focusInput = document.getElementById('focus-time-in');
+const shortInput = document.getElementById('short-break-in');
+const longInput = document.getElementById('long-break-in');
 
 const MODES = {
     focus: { time: 25, color: '#ff6b6b', msg: 'Time to focus!' },
@@ -17,17 +26,66 @@ let timeLeft = MODES[currentMode].time * 60;
 let timerInterval = null;
 let isRunning = false;
 let sessionsCompleted = 0;
+let isMusicEnabled = false;
 
 function init() {
     updateDisplay();
     updateTheme();
 }
 
+function handleBackgroundMusic(action) {
+    if (!isMusicEnabled) {
+        bgMusic.pause();
+        return;
+    }
+    
+    if (action === 'play') {
+        if (currentMode === 'focus') {
+            bgMusic.volume = 0.5;
+            bgMusic.play().catch(e => console.log("Audio play failed:", e));
+        } else {
+            bgMusic.pause();
+        }
+    } else if (action === 'pause') {
+        bgMusic.pause();
+    }
+}
+
+settingsBtn.addEventListener('click', () => {
+    focusInput.value = MODES.focus.time;
+    shortInput.value = MODES.shortBreak.time;
+    longInput.value = MODES.longBreak.time;
+    settingsModal.classList.remove('hidden');
+});
+
+closeModalBtn.addEventListener('click', () => {
+    settingsModal.classList.add('hidden');
+});
+
+window.addEventListener('click', (e) => {
+    if (e.target === settingsModal) {
+        settingsModal.classList.add('hidden');
+    }
+});
+
+saveSettingsBtn.addEventListener('click', () => {
+    MODES.focus.time = parseInt(focusInput.value) || 25;
+    MODES.shortBreak.time = parseInt(shortInput.value) || 5;
+    MODES.longBreak.time = parseInt(longInput.value) || 15;
+
+    isMusicEnabled = soundToggle.checked;
+
+    settingsModal.classList.add('hidden');
+
+    resetTimer();
+});
+
 function startTimer() {
     if (isRunning) return;
     
     isRunning = true;
     toggleControls(true);
+    handleBackgroundMusic('play');
     
     timerInterval = setInterval(() => {
         timeLeft--;
@@ -43,6 +101,7 @@ function pauseTimer() {
     isRunning = false;
     clearInterval(timerInterval);
     toggleControls(false);
+    handleBackgroundMusic('pause');
 }
 
 function resetTimer() {
@@ -53,6 +112,7 @@ function resetTimer() {
 
 function handleTimerComplete() {
     pauseTimer();
+    handleBackgroundMusic('pause');
     playNotificationSound();
     
     if (currentMode === 'focus') {
