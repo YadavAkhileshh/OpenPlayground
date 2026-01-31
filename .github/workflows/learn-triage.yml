@@ -1,0 +1,33 @@
+﻿name: Learn from Triage Corrections
+
+on:
+  issues:
+    types: [labeled, unlabeled]
+
+permissions:
+  issues: read
+  contents: write
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install @octokit/rest
+
+      - name: Update triage data
+        run: node scripts/learn-triage.js
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ACTION: ${{ github.event.action }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
