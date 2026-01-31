@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursor Effects Playground</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ed 100%);
+            color: #333;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #555, #888);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            color: #555;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 2px solid transparent;
+            min-width: 160px;
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .mode-btn.active {
+            border-color: #888;
+            background: #f8f9fa;
+            color: #222;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .mode-btn.trail {
+            background: linear-gradient(135deg, #f0f0f0, #ffffff);
+        }
+
+        .mode-btn.sparkle {
+            background: linear-gradient(135deg, #f5f5f5, #ffffff);
+        }
+
+        .mode-btn.bubble {
+            background: linear-gradient(135deg, #f8f8f8, #ffffff);
+        }
+
+        /* Settings Panel */
+        .settings {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px auto;
+            max-width: 800px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .settings h2 {
+            margin-bottom: 25px;
+            color: #444;
+            font-size: 1.8rem;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+            font-size: 1rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            background: #888;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .value-display {
+            font-size: 0.9rem;
+            color: #777;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        /* Demo Area */
+        .demo-area {
+            height: 400px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            margin: 40px auto;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .demo-title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+            color: #666;
+            text-align: center;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 30px;
+            border-radius: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .instructions {
+            text-align: center;
+            margin: 30px 0;
+            color: #777;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        /* Cursor Effects */
+        .cursor-trail {
+            position: fixed;
+            width: 12px;
+            height: 12px;
+            background: rgba(100, 100, 100, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease, opacity 0.3s ease;
+        }
+
+        .sparkle {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: rgba(150, 150, 150, 0.8);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            animation: sparkleFade 0.6s forwards;
+            box-shadow: 0 0 10px rgba(200, 200, 200, 0.5);
+        }
+
+        @keyframes sparkleFade {
+            0% {
+                transform: scale(1) translate(-50%, -50%);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(3) translate(-50%, -50%);
+                opacity: 0;
+            }
+        }
+
+        .bubble {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(180, 180, 180, 0.2);
+            border: 1px solid rgba(150, 150, 150, 0.3);
+            pointer-events: none;
+            z-index: 10000;
+            animation: bubbleFloat 1.2s forwards;
+        }
+
+        @keyframes bubbleFloat {
+            0% {
+                transform: scale(0) translate(-50%, -50%);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(1) translate(-50%, -50%) translateY(-40px);
+                opacity: 0;
+            }
+        }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            min-width: 150px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .controls {
+                gap: 10px;
+            }
+            
+            .mode-btn {
+                padding: 14px 20px;
+                min-width: 120px;
+                font-size: 1rem;
+            }
+            
+            .demo-area {
+                height: 300px;
+            }
+            
+            .stats {
+                gap: 15px;
+            }
+            
+            .stat {
+                min-width: 120px;
+                padding: 15px;
+            }
+            
+            .stat-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Cursor Effects Playground</h1>
+            <p class="subtitle">Interactive cursor effects with real-time customization</p>
+            <p class="subtitle">Move your cursor around to see the effects!</p>
+        </header>
+
+        <div class="controls">
+            <button class="mode-btn trail active" data-mode="trail">Trail Effect</button>
+            <button class="mode-btn sparkle" data-mode="sparkle">Sparkle Effect</button>
+            <button class="mode-btn bubble" data-mode="bubble">Bubble Effect</button>
+        </div>
+
+        <div class="settings">
+            <h2>Effect Settings</h2>
+            <div class="settings-grid">
+                <div class="setting-group">
+                    <label for="sizeRange">Effect Size</label>
+                    <input type="range" id="sizeRange" min="4" max="40" value="12">
+                    <div class="value-display" id="sizeValue">12px</div>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="opacityRange">Opacity</label>
+                    <input type="range" id="opacityRange" min="10" max="100" value="50">
+                    <div class="value-display" id="opacityValue">50%</div>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="trailLength">Trail Length</label>
+                    <input type="range" id="trailLength" min="5" max="30" value="15">
+                    <div class="value-display" id="trailValue">15 particles</div>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="speedRange">Animation Speed</label>
+                    <input type="range" id="speedRange" min="1" max="10" value="5">
+                    <div class="value-display" id="speedValue">Medium</div>
+                </div>
+            </div>
+        </div>
+
+        <p class="instructions">
+            Click on any effect button to switch modes. Adjust settings to customize the effects. 
+            Move your cursor around the demo area to see your changes in real-time!
+        </p>
+
+        <div class="demo-area">
+            <div class="demo-title">Effect Demo Area</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="effectCount">0</div>
+                <div class="stat-label">Effects Created</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="currentMode">Trail</div>
+                <div class="stat-label">Current Mode</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="fpsCounter">60</div>
+                <div class="stat-label">FPS</div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Cursor Effects Playground • Move cursor to see effects • Click buttons to switch modes</p>
+            <p>Made with vanilla JavaScript • No external libraries required</p>
+        </footer>
+    </div>
+
+    <script>
+        // State
+        let currentMode = 'trail';
+        let effectsCount = 0;
+        let lastTime = 0;
+        let fps = 60;
+        
+        // Settings
+        let settings = {
+            size: 12,
+            opacity: 0.5,
+            trailLength: 15,
+            speed: 5,
+            color: '#888888'
+        };
+        
+        // Trail particles
+        let trailParticles = [];
+        const maxTrailParticles = 30;
+        
+        // DOM Elements
+        const modeButtons = document.querySelectorAll('.mode-btn');
+        const effectCountElement = document.getElementById('effectCount');
+        const currentModeElement = document.getElementById('currentMode');
+        const fpsCounter = document.getElementById('fpsCounter');
+        
+        // Range inputs
+        const sizeRange = document.getElementById('sizeRange');
+        const opacityRange = document.getElementById('opacityRange');
+        const trailLengthRange = document.getElementById('trailLength');
+        const speedRange = document.getElementById('speedRange');
+        
+        // Value displays
+        const sizeValue = document.getElementById('sizeValue');
+        const opacityValue = document.getElementById('opacityValue');
+        const trailValue = document.getElementById('trailValue');
+        const speedValue = document.getElementById('speedValue');
+        
+        // Initialize
+        function init() {
+            setupEventListeners();
+            updateSettingsDisplays();
+            animate();
+            updateStats();
+        }
+        
+        // Event Listeners
+        function setupEventListeners() {
+            // Mode buttons
+            modeButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    switchMode(button.dataset.mode);
+                });
+            });
+            
+            // Range inputs
+            sizeRange.addEventListener('input', updateSize);
+            opacityRange.addEventListener('input', updateOpacity);
+            trailLengthRange.addEventListener('input', updateTrailLength);
+            speedRange.addEventListener('input', updateSpeed);
+            
+            // Mouse movement
+            document.addEventListener('mousemove', handleMouseMove);
+            
+            // Touch support for mobile
+            document.addEventListener('touchmove', handleTouchMove);
+            
+            // FPS counter
+            setInterval(updateFPS, 1000);
+        }
+        
+        // Mode switching
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Update active button
+            modeButtons.forEach(button => {
+                button.classList.toggle('active', button.dataset.mode === mode);
+            });
+            
+            // Update stats
+            currentModeElement.textContent = 
+                mode.charAt(0).toUpperCase() + mode.slice(1);
+            
+            // Clear existing effects
+            clearAllEffects();
+        }
+        
+        // Mouse movement handler
+        function handleMouseMove(e) {
+            createEffect(e.clientX, e.clientY);
+        }
+        
+        // Touch movement handler
+        function handleTouchMove(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            createEffect(touch.clientX, touch.clientY);
+        }
+        
+        // Create effect based on current mode
+        function createEffect(x, y) {
+            effectsCount++;
+            effectCountElement.textContent = effectsCount;
+            
+            switch(currentMode) {
+                case 'trail':
+                    createTrailEffect(x, y);
+                    break;
+                case 'sparkle':
+                    createSparkleEffect(x, y);
+                    break;
+                case 'bubble':
+                    createBubbleEffect(x, y);
+                    break;
+            }
+        }
+        
+        // Trail Effect
+        function createTrailEffect(x, y) {
+            // Create new trail particle
+            const particle = document.createElement('div');
+            particle.className = 'cursor-trail';
+            
+            // Apply settings
+            const size = settings.size;
+            const opacity = settings.opacity;
+            
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.background = `rgba(120, 120, 120, ${opacity})`;
+            particle.style.left = `${x}px`;
+            particle.style.top = `${y}px`;
+            
+            // Add to document
+            document.body.appendChild(particle);
+            
+            // Store in array
+            trailParticles.push({
+                element: particle,
+                x: x,
+                y: y,
+                life: 1.0
+            });
+            
+            // Limit array size
+            if (trailParticles.length > settings.trailLength) {
+                const oldParticle = trailParticles.shift();
+                if (oldParticle.element.parentNode) {
+                    oldParticle.element.parentNode.removeChild(oldParticle.element);
+                }
+            }
+        }
+        
+        // Sparkle Effect
+        function createSparkleEffect(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            
+            const size = settings.size * 0.7;
+            const opacity = settings.opacity;
+            
+            sparkle.style.width = `${size}px`;
+            sparkle.style.height = `${size}px`;
+            sparkle.style.background = `rgba(150, 150, 150, ${opacity})`;
+            sparkle.style.left = `${x}px`;
+            sparkle.style.top = `${y}px`;
+            sparkle.style.animationDuration = `${0.6 / (settings.speed / 5)}s`;
+            
+            document.body.appendChild(sparkle);
+            
+            // Remove after animation
+            setTimeout(() => {
+                if (sparkle.parentNode) {
+                    sparkle.parentNode.removeChild(sparkle);
+                }
+            }, 600);
+        }
+        
+        // Bubble Effect
+        function createBubbleEffect(x, y) {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            
+            const size = Math.random() * settings.size + settings.size / 2;
+            const opacity = settings.opacity * 0.5;
+            
+            bubble.style.width = `${size}px`;
+            bubble.style.height = `${size}px`;
+            bubble.style.background = `rgba(180, 180, 180, ${opacity})`;
+            bubble.style.border = `1px solid rgba(150, 150, 150, ${opacity * 2})`;
+            bubble.style.left = `${x}px`;
+            bubble.style.top = `${y}px`;
+            bubble.style.animationDuration = `${1.2 / (settings.speed / 5)}s`;
+            
+            document.body.appendChild(bubble);
+            
+            // Remove after animation
+            setTimeout(() => {
+                if (bubble.parentNode) {
+                    bubble.parentNode.removeChild(bubble);
+                }
+            }, 1200);
+        }
+        
+        // Clear all effects
+        function clearAllEffects() {
+            // Clear trail particles
+            trailParticles.forEach(particle => {
+                if (particle.element.parentNode) {
+                    particle.element.parentNode.removeChild(particle.element);
+                }
+            });
+            trailParticles = [];
+            
+            // Clear other effects
+            const effects = document.querySelectorAll('.sparkle, .bubble');
+            effects.forEach(effect => {
+                if (effect.parentNode) {
+                    effect.parentNode.removeChild(effect);
+                }
+            });
+        }
+        
+        // Animation loop
+        function animate(currentTime) {
+            // Calculate FPS
+            if (lastTime) {
+                const delta = currentTime - lastTime;
+                fps = Math.round(1000 / delta);
+            }
+            lastTime = currentTime;
+            
+            // Update trail particles
+            if (currentMode === 'trail') {
+                updateTrailParticles();
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // Update trail particles
+        function updateTrailParticles() {
+            const decayRate = 0.05 + (settings.speed / 100);
+            
+            for (let i = trailParticles.length - 1; i >= 0; i--) {
+                const particle = trailParticles[i];
+                particle.life -= decayRate;
+                
+                if (particle.life <= 0) {
+                    // Remove dead particle
+                    if (particle.element.parentNode) {
+                        particle.element.parentNode.removeChild(particle.element);
+                    }
+                    trailParticles.splice(i, 1);
+                } else {
+                    // Update opacity
+                    particle.element.style.opacity = particle.life * settings.opacity;
+                    
+                    // Shrink size
+                    const scale = 0.5 + particle.life * 0.5;
+                    particle.element.style.transform = `translate(-50%, -50%) scale(${scale})`;
+                }
+            }
+        }
+        
+        // Settings updates
+        function updateSize() {
+            settings.size = parseInt(sizeRange.value);
+            sizeValue.textContent = `${settings.size}px`;
+        }
+        
+        function updateOpacity() {
+            settings.opacity = parseInt(opacityRange.value) / 100;
+            opacityValue.textContent = `${parseInt(opacityRange.value)}%`;
+        }
+        
+        function updateTrailLength() {
+            settings.trailLength = parseInt(trailLengthRange.value);
+            trailValue.textContent = `${settings.trailLength} particles`;
+        }
+        
+        function updateSpeed() {
+            settings.speed = parseInt(speedRange.value);
+            const speedLabels = ['Very Slow', 'Slow', 'Medium', 'Fast', 'Very Fast'];
+            const speedIndex = Math.floor((settings.speed - 1) / 2);
+            speedValue.textContent = speedLabels[speedIndex] || 'Medium';
+        }
+        
+        function updateSettingsDisplays() {
+            updateSize();
+            updateOpacity();
+            updateTrailLength();
+            updateSpeed();
+        }
+        
+        // Stats updates
+        function updateStats() {
+            // Update FPS counter
+            setInterval(() => {
+                fpsCounter.textContent = Math.min(fps, 60);
+            }, 500);
+            
+            // Update effect count
+            setInterval(() => {
+                if (effectsCount > 999) {
+                    effectsCount = 0;
+                    effectCountElement.textContent = '0';
+                }
+            }, 10000);
+        }
+        
+        function updateFPS() {
+            // Already updated in animation loop
+        }
+        
+        // Initialize the playground
+        init();
+    </script>
+</body>
+</html>
