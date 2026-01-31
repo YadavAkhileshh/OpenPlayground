@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microservices Architecture Simulator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ Microservices Architecture Simulator</h1>
+            <p>Visualize and test distributed system patterns in real-time</p>
+        </div>
+
+        <div class="main-content">
+            <div class="control-panel">
+                <div class="panel-section">
+                    <h3>🎯 System Controls</h3>
+                    <button class="btn btn-success" onclick="simulator.startSimulation()">▶️ Start Simulation</button>
+                    <button class="btn btn-warning" onclick="simulator.pauseSimulation()">⏸️ Pause</button>
+                    <button class="btn btn-danger" onclick="simulator.resetSimulation()">🔄 Reset</button>
+                </div>
+
+                <div class="panel-section">
+                    <h3>🔧 Service Management</h3>
+                    <div class="input-group">
+                        <label>Service Name:</label>
+                        <input type="text" id="serviceName" placeholder="e.g., user-service">
+                    </div>
+                    <div class="input-group">
+                        <label>Service Type:</label>
+                        <select id="serviceType">
+                            <option value="microservice">Microservice</option>
+                            <option value="api-gateway">API Gateway</option>
+                            <option value="load-balancer">Load Balancer</option>
+                            <option value="service-discovery">Service Discovery</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="simulator.addService()">➕ Add Service</button>
+                    <button class="btn btn-danger" onclick="simulator.removeService()">➖ Remove Selected</button>
+                </div>
+
+                <div class="panel-section">
+                    <h3>⚙️ Feature Toggles</h3>
+                    <div class="toggle-group">
+                        <button class="btn toggle-btn" id="toggleCircuitBreaker" onclick="simulator.toggleFeature('circuitBreaker')">🔌 Circuit Breaker</button>
+                        <button class="btn toggle-btn" id="toggleRateLimit" onclick="simulator.toggleFeature('rateLimit')">⏱️ Rate Limiting</button>
+                        <button class="btn toggle-btn" id="toggleLoadBalance" onclick="simulator.toggleFeature('loadBalance')">⚖️ Load Balancing</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>🎲 Chaos Testing</h3>
+                    <div class="chaos-controls">
+                        <button class="btn btn-warning" onclick="simulator.injectLatency()">⏰ Inject Latency</button>
+                        <button class="btn btn-danger" onclick="simulator.causeServiceFailure()">💥 Service Failure</button>
+                        <button class="btn btn-warning" onclick="simulator.networkPartition()">🌐 Network Partition</button>
+                        <button class="btn btn-danger" onclick="simulator.memoryLeak()">💾 Memory Leak</button>
+                        <button class="btn btn-success" onclick="simulator.healAllServices()">💚 Heal All</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>📊 Traffic Control</h3>
+                    <div class="input-group">
+                        <label>Request Rate (req/s): <span id="rpsValue">10</span></label>
+                        <input type="range" id="requestRate" min="1" max="100" value="10" onchange="simulator.updateRequestRate(this.value)">
+                    </div>
+                    <div class="input-group">
+                        <label>Failure Rate (%): <span id="failureValue">10</span></label>
+                        <input type="range" id="failureRate" min="0" max="100" value="10" onchange="simulator.updateFailureRate(this.value)">
+                    </div>
+                </div>
+            </div>
+
+            <div class="visualization-area">
+                <div class="tabs">
+                    <button class="tab active" onclick="simulator.switchTab('architecture')">🏗️ Architecture</button>
+                    <button class="tab" onclick="simulator.switchTab('metrics')">📊 Metrics</button>
+                    <button class="tab" onclick="simulator.switchTab('logs')">📝 Logs</button>
+                    <button class="tab" onclick="simulator.switchTab('traffic')">🌐 Traffic</button>
+                </div>
+
+                <div id="architecture" class="tab-content active">
+                    <div class="architecture-canvas" id="canvas"></div>
+                </div>
+
+                <div id="metrics" class="tab-content">
+                    <div class="metrics-dashboard">
+                        <div class="metric-card">
+                            <div class="metric-title">Total Requests</div>
+                            <div class="metric-value" id="totalRequests">0</div>
+                            <div class="metric-change">↑ +0 this minute</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Success Rate</div>
+                            <div class="metric-value" id="successRate">100%</div>
+                            <div class="metric-change">Last 5 minutes</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Avg Latency</div>
+                            <div class="metric-value" id="avgLatency">0ms</div>
+                            <div class="metric-change">p95: <span id="p95Latency">0ms</span></div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Active Services</div>
+                            <div class="metric-value" id="activeServices">0</div>
+                            <div class="metric-change">Healthy services</div>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-label">Circuit Breakers Open</div>
+                            <div class="stat-value" id="circuitBreakersOpen">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Rate Limited Requests</div>
+                            <div class="stat-value" id="rateLimited">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Failed Requests</div>
+                            <div class="stat-value" id="failedRequests">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Avg Response Time</div>
+                            <div class="stat-value" id="avgResponseTime">0ms</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="logs" class="tab-content">
+                    <div class="logs-container" id="logsContainer"></div>
+                </div>
+
+                <div id="traffic" class="tab-content">
+                    <h3 style="margin-bottom: 20px;">Real-time Traffic Visualization</h3>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-label">Requests/Second</div>
+                            <div class="stat-value" id="currentRPS">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Load Distribution</div>
+                            <div class="stat-value" id="loadDistribution">Even</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Network Bandwidth</div>
+                            <div class="stat-value" id="bandwidth">0 MB/s</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Connection Pool</div>
+                            <div class="stat-value" id="connectionPool">0/100</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 30px; background: #f8f9fa; padding: 20px; border-radius: 12px;">
+                        <h4 style="margin-bottom: 15px;">Service Health Overview</h4>
+                        <div id="serviceHealthList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
