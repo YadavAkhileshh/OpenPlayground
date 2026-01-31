@@ -1,0 +1,171 @@
+<!-- Sandbox Panel Component -->
+<!-- Feature #1334: Project Playground Sandbox & Live Preview -->
+<!-- This component is dynamically rendered by sandboxEngine.js -->
+
+<!-- 
+    The sandbox panel is created programmatically via JavaScript.
+    This file documents the structure for reference and potential server-side rendering.
+    
+    Usage:
+    1. Include sandboxEngine.js in your page
+    2. Call window.sandboxEngine.open(project) with project data
+    3. Preview buttons are automatically added to project cards
+
+    Features:
+    - Resizable preview panel (25%, 50%, 75%, fullscreen)
+    - Device preview modes (phone, tablet, desktop)
+    - Mini code editor with HTML/CSS/JS tabs
+    - Fork & Edit functionality with localStorage persistence
+    - Export modified code as ZIP
+    - Undo/Redo history
+    - Keyboard shortcuts (Esc, Ctrl+Enter, Ctrl+S, Ctrl+Z, Ctrl+Y)
+-->
+
+<template id="sandbox-panel-template">
+    <div class="sandbox-panel">
+        <div class="sandbox-overlay"></div>
+        <div class="sandbox-container">
+            <!-- Header -->
+            <div class="sandbox-header">
+                <div class="sandbox-title">
+                    <i class="ri-code-box-line"></i>
+                    <span id="sandbox-project-title">Project Preview</span>
+                    <span class="sandbox-badge">Sandbox</span>
+                </div>
+                <div class="sandbox-controls">
+                    <!-- Size Controls -->
+                    <div class="sandbox-size-controls">
+                        <button class="size-btn" data-size="25%" title="25% width">
+                            <i class="ri-layout-column-line"></i>
+                        </button>
+                        <button class="size-btn active" data-size="50%" title="50% width">
+                            <i class="ri-layout-2-line"></i>
+                        </button>
+                        <button class="size-btn" data-size="75%" title="75% width">
+                            <i class="ri-layout-right-2-line"></i>
+                        </button>
+                        <button class="size-btn" data-size="100%" title="Fullscreen">
+                            <i class="ri-fullscreen-line"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="sandbox-divider"></div>
+                    
+                    <!-- Device Preview -->
+                    <div class="sandbox-device-controls">
+                        <button class="device-btn" data-device="phone" title="Phone View">
+                            <i class="ri-smartphone-line"></i>
+                        </button>
+                        <button class="device-btn" data-device="tablet" title="Tablet View">
+                            <i class="ri-tablet-line"></i>
+                        </button>
+                        <button class="device-btn active" data-device="desktop" title="Desktop View">
+                            <i class="ri-computer-line"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="sandbox-divider"></div>
+                    
+                    <!-- Actions -->
+                    <div class="sandbox-actions">
+                        <button class="action-btn" id="sandbox-refresh-btn" title="Refresh Preview (Ctrl+Enter)">
+                            <i class="ri-refresh-line"></i>
+                        </button>
+                        <button class="action-btn" id="sandbox-undo-btn" title="Undo (Ctrl+Z)" disabled>
+                            <i class="ri-arrow-go-back-line"></i>
+                        </button>
+                        <button class="action-btn" id="sandbox-redo-btn" title="Redo (Ctrl+Y)" disabled>
+                            <i class="ri-arrow-go-forward-line"></i>
+                        </button>
+                        <button class="action-btn" id="sandbox-fork-btn" title="Fork & Edit">
+                            <i class="ri-git-branch-line"></i>
+                        </button>
+                        <button class="action-btn" id="sandbox-export-btn" title="Export as ZIP">
+                            <i class="ri-download-2-line"></i>
+                        </button>
+                        <button class="action-btn" id="sandbox-open-btn" title="Open in New Tab">
+                            <i class="ri-external-link-line"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="sandbox-divider"></div>
+                    
+                    <button class="sandbox-close-btn" title="Close (Esc)">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Body -->
+            <div class="sandbox-body">
+                <!-- Code Editor Section -->
+                <div class="sandbox-editor-section" id="sandbox-editor-section">
+                    <div class="editor-tabs">
+                        <button class="editor-tab active" data-tab="html">
+                            <i class="ri-html5-line"></i> HTML
+                        </button>
+                        <button class="editor-tab" data-tab="css">
+                            <i class="ri-css3-line"></i> CSS
+                        </button>
+                        <button class="editor-tab" data-tab="js">
+                            <i class="ri-javascript-line"></i> JS
+                        </button>
+                        <button class="toggle-editor-btn" id="toggle-editor-btn" title="Toggle Editor">
+                            <i class="ri-code-line"></i>
+                        </button>
+                    </div>
+                    <div class="editor-panels">
+                        <div class="editor-panel active" data-panel="html">
+                            <textarea id="sandbox-html-editor" class="code-editor" placeholder="<!-- HTML code here -->"></textarea>
+                        </div>
+                        <div class="editor-panel" data-panel="css">
+                            <textarea id="sandbox-css-editor" class="code-editor" placeholder="/* CSS styles here */"></textarea>
+                        </div>
+                        <div class="editor-panel" data-panel="js">
+                            <textarea id="sandbox-js-editor" class="code-editor" placeholder="// JavaScript code here"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Preview Section -->
+                <div class="sandbox-preview-section">
+                    <div class="preview-device-frame desktop" id="preview-device-frame">
+                        <div class="device-notch" id="device-notch"></div>
+                        <iframe 
+                            id="sandbox-iframe"
+                            class="sandbox-iframe"
+                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                            title="Project Preview"
+                        ></iframe>
+                    </div>
+                    <div class="preview-info">
+                        <span id="preview-device-label">Desktop</span>
+                        <span id="preview-dimensions"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Resize Handle -->
+            <div class="sandbox-resize-handle" id="sandbox-resize-handle">
+                <i class="ri-drag-move-2-line"></i>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Quick Preview Button Template -->
+<template id="preview-btn-template">
+    <button class="preview-btn" title="Quick Preview">
+        <i class="ri-play-circle-line"></i>
+    </button>
+</template>
+
+<!-- 
+    Keyboard Shortcuts Reference:
+    - Esc: Close sandbox panel
+    - Ctrl+Enter: Refresh preview
+    - Ctrl+S: Fork/Save project
+    - Ctrl+Z: Undo (when editor not focused)
+    - Ctrl+Y: Redo (when editor not focused)
+    - Tab: Insert spaces in editor
+-->
