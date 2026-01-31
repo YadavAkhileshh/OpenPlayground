@@ -26,6 +26,33 @@ projects/your-project-name/
 └── README.md           # Documentation (optional)
 ```
 
+### 🚀 NEW: Full Stack / Backend Projects
+
+We now support complex projects in various languages and frameworks! Full-stack projects are stored in the `full-stack/` folder, organized by category. These do not appear in the main UI but are accessible directly in the repository.
+
+**Directory Structure:**
+```
+full-stack/
+├── [category]/         # e.g., mern, python, go, rust
+│   └── your-project/
+│       ├── client/     # Frontend code (if any)
+│       ├── server/     # Backend code
+│       └── README.md   # README WITH SETUP INSTRUCTIONS ⭐
+```
+
+**Requirements:**
+- **Categorization:** Place your project in the correct language/framework folder (create one if it doesn't exist).
+- **Structure:** Use separate `client` and `server` folders where applicable.
+- **Detailed README:** Include:
+  - Project description & features.
+  - Full setup and run instructions.
+  - Author name and social links (for credits).
+- **Environment Variables:** Provide `.env.example`. **DO NOT commit `.env` files.**
+
+**Categories:** `mern` | `python` (Flask, Django, FastAPI) | `go` | `rust` | `java` | `php` | `experimental`
+
+
+
 ### ❌ DO NOT MODIFY These Files
 
 - `index.html` (root) - Auto-generated from components

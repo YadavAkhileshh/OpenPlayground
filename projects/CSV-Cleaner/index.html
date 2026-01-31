@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Cleaner Tool | Remove Empty Rows & Fix Delimiters</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 400;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            padding: 25px;
+            gap: 25px;
+        }
+
+        .upload-section {
+            background-color: #f9f9ff;
+            border-radius: 10px;
+            padding: 25px;
+            border: 2px dashed #667eea;
+        }
+
+        .upload-area {
+            text-align: center;
+            padding: 40px 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            background-color: #f0f2ff;
+        }
+
+        .upload-area i {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .upload-area h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .upload-area p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .or-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .or-divider::before, .or-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #ddd;
+        }
+
+        .or-divider span {
+            padding: 0 15px;
+            color: #777;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #e1e5eb;
+            border-radius: 8px;
+            font-size: 16px;
+            line-height: 1.5;
+            resize: vertical;
+            transition: border 0.3s;
+            font-family: 'Courier New', monospace;
+            background-color: #fdfdfd;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .controls-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .control-group {
+            background-color: #f9f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .control-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-title i {
+            color: #667eea;
+        }
+
+        .checkbox-group, .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .checkbox-item, .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-item input, .radio-item input {
+            width: 18px;
+            height: 18px;
+        }
+
+        .select-group {
+            margin-top: 10px;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e1e5eb;
+            border-radius: 6px;
+            font-size: 16px;
+            background-color: white;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .preview-section {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .preview-section.active {
+            display: block;
+        }
+
+        .table-container {
+            border: 1px solid #e1e5eb;
+            border-radius: 8px;
+            overflow: auto;
+            max-height: 500px;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th {
+            background-color: #667eea;
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th:last-child {
+            border-right: none;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            border-right: 1px solid #eee;
+        }
+
+        td:last-child {
+            border-right: none;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9ff;
+        }
+
+        tr:hover {
+            background-color: #f0f2ff;
+        }
+
+        .empty-row {
+            background-color: #fff5f5 !important;
+        }
+
+        .empty-row td {
+            color: #999;
+            font-style: italic;
+        }
+
+        .stats {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            gap: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+        }
+
+        .stat-good {
+            color: #28a745;
+        }
+
+        .stat-bad {
+            color: #dc3545;
+        }
+
+        .stat-neutral {
+            color: #667eea;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .btn-primary {
+            background-color: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #f1f3f9;
+            color: #2c3e50;
+            border: 1px solid #ddd;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e4e8f0;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background-color: #667eea;
+            color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .file-name {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            border-top: 1px solid #eee;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 15px;
+            }
+            
+            .upload-section {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .stat-item {
+                min-width: 100px;
+            }
+            
+            .controls-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .csv-example {
+            font-size: 0.8rem;
+            color: #777;
+            margin-top: 8px;
+            cursor: pointer;
+            text-decoration: underline;
+            text-align: center;
+        }
+
+        .issues-list {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff5f5;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+            display: none;
+        }
+
+        .issues-list.active {
+            display: block;
+        }
+
+        .issue-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 6px;
+        }
+
+        .issue-item i {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-broom"></i> CSV Cleaner Tool</h1>
+            <p class="subtitle">Remove empty rows, fix delimiters, preview and clean your CSV data with ease</p>
+        </header>
+        
+        <div class="content">
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-file-csv"></i>
+                    <h3>Upload or Paste CSV Data</h3>
+                    <p>Drag & drop a CSV file or click to browse</p>
+                    <button class="btn-primary">
+                        <i class="fas fa-upload"></i> Browse Files
+                    </button>
+                    <input type="file" id="fileInput" accept=".csv,.txt" style="display: none;">
+                    
+                    <div class="or-divider">
+                        <span>OR</span>
+                    </div>
+                    
+                    <div>
+                        <p>Paste CSV data directly</p>
+                        <textarea id="csvInput" placeholder="Paste your CSV data here...
+Example:
+Name,Email,Phone,Department
+John Doe,john@example.com,555-1234,Engineering
+Jane Smith,jane@example.com,555-5678,Marketing
+,,,
+Robert Johnson,robert@example.com,555-9012,Sales"></textarea>
+                        <div class="csv-example" id="loadExample">Load example CSV data</div>
+                    </div>
+                    
+                    <div class="file-name" id="fileName"></div>
+                </div>
+                
+                <div class="controls-section">
+                    <div class="control-group">
+                        <h3 class="control-title"><i class="fas fa-filter"></i> Row Cleaning</h3>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="removeEmptyRows" checked>
+                                <span>Remove completely empty rows</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="removePartialRows">
+                                <span>Remove rows with empty required columns</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="trimWhitespace" checked>
+                                <span>Trim whitespace from cells</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h3 class="control-title"><i class="fas fa-columns"></i> Column Options</h3>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="removeEmptyColumns">
+                                <span>Remove empty columns</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="normalizeHeaders" checked>
+                                <span>Normalize column headers</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h3 class="control-title"><i class="fas fa-sliders-h"></i> CSV Settings</h3>
+                        <div class="radio-group">
+                            <label class="radio-item">
+                                <input type="radio" name="delimiter" value="comma" checked>
+                                <span>Comma delimiter ( , )</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="delimiter" value="semicolon">
+                                <span>Semicolon delimiter ( ; )</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="delimiter" value="tab">
+                                <span>Tab delimiter</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="delimiter" value="auto">
+                                <span>Auto-detect delimiter</span>
+                            </label>
+                        </div>
+                        
+                        <div class="select-group">
+                            <label for="quoteChar">Quote Character:</label>
+                            <select id="quoteChar">
+                                <option value='"'>Double quotes (")</option>
+                                <option value="'">Single quotes (')</option>
+                                <option value="none">None</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="issues-list" id="issuesList">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Issues Found</h3>
+                    <div id="issuesContainer">
+                        <!-- Issues will be listed here -->
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <button id="previewBtn" class="btn-primary">
+                        <i class="fas fa-eye"></i> Preview Cleaned Data
+                    </button>
+                    <button id="cleanBtn" class="btn-success">
+                        <i class="fas fa-magic"></i> Clean & Download CSV
+                    </button>
+                    <button id="resetBtn" class="btn-secondary">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+            </div>
+            
+            <div class="preview-section" id="previewSection">
+                <h3 class="control-title"><i class="fas fa-table"></i> Preview Cleaned Data</h3>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value stat-neutral" id="originalRows">0</div>
+                        <div class="stat-label">Original Rows</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value stat-good" id="cleanedRows">0</div>
+                        <div class="stat-label">Cleaned Rows</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value stat-bad" id="removedRows">0</div>
+                        <div class="stat-label">Rows Removed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value stat-neutral" id="originalCols">0</div>
+                        <div class="stat-label">Original Columns</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value stat-good" id="cleanedCols">0</div>
+                        <div class="stat-label">Cleaned Columns</div>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table id="previewTable">
+                        <thead id="tableHeader">
+                            <!-- Headers will be generated dynamically -->
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Table rows will be generated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="actions" style="margin-top: 20px;">
+                    <button id="copyBtn" class="btn-secondary">
+                        <i class="fas fa-copy"></i> Copy Cleaned CSV
+                    </button>
+                    <button id="downloadBtn" class="btn-success">
+                        <i class="fas fa-download"></i> Download Cleaned CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>CSV Cleaner Tool &copy; 2026 | Clean and optimize your CSV files with advanced filtering</p>
+        </footer>
+    </div>
+    
+    <div class="notification" id="notification">Notification message</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const csvInput = document.getElementById('csvInput');
+            const fileInput = document.getElementById('fileInput');
+            const uploadArea = document.getElementById('uploadArea');
+            const previewBtn = document.getElementById('previewBtn');
+            const cleanBtn = document.getElementById('cleanBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const loadExample = document.getElementById('loadExample');
+            const fileName = document.getElementById('fileName');
+            const previewSection = document.getElementById('previewSection');
+            const issuesList = document.getElementById('issuesList');
+            const issuesContainer = document.getElementById('issuesContainer');
+            const notification = document.getElementById('notification');
+            
+            // Cleaning options
+            const removeEmptyRows = document.getElementById('removeEmptyRows');
+            const removePartialRows = document.getElementById('removePartialRows');
+            const trimWhitespace = document.getElementById('trimWhitespace');
+            const removeEmptyColumns = document.getElementById('removeEmptyColumns');
+            const normalizeHeaders = document.getElementById('normalizeHeaders');
+            const delimiterRadios = document.querySelectorAll('input[name="delimiter"]');
+            const quoteChar = document.getElementById('quoteChar');
+            
+            // Stats elements
+            const originalRows = document.getElementById('originalRows');
+            const cleanedRows = document.getElementById('cleanedRows');
+            const removedRows = document.getElementById('removedRows');
+            const originalCols = document.getElementById('originalCols');
+            const cleanedCols = document.getElementById('cleanedCols');
+            
+            // Table elements
+            const tableHeader = document.getElementById('tableHeader');
+            const tableBody = document.getElementById('tableBody');
+            
+            // Example CSV data
+            const exampleCSV = `Name,Email,Phone,Department,Notes
+John Doe,john@example.com,555-1234,Engineering,"Works on frontend"
+Jane Smith,jane@example.com,555-5678,Marketing,
+Robert Johnson,robert@example.com,555-9012,Sales,"Senior sales rep"
+,,,,
+Alice Brown,,555-1122,HR,"New hire"
+Bob Wilson,bob@example.com,,Engineering,
+,charlie@example.com,555-3344,,
+David Lee,david@example.com,555-5566,Finance,""
+Eva Green,eva@example.com,555-7788,Marketing,"Marketing lead"`;
+
+            // State variables
+            let originalData = [];
+            let cleanedData = [];
+            let currentDelimiter = ',';
+            let currentQuoteChar = '"';
+            let headers = [];
+            let issues = [];
+            
+            // Load example CSV
+            loadExample.addEventListener('click', function() {
+                csvInput.value = exampleCSV;
+                fileName.textContent = '';
+                showNotification('Example CSV data loaded');
+            });
+            
+            // File upload handling
+            uploadArea.addEventListener('click', function(e) {
+                if (e.target.closest('button')) {
+                    fileInput.click();
+                }
+            });
+            
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                fileName.textContent = `Uploaded file: ${file.name}`;
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    csvInput.value = event.target.result;
+                    showNotification(`File "${file.name}" loaded successfully`);
+                };
+                reader.readAsText(file);
+            });
+            
+            // Drag and drop functionality
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '#f0f2ff';
+            });
+            
+            uploadArea.addEventListener('dragleave', function() {
+                uploadArea.style.backgroundColor = '';
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '';
+                
+                const file = e.dataTransfer.files[0];
+                if (!file) return;
+                
+                // Check if it's a CSV or text file
+                if (!file.name.match(/\.(csv|txt)$/i)) {
+                    showNotification('Please upload a CSV or text file', 'error');
+                    return;
+                }
+                
+                fileName.textContent = `Uploaded file: ${file.name}`;
+                fileInput.files = e.dataTransfer.files;
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    csvInput.value = event.target.result;
+                    showNotification(`File "${file.name}" loaded successfully`);
+                };
+                reader.readAsText(file);
+            });
+            
+            // Reset button
+            resetBtn.addEventListener('click', function() {
+                csvInput.value = '';
+                fileName.textContent = '';
+                previewSection.classList.remove('active');
+                issuesList.classList.remove('active');
+                fileInput.value = '';
+                showNotification('All inputs cleared');
+            });
+            
+            // Update delimiter when radio changes
+            delimiterRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'comma') currentDelimiter = ',';
+                    else if (this.value === 'semicolon') currentDelimiter = ';';
+                    else if (this.value === 'tab') currentDelimiter = '\t';
+                    else if (this.value === 'auto') currentDelimiter = detectDelimiter(csvInput.value);
+                });
+            });
+            
+            // Update quote char when select changes
+            quoteChar.addEventListener('change', function() {
+                currentQuoteChar = this.value === 'none' ? '' : this.value;
+            });
+            
+            // Preview cleaned data
+            previewBtn.addEventListener('click', function() {
+                const csvText = csvInput.value.trim();
+                if (!csvText) {
+                    showNotification('Please enter CSV data first', 'error');
+                    return;
+                }
+                
+                // Detect delimiter if auto is selected
+                if (document.querySelector('input[name="delimiter"]:checked').value === 'auto') {
+                    currentDelimiter = detectDelimiter(csvText);
+                }
+                
+                // Parse CSV
+                const parseResult = parseCSV(csvText, currentDelimiter, currentQuoteChar);
+                originalData = parseResult.data;
+                headers = parseResult.headers;
+                
+                if (originalData.length === 0) {
+                    showNotification('No valid CSV data found', 'error');
+                    return;
+                }
+                
+                // Clean the data
+                const cleanResult = cleanCSV(originalData, headers);
+                cleanedData = cleanResult.data;
+                issues = cleanResult.issues;
+                
+                // Update stats
+                updateStats(originalData, cleanedData);
+                
+                // Display issues if any
+                displayIssues(issues);
+                
+                // Display preview table
+                displayPreviewTable(cleanedData, cleanResult.cleanedHeaders);
+                
+                // Show preview section
+                previewSection.classList.add('active');
+                
+                showNotification(`Preview generated: ${cleanedData.length} rows after cleaning`);
+            });
+            
+            // Clean and download CSV
+            cleanBtn.addEventListener('click', function() {
+                if (cleanedData.length === 0) {
+                    showNotification('Please preview the data first', 'error');
+                    return;
+                }
+                
+                // Convert cleaned data back to CSV
+                const csvContent = convertToCSV(cleanedData, headers, currentDelimiter, currentQuoteChar);
+                
+                // Create download link
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'cleaned_data.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showNotification('Cleaned CSV file downloaded');
+            });
+            
+            // Copy cleaned CSV to clipboard
+            copyBtn.addEventListener('click', function() {
+                if (cleanedData.length === 0) {
+                    showNotification('No data to copy', 'error');
+                    return;
+                }
+                
+                const csvContent = convertToCSV(cleanedData, headers, currentDelimiter, currentQuoteChar);
+                navigator.clipboard.writeText(csvContent)
+                    .then(() => showNotification('Cleaned CSV copied to clipboard'))
+                    .catch(err => showNotification('Failed to copy CSV', 'error'));
+            });
+            
+            // Download cleaned CSV (from preview section)
+            downloadBtn.addEventListener('click', function() {
+                cleanBtn.click();
+            });
+            
+            // Helper function to detect delimiter
+            function detectDelimiter(text) {
+                // Count occurrences of common delimiters in first few lines
+                const lines = text.split('\n').slice(0, 5);
+                const commaCount = lines.reduce((count, line) => count + (line.match(/,/g) || []).length, 0);
+                const semicolonCount = lines.reduce((count, line) => count + (line.match(/;/g) || []).length, 0);
+                const tabCount = lines.reduce((count, line) => count + (line.match(/\t/g) || []).length, 0);
+                
+                // Return the most common delimiter
+                if (tabCount > commaCount && tabCount > semicolonCount) return '\t';
+                if (semicolonCount > commaCount && semicolonCount > tabCount) return ';';
+                return ','; // Default to comma
+            }
+            
+            // Helper function to parse CSV
+            function parseCSV(text, delimiter, quoteChar) {
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                if (lines.length === 0) return { headers: [], data: [] };
+                
+                // Get headers from first line
+                let headers = parseCSVLine(lines[0], delimiter, quoteChar);
+                
+                // Parse data rows
+                const data = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const row = parseCSVLine(lines[i], delimiter, quoteChar);
+                    
+                    // Ensure row has same number of columns as headers
+                    const paddedRow = [...row];
+                    while (paddedRow.length < headers.length) paddedRow.push('');
+                    while (paddedRow.length > headers.length) headers.push(`Column_${headers.length + 1}`);
+                    
+                    data.push(paddedRow);
+                }
+                
+                return { headers, data };
+            }
+            
+            // Helper function to parse a single CSV line
+            function parseCSVLine(line, delimiter, quoteChar) {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    const nextChar = line[i + 1];
+                    
+                    if (char === quoteChar && quoteChar !== '') {
+                        // Handle quoted fields
+                        if (inQuotes && nextChar === quoteChar) {
+                            // Escaped quote
+                            current += quoteChar;
+                            i++; // Skip next character
+                        } else {
+                            // Start or end of quotes
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (char === delimiter && !inQuotes) {
+                        // End of field
+                        result.push(current);
+                        current = '';
+                    } else {
+                        // Regular character
+                        current += char;
+                    }
+                }
+                
+                // Add the last field
+                result.push(current);
+                
+                return result;
+            }
+            
+            // Helper function to clean CSV data
+            function cleanCSV(data, headers) {
+                let cleanedData = [...data];
+                let cleanedHeaders = [...headers];
+                const issues = [];
+                
+                // 1. Trim whitespace if enabled
+                if (trimWhitespace.checked) {
+                    cleanedData = cleanedData.map(row => 
+                        row.map(cell => typeof cell === 'string' ? cell.trim() : cell)
+                    );
+                    cleanedHeaders = cleanedHeaders.map(header => header.trim());
+                }
+                
+                // 2. Normalize headers if enabled
+                if (normalizeHeaders.checked) {
+                    cleanedHeaders = cleanedHeaders.map((header, index) => {
+                        if (!header || header.trim() === '') {
+                            return `Column_${index + 1}`;
+                        }
+                        
+                        // Convert to lowercase, replace spaces with underscores
+                        return header
+                            .toString()
+                            .toLowerCase()
+                            .replace(/\s+/g, '_')
+                            .replace(/[^a-z0-9_]/gi, '');
+                    });
+                    
+                    // Check for duplicate headers
+                    const headerCount = {};
+                    cleanedHeaders.forEach((header, index) => {
+                        if (headerCount[header]) {
+                            headerCount[header]++;
+                            cleanedHeaders[index] = `${header}_${headerCount[header]}`;
+                            issues.push(`Duplicate header "${header}" renamed to "${cleanedHeaders[index]}"`);
+                        } else {
+                            headerCount[header] = 1;
+                        }
+                    });
+                }
+                
+                // 3. Remove empty rows if enabled
+                const originalRowCount = cleanedData.length;
+                if (removeEmptyRows.checked) {
+                    cleanedData = cleanedData.filter(row => {
+                        const isEmpty = row.every(cell => !cell || cell.toString().trim() === '');
+                        if (isEmpty) {
+                            issues.push(`Removed empty row`);
+                        }
+                        return !isEmpty;
+                    });
+                }
+                
+                // 4. Remove rows with empty required columns if enabled
+                if (removePartialRows.checked) {
+                    // For this example, consider first 2 columns as required
+                    const requiredColumns = Math.min(2, cleanedHeaders.length);
+                    cleanedData = cleanedData.filter((row, index) => {
+                        const hasMissingRequired = row.slice(0, requiredColumns).some(cell => !cell || cell.toString().trim() === '');
+                        if (hasMissingRequired) {
+                            issues.push(`Removed row with empty required column(s)`);
+                        }
+                        return !hasMissingRequired;
+                    });
+                }
+                
+                // 5. Remove empty columns if enabled
+                if (removeEmptyColumns.checked) {
+                    const columnCount = cleanedHeaders.length;
+                    const columnsToRemove = [];
+                    
+                    for (let col = 0; col < columnCount; col++) {
+                        const isEmptyColumn = cleanedData.every(row => !row[col] || row[col].toString().trim() === '');
+                        if (isEmptyColumn) {
+                            columnsToRemove.push(col);
+                            issues.push(`Removed empty column "${cleanedHeaders[col]}"`);
+                        }
+                    }
+                    
+                    // Remove columns in reverse order to maintain indices
+                    columnsToRemove.reverse().forEach(col => {
+                        cleanedHeaders.splice(col, 1);
+                        cleanedData = cleanedData.map(row => {
+                            row.splice(col, 1);
+                            return row;
+                        });
+                    });
+                }
+                
+                // Count removed rows
+                const removedRowCount = originalRowCount - cleanedData.length;
+                if (removedRowCount > 0) {
+                    issues.push(`Removed ${removedRowCount} empty or invalid rows`);
+                }
+                
+                return {
+                    data: cleanedData,
+                    cleanedHeaders,
+                    issues
+                };
+            }
+            
+            // Helper function to convert data back to CSV
+            function convertToCSV(data, headers, delimiter, quoteChar) {
+                const escapeQuotes = quoteChar !== '';
+                const quote = quoteChar || '';
+                
+                // Create header row
+                const headerRow = headers.map(header => {
+                    let cell = header.toString();
+                    if (escapeQuotes && cell.includes(quoteChar)) {
+                        cell = cell.replace(new RegExp(quoteChar, 'g'), quoteChar + quoteChar);
+                    }
+                    return escapeQuotes && (cell.includes(delimiter) || cell.includes('\n') || cell.includes(quoteChar)) 
+                        ? quote + cell + quote 
+                        : cell;
+                }).join(delimiter);
+                
+                // Create data rows
+                const dataRows = data.map(row => {
+                    return row.map(cell => {
+                        let cellStr = cell.toString();
+                        if (escapeQuotes && cellStr.includes(quoteChar)) {
+                            cellStr = cellStr.replace(new RegExp(quoteChar, 'g'), quoteChar + quoteChar);
+                        }
+                        return escapeQuotes && (cellStr.includes(delimiter) || cellStr.includes('\n') || cellStr.includes(quoteChar)) 
+                            ? quote + cellStr + quote 
+                            : cellStr;
+                    }).join(delimiter);
+                });
+                
+                return [headerRow, ...dataRows].join('\n');
+            }
+            
+            // Helper function to update stats
+            function updateStats(original, cleaned) {
+                originalRows.textContent = original.length;
+                cleanedRows.textContent = cleaned.length;
+                removedRows.textContent = original.length - cleaned.length;
+                originalCols.textContent = original[0] ? original[0].length : 0;
+                cleanedCols.textContent = cleaned[0] ? cleaned[0].length : 0;
+            }
+            
+            // Helper function to display issues
+            function displayIssues(issues) {
+                if (issues.length === 0) {
+                    issuesList.classList.remove('active');
+                    return;
+                }
+                
+                issuesContainer.innerHTML = '';
+                issues.forEach(issue => {
+                    const issueElement = document.createElement('div');
+                    issueElement.className = 'issue-item';
+                    issueElement.innerHTML = `<i class="fas fa-exclamation-circle"></i> <span>${issue}</span>`;
+                    issuesContainer.appendChild(issueElement);
+                });
+                
+                issuesList.classList.add('active');
+            }
+            
+            // Helper function to display preview table
+            function displayPreviewTable(data, headers) {
+                // Clear existing table
+                tableHeader.innerHTML = '';
+                tableBody.innerHTML = '';
+                
+                // Create table headers
+                headers.forEach(header => {
+                    const th = document.createElement('th');
+                    th.textContent = header;
+                    tableHeader.appendChild(th);
+                });
+                
+                // Create table rows
+                data.forEach((row, rowIndex) => {
+                    const tr = document.createElement('tr');
+                    
+                    // Check if row is empty (for highlighting)
+                    const isEmptyRow = row.every(cell => !cell || cell.toString().trim() === '');
+                    if (isEmptyRow) {
+                        tr.classList.add('empty-row');
+                    }
+                    
+                    row.forEach((cell, cellIndex) => {
+                        const td = document.createElement('td');
+                        td.textContent = cell !== undefined && cell !== null ? cell : '';
+                        
+                        // Check if cell is empty (for highlighting)
+                        if (!cell || cell.toString().trim() === '') {
+                            td.style.color = '#999';
+                            td.style.fontStyle = 'italic';
+                        }
+                        
+                        tr.appendChild(td);
+                    });
+                    
+                    tableBody.appendChild(tr);
+                });
+            }
+            
+            // Helper function to show notifications
+            function showNotification(message, type = 'success') {
+                notification.textContent = message;
+                notification.className = 'notification';
+                
+                // Set color based on type
+                if (type === 'error') {
+                    notification.style.backgroundColor = '#dc3545';
+                } else if (type === 'success') {
+                    notification.style.backgroundColor = '#667eea';
+                } else if (type === 'warning') {
+                    notification.style.backgroundColor = '#ffc107';
+                }
+                
+                // Show notification
+                notification.classList.add('show');
+                
+                // Hide after 3 seconds
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+            
+            // Auto-load example on page load
+            loadExample.click();
+        });
+    </script>
+</body>
+</html>

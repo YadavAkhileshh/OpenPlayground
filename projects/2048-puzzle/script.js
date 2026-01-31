@@ -1,5 +1,6 @@
 const boardEl = document.getElementById("board");
 const scoreEl = document.getElementById("score");
+const gameOverEl = document.getElementById("game-over");
 
 let board = Array(16).fill(0);
 let score = 0;
@@ -46,6 +47,27 @@ function rotate(times) {
   }
 }
 
+function isGameOver() {
+  // Check if there are empty tiles
+  if (board.includes(0)) return false;
+
+  // Check if there are possible merges horizontally
+  for (let i = 0; i < 4; i++) {
+    for (let j = 0; j < 3; j++) {
+      if (board[i * 4 + j] === board[i * 4 + j + 1]) return false;
+    }
+  }
+
+  // Check if there are possible merges vertically
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 4; j++) {
+      if (board[i * 4 + j] === board[(i + 1) * 4 + j]) return false;
+    }
+  }
+
+  return true;
+}
+
 function move(dir) {
   rotate(dir);
   let moved = false;
@@ -64,6 +86,10 @@ function move(dir) {
     addTile();
     scoreEl.textContent = score;
     draw();
+  }
+
+  if (isGameOver()) {
+    gameOverEl.classList.add("show");
   }
 }
 

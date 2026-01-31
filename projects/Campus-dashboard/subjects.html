@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Subjects | Smart Campus</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+        .subject-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        .subject-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+        }
+        .subject-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            width: 4px;
+            background: var(--primary);
+        }
+        /* Color variants */
+        .color-blue::before { background: #3b82f6; }
+        .color-purple::before { background: #a855f7; }
+        .color-cyan::before { background: #06b6d4; }
+        .color-orange::before { background: #f97316; }
+        .color-red::before { background: #ef4444; }
+
+        .subject-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        .code-pill {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .subject-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+        .prof-name {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .subject-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            margin-top: 1rem;
+        }
+        .progress-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 3px;
+        }
+        .schedule-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0,0,0,0.3);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            width: 100%;
+        }
+        .overlay-grade {
+            position: absolute;
+            top: 1.5rem; right: 1.5rem;
+            font-size: 2rem;
+            font-weight: bold;
+            opacity: 0.1;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        /* --- New Additions for Modal & Form --- */
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .btn-add {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+
+        /* Generic Modal */
+        .modal {
+            background: #141521;
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 500px;
+            border-radius: 16px;
+            padding: 2rem;
+            position: relative;
+        }
+        /* Expanded Subject View Modal */
+        .modal.large {
+            max-width: 800px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .modal-body-scroll {
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 1rem;
+        }
+
+        /* Form Styles */
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 0.6rem;
+            background: #05050a; border: 1px solid var(--border); color: #fff;
+            border-radius: 6px;
+        }
+
+        /* Content Sections */
+        .notes-area {
+            width: 100%;
+            height: 150px;
+            background: #05050a;
+            border: 1px solid var(--border);
+            color: #ccc;
+            padding: 1rem;
+            border-radius: 8px;
+            resize: vertical;
+            font-family: monospace;
+            margin-bottom: 1rem;
+        }
+        .resource-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .resource-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.05);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+        }
+        .resource-item a { color: var(--accent); text-decoration: none; flex: 1; }
+        .tabs { display: flex; gap: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .tab { padding: 0.5rem 1rem; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; }
+        .tab.active { color: var(--primary); border-color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebarContainer"></aside>
+        <main class="main-content">
+            <header class="top-header" id="headerContainer"></header>
+
+            <div class="header-controls">
+                <h1 style="margin: 0;">My Subjects</h1>
+                <button class="btn-add" onclick="openAddModal()">
+                    <i class="fa-solid fa-plus"></i> Add Subject
+                </button>
+            </div>
+            
+            <div class="subjects-grid" id="subjectsGrid"></div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    
+    <!-- Add Subject Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Add New Course</h2>
+                <button class="close-btn" onclick="closeModal('addModal')">&times;</button>
+            </div>
+            <form id="addSubjectForm">
+                <div class="form-group">
+                    <label>Course Name</label>
+                    <input type="text" id="addName" required placeholder="e.g. Linear Algebra">
+                </div>
+                <div class="form-group">
+                    <label>Course Code</label>
+                    <input type="text" id="addCode" required placeholder="e.g. MAT-101">
+                </div>
+                <div class="form-group">
+                    <label>Professor</label>
+                    <input type="text" id="addProf" placeholder="Full Name">
+                </div>
+                <div class="form-group">
+                    <label>Schedule</label>
+                    <input type="text" id="addSchedule" placeholder="e.g. Mon/Wed 10 AM">
+                </div>
+                <div class="form-group">
+                    <label>Credits</label>
+                    <input type="number" id="addCredits" value="3" min="1" max="10">
+                </div>
+                <div class="form-group">
+                    <label>Color Tag</label>
+                    <select id="addColor">
+                        <option value="blue">Blue</option>
+                        <option value="purple">Purple</option>
+                        <option value="cyan">Cyan</option>
+                        <option value="orange">Orange</option>
+                        <option value="red">Red</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-add" style="width: 100%; justify-content: center;">Add Course</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Subject Modal -->
+    <div class="modal-overlay" id="viewModal">
+        <div class="modal large">
+            <div class="modal-header">
+                <h2 id="viewTitle">Course Details</h2>
+                <button class="close-btn" onclick="closeModal('viewModal')">&times;</button>
+            </div>
+            
+            <div class="modal-body-scroll">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('notes')">Notes</div>
+                    <div class="tab" onclick="switchTab('resources')">Resources & Links</div>
+                </div>
+
+                <!-- Notes Tab -->
+                <div id="tab-notes">
+                    <textarea class="notes-area" id="subjectNotes" placeholder="Write your quick notes here..."></textarea>
+                    <button class="btn-add" onclick="saveNotes()">Save Notes</button>
+                </div>
+
+                <!-- Resources Tab -->
+                <div id="tab-resources" style="display: none;">
+                    <div class="form-group" style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="resName" placeholder="Resource Title" style="flex: 1;">
+                        <input type="text" id="resLink" placeholder="URL (https://...)" style="flex: 2;">
+                        <button class="btn-add" onclick="addResource()" style="padding: 0 1rem;"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                    <ul class="resource-list" id="resourceList">
+                        <!-- Filled by JS -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="js/db.js"></script>
+    <script src="js/shared.js"></script>
+    <script>
+        // --- State ---
+        let subjects = DB.get(DB.SUBJECTS);
+        let currentSubjectId = null;
+
+        // --- Render Grid ---
+        function renderSubjects() {
+            const grid = document.getElementById('subjectsGrid');
+            grid.innerHTML = '';
+
+            subjects.forEach(sub => {
+                const card = document.createElement('div');
+                card.className = `subject-card color-${sub.color || 'blue'}`;
+                card.onclick = () => openSubjectView(sub.id);
+                card.innerHTML = `
+                    <div class="subject-header">
+                        <span class="code-pill">${sub.code}</span>
+                        <div class="overlay-grade">${sub.grade || 'N/A'}</div>
+                    </div>
+                    <h3 class="subject-title">${sub.name}</h3>
+                    <div class="prof-name">
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                        ${sub.professor || 'Staff'}
+                    </div>
+
+                    <div class="subject-stats">
+                        <span>Course Progress</span>
+                        <span>${sub.progress}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${sub.progress}%; background: ${getColor(sub.color)}"></div>
+                    </div>
+
+                    <div class="schedule-tag">
+                        <i class="fa-regular fa-clock"></i>
+                        ${sub.schedule || 'TBA'} (${sub.credits}C)
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // --- View Logic ---
+        function openSubjectView(id) {
+            currentSubjectId = id;
+            const sub = subjects.find(s => s.id === id);
+            if(!sub) return;
+
+            // Ensure content structure exists
+            if(!sub.content) sub.content = { notes: '', resources: [] };
+
+            document.getElementById('viewTitle').innerHTML = `${sub.code}: ${sub.name}`;
+            document.getElementById('subjectNotes').value = sub.content.notes || '';
+            renderResources(sub.content.resources || []);
+
+            document.getElementById('viewModal').classList.add('active');
+        }
+
+        function saveNotes() {
+            const val = document.getElementById('subjectNotes').value;
+            const sub = subjects.find(s => s.id === currentSubjectId);
+            if(sub) {
+                sub.content.notes = val;
+                DB.saveSubjectContent(currentSubjectId, sub.content);
+                alert("Notes saved!");
+            }
+        }
+
+        function addResource() {
+            const name = document.getElementById('resName').value;
+            const url = document.getElementById('resLink').value;
+            if(!name || !url) return;
+
+            const sub = subjects.find(s => s.id === currentSubjectId);
+            if(sub) {
+                if(!sub.content.resources) sub.content.resources = [];
+                sub.content.resources.push({ name, url });
+                DB.saveSubjectContent(currentSubjectId, sub.content);
+                renderResources(sub.content.resources);
+                // Clear inputs
+                document.getElementById('resName').value = '';
+                document.getElementById('resLink').value = '';
+            }
+        }
+
+        function renderResources(list) {
+            const container = document.getElementById('resourceList');
+            container.innerHTML = '';
+            list.forEach(r => {
+                const cli = document.createElement('li');
+                cli.className = 'resource-item';
+                cli.innerHTML = `
+                    <i class="fa-solid fa-link"></i>
+                    <a href="${r.url}" target="_blank">${r.name}</a>
+                `;
+                container.appendChild(cli);
+            });
+        }
+
+        // --- Add Logic ---
+        document.getElementById('addSubjectForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newSub = {
+                name: document.getElementById('addName').value,
+                code: document.getElementById('addCode').value,
+                professor: document.getElementById('addProf').value,
+                schedule: document.getElementById('addSchedule').value,
+                credits: document.getElementById('addCredits').value,
+                color: document.getElementById('addColor').value
+            };
+
+            const res = DB.addSubject(newSub);
+            if(res.success) {
+                subjects = DB.get(DB.SUBJECTS); // Refresh local state
+                renderSubjects();
+                closeModal('addModal');
+                e.target.reset();
+            } else {
+                alert(res.message);
+            }
+        });
+
+        // --- Helpers ---
+        window.openAddModal = () => document.getElementById('addModal').classList.add('active');
+        window.closeModal = (id) => document.getElementById(id).classList.remove('active');
+        
+        window.switchTab = (tabName) => {
+            // UI Toggle
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            // This is quick hack, relies on ordering or checking text, but simpler:
+            event.target.classList.add('active');
+
+            document.getElementById('tab-notes').style.display = tabName === 'notes' ? 'block' : 'none';
+            document.getElementById('tab-resources').style.display = tabName === 'resources' ? 'block' : 'none';
+        }
+
+        function getColor(name) {
+            const map = { blue: '#3b82f6', purple: '#a855f7', cyan: '#06b6d4', orange: '#f97316', red: '#ef4444' };
+            return map[name] || '#6366f1';
+        }
+
+        // Init
+        renderSubjects();
+    </script>
+</body>
+</html>

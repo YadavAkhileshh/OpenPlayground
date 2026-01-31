@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Environment Variable Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #8B4513;
+            --primary-light: #A0522D;
+            --secondary: #556B2F;
+            --secondary-light: #6B8E23;
+            --danger: #C0392B;
+            --danger-light: #E74C3C;
+            --warning: #D35400;
+            --warning-light: #E67E22;
+            --success: #27AE60;
+            --success-light: #2ECC71;
+            --dark: #2C3E50;
+            --light: #F8F9FA;
+            --gray: #95A5A6;
+            --gray-light: #ECF0F1;
+            --border: #D5DBDB;
+            --card-bg: #FFF;
+            --sidebar-bg: #2C1810;
+            --sidebar-text: #E8D9C5;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #F5F5DC 0%, #FAF0E6 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .sidebar-mobile-toggle {
+                display: block;
+            }
+        }
+
+        .sidebar {
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #FFF;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .logo i {
+            color: var(--primary-light);
+        }
+
+        .nav-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gray);
+            margin: 25px 0 15px;
+        }
+
+        .nav-list {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 8px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            color: var(--sidebar-text);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background: rgba(139, 69, 19, 0.2);
+            color: #FFF;
+        }
+
+        .nav-link.active {
+            background: var(--primary);
+            color: #FFF;
+            font-weight: 500;
+        }
+
+        .nav-link i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .env-status {
+            margin-top: auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid var(--success);
+        }
+
+        .env-status-title {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: #FFF;
+        }
+
+        .env-status-count {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--success-light);
+        }
+
+        .main-content {
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .header-title {
+            font-size: 2.2rem;
+            color: var(--dark);
+            font-weight: 700;
+        }
+
+        .header-subtitle {
+            color: var(--gray);
+            margin-top: 5px;
+            font-size: 1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, var(--primary), var(--primary-light));
+            color: #FFF;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(139, 69, 19, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(to right, var(--secondary), var(--secondary-light));
+            color: #FFF;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(85, 107, 47, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--border);
+            color: var(--dark);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .dashboard-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            color: var(--gray);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+
+        .card-trend {
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .card-trend.up {
+            color: var(--success);
+        }
+
+        .card-trend.down {
+            color: var(--danger);
+        }
+
+        .env-section {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 14px 20px 14px 45px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            background: var(--light);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(139, 69, 19, 0.1);
+        }
+
+        .env-table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .env-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        .env-table thead {
+            background: var(--gray-light);
+        }
+
+        .env-table th {
+            padding: 18px 20px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--dark);
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .env-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .env-table tbody tr:hover {
+            background: var(--light);
+        }
+
+        .env-table td {
+            padding: 18px 20px;
+            vertical-align: middle;
+        }
+
+        .env-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .env-value {
+            font-family: 'JetBrains Mono', monospace;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .env-value.masked {
+            color: var(--danger);
+            letter-spacing: 2px;
+        }
+
+        .env-type {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .type-string {
+            background: rgba(139, 69, 19, 0.1);
+            color: var(--primary);
+        }
+
+        .type-number {
+            background: rgba(85, 107, 47, 0.1);
+            color: var(--secondary);
+        }
+
+        .type-boolean {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success);
+        }
+
+        .type-secret {
+            background: rgba(192, 57, 43, 0.1);
+            color: var(--danger);
+        }
+
+        .env-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: none;
+            background: var(--gray-light);
+            color: var(--dark);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:hover {
+            background: var(--primary);
+            color: #FFF;
+            transform: scale(1.1);
+        }
+
+        .action-btn.delete:hover {
+            background: var(--danger);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 25px 30px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--danger);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-label i {
+            color: var(--primary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            background: var(--light);
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(139, 69, 19, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .form-help {
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary);
+        }
+
+        .modal-footer {
+            padding: 25px 30px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .alert-success {
+            background: rgba(39, 174, 96, 0.1);
+            border-left: 4px solid var(--success);
+            color: var(--success);
+        }
+
+        .alert-warning {
+            background: rgba(211, 84, 0, 0.1);
+            border-left: 4px solid var(--warning);
+            color: var(--warning);
+        }
+
+        .alert-danger {
+            background: rgba(192, 57, 43, 0.1);
+            border-left: 4px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 30px;
+            color: var(--gray);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: var(--border);
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--gray);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        .sidebar-mobile-toggle {
+            display: none;
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #FFF;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(139, 69, 19, 0.3);
+            z-index: 100;
+        }
+
+        .mobile-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            z-index: 1001;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .mobile-sidebar.active {
+            transform: translateX(0);
+        }
+
+        .mobile-sidebar .sidebar {
+            box-shadow: none;
+        }
+
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .mobile-overlay.active {
+            display: block;
+        }
+
+        .env-group-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(139, 69, 19, 0.1);
+            color: var(--primary);
+            margin-left: 10px;
+        }
+
+        .copy-success {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--success);
+            color: #FFF;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(150%);
+            transition: transform 0.5s ease;
+            z-index: 100;
+        }
+
+        .copy-success.active {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+            }
+            
+            .header-actions {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+            
+            .btn {
+                flex: 1;
+                min-width: 140px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .modal-content {
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Desktop Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <i class="fas fa-leaf"></i>
+                EnvManager
+            </div>
+            
+            <div class="nav-title">Main</div>
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="variables">
+                        <i class="fas fa-list"></i>
+                        <span>All Variables</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="groups">
+                        <i class="fas fa-folder"></i>
+                        <span>Groups</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="secrets">
+                        <i class="fas fa-lock"></i>
+                        <span>Secrets</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="nav-title">Tools</div>
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="import">
+                        <i class="fas fa-file-import"></i>
+                        <span>Import</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="export">
+                        <i class="fas fa-file-export"></i>
+                        <span>Export</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="validation">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Validation</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="backup">
+                        <i class="fas fa-database"></i>
+                        <span>Backup</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="nav-title">Settings</div>
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="security">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Security</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="users">
+                        <i class="fas fa-users"></i>
+                        <span>Users</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="api">
+                        <i class="fas fa-code"></i>
+                        <span>API</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="env-status">
+                <div class="env-status-title">Environment Status</div>
+                <div class="env-status-count" id="envCount">0</div>
+                <div>variables loaded</div>
+            </div>
+        </div>
+        
+        <!-- Mobile Sidebar -->
+        <div class="mobile-sidebar" id="mobileSidebar">
+            <div class="sidebar">
+                <div class="logo">
+                    <i class="fas fa-leaf"></i>
+                    EnvManager
+                </div>
+                
+                <div class="nav-title">Main</div>
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link active" data-page="dashboard">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="variables">
+                            <i class="fas fa-list"></i>
+                            <span>All Variables</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="groups">
+                            <i class="fas fa-folder"></i>
+                            <span>Groups</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="secrets">
+                            <i class="fas fa-lock"></i>
+                            <span>Secrets</span>
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="nav-title">Tools</div>
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="import">
+                            <i class="fas fa-file-import"></i>
+                            <span>Import</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="export">
+                            <i class="fas fa-file-export"></i>
+                            <span>Export</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="validation">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Validation</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="backup">
+                            <i class="fas fa-database"></i>
+                            <span>Backup</span>
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="nav-title">Settings</div>
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="security">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Security</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="users">
+                            <i class="fas fa-users"></i>
+                            <span>Users</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-page="api">
+                            <i class="fas fa-code"></i>
+                            <span>API</span>
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="env-status">
+                    <div class="env-status-title">Environment Status</div>
+                    <div class="env-status-count" id="mobileEnvCount">0</div>
+                    <div>variables loaded</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Overlay -->
+        <div class="mobile-overlay" id="mobileOverlay"></div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Header -->
+            <div class="header">
+                <div>
+                    <h1 class="header-title" id="pageTitle">Environment Dashboard</h1>
+                    <p class="header-subtitle" id="pageSubtitle">Manage your environment variables securely</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-outline" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                    <button class="btn btn-primary" id="addVariableBtn">
+                        <i class="fas fa-plus"></i>
+                        Add Variable
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Dashboard Content -->
+            <div id="pageContent">
+                <!-- Dashboard Page (default) -->
+                <div class="page" id="dashboardPage">
+                    <div class="dashboard-cards">
+                        <div class="dashboard-card">
+                            <div class="card-title">
+                                <i class="fas fa-list"></i>
+                                Total Variables
+                            </div>
+                            <div class="card-value" id="totalVariables">0</div>
+                            <div class="card-trend up">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>12% from last week</span>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-card">
+                            <div class="card-title">
+                                <i class="fas fa-lock"></i>
+                                Secret Variables
+                            </div>
+                            <div class="card-value" id="secretVariables">0</div>
+                            <div class="card-trend up">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>5% from last week</span>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-card">
+                            <div class="card-title">
+                                <i class="fas fa-folder"></i>
+                                Groups
+                            </div>
+                            <div class="card-value" id="totalGroups">0</div>
+                            <div class="card-trend down">
+                                <i class="fas fa-arrow-down"></i>
+                                <span>2% from last week</span>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-card">
+                            <div class="card-title">
+                                <i class="fas fa-shield-alt"></i>
+                                Security Score
+                            </div>
+                            <div class="card-value" id="securityScore">0%</div>
+                            <div class="card-trend up">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>8% from last week</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="env-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Recent Variables</h2>
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="searchRecent" placeholder="Search recent variables...">
+                            </div>
+                        </div>
+                        
+                        <div class="env-table-container">
+                            <table class="env-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Value</th>
+                                        <th>Type</th>
+                                        <th>Group</th>
+                                        <th>Last Updated</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentVariablesTable">
+                                    <!-- Recent variables will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="env-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Environment Groups</h2>
+                            <button class="btn btn-secondary" id="addGroupBtn">
+                                <i class="fas fa-plus"></i>
+                                Add Group
+                            </button>
+                        </div>
+                        
+                        <div class="env-table-container">
+                            <table class="env-table">
+                                <thead>
+                                    <tr>
+                                        <th>Group Name</th>
+                                        <th>Description</th>
+                                        <th>Variables</th>
+                                        <th>Environment</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="groupsTable">
+                                    <!-- Groups will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Variables Page -->
+                <div class="page" id="variablesPage" style="display: none;">
+                    <div class="env-section">
+                        <div class="section-header">
+                            <h2 class="section-title">All Environment Variables</h2>
+                            <div style="display: flex; gap: 15px;">
+                                <div class="search-box">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="searchAllVariables" placeholder="Search variables...">
+                                </div>
+                                <button class="btn btn-outline" id="filterBtn">
+                                    <i class="fas fa-filter"></i>
+                                    Filter
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="allVariablesTableContainer">
+                            <!-- All variables will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Groups Page -->
+                <div class="page" id="groupsPage" style="display: none;">
+                    <div class="env-section">
+                        <div class="section-header">
+                            <h2 class="section-title">Environment Groups</h2>
+                            <div style="display: flex; gap: 15px;">
+                                <div class="search-box">
+                                    <i class="fas fa-search"></i>
+                                    <input type="text" id="searchGroups" placeholder="Search groups...">
+                                </div>
+                                <button class="btn btn-primary" id="addNewGroupBtn">
+                                    <i class="fas fa-plus"></i>
+                                    New Group
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="groupsListContainer">
+                            <!-- Groups list will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Other pages would go here -->
+            </div>
+        </div>
+        
+        <!-- Mobile Toggle Button -->
+        <button class="sidebar-mobile-toggle" id="mobileToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+    
+    <!-- Add Variable Modal -->
+    <div class="modal" id="addVariableModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-plus"></i>
+                    Add Environment Variable
+                </h2>
+                <button class="modal-close" id="closeAddModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addVariableForm">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-tag"></i>
+                            Variable Name
+                        </label>
+                        <input type="text" class="form-control" id="varName" placeholder="e.g., DATABASE_URL" required>
+                        <div class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Use uppercase with underscores (e.g., API_KEY, DB_HOST)
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-key"></i>
+                            Variable Value
+                        </label>
+                        <textarea class="form-control" id="varValue" placeholder="Enter the value..." required></textarea>
+                        <div class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            For secrets, the value will be masked in the interface
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-list"></i>
+                                Variable Type
+                            </label>
+                            <select class="form-control" id="varType">
+                                <option value="string">String</option>
+                                <option value="number">Number</option>
+                                <option value="boolean">Boolean</option>
+                                <option value="secret">Secret</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-folder"></i>
+                                Group
+                            </label>
+                            <select class="form-control" id="varGroup">
+                                <option value="">No Group</option>
+                                <option value="database">Database</option>
+                                <option value="api">API</option>
+                                <option value="auth">Authentication</option>
+                                <option value="logging">Logging</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-file-alt"></i>
+                            Description (Optional)
+                        </label>
+                        <textarea class="form-control" id="varDescription" placeholder="Describe what this variable is used for..."></textarea>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="varRequired">
+                        <label for="varRequired">This variable is required for the application to run</label>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <strong>Security Note:</strong> Never commit environment variables with secret values to version control. 
+                            Use this manager to keep them secure.
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancelAddBtn">Cancel</button>
+                <button class="btn btn-primary" id="saveVariableBtn">Save Variable</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Variable Modal -->
+    <div class="modal" id="editVariableModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-edit"></i>
+                    Edit Environment Variable
+                </h2>
+                <button class="modal-close" id="closeEditModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editVariableForm">
+                    <input type="hidden" id="editVarId">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-tag"></i>
+                            Variable Name
+                        </label>
+                        <input type="text" class="form-control" id="editVarName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-key"></i>
+                            Variable Value
+                        </label>
+                        <textarea class="form-control" id="editVarValue" required></textarea>
+                        <div class="toggle-switch">
+                            <span>Show Value</span>
+                            <label class="switch">
+                                <input type="checkbox" id="toggleEditValue">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-list"></i>
+                                Variable Type
+                            </label>
+                            <select class="form-control" id="editVarType">
+                                <option value="string">String</option>
+                                <option value="number">Number</option>
+                                <option value="boolean">Boolean</option>
+                                <option value="secret">Secret</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-folder"></i>
+                                Group
+                            </label>
+                            <select class="form-control" id="editVarGroup">
+                                <option value="">No Group</option>
+                                <option value="database">Database</option>
+                                <option value="api">API</option>
+                                <option value="auth">Authentication</option>
+                                <option value="logging">Logging</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-file-alt"></i>
+                            Description
+                        </label>
+                        <textarea class="form-control" id="editVarDescription"></textarea>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="editVarRequired">
+                        <label for="editVarRequired">This variable is required for the application to run</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancelEditBtn">Cancel</button>
+                <button class="btn btn-primary" id="saveEditBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Success Notification -->
+    <div class="copy-success" id="copySuccess">
+        <i class="fas fa-check-circle"></i>
+        <span>Value copied to clipboard!</span>
+    </div>
+    
+    <script src="script.js">
+
+    </script>
+</body>
+</html>

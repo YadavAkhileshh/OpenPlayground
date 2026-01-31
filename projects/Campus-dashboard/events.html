@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events | Smart Campus</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .event-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+        .event-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-5px);
+        }
+        .event-img {
+            height: 150px;
+            background: #2d3748;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: rgba(255,255,255,0.1);
+        }
+        .event-body {
+            padding: 1.5rem;
+        }
+        .event-date {
+            color: var(--primary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .event-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        .event-loc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-rsvp {
+            width: 100%;
+            padding: 0.6rem;
+            border-radius: 6px;
+            border: 1px solid var(--primary);
+            background: transparent;
+            color: var(--primary);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-rsvp.registered {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+        .btn-rsvp:hover:not(.registered) {
+            background: var(--primary);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebarContainer"></aside>
+        <main class="main-content">
+            <header class="top-header" id="headerContainer"></header>
+
+            <h1 style="margin-bottom: 1.5rem;">Upcoming Events</h1>
+            <div class="events-grid" id="eventsGrid"></div>
+        </main>
+    </div>
+
+    <script src="js/db.js"></script>
+    <script src="js/shared.js"></script>
+    <script>
+        const user = DB.getUser();
+        
+        function renderEvents() {
+            const events = DB.get(DB.EVENTS);
+            const grid = document.getElementById('eventsGrid');
+            grid.innerHTML = '';
+            
+            events.forEach(ev => {
+                const isRegistered = ev.registered.includes(user.id);
+                
+                const card = document.createElement('div');
+                card.className = 'event-card';
+                card.innerHTML = `
+                    <div class="event-img">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                    <div class="event-body">
+                        <span class="event-date">${ev.date}</span>
+                        <h3 class="event-title">${ev.title}</h3>
+                        <div class="event-loc"><i class="fa-solid fa-location-dot"></i> ${ev.location}</div>
+                        <button class="btn-rsvp ${isRegistered ? 'registered' : ''}" onclick="toggleRSVP(${ev.id})">
+                            ${isRegistered ? 'Registered' : 'RSVP Now'}
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        window.toggleRSVP = (id) => {
+            const events = DB.get(DB.EVENTS);
+            const ev = events.find(e => e.id === id);
+            
+            if (ev.registered.includes(user.id)) {
+                ev.registered = ev.registered.filter(uid => uid !== user.id);
+            } else {
+                ev.registered.push(user.id);
+            }
+            
+            DB.set(DB.EVENTS, events);
+            renderEvents();
+        };
+
+        renderEvents();
+    </script>
+</body>
+</html>

@@ -9,37 +9,49 @@ document.addEventListener("DOMContentLoaded", () => {
         contactForm.addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            // Reset messages
-            successMsg.style.display = "none";
-            errorMsg.style.display = "none";
+            const data = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                subject: document.getElementById('subject').value,
+                message: document.getElementById('message').value
+            };
+
+            // Validation using ValidationEngine
+            const rules = {
+                name: { required: true, min: 2 },
+                email: { required: true, type: 'email' },
+                message: { required: true, min: 10 }
+            };
+
+            const validation = window.ValidationEngine.validate(data, rules);
+
+            if (!validation.isValid) {
+                const errorMsg = Object.values(validation.errors)[0];
+                window.notificationManager.error(errorMsg);
+                return;
+            }
+
+            // Reset messages (using centralized notification now, but keep DOM if needed for UI)
+            if (successMsg) successMsg.style.display = 'none';
+            if (errorMsg) errorMsg.style.display = 'none';
 
             // Disable button
             submitBtn.disabled = true;
-            submitBtn.innerHTML =
-                '<span>Sending...</span><i class="ri-loader-4-line ri-spin"></i>';
-
-            const formData = {
-                name: document.getElementById("name").value,
-                email: document.getElementById("email").value,
-                subject: document.getElementById("subject").value,
-                message: document.getElementById("message").value,
-            };
+            submitBtn.innerHTML = '<span>Sending...</span><i class="ri-loader-4-line ri-spin"></i>';
 
             try {
                 // Simulate a short delay for sending
-                await new Promise((resolve) => setTimeout(resolve, 800));
+                await new Promise(resolve => setTimeout(resolve, 800));
 
                 // Show success message and reset form
-                successMsg.style.display = "flex";
+                window.notificationManager.success('Thank you! Your message has been sent successfully.');
                 contactForm.reset();
             } catch (error) {
-                console.error("Submission error:", error);
-                errorMsg.style.display = "flex";
-                errorText.innerText = "Oops! Something went wrong. Please try again.";
+                console.error('Submission error:', error);
+                window.notificationManager.error('Oops! Something went wrong. Please try again.');
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML =
-                    '<span>Send Message</span><i class="ri-send-plane-fill"></i>';
+                submitBtn.innerHTML = '<span>Send Message</span><i class="ri-send-plane-fill"></i>';
             }
         });
     }

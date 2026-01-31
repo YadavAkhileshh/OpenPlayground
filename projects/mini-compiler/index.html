@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Mini Compiler (Lexer + Parser)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+  body {
+    background: #020617;
+    color: #e5e7eb;
+    font-family: monospace;
+    padding: 20px;
+  }
+
+  h1 {
+    text-align: center;
+  }
+
+  textarea {
+    width: 100%;
+    height: 160px;
+    background: #020617;
+    color: #22c55e;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 14px;
+  }
+
+  button {
+    margin-top: 10px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    background: #38bdf8;
+    color: #020617;
+    font-weight: bold;
+  }
+
+  .section {
+    margin-top: 20px;
+  }
+
+  pre {
+    background: #020617;
+    border: 1px solid #334155;
+    padding: 10px;
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+</style>
+</head>
+
+<body>
+
+<h1>Mini Compiler (Lexer + Parser)</h1>
+
+<textarea id="code">
+x = 10 + 5 * 2
+y = x - 3
+print y
+</textarea>
+
+<button onclick="compile()">Compile & Run</button>
+
+<div class="section">
+  <h3>Tokens</h3>
+  <pre id="tokens"></pre>
+</div>
+
+<div class="section">
+  <h3>AST</h3>
+  <pre id="ast"></pre>
+</div>
+
+<div class="section">
+  <h3>Output</h3>
+  <pre id="output"></pre>
+</div>
+
+<script>
+/* =======================
+   LEXER
+======================= */
+function lexer(input) {
+  const tokens = [];
+  const chars = input.split("");
+  let i = 0;
+
+  while (i < chars.length) {
+    let c = chars[i];
+
+    if (/\s/.test(c)) {
+      i++;
+      continue;
+    }
+
+    if (/[0-9]/.test(c)) {
+      let num = "";
+      while (/[0-9]/.test(chars[i])) {
+        num += chars[i++];
+      }
+      tokens.push({ type: "NUMBER", value: Number(num) });
+      continue;
+    }
+
+    if (/[a-z]/i.test(c)) {
+      let id = "";
+      while (/[a-z]/i.test(chars[i])) {
+        id += chars[i++];
+      }
+      if (id === "print") {
+        tokens.push({ type: "PRINT" });
+      } else {
+        tokens.push({ type: "IDENT", value: id });
+      }
+      continue;
+    }
+
+    if ("+-*/=()".includes(c)) {
+      tokens.push({ type: c });
+      i++;
+      continue;
+    }
+
+    throw new Error("Unknown character: " + c);
+  }
+
+  return tokens;
+}
+
+/* =======================
+   PARSER (Recursive Descent)
+======================= */
+let tokens = [];
+let pos = 0;
+
+function peek() {
+  return tokens[pos];
+}
+
+function consume(type) {
+  if (peek()?.type === type) return tokens[pos++];
+  throw new Error("Expected " + type);
+}
+
+function parseProgram() {
+  const body = [];
+  while (pos < tokens.length) {
+    body.push(parseStatement());
+  }
+  return { type: "Program", body };
+}
+
+function parseStatement() {
+  if (peek().type === "PRINT") {
+    consume("PRINT");
+    return { type: "Print", expr: parseExpression() };
+  }
+
+  const id = consume("IDENT").value;
+  consume("=");
+  const expr = parseExpression();
+  return { type: "Assign", name: id, expr };
+}
+
+function parseExpression() {
+  let node = parseTerm();
+  while (peek() && (peek().type === "+" || peek().type === "-")) {
+    const op = consume(peek().type).type;
+    node = { type: "Binary", op, left: node, right: parseTerm() };
+  }
+  return node;
+}
+
+function parseTerm() {
+  let node = parseFactor();
+  while (peek() && (peek().type === "*" || peek().type === "/")) {
+    const op = consume(peek().type).type;
+    node = { type: "Binary", op, left: node, right: parseFactor() };
+  }
+  return node;
+}
+
+function parseFactor() {
+  if (peek().type === "NUMBER") {
+    return { type: "Number", value: consume("NUMBER").value };
+  }
+
+  if (peek().type === "IDENT") {
+    return { type: "Var", name: consume("IDENT").value };
+  }
+
+  if (peek().type === "(") {
+    consume("(");
+    const expr = parseExpression();
+    consume(")");
+    return expr;
+  }
+
+  throw new Error("Unexpected token");
+}
+
+/* =======================
+   INTERPRETER
+======================= */
+function evaluate(node, env) {
+  switch (node.type) {
+    case "Program":
+      node.body.forEach(stmt => evaluate(stmt, env));
+      break;
+
+    case "Assign":
+      env[node.name] = evaluate(node.expr, env);
+      break;
+
+    case "Print":
+      output.push(evaluate(node.expr, env));
+      break;
+
+    case "Binary":
+      const l = evaluate(node.left, env);
+      const r = evaluate(node.right, env);
+      if (node.op === "+") return l + r;
+      if (node.op === "-") return l - r;
+      if (node.op === "*") return l * r;
+      if (node.op === "/") return l / r;
+      break;
+
+    case "Number":
+      return node.value;
+
+    case "Var":
+      if (!(node.name in env)) {
+        throw new Error("Undefined variable: " + node.name);
+      }
+      return env[node.name];
+  }
+}
+
+/* =======================
+   COMPILE PIPELINE
+======================= */
+let output = [];
+
+function compile() {
+  try {
+    const code = document.getElementById("code").value;
+
+    // Lexer
+    tokens = lexer(code);
+    pos = 0;
+    document.getElementById("tokens").textContent =
+      JSON.stringify(tokens, null, 2);
+
+    // Parser
+    const ast = parseProgram();
+    document.getElementById("ast").textContent =
+      JSON.stringify(ast, null, 2);
+
+    // Interpreter
+    output = [];
+    evaluate(ast, {});
+    document.getElementById("output").textContent =
+      output.join("\n");
+
+  } catch (e) {
+    document.getElementById("output").textContent = "Error: " + e.message;
+  }
+}
+</script>
+
+</body>
+</html>
