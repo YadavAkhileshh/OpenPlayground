@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance | Smart Campus</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .id-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            max-width: 600px;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .id-card::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+            opacity: 0.2;
+            border-radius: 50%;
+            transform: translate(50%, -50%);
+        }
+        .id-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 12px;
+            border: 2px solid var(--accent);
+            object-fit: cover;
+        }
+        .id-info h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+        .id-info p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .checkin-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: 0.3s;
+        }
+        .checkin-btn:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .history-table th, .history-table td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .history-table th {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Placeholder -->
+        <aside class="sidebar" id="sidebarContainer"></aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header" id="headerContainer"></header>
+
+            <h1 style="margin-bottom: 1.5rem;">My Attendance</h1>
+            
+            <div class="id-card">
+                <img src="" alt="Profile" class="id-image" id="userAvatar">
+                <div class="id-info">
+                    <h2 id="userName">Loading...</h2>
+                    <p id="userRole">Loading...</p>
+                    <p id="userId">ID: 88472910</p>
+                    <button class="checkin-btn" onclick="markAttendance()">
+                        <i class="fa-solid fa-fingerprint"></i> Mark Presence
+                    </button>
+                    <span id="msg" style="margin-left: 10px; font-size: 0.9rem;"></span>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h2><i class="fa-solid fa-clock-rotate-left"></i> Check-in History</h2>
+                </div>
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                        <!-- Filled via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/db.js"></script>
+    <script src="js/shared.js"></script>
+    <script>
+        const user = DB.getUser();
+        
+        // Render User Info
+        document.getElementById('userName').textContent = user.name;
+        document.getElementById('userRole').textContent = user.role;
+        document.getElementById('userAvatar').src = user.avatar;
+
+        function loadHistory() {
+            const records = DB.get(DB.ATTENDANCE).filter(r => r.userId === user.id).reverse();
+            const tbody = document.getElementById('historyBody');
+            tbody.innerHTML = '';
+            
+            records.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${r.date}</td>
+                    <td>${r.time}</td>
+                    <td>${r.location}</td>
+                    <td><span style="color: var(--success)">Present</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function markAttendance() {
+            const now = new Date();
+            const record = {
+                userId: user.id,
+                date: now.toLocaleDateString(),
+                time: now.toLocaleTimeString(),
+                location: 'Main Campus'
+            };
+            
+            const all = DB.get(DB.ATTENDANCE);
+            all.push(record);
+            DB.set(DB.ATTENDANCE, all);
+            
+            const msg = document.getElementById('msg');
+            msg.textContent = "Checked in successfully!";
+            msg.style.color = "var(--success)";
+            
+            loadHistory();
+        }
+
+        loadHistory();
+    </script>
+</body>
+</html>

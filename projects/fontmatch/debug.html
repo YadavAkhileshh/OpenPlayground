@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FontMatch Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        .pass {
+            background: #10b981;
+            color: white;
+        }
+
+        .fail {
+            background: #ef4444;
+            color: white;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>FontMatch Debug Test</h1>
+    <div id="results"></div>
+
+    <h2>Manual Tests</h2>
+    <button onclick="testButton()">Test Button Click</button>
+    <button onclick="testFontManager()">Test FontManager</button>
+    <button onclick="testPairingEngine()">Test PairingEngine</button>
+    <button onclick="testUIController()">Test UIController</button>
+
+    <div id="manual-results"></div>
+
+    <!-- Load the same scripts as main app -->
+    <script src="js/fonts.js"></script>
+    <script src="js/pairing.js"></script>
+    <script src="js/ui.js"></script>
+
+    <script>
+        const results = document.getElementById('results');
+        const manualResults = document.getElementById('manual-results');
+
+        function addResult(message, pass) {
+            const div = document.createElement('div');
+            div.className = `test-result ${pass ? 'pass' : 'fail'}`;
+            div.textContent = (pass ? '✓ ' : '✗ ') + message;
+            results.appendChild(div);
+        }
+
+        function addManualResult(message) {
+            const div = document.createElement('div');
+            div.className = 'test-result pass';
+            div.textContent = '✓ ' + message;
+            manualResults.appendChild(div);
+        }
+
+        // Run automatic tests
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Running debug tests...');
+
+            // Test 1: Check if FontManager loaded
+            try {
+                if (typeof FontManager !== 'undefined') {
+                    addResult('FontManager loaded', true);
+
+                    // Test FontManager methods
+                    const fonts = FontManager.getAllFonts();
+                    addResult(`FontManager.getAllFonts() returned ${fonts.length} fonts`, fonts.length > 0);
+                } else {
+                    addResult('FontManager NOT loaded', false);
+                }
+            } catch (e) {
+                addResult('FontManager error: ' + e.message, false);
+            }
+
+            // Test 2: Check if PairingEngine loaded
+            try {
+                if (typeof PairingEngine !== 'undefined') {
+                    addResult('PairingEngine loaded', true);
+                } else {
+                    addResult('PairingEngine NOT loaded', false);
+                }
+            } catch (e) {
+                addResult('PairingEngine error: ' + e.message, false);
+            }
+
+            // Test 3: Check if UIController loaded
+            try {
+                if (typeof UIController !== 'undefined') {
+                    addResult('UIController loaded', true);
+                } else {
+                    addResult('UIController NOT loaded', false);
+                }
+            } catch (e) {
+                addResult('UIController error: ' + e.message, false);
+            }
+
+            // Test 4: Check console for errors
+            const originalError = console.error;
+            let errorCount = 0;
+            console.error = function (...args) {
+                errorCount++;
+                originalError.apply(console, args);
+            };
+
+            setTimeout(() => {
+                addResult(`Console errors: ${errorCount}`, errorCount === 0);
+            }, 1000);
+        });
+
+        function testButton() {
+            addManualResult('Button click works!');
+        }
+
+        function testFontManager() {
+            try {
+                const fonts = FontManager.getAllFonts();
+                const metadata = FontManager.getFontMetadata('Inter');
+                addManualResult(`FontManager works! Found ${fonts.length} fonts. Inter category: ${metadata.category}`);
+            } catch (e) {
+                addManualResult('FontManager error: ' + e.message);
+            }
+        }
+
+        function testPairingEngine() {
+            try {
+                const score = PairingEngine.calculateCompatibility('Playfair Display', 'Open Sans');
+                addManualResult(`PairingEngine works! Compatibility score: ${score}`);
+            } catch (e) {
+                addManualResult('PairingEngine error: ' + e.message);
+            }
+        }
+
+        function testUIController() {
+            try {
+                const state = UIController.getState();
+                addManualResult(`UIController works! Current heading font: ${state.headingFont}`);
+            } catch (e) {
+                addManualResult('UIController error: ' + e.message);
+            }
+        }
+    </script>
+</body>
+
+</html>
