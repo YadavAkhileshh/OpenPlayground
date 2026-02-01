@@ -110,6 +110,15 @@ export function createProjectCard(project) {
         category: project.category
     }).replace(/'/g, "\\'");
 
+    // Thumbnail rendering logic
+    const thumbnailHtml = project.thumbnail 
+        ? `<img src="${escapeHtml(project.thumbnail)}" alt="${escapeHtml(project.title)}" class="card-thumbnail" onerror="this.style.display='none'; this.parentElement.classList.add('thumbnail-error');">`
+        : '';
+    
+    const coverContent = project.thumbnail
+        ? thumbnailHtml
+        : `<i class="${escapeHtml(project.icon || 'ri-code-s-slash-line')}"></i>`;
+
     return `
         <div class="card" data-category="${escapeHtml(project.category)}" onclick="window.trackProjectView && window.trackProjectView(${projectDataStr.replace(/"/g, '&quot;')}); window.location.href='${escapeHtml(project.link)}'; event.stopPropagation();">
             <div class="card-actions">
@@ -137,8 +146,8 @@ export function createProjectCard(project) {
             </div>
             ${deadlineIndicator}
             <div class="card-link">
-                <div class="card-cover ${coverClass}" style="${coverStyle}">
-                    <i class="${escapeHtml(project.icon || 'ri-code-s-slash-line')}"></i>
+                <div class="card-cover ${coverClass} ${project.thumbnail ? 'has-thumbnail' : ''}" style="${coverStyle}">
+                    ${coverContent}
                 </div>
                 <div class="card-content">
                     <div class="card-header-flex">
@@ -174,10 +183,15 @@ export function createProjectListCard(project) {
         category: project.category
     }).replace(/'/g, "\\'");
 
+    // Thumbnail for list view
+    const listIconContent = project.thumbnail
+        ? `<img src="${escapeHtml(project.thumbnail)}" alt="${escapeHtml(project.title)}" class="list-card-thumbnail" onerror="this.style.display='none'; this.parentElement.classList.add('thumbnail-error');">`
+        : `<i class="${escapeHtml(project.icon || 'ri-code-s-slash-line')}"></i>`;
+
     return `
         <div class="list-card">
-            <div class="list-card-icon ${coverClass}" style="${coverStyle}">
-                <i class="${escapeHtml(project.icon || 'ri-code-s-slash-line')}"></i>
+            <div class="list-card-icon ${coverClass} ${project.thumbnail ? 'has-thumbnail' : ''}" style="${coverStyle}">
+                ${listIconContent}
             </div>
             <div class="list-card-content">
                 <div class="list-card-title-wrapper">
