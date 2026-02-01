@@ -8,72 +8,7 @@
   <!-- Chessboard.js CSS -->
   <link rel="stylesheet" href="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" />
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .app {
-      background: #111827;
-      padding: 20px;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 900px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 16px;
-    }
-
-    .controls {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-
-    select, button {
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button {
-      background: #22c55e;
-      color: #111;
-    }
-
-    .board-container {
-      display: flex;
-      justify-content: center;
-    }
-
-    #board {
-      width: 400px;
-    }
-
-    .status {
-      text-align: center;
-      margin-top: 12px;
-      font-size: 14px;
-    }
-
-    @media (max-width: 600px) {
-      #board { width: 300px; }
-    }
-  </style>
+ <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="app">
@@ -105,81 +40,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
   <script src="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
 
-  <script>
-    let board = null;
-    let game = new Chess();
-    let modeSelect = document.getElementById('mode');
-    let difficultySelect = document.getElementById('difficulty');
-    let statusEl = document.getElementById('status');
-
-    // Stockfish Web Worker
-    let stockfish = new Worker('https://cdn.jsdelivr.net/npm/stockfish/stockfish.js');
-
-    stockfish.postMessage('uci');
-
-    stockfish.onmessage = (e) => {
-      if (e.data.startsWith('bestmove')) {
-        const move = e.data.split(' ')[1];
-        game.move({ from: move.substring(0,2), to: move.substring(2,4), promotion: 'q' });
-        board.position(game.fen());
-        updateStatus();
-      }
-    };
-
-    function onDragStart(source, piece) {
-      if (game.game_over()) return false;
-      if (piece.startsWith('b') && modeSelect.value === 'ai') return false;
-    }
-
-    function onDrop(source, target) {
-      const move = game.move({ from: source, to: target, promotion: 'q' });
-      if (move === null) return 'snapback';
-
-      updateStatus();
-
-      if (modeSelect.value === 'ai' && !game.game_over()) {
-        setTimeout(makeAIMove, 300);
-      }
-    }
-
-    function makeAIMove() {
-      const depth = difficultySelect.value;
-      stockfish.postMessage('position fen ' + game.fen());
-      stockfish.postMessage('go depth ' + depth);
-    }
-
-    function updateStatus() {
-      let status = '';
-      const moveColor = game.turn() === 'b' ? 'Black' : 'White';
-
-      if (game.in_checkmate()) {
-        status = 'Checkmate! ' + moveColor + ' loses.';
-      } else if (game.in_draw()) {
-        status = 'Draw!';
-      } else {
-        status = moveColor + ' to move';
-        if (game.in_check()) status += ' (Check)';
-      }
-
-      statusEl.textContent = status;
-    }
-
-    function resetGame() {
-      game.reset();
-      board.start();
-      updateStatus();
-    }
-
-    const config = {
-      draggable: true,
-      position: 'start',
-      onDragStart,
-      onDrop,
-      onSnapEnd: () => board.position(game.fen())
-    };
-
-    board = Chessboard('board', config);
-    updateStatus();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
+
