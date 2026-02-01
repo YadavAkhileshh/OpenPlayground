@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Human Body Interactive Map</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-coral: #FF6B6B;
+            --secondary-mint: #4ECDC4;
+            --accent-sun: #FFD166;
+            --accent-lavender: #A882DD;
+            --accent-grass: #06D6A0;
+            --light-bg: #FFF9F0;
+            --card-bg: #FFFFFF;
+            --text-dark: #2D3047;
+            --text-light: #5D5D7A;
+            --shadow: rgba(45, 48, 71, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 90% 10%, rgba(255, 107, 107, 0.05) 0%, transparent 25%),
+                radial-gradient(circle at 10% 90%, rgba(78, 205, 196, 0.05) 0%, transparent 25%);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: var(--text-dark);
+            margin-bottom: 10px;
+            font-size: 2.8rem;
+            font-weight: 800;
+            position: relative;
+            display: inline-block;
+        }
+        
+        h1:after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--primary-coral), var(--accent-grass));
+            bottom: -5px;
+            left: 0;
+            border-radius: 3px;
+        }
+        
+        .tagline {
+            color: var(--text-light);
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto 20px;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        @media (max-width: 1100px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .body-map-container {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px var(--shadow);
+            border: 1px solid rgba(255, 107, 107, 0.1);
+            position: relative;
+            min-height: 700px;
+        }
+        
+        .info-panel {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px var(--shadow);
+            border: 1px solid rgba(78, 205, 196, 0.1);
+            overflow-y: auto;
+            max-height: 700px;
+        }
+        
+        .panel-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            color: var(--text-dark);
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+        
+        .panel-title i {
+            margin-right: 12px;
+            font-size: 1.5rem;
+        }
+        
+        .body-map {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600"><path d="M200,100 C250,80 300,120 200,200 C100,120 150,80 200,100 Z" fill="%23FF6B6B20" stroke="%23FF6B6B" stroke-width="2"/><path d="M200,220 C250,200 300,240 200,320 C100,240 150,200 200,220 Z" fill="%234ECDC420" stroke="%234ECDC4" stroke-width="2"/><path d="M200,340 C250,320 300,360 200,440 C100,360 150,320 200,340 Z" fill="%23FFD16620" stroke="%23FFD166" stroke-width="2"/></svg>');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+        }
+        
+        .body-part {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 3px solid white;
+        }
+        
+        .body-part:hover {
+            transform: scale(1.1);
+            z-index: 20;
+        }
+        
+        .body-part-icon {
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        .body-part-label {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            background-color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 30;
+        }
+        
+        .body-part:hover .body-part-label {
+            opacity: 1;
+        }
+        
+        /* Body part positions and colors */
+        .brain {
+            top: 15%;
+            left: 48%;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--accent-lavender), #8A6FDF);
+        }
+        
+        .heart {
+            top: 32%;
+            left: 48%;
+            width: 65px;
+            height: 65px;
+            background: linear-gradient(135deg, var(--primary-coral), #FF5252);
+        }
+        
+        .lungs {
+            top: 35%;
+            left: 35%;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--secondary-mint), #3DBBB3);
+        }
+        
+        .lungs.right-lung {
+            left: 61%;
+        }
+        
+        .stomach {
+            top: 48%;
+            left: 48%;
+            width: 65px;
+            height: 65px;
+            background: linear-gradient(135deg, var(--accent-sun), #FFC145);
+        }
+        
+        .liver {
+            top: 50%;
+            left: 40%;
+            width: 55px;
+            height: 55px;
+            background: linear-gradient(135deg, var(--accent-grass), #05C692);
+        }
+        
+        .kidneys {
+            top: 55%;
+            left: 35%;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #FF9E6D, #FF8A4C);
+        }
+        
+        .kidneys.right-kidney {
+            left: 61%;
+        }
+        
+        .bones {
+            top: 70%;
+            left: 48%;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #B8B8B8, #9E9E9E);
+        }
+        
+        .info-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid;
+            border-image: linear-gradient(to right, var(--primary-coral), var(--accent-grass)) 1;
+        }
+        
+        .info-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            font-size: 2rem;
+            color: white;
+        }
+        
+        .info-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-dark);
+        }
+        
+        .info-subtitle {
+            font-size: 1rem;
+            color: var(--text-light);
+            margin-top: 5px;
+        }
+        
+        .info-content {
+            padding: 20px 0;
+        }
+        
+        .info-section {
+            margin-bottom: 25px;
+        }
+        
+        .info-section-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+        
+        .info-section-title i {
+            margin-right: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .info-list {
+            list-style-type: none;
+            padding-left: 40px;
+        }
+        
+        .info-list li {
+            margin-bottom: 10px;
+            padding-left: 10px;
+            position: relative;
+        }
+        
+        .info-list li:before {
+            content: '•';
+            position: absolute;
+            left: -15px;
+            color: var(--primary-coral);
+            font-size: 1.5rem;
+        }
+        
+        .disease-card {
+            background-color: #FFF5F5;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--primary-coral);
+        }
+        
+        .tip-card {
+            background-color: #F0FFF7;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--accent-grass);
+        }
+        
+        .card-title {
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title i {
+            margin-right: 10px;
+        }
+        
+        .default-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .default-icon {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-coral), var(--accent-grass));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            font-size: 3.5rem;
+            color: white;
+        }
+        
+        .default-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--text-dark);
+        }
+        
+        .default-text {
+            color: var(--text-light);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .body-part-description {
+            display: none;
+        }
+        
+        .active {
+            display: block;
+        }
+        
+        .health-tip {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+        
+        .tip-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+            color: white;
+        }
+        
+        .body-system {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 10px;
+            background-color: rgba(255, 107, 107, 0.1);
+            color: var(--primary-coral);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        .quick-facts {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .fact {
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+            border-top: 4px solid;
+        }
+        
+        @media (max-width: 768px) {
+            .quick-facts {
+                grid-template-columns: 1fr;
+            }
+            
+            .body-map {
+                height: 500px;
+            }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 107, 107, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Human Body Interactive Map</h1>
+            <p class="tagline">Click on any body part to learn about its function, common diseases, and health tips for maintaining optimal wellness.</p>
+            <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                <span style="background-color: #FF6B6B; color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem;"><i class="fas fa-heartbeat"></i> Disease Awareness</span>
+                <span style="background-color: #4ECDC4; color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem;"><i class="fas fa-apple-alt"></i> Health Tips</span>
+                <span style="background-color: #FFD166; color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem;"><i class="fas fa-brain"></i> Interactive Learning</span>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="body-map-container">
+                <div class="panel-title">
+                    <i class="fas fa-map"></i> Interactive Body Map
+                </div>
+                
+                <div class="body-map">
+                    <!-- Body parts as clickable elements -->
+                    <div class="body-part brain pulse" data-part="brain">
+                        <div class="body-part-icon"><i class="fas fa-brain"></i></div>
+                        <div class="body-part-label">Brain</div>
+                    </div>
+                    
+                    <div class="body-part heart" data-part="heart">
+                        <div class="body-part-icon"><i class="fas fa-heart"></i></div>
+                        <div class="body-part-label">Heart</div>
+                    </div>
+                    
+                    <div class="body-part lungs" data-part="lungs">
+                        <div class="body-part-icon"><i class="fas fa-lungs"></i></div>
+                        <div class="body-part-label">Left Lung</div>
+                    </div>
+                    
+                    <div class="body-part lungs right-lung" data-part="lungs">
+                        <div class="body-part-icon"><i class="fas fa-lungs"></i></div>
+                        <div class="body-part-label">Right Lung</div>
+                    </div>
+                    
+                    <div class="body-part stomach" data-part="stomach">
+                        <div class="body-part-icon"><i class="fas fa-seedling"></i></div>
+                        <div class="body-part-label">Stomach</div>
+                    </div>
+                    
+                    <div class="body-part liver" data-part="liver">
+                        <div class="body-part-icon"><i class="fas fa-filter"></i></div>
+                        <div class="body-part-label">Liver</div>
+                    </div>
+                    
+                    <div class="body-part kidneys" data-part="kidneys">
+                        <div class="body-part-icon"><i class="fas fa-tint"></i></div>
+                        <div class="body-part-label">Left Kidney</div>
+                    </div>
+                    
+                    <div class="body-part kidneys right-kidney" data-part="kidneys">
+                        <div class="body-part-icon"><i class="fas fa-tint"></i></div>
+                        <div class="body-part-label">Right Kidney</div>
+                    </div>
+                    
+                    <div class="body-part bones" data-part="bones">
+                        <div class="body-part-icon"><i class="fas fa-bone"></i></div>
+                        <div class="body-part-label">Skeletal System</div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px; color: var(--text-light); font-size: 0.9rem;">
+                    <i class="fas fa-mouse-pointer"></i> Click on any body part above to learn more about it
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <div class="panel-title">
+                    <i class="fas fa-info-circle"></i> Body Part Information
+                </div>
+                
+                <!-- Default message when no body part is selected -->
+                <div class="default-message active" id="default-info">
+                    <div class="default-icon">
+                        <i class="fas fa-hand-pointer"></i>
+                    </div>
+                    <div class="default-title">Explore the Human Body</div>
+                    <div class="default-text">
+                        Click on any body part in the interactive map to discover:
+                        <ul class="info-list" style="margin-top: 15px; text-align: left;">
+                            <li>Key functions and importance</li>
+                            <li>Common diseases and prevention</li>
+                            <li>Health tips for optimal wellness</li>
+                            <li>Interesting facts and statistics</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Brain Information -->
+                <div class="body-part-description" id="brain-info">
+                    <div class="info-header">
+                        <div class="info-icon" style="background: linear-gradient(135deg, var(--accent-lavender), #8A6FDF);">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div>
+                            <div class="info-title">Brain</div>
+                            <div class="info-subtitle">Control Center of the Body</div>
+                            <span class="body-system">Nervous System</span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-content">
+                        <p>The brain is the most complex organ in the human body, responsible for thoughts, memory, emotions, touch, motor skills, vision, breathing, temperature, and every process that regulates our body.</p>
+                        
+                        <div class="info-section">
+                            <div class="info-section-title">
+                                <i class="fas fa-exclamation-triangle" style="background-color: var(--primary-coral);"></i>
+                                Common Diseases & Prevention
+                            </div>
+                            <div class="disease-card">
+                                <div class="card-title" style="color: var(--primary-coral);">
+                                    <i class="fas fa-head-side-virus"></i> Alzheimer's & Dementia
+                                </div>
+                                <p>Progressive brain disorders that affect memory, thinking, and behavior. Risk increases with age but is not a normal part of aging.</p>
+                                <div class="health-tip">
+                                    <div class="tip-icon" style="background-color: var(--accent-grass);">
+                                        <i class="fas fa-lightbulb"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Prevention Tip:</strong> Regular mental stimulation, social engagement, and physical activity can help maintain brain health.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="disease-card">
+                                <div class="card-title" style="color: var(--primary-coral);">
+                                    <i class="fas fa-brain"></i> Stroke
+                                </div>
+                                <p>Occurs when blood supply to part of the brain is interrupted, preventing brain tissue from getting oxygen and nutrients.</p>
+                                <div class="health-tip">
+                                    <div class="tip-icon" style="background-color: var(--accent-grass);">
+                                        <i class="fas fa-heartbeat"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Prevention Tip:</strong> Control blood pressure, maintain healthy cholesterol levels, avoid smoking, and exercise regularly.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <div class="info-section-title">
+                                <i class="fas fa-heart" style="background-color: var(--accent-grass);"></i>
+                                Health Tips for Brain Wellness
+                            </div>
+                            <div class="quick-facts">
+                                <div class="fact" style="border-color: var(--accent-lavender);">
+                                    <strong>Stay Mentally Active</strong>
+                                    <p>Puzzles, reading, and learning new skills can help build cognitive reserve.</p>
+                                </div>
+                                <div class="fact" style="border-color: var(--accent-lavender);">
+                                    <strong>Omega-3 Fatty Acids</strong>
+                                    <p>Found in fish, nuts, and seeds, these support brain cell structure and function.</p>
+                                </div>
+                                <div class="fact" style="border-color: var(--accent-lavender);">
+                                    <strong>Quality Sleep</strong>
+                                    <p>7-9 hours nightly helps clear brain toxins and consolidate memories.</p>
+                                </div>
+                                <div class="fact" style="border-color: var(--accent-lavender);">
+                                    <strong>Stress Management</strong>
+                                    <p>Chronic stress can damage brain cells; meditation and yoga can help.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stats">
+                            <div class="stat-item">
+                                <span class="stat-value">86B</span>
+                                <span class="stat-label">Neurons</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">20%</span>
+                                <span class="stat-label">Body's Energy</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">3 lbs</span>
+                                <span class="stat-label">Average Weight</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Heart Information -->
+                <div class="body-part-description" id="heart-info">
+                    <div class="info-header">
+                        <div class="info-icon" style="background: linear-gradient(135deg, var(--primary-coral), #FF5252);">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <div>
+                            <div class="info-title">Heart</div>
+                            <div class="info-subtitle">Your Lifelong Pump</div>
+                            <span class="body-system">Cardiovascular System</span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-content">
+                        <p>The heart is a muscular organ that pumps blood throughout the body via the circulatory system, supplying oxygen and nutrients to tissues and removing carbon dioxide and other wastes.</p>
+                        
+                        <div class="info-section">
+                            <div class="info-section-title">
+                                <i class="fas fa-exclamation-triangle" style="background-color: var(--primary-coral);"></i>
+                                Common Diseases & Prevention
+                            </div>
+                            <div class="disease-card">
+                                <div class="card-title" style="color: var(--primary-coral);">
+                                    <i class="fas fa-heartbeat"></i> Coronary Artery Disease
+                                </div>
+                                <p>The most common type of heart disease, caused by plaque buildup in the walls of arteries that supply blood to the heart.</p>
+                                <div class="health-tip">
+                                    <div class="tip-icon" style="background-color: var(--accent-grass);">
+                                        <i class="fas fa-apple-alt"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Prevention Tip:</strong> Eat a heart-healthy diet low in saturated fats, trans fats, and cholesterol.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="disease-card">
+                                <div class="card-title" style="color: var(--primary-coral);">
+                                    <i class="fas fa-heart-broken"></i> Heart Attack
+                                </div>
+                                <p>Occurs when blood flow to part of the heart is blocked, usually by a blood clot, damaging the heart muscle.</p>
+                                <div class="health-tip">
+                                    <div class="tip-icon" style="background-color: var(--accent-grass);">
+                                        <i class="fas fa-walking"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Prevention Tip:</strong> Regular physical activity strengthens the heart muscle and improves circulation.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <div class="info-section-title">
+                                <i class="fas fa-heart" style="background-color: var(--accent-grass);"></i>
+                                Heart-Healthy Habits
+                            </div>
+                            <div class="tip-card">
+                                <div class="card-title" style="color: var(--accent-grass);">
+                                    <i class="fas fa-running"></i> Exercise Regularly
+                                </div>
+                                <p>Aim for at least 150 minutes of moderate-intensity aerobic activity per week, like brisk walking or cycling.</p>
+                            </div>
+                            
+                            <div class="tip-card">
+                                <div class="card-title" style="color: var(--accent-grass);">
+                                    <i class="fas fa-ban-smoking"></i> Avoid Tobacco
+                                </div>
+                                <p>Smoking damages blood vessels and increases heart disease risk. Quitting has immediate and long-term benefits.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stats">
+                            <div class="stat-item">
+                                <span class="stat-value">100K</span>
+                                <span class="stat-label">Beats/Day</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">2K</span>
+                                <span class="stat-label">Gallons Daily</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">60-100</span>
+                                <span class="stat-label">BPM (Resting)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Lungs Information -->
+                <div class="body-part-description" id="lungs-info">
+                    <div class="info-header">
+                        <div class="info-icon" style="background: linear-gradient(135deg, var(--secondary-mint), #3DBBB3);">
+                            <i class="fas fa-lungs"></i>
+                        </div>
+                        <div>
+                            <div class="info-title">Lungs</div>
+                            <div class="info-subtitle">Your Breathing Powerhouse</div>
+                            <span class="body-system">Respiratory System</span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-content">
+                        <p>The lungs are a pair of spongy, air-filled organs located on either side of the chest. They bring oxygen into the body and remove carbon dioxide through the process of respiration.</p>
+                        
+                        <div class="info-section">
+                            <div class="info-section-title">
+                                <i class="fas fa-exclamation-triangle" style="background-color: var(--primary-coral);"></i>
+                                Common Diseases & Prevention
+                            </div>
+                            <div class="disease-card">
+                                <div class="card-title" style="color: var(--primary-coral);">
+                                    <i class="fas fa-wind"></i> Asthma
+                                </div>
+                                <p>A condition in which airways narrow and swell, producing extra mucus, making breathing difficult.</p>
+                                <div class="health-tip">
+                                    <div class="tip-icon" style="background-color: var(--accent-grass);">
+                                        <i class="fas fa-allergies"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Prevention Tip:</strong> Identify and avoid triggers like pollen, dust mites, or pet dander.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="disease-card">
+                                <div class="card-title" style="color: var(--primary-coral);">
+                                    <i class="fas fa-smog"></i> COPD (Chronic Obstructive Pulmonary Disease)
+                                </div>
+                                <p>A group of lung diseases that block airflow and make breathing difficult, often caused by long-term exposure to irritating gases or particulate matter.</p>
+                                <div class="health-tip">
+                                    <div class="tip-icon" style="background-color: var(--accent-grass);">
+                                        <i class="fas fa-ban-smoking"></i>
+                                    </div>
+                                    <div>
+                                        <strong>Prevention Tip:</strong> The most important step is to quit smoking and avoid secondhand smoke.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <div class="info-section-title">
+                                <i class="fas fa-heart" style="background-color: var(--accent-grass);"></i>
+                                Lung Health Tips
+                            </div>
+                            <div class="quick-facts">
+                                <div class="fact" style="border-color: var(--secondary-mint);">
+                                    <strong>Deep Breathing Exercises</strong>
+                                    <p>Practice diaphragmatic breathing to increase lung capacity and efficiency.</p>
+                                </div>
+                                <div class="fact" style="border-color: var(--secondary-mint);">
+                                    <strong>Avoid Pollutants</strong>
+                                    <p>Minimize exposure to air pollution, chemical fumes, and dust.</p>
+                                </div>
+                                <div class="fact" style="border-color: var(--secondary-mint);">
+                                    <strong>Stay Hydrated</strong>
+                                    <p>Drinking enough water keeps the mucosal linings in the lungs thin.</p>
+                                </div>
+                                <div class="fact" style="border-color: var(--secondary-mint);">
+                                    <strong>Regular Exercise</strong>
+                                    <p>Improves lung capacity and strengthens respiratory muscles.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stats">
+                            <div class="stat-item">
+                                <span class="stat-value">6L</span>
+                                <span class="stat-label">Total Capacity</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">17K</span>
+                                <span class="stat-label">Breaths/Day</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">300M</span>
+                                <span class="stat-label">Alveoli</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional body part info would continue here -->
+                <!-- Stomach, Liver, Kidneys, Bones information would follow similar pattern -->
+                
+            </div>
+        </div>
+        
+        <footer>
+            <p><i class="fas fa-heartbeat"></i> <strong>Human Body Interactive Map</strong> - Educational tool for health awareness and disease prevention</p>
+            <p style="margin-top: 10px; font-size: 0.8rem;">Note: This information is for educational purposes only. Consult healthcare professionals for medical advice.</p>
+        </footer>
+    </div>
+    
+    <script src="script.js">
+
+    </script>
+</body>
+</html>
