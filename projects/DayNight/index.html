@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Day/Night Cycle</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background-color 3s ease, color 2s ease;
+        }
+        
+        .sky {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            transition: background 3s ease;
+            overflow: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 2s ease;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            transition: color 2s ease;
+        }
+        
+        .subtitle {
+            font-size: 1.4rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .time-display {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .time-box {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(5px);
+            padding: 20px 30px;
+            border-radius: 15px;
+            min-width: 200px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: all 2s ease;
+        }
+        
+        .time-value {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+        
+        .time-label {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .current-period {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-top: 20px;
+            transition: color 2s ease;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+            background-color: rgba(255, 255, 255, 0.2);
+            color: inherit;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(-2px);
+        }
+        
+        .environment {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 50px;
+            margin: 60px 0;
+        }
+        
+        .environment-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 2s ease;
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .environment-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.05);
+            transition: all 0.5s ease;
+        }
+        
+        .environment-icon {
+            font-size: 2rem;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .environment-text {
+            flex: 1;
+        }
+        
+        .environment-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .environment-desc {
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+        
+        .celestial-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .sun, .moon {
+            position: absolute;
+            transition: all 3s ease;
+        }
+        
+        .sun {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, #FFD700, #FF8C00);
+            border-radius: 50%;
+            box-shadow: 0 0 60px #FFA500, 0 0 100px rgba(255, 165, 0, 0.5);
+            top: 20%;
+            left: 15%;
+        }
+        
+        .moon {
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #F0F8FF, #C0C0C0);
+            border-radius: 50%;
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.8), 0 0 80px rgba(255, 255, 255, 0.3);
+            top: 20%;
+            right: 15%;
+            opacity: 0;
+        }
+        
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 3s ease;
+        }
+        
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite alternate;
+        }
+        
+        @keyframes twinkle {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        
+        .cloud {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            transition: all 3s ease;
+        }
+        
+        .cloud1 {
+            width: 150px;
+            height: 60px;
+            top: 15%;
+            right: 10%;
+        }
+        
+        .cloud2 {
+            width: 200px;
+            height: 80px;
+            top: 25%;
+            left: 5%;
+        }
+        
+        .cloud3 {
+            width: 180px;
+            height: 70px;
+            top: 40%;
+            right: 20%;
+        }
+        
+        .birds {
+            position: absolute;
+            top: 20%;
+            left: 30%;
+            opacity: 1;
+            transition: opacity 2s ease;
+        }
+        
+        .bird {
+            position: absolute;
+            width: 30px;
+            height: 20px;
+            background-color: #333;
+            border-radius: 50%;
+            animation: fly 15s linear infinite;
+        }
+        
+        .bird:before, .bird:after {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 20px;
+            background-color: #333;
+            border-radius: 50%;
+            top: -5px;
+        }
+        
+        .bird:before {
+            left: 5px;
+            transform: rotate(30deg);
+        }
+        
+        .bird:after {
+            left: 20px;
+            transform: rotate(-30deg);
+        }
+        
+        @keyframes fly {
+            0% { transform: translateX(-100px) translateY(0); }
+            50% { transform: translateX(100px) translateY(-20px); }
+            100% { transform: translateX(300px) translateY(0); }
+        }
+        
+        .nocturnal-animals {
+            position: absolute;
+            bottom: 20%;
+            left: 20%;
+            opacity: 0;
+            transition: opacity 2s ease;
+        }
+        
+        .owl {
+            position: relative;
+            width: 80px;
+            height: 60px;
+        }
+        
+        .owl-body {
+            width: 80px;
+            height: 60px;
+            background-color: #5D4037;
+            border-radius: 50%;
+            position: relative;
+        }
+        
+        .owl-eye {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            background-color: #FFF;
+            border-radius: 50%;
+            top: 15px;
+        }
+        
+        .owl-eye.left { left: 15px; }
+        .owl-eye.right { right: 15px; }
+        
+        .owl-eye:after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #000;
+            border-radius: 50%;
+            top: 6px;
+            left: 6px;
+        }
+        
+        .info-box {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 2s ease;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px;
+            margin-top: 50px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            transition: color 2s ease;
+        }
+        
+        /* Day/Night specific styles */
+        .day-mode {
+            background-color: #87CEEB;
+            color: #333;
+        }
+        
+        .night-mode {
+            background-color: #0F1B2D;
+            color: #F0F8FF;
+        }
+        
+        .morning-mode {
+            background: linear-gradient(to bottom, #FFD89B, #87CEEB);
+            color: #333;
+        }
+        
+        .evening-mode {
+            background: linear-gradient(to bottom, #FF7E5F, #0F1B2D);
+            color: #F0F8FF;
+        }
+        
+        .day-header {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .night-header {
+            background-color: rgba(15, 27, 45, 0.5);
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .time-value {
+                font-size: 2.5rem;
+            }
+            
+            .environment-section {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="day-mode">
+    <div class="sky"></div>
+    
+    <div class="celestial-container">
+        <div class="sun" id="sun"></div>
+        <div class="moon" id="moon"></div>
+        <div class="stars" id="stars"></div>
+        <div class="cloud cloud1" id="cloud1"></div>
+        <div class="cloud cloud2" id="cloud2"></div>
+        <div class="cloud cloud3" id="cloud3"></div>
+        <div class="birds" id="birds">
+            <div class="bird"></div>
+            <div class="bird" style="top: 15px; left: 20px; animation-delay: 1s;"></div>
+            <div class="bird" style="top: -10px; left: 40px; animation-delay: 2s;"></div>
+        </div>
+        <div class="nocturnal-animals" id="nocturnalAnimals">
+            <div class="owl">
+                <div class="owl-body">
+                    <div class="owl-eye left"></div>
+                    <div class="owl-eye right"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <header class="day-header" id="header">
+            <h1 id="timeGreeting">Good Morning!</h1>
+            <p class="subtitle">Watch as the background and animations change based on real time</p>
+            
+            <div class="time-display">
+                <div class="time-box">
+                    <div class="time-value" id="currentTime">00:00:00</div>
+                    <div class="time-label">Current Time</div>
+                </div>
+                <div class="time-box">
+                    <div class="time-value" id="currentDate">Jan 1, 2023</div>
+                    <div class="time-label">Current Date</div>
+                </div>
+            </div>
+            
+            <div class="current-period" id="currentPeriod">Daytime</div>
+        </header>
+        
+        <div class="controls">
+            <button class="btn" id="realTimeBtn">
+                <i class="fas fa-clock"></i> Use Real Time
+            </button>
+            <button class="btn" id="simulateBtn">
+                <i class="fas fa-forward"></i> Simulate Cycle
+            </button>
+            <button class="btn" id="pauseBtn">
+                <i class="fas fa-pause"></i> Pause Simulation
+            </button>
+        </div>
+        
+        <div class="environment">
+            <div class="environment-section">
+                <h2><i class="fas fa-tree"></i> Environment Changes</h2>
+                
+                <div class="environment-item" id="skyItem">
+                    <div class="environment-icon">
+                        <i class="fas fa-cloud-sun"></i>
+                    </div>
+                    <div class="environment-text">
+                        <div class="environment-title">Sky & Weather</div>
+                        <div class="environment-desc" id="skyDesc">Bright blue sky with scattered clouds</div>
+                    </div>
+                </div>
+                
+                <div class="environment-item" id="lightItem">
+                    <div class="environment-icon">
+                        <i class="fas fa-sun"></i>
+                    </div>
+                    <div class="environment-text">
+                        <div class="environment-title">Lighting</div>
+                        <div class="environment-desc" id="lightDesc">Bright sunlight with clear visibility</div>
+                    </div>
+                </div>
+                
+                <div class="environment-item" id="tempItem">
+                    <div class="environment-icon">
+                        <i class="fas fa-thermometer-half"></i>
+                    </div>
+                    <div class="environment-text">
+                        <div class="environment-title">Temperature</div>
+                        <div class="environment-desc" id="tempDesc">Warm and pleasant</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="environment-section">
+                <h2><i class="fas fa-dove"></i> Wildlife Activity</h2>
+                
+                <div class="environment-item" id="birdsItem">
+                    <div class="environment-icon">
+                        <i class="fas fa-dove"></i>
+                    </div>
+                    <div class="environment-text">
+                        <div class="environment-title">Birds</div>
+                        <div class="environment-desc" id="birdsDesc">Active and flying around</div>
+                    </div>
+                </div>
+                
+                <div class="environment-item" id="nocturnalItem">
+                    <div class="environment-icon">
+                        <i class="fas fa-otter"></i>
+                    </div>
+                    <div class="environment-text">
+                        <div class="environment-title">Nocturnal Animals</div>
+                        <div class="environment-desc" id="nocturnalDesc">Resting and hidden</div>
+                    </div>
+                </div>
+                
+                <div class="environment-item" id="soundItem">
+                    <div class="environment-icon">
+                        <i class="fas fa-volume-up"></i>
+                    </div>
+                    <div class="environment-text">
+                        <div class="environment-title">Ambient Sounds</div>
+                        <div class="environment-desc" id="soundDesc">Birds chirping and light breeze</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h2><i class="fas fa-info-circle"></i> How It Works</h2>
+            <p style="margin-top: 15px; line-height: 1.6; font-size: 1.1rem;">
+                This page detects your current time and adjusts the background, colors, animations, and environmental elements accordingly.
+                The day/night cycle is divided into four periods: <strong>Morning (5AM-11AM)</strong>, <strong>Day (11AM-5PM)</strong>, 
+                <strong>Evening (5PM-9PM)</strong>, and <strong>Night (9PM-5AM)</strong>. You can use real time or simulate the cycle to see all transitions.
+            </p>
+        </div>
+        
+        <footer>
+            <p>Day/Night Cycle Simulation &copy; 2026 | Real-time environment based on your local time</p>
+        </footer>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const body = document.body;
+        const sky = document.querySelector('.sky');
+        const sun = document.getElementById('sun');
+        const moon = document.getElementById('moon');
+        const stars = document.getElementById('stars');
+        const clouds = [document.getElementById('cloud1'), document.getElementById('cloud2'), document.getElementById('cloud3')];
+        const birds = document.getElementById('birds');
+        const nocturnalAnimals = document.getElementById('nocturnalAnimals');
+        const header = document.getElementById('header');
+        const currentTimeElement = document.getElementById('currentTime');
+        const currentDateElement = document.getElementById('currentDate');
+        const timeGreeting = document.getElementById('timeGreeting');
+        const currentPeriod = document.getElementById('currentPeriod');
+        
+        // Environment description elements
+        const skyDesc = document.getElementById('skyDesc');
+        const lightDesc = document.getElementById('lightDesc');
+        const tempDesc = document.getElementById('tempDesc');
+        const birdsDesc = document.getElementById('birdsDesc');
+        const nocturnalDesc = document.getElementById('nocturnalDesc');
+        const soundDesc = document.getElementById('soundDesc');
+        
+        // Control buttons
+        const realTimeBtn = document.getElementById('realTimeBtn');
+        const simulateBtn = document.getElementById('simulateBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        
+        // State variables
+        let isSimulating = false;
+        let simulationInterval;
+        let simulationSpeed = 60000; // 1 minute = 1 second in simulation
+        let simulatedTime = new Date();
+        
+        // Initialize the page with current time
+        function init() {
+            updateTime();
+            updateDayNightCycle();
+            createStars();
+            
+            // Update time every second
+            setInterval(updateTime, 1000);
+            
+            // Update day/night cycle every minute
+            setInterval(updateDayNightCycle, 60000);
+            
+            // Set up button event listeners
+            realTimeBtn.addEventListener('click', useRealTime);
+            simulateBtn.addEventListener('click', startSimulation);
+            pauseBtn.addEventListener('click', pauseSimulation);
+        }
+        
+        // Update time display
+        function updateTime() {
+            const now = isSimulating ? simulatedTime : new Date();
+            
+            // Format time
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            currentTimeElement.textContent = `${hours}:${minutes}:${seconds}`;
+            
+            // Format date
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            currentDateElement.textContent = now.toLocaleDateString('en-US', options);
+            
+            // Update simulated time if simulation is active
+            if (isSimulating) {
+                simulatedTime = new Date(simulatedTime.getTime() + 60000); // Add 1 minute
+            }
+        }
+        
+        // Update day/night cycle based on current time
+        function updateDayNightCycle() {
+            const now = isSimulating ? simulatedTime : new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const timeOfDay = hours + minutes / 60;
+            
+            // Determine period of day
+            let period, greeting;
+            let sunPosition, moonPosition, starsOpacity, cloudColor, cloudOpacity;
+            let birdsOpacity = 1, nocturnalOpacity = 0;
+            
+            // Morning: 5:00 - 11:00
+            if (timeOfDay >= 5 && timeOfDay < 11) {
+                period = "Morning";
+                greeting = "Good Morning!";
+                body.className = "morning-mode";
+                header.className = "day-header";
+                
+                // Sun position (rising)
+                sunPosition = {
+                    top: `${20 + (timeOfDay - 5) * 5}%`,
+                    left: `${15 + (timeOfDay - 5) * 5}%`
+                };
+                
+                moonPosition = { top: "20%", right: "15%", opacity: 0 };
+                starsOpacity = 0;
+                cloudColor = "rgba(255, 255, 255, 0.9)";
+                cloudOpacity = 0.7;
+                
+                // Environment descriptions
+                skyDesc.textContent = "Soft morning light with pink/orange hues";
+                lightDesc.textContent = "Gentle sunrise with increasing brightness";
+                tempDesc.textContent = "Cool but warming up";
+                birdsDesc.textContent = "Active and singing morning songs";
+                nocturnalDesc.textContent = "Returning to their shelters";
+                soundDesc.textContent = "Birds chirping and morning breeze";
+                
+            // Day: 11:00 - 17:00
+            } else if (timeOfDay >= 11 && timeOfDay < 17) {
+                period = "Day";
+                greeting = "Good Day!";
+                body.className = "day-mode";
+                header.className = "day-header";
+                
+                // Sun position (high in the sky)
+                sunPosition = {
+                    top: `${50 - (timeOfDay - 14) * 2}%`,
+                    left: `${40 + (timeOfDay - 11) * 5}%`
+                };
+                
+                moonPosition = { top: "20%", right: "15%", opacity: 0 };
+                starsOpacity = 0;
+                cloudColor = "rgba(255, 255, 255, 0.9)";
+                cloudOpacity = 0.8;
+                
+                // Environment descriptions
+                skyDesc.textContent = "Bright blue sky with scattered clouds";
+                lightDesc.textContent = "Bright sunlight with clear visibility";
+                tempDesc.textContent = "Warm and pleasant";
+                birdsDesc.textContent = "Active and flying around";
+                nocturnalDesc.textContent = "Resting and hidden";
+                soundDesc.textContent = "Birds chirping and light breeze";
+                
+            // Evening: 17:00 - 21:00
+            } else if (timeOfDay >= 17 && timeOfDay < 21) {
+                period = "Evening";
+                greeting = "Good Evening!";
+                body.className = "evening-mode";
+                header.className = "night-header";
+                
+                // Sun position (setting)
+                sunPosition = {
+                    top: `${40 + (timeOfDay - 17) * 5}%`,
+                    left: `${70 + (timeOfDay - 17) * 5}%`
+                };
+                
+                // Moon position (rising)
+                moonPosition = {
+                    top: `${30 - (timeOfDay - 17) * 3}%`,
+                    right: `${15 - (timeOfDay - 17) * 3}%`,
+                    opacity: (timeOfDay - 17) * 0.25
+                };
+                
+                starsOpacity = (timeOfDay - 17) * 0.25;
+                cloudColor = "rgba(255, 200, 150, 0.8)";
+                cloudOpacity = 0.6;
+                birdsOpacity = 1 - (timeOfDay - 17) * 0.25;
+                
+                // Environment descriptions
+                skyDesc.textContent = "Golden hour with orange/purple sunset";
+                lightDesc.textContent = "Dimming light with long shadows";
+                tempDesc.textContent = "Cooling down";
+                birdsDesc.textContent = "Returning to nests for the night";
+                nocturnalDesc.textContent = "Starting to become active";
+                soundDesc.textContent = "Crickets beginning to chirp";
+                
+            // Night: 21:00 - 5:00
+            } else {
+                period = "Night";
+                greeting = "Good Night!";
+                body.className = "night-mode";
+                header.className = "night-header";
+                
+                // Sun position (below horizon)
+                sunPosition = { top: "120%", left: "50%", opacity: 0 };
+                
+                // Moon position (high in the sky)
+                let nightHours = timeOfDay < 5 ? timeOfDay + 24 : timeOfDay;
+                moonPosition = {
+                    top: `${30 + (nightHours - 21) * 2}%`,
+                    right: `${5 + (nightHours - 21) * 5}%`,
+                    opacity: 1
+                };
+                
+                starsOpacity = 1;
+                cloudColor = "rgba(150, 150, 200, 0.6)";
+                cloudOpacity = 0.4;
+                birdsOpacity = 0;
+                nocturnalOpacity = 1;
+                
+                // Environment descriptions
+                skyDesc.textContent = "Dark sky with stars and moonlight";
+                lightDesc.textContent = "Moonlight and starlight";
+                tempDesc.textContent = "Cool to cold";
+                birdsDesc.textContent = "Asleep in nests";
+                nocturnalDesc.textContent = "Active and hunting";
+                soundDesc.textContent = "Crickets, owls, and night sounds";
+            }
+            
+            // Update UI elements
+            timeGreeting.textContent = greeting;
+            currentPeriod.textContent = period;
+            
+            // Update celestial bodies
+            updateCelestialBodies(sunPosition, moonPosition, starsOpacity, cloudColor, cloudOpacity, birdsOpacity, nocturnalOpacity);
+        }
+        
+        // Update celestial bodies positions and properties
+        function updateCelestialBodies(sunPos, moonPos, starsOp, cloudColor, cloudOp, birdsOp, nocturnalOp) {
+            // Update sun
+            Object.keys(sunPos).forEach(key => {
+                sun.style[key] = sunPos[key];
+            });
+            
+            // Update moon
+            Object.keys(moonPos).forEach(key => {
+                moon.style[key] = moonPos[key];
+            });
+            
+            // Update stars
+            stars.style.opacity = starsOp;
+            
+            // Update clouds
+            clouds.forEach(cloud => {
+                cloud.style.backgroundColor = cloudColor;
+                cloud.style.opacity = cloudOp;
+            });
+            
+            // Update birds and nocturnal animals
+            birds.style.opacity = birdsOp;
+            nocturnalAnimals.style.opacity = nocturnalOp;
+        }
+        
+        // Create starfield
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            const starCount = 200;
+            
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                
+                // Random position
+                const x = Math.random() * 100;
+                const y = Math.random() * 100;
+                
+                // Random size
+                const size = Math.random() * 3 + 1;
+                
+                // Random twinkle delay
+                const delay = Math.random() * 5;
+                
+                star.style.left = `${x}%`;
+                star.style.top = `${y}%`;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.animationDelay = `${delay}s`;
+                
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        // Use real time (stop simulation)
+        function useRealTime() {
+            if (isSimulating) {
+                clearInterval(simulationInterval);
+                isSimulating = false;
+                simulatedTime = new Date();
+            }
+            
+            // Update UI to show real time mode
+            realTimeBtn.innerHTML = '<i class="fas fa-check-circle"></i> Using Real Time';
+            simulateBtn.innerHTML = '<i class="fas fa-forward"></i> Simulate Cycle';
+            
+            // Update immediately
+            updateTime();
+            updateDayNightCycle();
+        }
+        
+        // Start simulation
+        function startSimulation() {
+            if (!isSimulating) {
+                isSimulating = true;
+                simulatedTime = new Date();
+                
+                // Update UI to show simulation mode
+                realTimeBtn.innerHTML = '<i class="fas fa-clock"></i> Use Real Time';
+                simulateBtn.innerHTML = '<i class="fas fa-forward"></i> Simulating...';
+                
+                // Start simulation interval
+                simulationInterval = setInterval(() => {
+                    updateTime();
+                    updateDayNightCycle();
+                }, 1000); // Update every second
+            }
+        }
+        
+        // Pause simulation
+        function pauseSimulation() {
+            if (isSimulating) {
+                clearInterval(simulationInterval);
+                isSimulating = false;
+                
+                // Update UI
+                simulateBtn.innerHTML = '<i class="fas fa-forward"></i> Resume Simulation';
+            }
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
