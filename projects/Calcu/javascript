@@ -1,6 +1,18 @@
 let display = document.getElementById("display");
 
 function appendValue(value) {
+    if (display.value === "Error") {
+        display.value = "";
+    }
+
+    const lastChar = display.value.slice(-1);
+    const operators = ["+", "-", "*", "/"];
+
+    // Prevent multiple operators in a row
+    if (operators.includes(lastChar) && operators.includes(value)) {
+        return;
+    }
+
     display.value += value;
 }
 
@@ -9,9 +21,42 @@ function clearDisplay() {
 }
 
 function calculateResult() {
+    if (display.value === "") return;
+
     try {
         display.value = eval(display.value);
-    } catch (error) {
+    } catch {
         display.value = "Error";
     }
 }
+
+/* 🔑 Keyboard support */
+document.addEventListener("keydown", function (event) {
+    const key = event.key;
+
+    // Numbers and operators
+    if (
+        (key >= "0" && key <= "9") ||
+        key === "+" || key === "-" ||
+        key === "*" || key === "/" ||
+        key === "."
+    ) {
+        appendValue(key);
+    }
+
+    // Enter = calculate
+    if (key === "Enter") {
+        event.preventDefault();
+        calculateResult();
+    }
+
+    // Backspace = delete last character
+    if (key === "Backspace") {
+        display.value = display.value.slice(0, -1);
+    }
+
+    // Escape = clear display
+    if (key === "Escape") {
+        clearDisplay();
+    }
+});
