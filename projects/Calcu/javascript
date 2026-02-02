@@ -1,62 +1,91 @@
-let display = document.getElementById("display");
-
-function appendValue(value) {
-    if (display.value === "Error") {
-        display.value = "";
+class Calculator {
+    constructor(previousOperand, currentOperand) {
+        this.previousOperand = previousOperand;
+        this.currentOperand = currentOperand;
+        this.clear();
     }
 
-    const lastChar = display.value.slice(-1);
-    const operators = ["+", "-", "*", "/"];
-
-    // Prevent multiple operators in a row
-    if (operators.includes(lastChar) && operators.includes(value)) {
-        return;
+    clear() {
+        this.current = '';
+        this.previous = '';
+        this.operation = undefined;
+        this.updateDisplay();
     }
 
-    display.value += value;
+    delete() {
+        this.current = this.current.toString().slice(0, -1);
+        this.updateDisplay();
+    }
+
+    appendNumber(number) {
+        if (number === '.' && this.current.includes('.')) return;
+        this.current += number;
+        this.updateDisplay();
+    }
+
+    chooseOperation(operation) {
+        if (this.current === '') return;
+        if (this.previous !== '') {
+            this.compute();
+        }
+        this.operation = operation;
+        this.previous = this.current;
+        this.current = '';
+        this.updateDisplay();
+    }
+
+    compute() {
+        let result;
+        const prev = parseFloat(this.previous);
+        const curr = parseFloat(this.current);
+        if (isNaN(prev) || isNaN(curr)) return;
+
+        switch (this.operation) {
+            case '+':
+                result = prev + curr;
+                break;
+            case '−':
+                result = prev - curr;
+                break;
+            case '×':
+                result = prev * curr;
+                break;
+            case '÷':
+                result = prev / curr;
+                break;
+            case '%':
+                result = prev % curr;
+                break;
+            default:
+                return;
+        }
+
+        this.current = result;
+        this.operation = undefined;
+        this.previous = '';
+        this.updateDisplay();
+    }
+
+    updateDisplay() {
+        this.currentOperand.innerText = this.current || '0';
+        this.previousOperand.innerText =
+            this.operation ? `${this.previous} ${this.operation}` : '';
+    }
 }
 
-function clearDisplay() {
-    display.value = "";
-}
+const calculator = new Calculator(
+    document.getElementById('previousOperand'),
+    document.getElementById('currentOperand')
+);
 
-function calculateResult() {
-    if (display.value === "") return;
+document.querySelectorAll('.btn-number').forEach(btn =>
+    btn.addEventListener('click', () => calculator.appendNumber(btn.innerText))
+);
 
-    try {
-        display.value = eval(display.value);
-    } catch {
-        display.value = "Error";
-    }
-}
+document.querySelectorAll('.btn-operator').forEach(btn =>
+    btn.addEventListener('click', () => calculator.chooseOperation(btn.innerText))
+);
 
-/* 🔑 Keyboard support */
-document.addEventListener("keydown", function (event) {
-    const key = event.key;
-
-    // Numbers and operators
-    if (
-        (key >= "0" && key <= "9") ||
-        key === "+" || key === "-" ||
-        key === "*" || key === "/" ||
-        key === "."
-    ) {
-        appendValue(key);
-    }
-
-    // Enter = calculate
-    if (key === "Enter") {
-        event.preventDefault();
-        calculateResult();
-    }
-
-    // Backspace = delete last character
-    if (key === "Backspace") {
-        display.value = display.value.slice(0, -1);
-    }
-
-    // Escape = clear display
-    if (key === "Escape") {
-        clearDisplay();
-    }
-});
+document.querySelector('.btn-equals').addEventListener('click', () => calculator.compute());
+document.querySelector('.btn-clear').addEventListener('click', () => calculator.clear());
+document.querySelector('.btn-delete').addEventListener('click', () => calculator.delete());
