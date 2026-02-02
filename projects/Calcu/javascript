@@ -1,47 +1,79 @@
-const inputDisplay = document.getElementById("input");
-const resultDisplay = document.getElementById("result");
+const current = document.getElementById("current");
+const previous = document.getElementById("previous");
 const buttons = document.querySelectorAll("button");
 
-let expression = "";
+let currentValue = "0";
+let previousValue = "";
+let operator = null;
+let resetNext = false;
 
-buttons.forEach(button => {
-    button.addEventListener("click", () => {
-        const value = button.innerText;
+function updateDisplay() {
+    current.innerText = currentValue;
+    previous.innerText = operator ? `${previousValue} ${operator}` : "";
+}
 
-        // CLEAR
-        if (value === "Clear") {
-            expression = "";
-            inputDisplay.innerText = "0";
-            resultDisplay.innerText = "Result";
-            return;
-        }
+buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        const value = btn.innerText;
 
-        // EQUALS
-        if (value === "=") {
-            if (expression === "") return;
-
-            try {
-                const calcResult = eval(expression);
-                resultDisplay.innerText = calcResult;
-            } catch {
-                resultDisplay.innerText = "Error";
+        if (!isNaN(value) || value === ".") {
+            if (currentValue === "0" || resetNext) {
+                currentValue = value === "." ? "0." : value;
+                resetNext = false;
+            } else {
+                if (value === "." && currentValue.includes(".")) return;
+                currentValue += value;
             }
+            updateDisplay();
             return;
         }
 
-        // Prevent multiple operators in a row
-        const operators = ["+", "-", "*", "/"];
-        const lastChar = expression.slice(-1);
-
-        if (
-            operators.includes(lastChar) &&
-            operators.includes(value)
-        ) {
+        if (value === "AC") {
+            currentValue = "0";
+            previousValue = "";
+            operator = null;
+            updateDisplay();
             return;
         }
 
-        // Append clicked value
-        expression += value;
-        inputDisplay.innerText = expression;
+        if (value === "=") {
+            if (!operator) return;
+            calculate();
+            operator = null;
+            previousValue = "";
+            resetNext = true;
+            updateDisplay();
+            return;
+        }
+
+        // Operator handling
+        if (["+", "−", "×", "÷"].includes(value)) {
+            if (operator) calculate();
+            operator = value;
+            previousValue = currentValue;
+            resetNext = true;
+            updateDisplay();
+        }
     });
 });
+
+function calculate() {
+    const prev = parseFloat(previousValue);
+    const curr = parseFloat(currentValue);
+
+    let result;
+    switch (operator) {
+        case "+": result = prev + curr; break;
+        case "−": result = prev - curr; break;
+        case "×": result = prev * curr; break;
+        case "÷":
+            if (curr === 0) {
+                currentValue = "Error";
+                return;
+            }
+            result = prev / curr;
+            break;
+    }
+
+    currentValue = result.toString();
+}
