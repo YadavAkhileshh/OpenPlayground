@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrollless - Navigation Without Scrollbars</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6C63FF;
+            --primary-light: #8B85FF;
+            --secondary: #FF6584;
+            --accent: #36D1DC;
+            --dark: #2A2D43;
+            --light: #F8F9FA;
+            --gray: #E9ECEF;
+            --text: #333;
+            --text-light: #666;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            --radius: 16px;
+            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            color: var(--text);
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Hide all scrollbars */
+        body::-webkit-scrollbar,
+        .container::-webkit-scrollbar {
+            display: none;
+        }
+
+        body,
+        .container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scroll-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            will-change: transform;
+            transition: var(--transition);
+        }
+
+        .section {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+        }
+
+        .content {
+            max-width: 1200px;
+            width: 100%;
+            padding: 60px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+
+        h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: var(--dark);
+        }
+
+        p {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            color: var(--text-light);
+            margin-bottom: 30px;
+        }
+
+        .highlight {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .section-1 {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+
+        .section-2 {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        }
+
+        .section-3 {
+            background: linear-gradient(135deg, #a3bded 0%, #6991c7 100%);
+        }
+
+        .section-4 {
+            background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%);
+        }
+
+        .section-5 {
+            background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+        }
+
+        /* Navigation Controls */
+        .nav-controls {
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--primary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            color: var(--secondary);
+        }
+
+        .nav-btn:active {
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .nav-dots {
+            position: fixed;
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            border: 3px solid white;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .dot.active {
+            background: var(--primary);
+            transform: scale(1.3);
+            border-color: white;
+        }
+
+        .dot:hover:not(.active) {
+            background: var(--primary-light);
+            transform: scale(1.1);
+        }
+
+        /* Progress Indicator */
+        .progress-container {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            z-index: 100;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            width: 20%;
+            transition: width 0.5s ease;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 15px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--dark);
+            font-weight: 500;
+        }
+
+        /* Scroll Hint */
+        .scroll-hint {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-light);
+            z-index: 100;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
+            40% {transform: translateX(-50%) translateY(-10px);}
+            60% {transform: translateX(-50%) translateY(-5px);}
+        }
+
+        .scroll-hint i {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        .scroll-hint span {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Section Indicators */
+        .section-indicator {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--primary);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Features Grid */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .feature {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+            border: 1px solid var(--gray);
+        }
+
+        .feature:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .feature h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--dark);
+        }
+
+        /* Demo Cards */
+        .demo-cards {
+            display: flex;
+            gap: 30px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+
+        .demo-card {
+            flex: 1;
+            min-width: 250px;
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+
+        .demo-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-card h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: var(--shadow);
+            z-index: 100;
+        }
+
+        .toggle-label {
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+        }
+
+        .toggle-checkbox {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            border-radius: 34px;
+            transition: .4s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .4s;
+        }
+
+        .toggle-checkbox:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+
+        .toggle-checkbox:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+
+        /* Instructions */
+        .instructions {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: var(--radius);
+            max-width: 350px;
+            box-shadow: var(--shadow);
+            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .instructions h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .instructions ul {
+            list-style-type: none;
+        }
+
+        .instructions li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-light);
+        }
+
+        .instructions i {
+            color: var(--primary);
+            width: 20px;
+        }
+
+        /* Mobile Controls */
+        .mobile-controls {
+            display: none;
+            position: fixed;
+            bottom: 100px;
+            left: 0;
+            right: 0;
+            justify-content: center;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .mobile-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            h1 {
+                font-size: 2.8rem;
+            }
+            
+            h2 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 40px;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-dots {
+                left: 20px;
+            }
+            
+            .nav-controls {
+                right: 20px;
+            }
+            
+            .instructions {
+                max-width: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            h2 {
+                font-size: 1.8rem;
+            }
+            
+            .content {
+                padding: 30px;
+            }
+            
+            .section-indicator {
+                top: 20px;
+                right: 20px;
+            }
+            
+            .nav-dots {
+                display: none;
+            }
+            
+            .nav-controls {
+                display: none;
+            }
+            
+            .mobile-controls {
+                display: flex;
+            }
+            
+            .instructions {
+                position: static;
+                max-width: 100%;
+                margin-bottom: 30px;
+            }
+            
+            .toggle-container {
+                bottom: 20px;
+                right: 20px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .section {
+                padding: 20px;
+            }
+            
+            .content {
+                padding: 25px;
+            }
+            
+            .progress-container {
+                width: 200px;
+            }
+        }
+
+        /* Animation for new section */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        /* Visual scroll effect */
+        .scroll-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .scroll-line {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 0;
+            background: linear-gradient(to bottom, var(--primary), var(--accent));
+            box-shadow: 0 0 20px rgba(108, 99, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="container">
+        <!-- Scroll effect visual -->
+        <div class="scroll-effect" id="scrollEffect">
+            <div class="scroll-line" id="scrollLine"></div>
+        </div>
+        
+        <!-- Instructions -->
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle"></i> Navigation Guide</h3>
+            <ul>
+                <li><i class="fas fa-mouse"></i> Use mouse wheel to scroll</li>
+                <li><i class="fas fa-arrow-up"></i><i class="fas fa-arrow-down"></i> Use arrow keys</li>
+                <li><i class="fas fa-circle"></i> Click dots to jump to section</li>
+                <li><i class="fas fa-hand-point-up"></i> Swipe up/down on mobile</li>
+            </ul>
+        </div>
+        
+        <!-- Progress Indicator -->
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+            <div class="progress-text" id="progressText">Section 1 of 5</div>
+        </div>
+        
+        <!-- Navigation Dots -->
+        <div class="nav-dots" id="navDots">
+            <div class="dot active" data-section="0"></div>
+            <div class="dot" data-section="1"></div>
+            <div class="dot" data-section="2"></div>
+            <div class="dot" data-section="3"></div>
+            <div class="dot" data-section="4"></div>
+        </div>
+        
+        <!-- Navigation Buttons -->
+        <div class="nav-controls">
+            <button class="nav-btn" id="prevBtn">
+                <i class="fas fa-chevron-up"></i>
+            </button>
+            <button class="nav-btn" id="nextBtn">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        
+        <!-- Scroll Hint -->
+        <div class="scroll-hint" id="scrollHint">
+            <i class="fas fa-chevron-down"></i>
+            <span>Scroll to continue</span>
+        </div>
+        
+        <!-- Mobile Controls -->
+        <div class="mobile-controls">
+            <button class="mobile-btn" id="mobilePrevBtn">
+                <i class="fas fa-chevron-up"></i>
+            </button>
+            <button class="mobile-btn" id="mobileNextBtn">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        
+        <!-- Toggle for scroll method -->
+        <div class="toggle-container">
+            <span class="toggle-label">Smooth Scroll</span>
+            <label class="toggle-switch">
+                <input type="checkbox" class="toggle-checkbox" id="smoothToggle" checked>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        
+        <!-- Scroll Wrapper -->
+        <div class="scroll-wrapper" id="scrollWrapper">
+            <!-- Section 1 -->
+            <section class="section section-1">
+                <div class="section-indicator">Welcome</div>
+                <div class="content">
+                    <h1>Scroll Without Scrollbar</h1>
+                    <p>Experience a new way of navigating content. This interface eliminates traditional scrollbars and replaces them with intuitive, visual navigation controls.</p>
+                    <p>Use <span class="highlight">mouse wheel</span>, <span class="highlight">arrow keys</span>, or <span class="highlight">tap the navigation dots</span> to move between sections. The content flows seamlessly without the visual clutter of scrollbars.</p>
+                    
+                    <div class="features">
+                        <div class="feature">
+                            <div class="feature-icon">
+                                <i class="fas fa-mouse"></i>
+                            </div>
+                            <h3>Mouse Wheel</h3>
+                            <p>Scroll naturally with your mouse wheel. The interface responds with smooth animations.</p>
+                        </div>
+                        <div class="feature">
+                            <div class="feature-icon">
+                                <i class="fas fa-keyboard"></i>
+                            </div>
+                            <h3>Keyboard Navigation</h3>
+                            <p>Use arrow keys, Page Up/Down, or Spacebar to navigate through the content.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Section 2 -->
+            <section class="section section-2">
+                <div class="section-indicator">How It Works</div>
+                <div class="content">
+                    <h2>The Magic Behind Scrollless Navigation</h2>
+                    <p>This interface uses <span class="highlight">CSS transforms</span> and <span class="highlight">JavaScript</span> to create a seamless scrolling experience without traditional scrollbars.</p>
+                    <p>Each section is a full viewport height container that smoothly transitions into view as you navigate.</p>
+                    
+                    <div class="demo-cards">
+                        <div class="demo-card">
+                            <h3><i class="fas fa-code"></i> Technical Implementation</h3>
+                            <p>The scroll position is tracked and translated into vertical movements of the content wrapper. This creates the illusion of scrolling without actual scrollbars.</p>
+                        </div>
+                        <div class="demo-card">
+                            <h3><i class="fas fa-palette"></i> Visual Design</h3>
+                            <p>Clean, minimalist design with visual cues to guide navigation. Color-coded sections and progress indicators help users understand their position.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Section 3 -->
+            <section class="section section-3">
+                <div class="section-indicator">Benefits</div>
+                <div class="content">
+                    <h2>Why Scrollbar-Free Navigation?</h2>
+                    <p>Traditional scrollbars can be visually distracting, especially in full-screen experiences or presentations.</p>
+                    
+                    <div class="features">
+                        <div class="feature">
+                            <div class="feature-icon">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <h3>Clean Aesthetics</h3>
+                            <p>Removes visual clutter for a more immersive reading experience. Perfect for portfolios, presentations, and storytelling websites.</p>
+                        </div>
+                        <div class="feature">
+                            <div class="feature-icon">
+                                <i class="fas fa-tachometer-alt"></i>
+                            </div>
+                            <h3>Better Performance</h3>
+                            <p>CSS transforms are hardware-accelerated, resulting in smoother animations compared to traditional scrolling.</p>
+                        </div>
+                        <div class="feature">
+                            <div class="feature-icon">
+                                <i class="fas fa-mobile-alt"></i>
+                            </div>
+                            <h3>Mobile Friendly</h3>
+                            <p>Touch gestures work naturally. Swipe up or down to navigate, with visual feedback for touch interactions.</p>
+                        </div>
+                        <div class="feature">
+                            <div class="feature-icon">
+                                <i class="fas fa-universal-access"></i>
+                            </div>
+                            <h3>Accessibility</h3>
+                            <p>Multiple navigation methods ensure the interface is usable for everyone, including keyboard-only users.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Section 4 -->
+            <section class="section section-4">
+                <div class="section-indicator">Try It Out</div>
+                <div class="content">
+                    <h2>Interactive Demonstration</h2>
+                    <p>Try different navigation methods to experience the fluidity of scrollbar-free navigation.</p>
+                    
+                    <div class="demo-cards">
+                        <div class="demo-card">
+                            <h3><i class="fas fa-sliders-h"></i> Adjust Settings</h3>
+                            <p>Toggle the "Smooth Scroll" switch to experience different transition effects. Smooth mode uses easing functions for natural movement.</p>
+                            <div style="margin-top: 20px; padding: 15px; background: var(--gray); border-radius: 10px;">
+                                <p style="margin-bottom: 10px;"><strong>Current Mode:</strong> <span id="modeIndicator">Smooth Scroll</span></p>
+                                <button id="demoBtn" style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Test Navigation</button>
+                            </div>
+                        </div>
+                        <div class="demo-card">
+                            <h3><i class="fas fa-gamepad"></i> Navigation Methods</h3>
+                            <p>Try all available navigation methods:</p>
+                            <ul style="list-style-type: none; margin-top: 15px;">
+                                <li style="padding: 8px 0;"><i class="fas fa-check-circle" style="color: var(--primary);"></i> Mouse wheel</li>
+                                <li style="padding: 8px 0;"><i class="fas fa-check-circle" style="color: var(--primary);"></i> Arrow keys</li>
+                                <li style="padding: 8px 0;"><i class="fas fa-check-circle" style="color: var(--primary);"></i> Navigation dots</li>
+                                <li style="padding: 8px 0;"><i class="fas fa-check-circle" style="color: var(--primary);"></i> Swipe gestures</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Section 5 -->
+            <section class="section section-5">
+                <div class="section-indicator">Conclusion</div>
+                <div class="content">
+                    <h2>The Future of Scrolling</h2>
+                    <p>Scrollbar-free navigation represents a shift towards more immersive, intentional web experiences. By removing traditional UI elements, we can focus attention on content.</p>
+                    <p>This approach works particularly well for:</p>
+                    
+                    <div class="features">
+                        <div class="feature">
+                            <div class="feature-icon">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <h3>Storytelling</h3>
+                            <p>Long-form articles and narratives that benefit from uninterrupted reading flow.</p>
+                        </div>
+                        <div class="feature">
+                            <div class="feature-icon">
+                                <i class="fas fa-briefcase"></i>
+                            </div>
+                            <h3>Portfolios</h3>
+                            <p>Showcase work in a full-screen, distraction-free environment.</p>
+                        </div>
+                        <div class="feature">
+                            <div class="feature-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3>Presentations</h3>
+                            <p>Slide-like navigation without the constraints of presentation software.</p>
+                        </div>
+                    </div>
+                    
+                    <p style="margin-top: 40px; padding-top: 20px; border-top: 2px dashed var(--gray);">
+                        <span class="highlight">Thank you for exploring scroll-free navigation!</span> This demo shows how removing traditional UI elements can create cleaner, more engaging user experiences.
+                    </p>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

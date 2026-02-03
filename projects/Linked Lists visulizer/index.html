@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Linked List Visualizer</title>
+
+<style>
+  body {
+    background: #020617;
+    color: #e5e7eb;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 20px;
+  }
+
+  h1 {
+    margin-bottom: 10px;
+  }
+
+  .controls {
+    margin: 15px 0;
+  }
+
+  input, select {
+    padding: 8px;
+    border-radius: 6px;
+    border: none;
+    margin: 5px;
+    width: 120px;
+  }
+
+  button {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    background: #38bdf8;
+    color: #020617;
+    font-weight: bold;
+  }
+
+  button:hover {
+    background: #0ea5e9;
+  }
+
+  .list-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 40px;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .node {
+    background: #22c55e;
+    color: #022c22;
+    padding: 14px;
+    min-width: 70px;
+    border-radius: 8px;
+    position: relative;
+    transition: transform 0.3s;
+  }
+
+  .node.active {
+    background: #facc15;
+  }
+
+  .arrow {
+    font-size: 22px;
+    color: #f87171;
+  }
+
+  .arrow.prev {
+    color: #a78bfa;
+  }
+
+  .label {
+    font-size: 11px;
+    opacity: 0.7;
+  }
+
+  .empty {
+    opacity: 0.6;
+    font-style: italic;
+  }
+</style>
+</head>
+
+<body>
+
+<h1>Linked List Visualizer</h1>
+
+<div class="controls">
+  <select id="mode">
+    <option value="singly">Singly Linked List</option>
+    <option value="doubly">Doubly Linked List</option>
+  </select>
+</div>
+
+<div class="controls">
+  <input type="number" id="value" placeholder="Value" />
+  <input type="number" id="index" placeholder="Index" />
+  <br /><br />
+  <button onclick="insertHead()">Insert Head</button>
+  <button onclick="insertTail()">Insert Tail</button>
+  <button onclick="insertAt()">Insert At</button>
+  <button onclick="deleteValue()">Delete</button>
+  <button onclick="traverse()">Traverse</button>
+</div>
+
+<div id="list" class="list-container">
+  <span class="empty">List is empty</span>
+</div>
+
+<script>
+class Node {
+  constructor(value) {
+    this.value = value;
+    this.next = null;
+    this.prev = null;
+  }
+}
+
+let head = null;
+
+function render() {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  if (!head) {
+    list.innerHTML = '<span class="empty">List is empty</span>';
+    return;
+  }
+
+  let curr = head;
+  const doubly = document.getElementById("mode").value === "doubly";
+
+  while (curr) {
+    if (doubly && curr.prev) {
+      const prevArrow = document.createElement("div");
+      prevArrow.className = "arrow prev";
+      prevArrow.textContent = "←";
+      list.appendChild(prevArrow);
+    }
+
+    const node = document.createElement("div");
+    node.className = "node";
+    node.textContent = curr.value;
+    list.appendChild(node);
+
+    if (curr.next) {
+      const arrow = document.createElement("div");
+      arrow.className = "arrow";
+      arrow.textContent = "→";
+      list.appendChild(arrow);
+    }
+
+    curr = curr.next;
+  }
+}
+
+function insertHead() {
+  const value = getValue();
+  if (value === null) return;
+
+  const node = new Node(value);
+  if (head) {
+    node.next = head;
+    head.prev = node;
+  }
+  head = node;
+  render();
+}
+
+function insertTail() {
+  const value = getValue();
+  if (value === null) return;
+
+  const node = new Node(value);
+  if (!head) {
+    head = node;
+  } else {
+    let curr = head;
+    while (curr.next) curr = curr.next;
+    curr.next = node;
+    node.prev = curr;
+  }
+  render();
+}
+
+function insertAt() {
+  const value = getValue();
+  const index = getIndex();
+  if (value === null || index === null) return;
+
+  if (index === 0) return insertHead();
+
+  let curr = head;
+  let i = 0;
+
+  while (curr && i < index - 1) {
+    curr = curr.next;
+    i++;
+  }
+
+  if (!curr) return;
+
+  const node = new Node(value);
+  node.next = curr.next;
+  if (curr.next) curr.next.prev = node;
+  curr.next = node;
+  node.prev = curr;
+
+  render();
+}
+
+function deleteValue() {
+  const value = getValue();
+  if (value === null) return;
+
+  let curr = head;
+
+  while (curr) {
+    if (curr.value == value) {
+      if (curr.prev) curr.prev.next = curr.next;
+      if (curr.next) curr.next.prev = curr.prev;
+      if (curr === head) head = curr.next;
+      break;
+    }
+    curr = curr.next;
+  }
+
+  render();
+}
+
+async function traverse() {
+  const nodes = document.querySelectorAll(".node");
+  for (const node of nodes) {
+    node.classList.add("active");
+    await sleep(500);
+    node.classList.remove("active");
+  }
+}
+
+function sleep(ms) {
+  return new Promise(res => setTimeout(res, ms));
+}
+
+function getValue() {
+  const v = document.getElementById("value").value;
+  if (v === "") return null;
+  document.getElementById("value").value = "";
+  return Number(v);
+}
+
+function getIndex() {
+  const i = document.getElementById("index").value;
+  if (i === "") return null;
+  document.getElementById("index").value = "";
+  return Number(i);
+}
+
+render();
+</script>
+
+</body>
+</html>
