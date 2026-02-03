@@ -2,51 +2,51 @@ let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 let timer;
 let timeLeft = 25 * 60;
 
-// TASK FUNCTIONS
+const taskList = document.getElementById("taskList");
+
 function addTask() {
   const input = document.getElementById("taskInput");
   if (input.value.trim() === "") return;
 
   tasks.push({ text: input.value, done: false });
   input.value = "";
-  saveTasks();
-  renderTasks();
+  save();
+  render();
 }
 
 function toggleTask(index) {
   tasks[index].done = !tasks[index].done;
-  saveTasks();
-  renderTasks();
+  save();
+  render();
 }
 
-function saveTasks() {
-  localStorage.setItem("tasks", JSON.stringify(tasks));
-}
-
-function renderTasks() {
-  const list = document.getElementById("taskList");
-  list.innerHTML = "";
-
+function render() {
+  taskList.innerHTML = "";
   tasks.forEach((task, index) => {
-    list.innerHTML += `
-      <li class="${task.done ? "completed" : ""}">
+    taskList.innerHTML += `
+      <li class="${task.done ? "done" : ""}">
         ${task.text}
-        <input type="checkbox" ${task.done ? "checked" : ""} onclick="toggleTask(${index})">
+        <input type="checkbox" ${task.done ? "checked" : ""}
+        onclick="toggleTask(${index})"/>
       </li>
     `;
   });
 
-  updateStats();
+  updateSummary();
 }
 
-function updateStats() {
+function updateSummary() {
   const completed = tasks.filter(t => t.done).length;
-  document.getElementById("totalTasks").innerText = tasks.length;
-  document.getElementById("completedTasks").innerText = completed;
-  document.getElementById("pendingTasks").innerText = tasks.length - completed;
+  document.getElementById("total").innerText = tasks.length;
+  document.getElementById("completed").innerText = completed;
+  document.getElementById("pending").innerText = tasks.length - completed;
 }
 
-// TIMER FUNCTIONS
+function save() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+/* TIMER */
 function startTimer() {
   if (timer) return;
   timer = setInterval(() => {
@@ -69,10 +69,10 @@ function resetTimer() {
 }
 
 function updateTimer() {
-  const minutes = String(Math.floor(timeLeft / 60)).padStart(2, "0");
-  const seconds = String(timeLeft % 60).padStart(2, "0");
-  document.getElementById("timer").innerText = `${minutes}:${seconds}`;
+  const min = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+  const sec = String(timeLeft % 60).padStart(2, "0");
+  document.getElementById("timer").innerText = `${min}:${sec}`;
 }
 
-renderTasks();
+render();
 updateTimer();
