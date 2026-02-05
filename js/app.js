@@ -1,4 +1,3 @@
-// ===============================
 // OpenPlayground - Unified App Logic
 // Feature #1291: Added Analytics Engine Integration
 // ===============================
@@ -15,6 +14,31 @@ class ProjectManager {
     if (window.projectManagerInstance) {
       console.log('♻️ ProjectManager: Instance already exists.');
       return window.projectManagerInstance;
+    constructor() {
+        // Prevent multiple instances
+        if (window.projectManagerInstance) {
+            console.log("♻️ ProjectManager: Instance already exists.");
+            return window.projectManagerInstance;
+        }
+
+        this.config = {
+            ITEMS_PER_PAGE: 12,
+            ANIMATION_DELAY: 50
+        };
+
+        this.state = {
+            allProjects: [],
+            visibilityEngine: null,
+            viewMode: 'card',
+            currentPage: 1,
+            initialized: false,
+            dynamicPlaceholderStarted: false // Added state flag
+        };
+
+        this.elements = null;
+        this.analyticsEngine = window.analyticsEngine || null;
+        this.viewportObserver = null; // For tracking card views
+        window.projectManagerInstance = this;
     }
 
     this.config = {
@@ -48,6 +72,57 @@ class ProjectManager {
 
     // Initialize analytics integration
     this.initializeAnalytics();
+       this.state.initialized = true;
+console.log("✅ ProjectManager: Ready.");
+
+this.startDynamicSearchPlaceholder();
+
+    }
+
+    /**
+     * Cycles through search examples in the placeholder to guide users
+     */
+    startDynamicSearchPlaceholder() {
+        if (this.state.dynamicPlaceholderStarted) return;
+        this.state.dynamicPlaceholderStarted = true;
+
+        const input = this.elements.searchInput;
+        if (!input) return;
+
+        const placeholders = [
+            "Search 'Tic Tac Toe'…",
+            "Search 'Expense Tracker'…",
+            "Search 'Weather App'…",
+            "Search 'Password Generator'…"
+        ];
+
+        let index = 0;
+
+        setInterval(() => {
+            // Only update if user isn't currently typing
+            if (document.activeElement !== input) {
+                input.placeholder = placeholders[index % placeholders.length];
+                index++;
+            }
+        }, 2500);
+
+        console.log("✅ Dynamic placeholder activated");
+    }
+
+
+    /**
+     * Initialize analytics engine integration
+     */
+    initializeAnalytics() {
+        // Get analytics engine from global scope
+        this.analyticsEngine = window.analyticsEngine || null;
+
+        if (this.analyticsEngine && this.state.visibilityEngine) {
+            // Connect analytics to visibility engine
+            this.state.visibilityEngine.setAnalyticsEngine(this.analyticsEngine);
+            console.log("📊 Analytics Engine connected to ProjectManager");
+        }
+    }
 
     // Setup viewport observer for tracking card views
     this.setupViewportObserver();
@@ -305,6 +380,49 @@ class ProjectManager {
     this.state.visibilityEngine?.updateURL(this.state.viewMode);
     this.render();
   }
+    /* -----------------------------------------------------------
+     * Rendering Logic
+     * ----------------------------------------------------------- */
+    render() {
+        if (!this.state.visibilityEngine) return;
+
+        const el = this.elements;
+
+        this.state.visibilityEngine.setPage(this.state.currentPage);
+
+        // Get sort mode and set in visibility engine
+        const sortMode = el.sortSelect?.value || 'default';
+        this.state.visibilityEngine.setSortMode(sortMode);
+
+        // Get filtered and sorted projects from visibility engine
+        let filtered = this.state.visibilityEngine.getVisibleProjects();
+
+        if (sortMode === 'az') filtered.sort((a, b) => a.title.localeCompare(b.title));
+        else if (sortMode === 'za') filtered.sort((a, b) => b.title.localeCompare(a.title));
+        else if (sortMode === 'newest') filtered.reverse();
+        else if (sortMode === 'deadline') filtered = deadlineManager.sortByDeadline(filtered);
+        else if (sortMode === 'importance') filtered = deadlineManager.sortByImportance(filtered);
+
+        // Pagination
+        const totalPages = Math.ceil(filtered.length / this.config.ITEMS_PER_PAGE);
+        const start = (this.state.currentPage - 1) * this.config.ITEMS_PER_PAGE;
+        const pageItems = filtered.slice(start, start + this.config.ITEMS_PER_PAGE);
+
+        // Grid/List display management
+        if (el.projectsGrid) {
+            el.projectsGrid.style.display = this.state.viewMode === 'card' ? 'grid' : 'none';
+            el.projectsGrid.innerHTML = '';
+        }
+        if (el.projectsList) {
+            el.projectsList.style.display = this.state.viewMode === 'list' ? 'flex' : 'none';
+            el.projectsList.innerHTML = '';
+        }
+
+        if (pageItems.length === 0) {
+            if (el.emptyState) el.emptyState.style.display = 'block';
+            this.renderPagination(0);
+            return;
+        }
 
   setupSearchSuggestions(searchInput) {
     const suggestionsContainer = document.createElement('div');
@@ -663,7 +781,6 @@ class ProjectManager {
                                 title="Set deadline and importance">
                             <i class="ri-calendar-line"></i>
                         </button>
-                        <a href="${project.link}" class="view-btn" title="View Project">
                         <a href="${project.link}" class="view-btn" title="View Project"
                            onclick="window.projectManagerInstance.trackProjectClick(${JSON.stringify(project).replace(/"/g, '&quot;')})">
                             <i class="ri-arrow-right-line"></i>
@@ -850,29 +967,22 @@ async function fetchContributors() {
 /**
  * Global Bookmark Toggle Wrapper
  */
-window.toggleProjectBookmark = function (
-  btn,
-  title,
-  link,
-  category,
-  description,
-) {
-  if (!window.bookmarksManager) return;
+window.toggleProjectBookmark = function (btn, title, link, category, description) {
+    if (!window.bookmarksManager) return;
 
-  const project = { title, link, category, description };
-  const isNowBookmarked = window.bookmarksManager.toggleBookmark(project);
+    const project = { title, link, category, description };
+    const isNowBookmarked = window.bookmarksManager.toggleBookmark(project);
 
-  const icon = btn.querySelector('i');
-  btn.classList.toggle('bookmarked', isNowBookmarked);
-  if (icon)
-    icon.className = isNowBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
+    const icon = btn.querySelector('i');
+    btn.classList.toggle('bookmarked', isNowBookmarked);
+    if (icon) icon.className = isNowBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line';
 
-  // Track bookmark in analytics
-  if (window.analyticsEngine) {
-    window.analyticsEngine.trackBookmark(title, isNowBookmarked);
-  }
+    // Track bookmark in analytics
+    if (window.analyticsEngine) {
+        window.analyticsEngine.trackBookmark(title, isNowBookmarked);
+    }
 
-  showToast(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
+    notificationManager.success(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
 };
 
 /**
@@ -1157,9 +1267,21 @@ const observer = new IntersectionObserver(
   { threshold: 0.1 },
 );
 
-document.querySelectorAll('.fade-up').forEach((el) => observer.observe(el));
+console.log('%c🚀 OpenPlayground Unified Logic Active', 'color:#6366f1;font-weight:bold;');
+/**
+ * Global function to check for project insight deep links in the URL
+ */
+function checkInsightDeepLink() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectTitle = urlParams.get('insight');
+    if (projectTitle && typeof window.openInsightsPanel === 'function') {
+        console.log(`🔍 Deep link found for insight: ${projectTitle}`);
+        // Small delay to ensure any necessary UI components are ready
+        setTimeout(() => {
+            window.openInsightsPanel(decodeURIComponent(projectTitle));
+        }, 500);
+    }
+}
 
-console.log(
-  '%c🚀 OpenPlayground Unified Logic Active',
-  'color:#6366f1;font-weight:bold;',
-);
+// Make it global so the setTimeout can find it
+window.checkInsightDeepLink = checkInsightDeepLink;
