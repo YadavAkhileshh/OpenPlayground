@@ -1,3 +1,22 @@
+ text-analyzer
+const textInput = document.getElementById("textInput");
+const charCount = document.getElementById("charCount");
+const charNoSpace = document.getElementById("charNoSpace");
+const wordCount = document.getElementById("wordCount");
+const readTime = document.getElementById("readTime");
+
+textInput.addEventListener("input", () => {
+  const text = textInput.value;
+
+  charCount.textContent = text.length;
+  charNoSpace.textContent = text.replace(/\s/g, "").length;
+
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  wordCount.textContent = words.length;
+
+  const minutes = Math.ceil(words.length / 200);
+  readTime.textContent = minutes || 0;
+=======
 document.addEventListener('DOMContentLoaded', function() {
     // Elements
     const textInput = document.getElementById('textInput');
@@ -519,7 +538,7 @@ While digital tools offer unprecedented access to information, they also present
     
     function generateTextReport(analysis) {
         return `TEXT ANALYSIS REPORT
-====================
+
 
 Generated: ${new Date().toLocaleString()}
 
@@ -638,4 +657,5 @@ ${analysis.text}
     function formatNumber(num) {
         return num.toLocaleString('en-US');
     }
+ main
 });

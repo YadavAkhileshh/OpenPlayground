@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goal Tracker - Monthly & Yearly Progress</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6C63FF;
+            --primary-light: #8A84FF;
+            --primary-dark: #4A44C6;
+            --secondary: #36D7B7;
+            --secondary-light: #5CE3C1;
+            --accent: #FF6584;
+            --accent-light: #FF8DA1;
+            --light: #F8F9FA;
+            --dark: #343A40;
+            --gray: #6C757D;
+            --light-gray: #E9ECEF;
+            --success: #28A745;
+            --warning: #FFC107;
+            --danger: #DC3545;
+            --info: #17A2B8;
+            
+            /* Category colors */
+            --health: #36D7B7;
+            --finance: #6C63FF;
+            --career: #FFB347;
+            --education: #A7C7E7;
+            --personal: #FF8DA1;
+            --fitness: #4ECDC4;
+            --hobby: #C3B1E1;
+            --other: #95E1D3;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(108, 99, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        h1 i {
+            margin-right: 15px;
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .dashboard-card h3 {
+            font-size: 1rem;
+            color: var(--gray);
+            margin-bottom: 10px;
+        }
+
+        .dashboard-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .dashboard-card .subtext {
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 1100px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            height: fit-content;
+        }
+
+        .goals-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title i {
+            margin-right: 10px;
+        }
+
+        .goal-form {
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .category-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        .category-option {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            background-color: var(--light-gray);
+            color: var(--dark);
+        }
+
+        .category-option:hover {
+            transform: translateY(-2px);
+        }
+
+        .category-option.selected {
+            border-color: var(--dark);
+            font-weight: 600;
+        }
+
+        .category-option.health { background-color: var(--health); }
+        .category-option.finance { background-color: var(--finance); color: white; }
+        .category-option.career { background-color: var(--career); }
+        .category-option.education { background-color: var(--education); }
+        .category-option.personal { background-color: var(--personal); color: white; }
+        .category-option.fitness { background-color: var(--fitness); color: white; }
+        .category-option.hobby { background-color: var(--hobby); }
+        .category-option.other { background-color: var(--other); }
+
+        .timeframe-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .timeframe-option {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: var(--light-gray);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .timeframe-option:hover {
+            background-color: #d1d9e0;
+        }
+
+        .timeframe-option.selected {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary-dark);
+        }
+
+        .progress-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .progress-input-group input {
+            flex: 1;
+        }
+
+        .progress-input-group span {
+            font-weight: 600;
+            color: var(--primary);
+            white-space: nowrap;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn i {
+            margin-right: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(108, 99, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: var(--light-gray);
+            color: var(--dark);
+        }
+
+        .btn-secondary:hover {
+            background-color: #d1d9e0;
+        }
+
+        .btn-add {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .filters {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border-radius: 20px;
+            background-color: var(--light-gray);
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .filter-btn:hover:not(.active) {
+            background-color: #d1d9e0;
+        }
+
+        .goals-list {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .goal-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid var(--primary);
+            transition: transform 0.3s;
+        }
+
+        .goal-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .goal-card.health { border-left-color: var(--health); }
+        .goal-card.finance { border-left-color: var(--finance); }
+        .goal-card.career { border-left-color: var(--career); }
+        .goal-card.education { border-left-color: var(--education); }
+        .goal-card.personal { border-left-color: var(--personal); }
+        .goal-card.fitness { border-left-color: var(--fitness); }
+        .goal-card.hobby { border-left-color: var(--hobby); }
+        .goal-card.other { border-left-color: var(--other); }
+
+        .goal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .goal-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--dark);
+            flex: 1;
+        }
+
+        .goal-category {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .goal-timeframe {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            background-color: var(--light-gray);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .goal-description {
+            color: var(--gray);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .progress-container {
+            margin-bottom: 20px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .progress-label {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .progress-percentage {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .progress-bar {
+            height: 20px;
+            background-color: var(--light-gray);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .goal-card.health .progress-fill { background-color: var(--health); }
+        .goal-card.finance .progress-fill { background-color: var(--finance); }
+        .goal-card.career .progress-fill { background-color: var(--career); }
+        .goal-card.education .progress-fill { background-color: var(--education); }
+        .goal-card.personal .progress-fill { background-color: var(--personal); }
+        .goal-card.fitness .progress-fill { background-color: var(--fitness); }
+        .goal-card.hobby .progress-fill { background-color: var(--hobby); }
+        .goal-card.other .progress-fill { background-color: var(--other); }
+
+        .progress-target {
+            font-size: 0.9rem;
+            color: var(--gray);
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .goal-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .progress-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .progress-btn {
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .progress-btn.increase {
+            background-color: #D4EDDA;
+            color: var(--success);
+        }
+
+        .progress-btn.increase:hover {
+            background-color: #C3E6CB;
+        }
+
+        .progress-btn.decrease {
+            background-color: #F8D7DA;
+            color: var(--danger);
+        }
+
+        .progress-btn.decrease:hover {
+            background-color: #F5C6CB;
+        }
+
+        .goal-card-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .edit-btn {
+            background-color: var(--light-gray);
+            color: var(--dark);
+        }
+
+        .edit-btn:hover {
+            background-color: #d1d9e0;
+        }
+
+        .delete-btn {
+            background-color: #FFE5E5;
+            color: var(--danger);
+        }
+
+        .delete-btn:hover {
+            background-color: #FFD1D1;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: var(--light-gray);
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .empty-state p {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .motivational-quote {
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(108, 99, 255, 0.2);
+        }
+
+        .motivational-quote i {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .motivational-quote p {
+            font-size: 1.2rem;
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .motivational-quote .author {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--gray);
+            margin-top: 40px;
+            border-top: 1px solid var(--light-gray);
+        }
+
+        .achievement-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: var(--accent);
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 10px rgba(255, 101, 132, 0.3);
+        }
+
+        .completed-goal .progress-fill {
+            background-color: var(--success) !important;
+        }
+
+        .completed-goal .goal-title {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                gap: 20px;
+            }
+            
+            .sidebar, .goals-container {
+                padding: 20px;
+            }
+            
+            .dashboard {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .goal-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .goal-actions {
+                flex-direction: column;
+            }
+            
+            .progress-controls {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .goal-card-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters {
+                flex-direction: column;
+            }
+            
+            .filter-group {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-bullseye"></i> Goal Tracker</h1>
+            <p class="tagline">Track your monthly and yearly goals with visual progress bars</p>
+        </header>
+
+        <div class="dashboard">
+            <div class="dashboard-card">
+                <h3>Total Goals</h3>
+                <div class="value" id="totalGoals">0</div>
+                <div class="subtext">All active goals</div>
+            </div>
+            <div class="dashboard-card">
+                <h3>Completed</h3>
+                <div class="value" id="completedGoals">0</div>
+                <div class="subtext">Goals achieved</div>
+            </div>
+            <div class="dashboard-card">
+                <h3>Monthly Progress</h3>
+                <div class="value" id="monthlyProgress">0%</div>
+                <div class="subtext">Average completion</div>
+            </div>
+            <div class="dashboard-card">
+                <h3>Yearly Progress</h3>
+                <div class="value" id="yearlyProgress">0%</div>
+                <div class="subtext">Average completion</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <h2 class="section-title"><i class="fas fa-plus-circle"></i> Add New Goal</h2>
+                
+                <form class="goal-form" id="goalForm">
+                    <div class="form-group">
+                        <label for="goalTitle">Goal Title</label>
+                        <input type="text" id="goalTitle" placeholder="e.g., Read 12 books this year" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Category</label>
+                        <div class="category-options">
+                            <div class="category-option health" data-category="health">Health</div>
+                            <div class="category-option finance" data-category="finance">Finance</div>
+                            <div class="category-option career" data-category="career">Career</div>
+                            <div class="category-option education" data-category="education">Education</div>
+                            <div class="category-option personal" data-category="personal">Personal</div>
+                            <div class="category-option fitness" data-category="fitness">Fitness</div>
+                            <div class="category-option hobby" data-category="hobby">Hobby</div>
+                            <div class="category-option other" data-category="other">Other</div>
+                        </div>
+                        <input type="hidden" id="goalCategory" value="health" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Timeframe</label>
+                        <div class="timeframe-options">
+                            <div class="timeframe-option" data-timeframe="monthly">Monthly</div>
+                            <div class="timeframe-option" data-timeframe="yearly">Yearly</div>
+                        </div>
+                        <input type="hidden" id="goalTimeframe" value="monthly" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="goalTarget">Target Value</label>
+                        <input type="number" id="goalTarget" placeholder="e.g., 100 (books, kg, $, etc.)" required min="1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="goalCurrent">Current Progress</label>
+                        <div class="progress-input-group">
+                            <input type="number" id="goalCurrent" placeholder="Current value" required min="0">
+                            <span>/ <span id="targetDisplay">0</span></span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="goalDescription">Description (Optional)</label>
+                        <textarea id="goalDescription" placeholder="Add details about your goal..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-add">
+                        <i class="fas fa-calendar-plus"></i> Add Goal
+                    </button>
+                </form>
+                
+                <div class="motivational-quote">
+                    <i class="fas fa-quote-left"></i>
+                    <p id="quoteText">The secret of getting ahead is getting started.</p>
+                    <div class="author" id="quoteAuthor">Mark Twain</div>
+                </div>
+            </div>
+            
+            <div class="goals-container">
+                <div class="filters">
+                    <div class="filter-group">
+                        <button class="filter-btn active" data-filter="all">All Goals</button>
+                        <button class="filter-btn" data-filter="monthly">Monthly</button>
+                        <button class="filter-btn" data-filter="yearly">Yearly</button>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <button class="filter-btn" data-filter="in-progress">In Progress</button>
+                        <button class="filter-btn" data-filter="completed">Completed</button>
+                    </div>
+                </div>
+                
+                <div id="goalsList" class="goals-list">
+                    <!-- Goals will be added here by JavaScript -->
+                    <div class="empty-state" id="emptyGoals">
+                        <i class="fas fa-bullseye"></i>
+                        <h3>No goals yet</h3>
+                        <p>Add your first goal to start tracking your progress!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Goal Tracker &copy; <span id="currentYear"></span> • Track your progress, achieve your dreams</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;"><i class="fas fa-info-circle"></i> Your goals are stored locally in your browser</p>
+        </footer>
+    </div>
+
+    <script>
+        // Current year for footer
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        // Motivational quotes
+        const motivationalQuotes = [
+            { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+            { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
+            { text: "The future depends on what you do today.", author: "Mahatma Gandhi" },
+            { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
+            { text: "The only limit to our realization of tomorrow will be our doubts of today.", author: "Franklin D. Roosevelt" },
+            { text: "You are never too old to set another goal or to dream a new dream.", author: "C.S. Lewis" },
+            { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+            { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+            { text: "Your time is limited, don't waste it living someone else's life.", author: "Steve Jobs" },
+            { text: "The harder I work, the more luck I seem to have.", author: "Thomas Jefferson" }
+        ];
+
+        // Sample goals data
+        let goals = [
+            {
+                id: 1,
+                title: "Read 12 books this year",
+                category: "education",
+                timeframe: "yearly",
+                target: 12,
+                current: 5,
+                description: "Read one book per month to expand knowledge",
+                createdAt: new Date(2023, 0, 1).toISOString()
+            },
+            {
+                id: 2,
+                title: "Save $5,000 for emergency fund",
+                category: "finance",
+                timeframe: "yearly",
+                target: 5000,
+                current: 3200,
+                description: "Monthly savings goal: $417",
+                createdAt: new Date(2023, 0, 15).toISOString()
+            },
+            {
+                id: 3,
+                title: "Lose 5 kg this month",
+                category: "fitness",
+                timeframe: "monthly",
+                target: 5,
+                current: 2.5,
+                description: "Exercise 5 times per week and track calories",
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 4,
+                title: "Complete online course",
+                category: "education",
+                timeframe: "monthly",
+                target: 100,
+                current: 65,
+                description: "Web Development Bootcamp on Udemy",
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 5,
+                title: "Meditate 30 days straight",
+                category: "health",
+                timeframe: "monthly",
+                target: 30,
+                current: 15,
+                description: "10 minutes of meditation every morning",
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 6,
+                title: "Run 500 km this year",
+                category: "fitness",
+                timeframe: "yearly",
+                target: 500,
+                current: 210,
+                description: "Approximately 10 km per week",
+                createdAt: new Date(2023, 0, 1).toISOString()
+            }
+        ];
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set random motivational quote
+            setRandomQuote();
+            
+            // Load goals from localStorage if available
+            const savedGoals = localStorage.getItem('goalTrackerGoals');
+            if (savedGoals) {
+                goals = JSON.parse(savedGoals);
+            }
+            
+            // Initialize category selection
+            initCategorySelection();
+            
+            // Initialize timeframe selection
+            initTimeframeSelection();
+            
+            // Update target display when target changes
+            document.getElementById('goalTarget').addEventListener('input', function() {
+                document.getElementById('targetDisplay').textContent = this.value || 0;
+            });
+            
+            // Set initial target display
+            document.getElementById('targetDisplay').textContent = document.getElementById('goalTarget').value || 0;
+            
+            // Load the goals list
+            renderGoals();
+            updateDashboard();
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Set up filter buttons
+            setupFilterButtons();
+        });
+
+        // Set random motivational quote
+        function setRandomQuote() {
+            const randomIndex = Math.floor(Math.random() * motivationalQuotes.length);
+            const quote = motivationalQuotes[randomIndex];
+            document.getElementById('quoteText').textContent = quote.text;
+            document.getElementById('quoteAuthor').textContent = quote.author;
+        }
+
+        // Initialize category selection in the form
+        function initCategorySelection() {
+            const categoryOptions = document.querySelectorAll('.category-option');
+            const categoryInput = document.getElementById('goalCategory');
+            
+            categoryOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove selected class from all options
+                    categoryOptions.forEach(opt => opt.classList.remove('selected'));
+                    
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                    
+                    // Update the hidden input value
+                    categoryInput.value = this.dataset.category;
+                });
+                
+                // Set the first option as selected by default
+                if (option.dataset.category === categoryInput.value) {
+                    option.classList.add('selected');
+                }
+            });
+        }
+
+        // Initialize timeframe selection in the form
+        function initTimeframeSelection() {
+            const timeframeOptions = document.querySelectorAll('.timeframe-option');
+            const timeframeInput = document.getElementById('goalTimeframe');
+            
+            timeframeOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove selected class from all options
+                    timeframeOptions.forEach(opt => opt.classList.remove('selected'));
+                    
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                    
+                    // Update the hidden input value
+                    timeframeInput.value = this.dataset.timeframe;
+                });
+                
+                // Set the first option as selected by default
+                if (option.dataset.timeframe === timeframeInput.value) {
+                    option.classList.add('selected');
+                }
+            });
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Form submission
+            const form = document.getElementById('goalForm');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                addGoal();
+            });
+        }
+
+        // Set up filter buttons
+        function setupFilterButtons() {
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all filter buttons
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Get the filter value
+                    const filter = this.dataset.filter;
+                    
+                    // Apply the filter
+                    filterGoals(filter);
+                });
+            });
+        }
+
+        // Add a new goal
+        function addGoal() {
+            const title = document.getElementById('goalTitle').value;
+            const category = document.getElementById('goalCategory').value;
+            const timeframe = document.getElementById('goalTimeframe').value;
+            const target = parseInt(document.getElementById('goalTarget').value);
+            const current = parseInt(document.getElementById('goalCurrent').value) || 0;
+            const description = document.getElementById('goalDescription').value;
+            
+            // Validate input
+            if (current > target) {
+                showNotification('Current progress cannot exceed target value!', 'error');
+                return;
+            }
+            
+            // Create new goal object
+            const newGoal = {
+                id: Date.now(), // Simple ID generation
+                title: title,
+                category: category,
+                timeframe: timeframe,
+                target: target,
+                current: current,
+                description: description,
+                createdAt: new Date().toISOString()
+            };
+            
+            // Add to goals array
+            goals.push(newGoal);
+            
+            // Save to localStorage
+            saveToLocalStorage();
+            
+            // Clear the form
+            document.getElementById('goalForm').reset();
+            document.getElementById('goalCurrent').value = 0;
+            document.getElementById('targetDisplay').textContent = 0;
+            
+            // Reset category selection
+            const categoryOptions = document.querySelectorAll('.category-option');
+            categoryOptions.forEach(opt => opt.classList.remove('selected'));
+            document.querySelector('.category-option[data-category="health"]').classList.add('selected');
+            document.getElementById('goalCategory').value = 'health';
+            
+            // Reset timeframe selection
+            const timeframeOptions = document.querySelectorAll('.timeframe-option');
+            timeframeOptions.forEach(opt => opt.classList.remove('selected'));
+            document.querySelector('.timeframe-option[data-timeframe="monthly"]').classList.add('selected');
+            document.getElementById('goalTimeframe').value = 'monthly';
+            
+            // Update the goals list and dashboard
+            renderGoals();
+            updateDashboard();
+            
+            // Show success message
+            showNotification('Goal added successfully!', 'success');
+        }
+
+        // Edit a goal
+        function editGoal(id) {
+            const goal = goals.find(g => g.id === id);
+            if (!goal) return;
+            
+            // Populate the form with goal data
+            document.getElementById('goalTitle').value = goal.title;
+            document.getElementById('goalTarget').value = goal.target;
+            document.getElementById('goalCurrent').value = goal.current;
+            document.getElementById('goalDescription').value = goal.description;
+            document.getElementById('targetDisplay').textContent = goal.target;
+            
+            // Set the category
+            const categoryOptions = document.querySelectorAll('.category-option');
+            categoryOptions.forEach(opt => opt.classList.remove('selected'));
+            document.querySelector(`.category-option[data-category="${goal.category}"]`).classList.add('selected');
+            document.getElementById('goalCategory').value = goal.category;
+            
+            // Set the timeframe
+            const timeframeOptions = document.querySelectorAll('.timeframe-option');
+            timeframeOptions.forEach(opt => opt.classList.remove('selected'));
+            document.querySelector(`.timeframe-option[data-timeframe="${goal.timeframe}"]`).classList.add('selected');
+            document.getElementById('goalTimeframe').value = goal.timeframe;
+            
+            // Change form button to "Update"
+            const formButton = document.querySelector('.btn-add');
+            formButton.innerHTML = '<i class="fas fa-save"></i> Update Goal';
+            formButton.onclick = function(e) {
+                e.preventDefault();
+                updateGoal(id);
+            };
+            
+            // Scroll to form
+            document.querySelector('.sidebar').scrollIntoView({ behavior: 'smooth' });
+            
+            showNotification('Editing goal...', 'info');
+        }
+
+        // Update a goal
+        function updateGoal(id) {
+            const index = goals.findIndex(g => g.id === id);
+            if (index === -1) return;
+            
+            // Get updated values
+            const target = parseInt(document.getElementById('goalTarget').value);
+            const current = parseInt(document.getElementById('goalCurrent').value) || 0;
+            
+            // Validate input
+            if (current > target) {
+                showNotification('Current progress cannot exceed target value!', 'error');
+                return;
+            }
+            
+            // Update goal data
+            goals[index].title = document.getElementById('goalTitle').value;
+            goals[index].category = document.getElementById('goalCategory').value;
+            goals[index].timeframe = document.getElementById('goalTimeframe').value;
+            goals[index].target = target;
+            goals[index].current = current;
+            goals[index].description = document.getElementById('goalDescription').value;
+            
+            // Save to localStorage
+            saveToLocalStorage();
+            
+            // Reset form
+            document.getElementById('goalForm').reset();
+            document.getElementById('goalCurrent').value = 0;
+            document.getElementById('targetDisplay').textContent = 0;
+            
+            // Reset category selection
+            const categoryOptions = document.querySelectorAll('.category-option');
+            categoryOptions.forEach(opt => opt.classList.remove('selected'));
+            document.querySelector('.category-option[data-category="health"]').classList.add('selected');
+            document.getElementById('goalCategory').value = 'health';
+            
+            // Reset timeframe selection
+            const timeframeOptions = document.querySelectorAll('.timeframe-option');
+            timeframeOptions.forEach(opt => opt.classList.remove('selected'));
+            document.querySelector('.timeframe-option[data-timeframe="monthly"]').classList.add('selected');
+            document.getElementById('goalTimeframe').value = 'monthly';
+            
+            // Change form button back to "Add"
+            const formButton = document.querySelector('.btn-add');
+            formButton.innerHTML = '<i class="fas fa-calendar-plus"></i> Add Goal';
+            formButton.onclick = function(e) {
+                e.preventDefault();
+                addGoal();
+            };
+            
+            // Update the goals list and dashboard
+            renderGoals();
+            updateDashboard();
+            
+            showNotification('Goal updated successfully!', 'success');
+        }
+
+        // Delete a goal
+        function deleteGoal(id) {
+            if (!confirm('Are you sure you want to delete this goal?')) return;
+            
+            // Remove goal from array
+            goals = goals.filter(g => g.id !== id);
+            
+            // Save to localStorage
+            saveToLocalStorage();
+            
+            // Update the goals list and dashboard
+            renderGoals();
+            updateDashboard();
+            
+            showNotification('Goal deleted', 'info');
+        }
+
+        // Update goal progress
+        function updateProgress(id, amount) {
+            const goal = goals.find(g => g.id === id);
+            if (!goal) return;
+            
+            // Calculate new current value
+            let newCurrent = goal.current + amount;
+            
+            // Ensure current value is between 0 and target
+            newCurrent = Math.max(0, Math.min(newCurrent, goal.target));
+            
+            // Update goal
+            goal.current = newCurrent;
+            
+            // Save to localStorage
+            saveToLocalStorage();
+            
+            // Update the goals list and dashboard
+            renderGoals();
+            updateDashboard();
+            
+            // Check if goal is now completed
+            if (newCurrent === goal.target && amount > 0) {
+                showNotification(`Congratulations! You completed: ${goal.title}`, 'success');
+                
+                // Add achievement badge temporarily
+                const goalCard = document.querySelector(`.goal-card[data-id="${id}"]`);
+                if (goalCard) {
+                    const badge = document.createElement('div');
+                    badge.className = 'achievement-badge';
+                    badge.innerHTML = '<i class="fas fa-trophy"></i>';
+                    goalCard.appendChild(badge);
+                    
+                    // Remove badge after 5 seconds
+                    setTimeout(() => {
+                        if (badge.parentNode) {
+                            badge.parentNode.removeChild(badge);
+                        }
+                    }, 5000);
+                }
+            }
+        }
+
+        // Save goals to localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('goalTrackerGoals', JSON.stringify(goals));
+        }
+
+        // Render the goals list
+        function renderGoals(filter = 'all') {
+            const goalsList = document.getElementById('goalsList');
+            const emptyState = document.getElementById('emptyGoals');
+            
+            // Clear the goals list
+            goalsList.innerHTML = '';
+            
+            // Filter goals based on selected filter
+            let filteredGoals = [...goals];
+            
+            if (filter === 'monthly') {
+                filteredGoals = filteredGoals.filter(g => g.timeframe === 'monthly');
+            } else if (filter === 'yearly') {
+                filteredGoals = filteredGoals.filter(g => g.timeframe === 'yearly');
+            } else if (filter === 'in-progress') {
+                filteredGoals = filteredGoals.filter(g => g.current < g.target);
+            } else if (filter === 'completed') {
+                filteredGoals = filteredGoals.filter(g => g.current >= g.target);
+            }
+            
+            // Sort goals by completion status (in progress first, then completed)
+            filteredGoals.sort((a, b) => {
+                const aCompleted = a.current >= a.target;
+                const bCompleted = b.current >= b.target;
+                
+                if (aCompleted && !bCompleted) return 1;
+                if (!aCompleted && bCompleted) return -1;
+                
+                // If same completion status, sort by creation date (newest first)
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            });
+            
+            // If no goals, show empty state
+            if (filteredGoals.length === 0) {
+                emptyState.style.display = 'block';
+                goalsList.appendChild(emptyState);
+                return;
+            }
+            
+            // Hide empty state
+            emptyState.style.display = 'none';
+            
+            // Create goal cards
+            filteredGoals.forEach(goal => {
+                const goalCard = document.createElement('div');
+                goalCard.className = `goal-card ${goal.category}`;
+                if (goal.current >= goal.target) {
+                    goalCard.classList.add('completed-goal');
+                }
+                goalCard.dataset.id = goal.id;
+                
+                // Calculate progress percentage
+                const progressPercentage = Math.min(100, Math.round((goal.current / goal.target) * 100));
+                
+                // Get category name with first letter capitalized
+                const categoryName = goal.category.charAt(0).toUpperCase() + goal.category.slice(1);
+                
+                // Format timeframe
+                const timeframeName = goal.timeframe.charAt(0).toUpperCase() + goal.timeframe.slice(1);
+                
+                // Create the goal card HTML
+                goalCard.innerHTML = `
+                    <div class="goal-header">
+                        <div class="goal-title">${goal.title}</div>
+                        <div>
+                            <span class="goal-category ${goal.category}">${categoryName}</span>
+                            <span class="goal-timeframe">${timeframeName}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="goal-description">${goal.description || 'No description provided.'}</div>
+                    
+                    <div class="progress-container">
+                        <div class="progress-info">
+                            <span class="progress-label">Progress</span>
+                            <span class="progress-percentage">${progressPercentage}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+                        </div>
+                        <div class="progress-target">${goal.current} / ${goal.target}</div>
+                    </div>
+                    
+                    <div class="goal-actions">
+                        <div class="progress-controls">
+                            <button class="progress-btn decrease" onclick="updateProgress(${goal.id}, -1)">
+                                <i class="fas fa-minus"></i> Decrease
+                            </button>
+                            <button class="progress-btn increase" onclick="updateProgress(${goal.id}, 1)">
+                                <i class="fas fa-plus"></i> Increase
+                            </button>
+                            <button class="progress-btn increase" onclick="updateProgress(${goal.id}, 5)">
+                                <i class="fas fa-fast-forward"></i> +5
+                            </button>
+                        </div>
+                        
+                        <div class="goal-card-actions">
+                            <button class="action-btn edit-btn" onclick="editGoal(${goal.id})">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteGoal(${goal.id})">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                goalsList.appendChild(goalCard);
+            });
+        }
+
+        // Filter goals
+        function filterGoals(filter) {
+            renderGoals(filter);
+        }
+
+        // Update the dashboard statistics
+        function updateDashboard() {
+            // Calculate total goals
+            document.getElementById('totalGoals').textContent = goals.length;
+            
+            // Calculate completed goals
+            const completedGoals = goals.filter(g => g.current >= g.target).length;
+            document.getElementById('completedGoals').textContent = completedGoals;
+            
+            // Calculate monthly progress average
+            const monthlyGoals = goals.filter(g => g.timeframe === 'monthly');
+            let monthlyAvg = 0;
+            if (monthlyGoals.length > 0) {
+                const totalMonthlyProgress = monthlyGoals.reduce((sum, goal) => {
+                    return sum + Math.min(100, Math.round((goal.current / goal.target) * 100));
+                }, 0);
+                monthlyAvg = Math.round(totalMonthlyProgress / monthlyGoals.length);
+            }
+            document.getElementById('monthlyProgress').textContent = `${monthlyAvg}%`;
+            
+            // Calculate yearly progress average
+            const yearlyGoals = goals.filter(g => g.timeframe === 'yearly');
+            let yearlyAvg = 0;
+            if (yearlyGoals.length > 0) {
+                const totalYearlyProgress = yearlyGoals.reduce((sum, goal) => {
+                    return sum + Math.min(100, Math.round((goal.current / goal.target) * 100));
+                }, 0);
+                yearlyAvg = Math.round(totalYearlyProgress / yearlyGoals.length);
+            }
+            document.getElementById('yearlyProgress').textContent = `${yearlyAvg}%`;
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 1000;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            // Set background color based on type
+            if (type === 'success') {
+                notification.style.backgroundColor = 'var(--success)';
+            } else if (type === 'error') {
+                notification.style.backgroundColor = 'var(--danger)';
+            } else {
+                notification.style.backgroundColor = 'var(--primary)';
+            }
+            
+            // Add to page
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+            
+            // Add CSS for animations
+            if (!document.querySelector('#notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOut {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+    </script>
+</body>
+</html>

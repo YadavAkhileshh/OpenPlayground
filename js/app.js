@@ -1,4 +1,3 @@
-// ===============================
 // OpenPlayground - Unified App Logic
 // Feature #1291: Added Analytics Engine Integration
 // Feature #1985: Project Card View Modes & Grid Layouts
@@ -29,7 +28,8 @@ class ProjectManager {
             visibilityEngine: null,
             viewMode: 'card',
             currentPage: 1,
-            initialized: false
+            initialized: false,
+            dynamicPlaceholderStarted: false // Added state flag
         };
 
         this.elements = null;
@@ -54,9 +54,43 @@ class ProjectManager {
         // Setup viewport observer for tracking card views
         this.setupViewportObserver();
 
-        this.state.initialized = true;
-        console.log("✅ ProjectManager: Ready.");
+       this.state.initialized = true;
+console.log("✅ ProjectManager: Ready.");
+
+this.startDynamicSearchPlaceholder();
+
     }
+
+    /**
+     * Cycles through search examples in the placeholder to guide users
+     */
+    startDynamicSearchPlaceholder() {
+        if (this.state.dynamicPlaceholderStarted) return;
+        this.state.dynamicPlaceholderStarted = true;
+
+        const input = this.elements.searchInput;
+        if (!input) return;
+
+        const placeholders = [
+            "Search 'Tic Tac Toe'…",
+            "Search 'Expense Tracker'…",
+            "Search 'Weather App'…",
+            "Search 'Password Generator'…"
+        ];
+
+        let index = 0;
+
+        setInterval(() => {
+            // Only update if user isn't currently typing
+            if (document.activeElement !== input) {
+                input.placeholder = placeholders[index % placeholders.length];
+                index++;
+            }
+        }, 2500);
+
+        console.log("✅ Dynamic placeholder activated");
+    }
+
 
     /**
      * Initialize analytics engine integration
@@ -645,7 +679,6 @@ class ProjectManager {
                                 title="Set deadline and importance">
                             <i class="ri-calendar-line"></i>
                         </button>
-                        <a href="${project.link}" class="view-btn" title="View Project">
                         <a href="${project.link}" class="view-btn" title="View Project"
                            onclick="window.projectManagerInstance.trackProjectClick(${JSON.stringify(project).replace(/"/g, '&quot;')})">
                             <i class="ri-arrow-right-line"></i>
@@ -831,7 +864,7 @@ window.toggleProjectBookmark = function (btn, title, link, category, description
         window.analyticsEngine.trackBookmark(title, isNowBookmarked);
     }
 
-    showToast(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
+    notificationManager.success(isNowBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks');
 };
 
 /**
@@ -1100,4 +1133,20 @@ const observer = new IntersectionObserver((entries) => {
 document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 
 console.log('%c🚀 OpenPlayground Unified Logic Active', 'color:#6366f1;font-weight:bold;');
+/**
+ * Global function to check for project insight deep links in the URL
+ */
+function checkInsightDeepLink() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectTitle = urlParams.get('insight');
+    if (projectTitle && typeof window.openInsightsPanel === 'function') {
+        console.log(`🔍 Deep link found for insight: ${projectTitle}`);
+        // Small delay to ensure any necessary UI components are ready
+        setTimeout(() => {
+            window.openInsightsPanel(decodeURIComponent(projectTitle));
+        }, 500);
+    }
+}
 
+// Make it global so the setTimeout can find it
+window.checkInsightDeepLink = checkInsightDeepLink;
