@@ -1,6 +1,7 @@
 // ===============================
 // OpenPlayground - Unified App Logic
 // Feature #1291: Added Analytics Engine Integration
+// Feature #1985: Project Card View Modes & Grid Layouts
 // ===============================
 
 import { ProjectVisibilityEngine } from "./core/projectVisibilityEngine.js";
@@ -8,6 +9,7 @@ import { keyevents } from "./core/Shortcut.js"
 import { deadlineManager } from "./projectDeadlineManager.js";
 import { deadlineUI } from "./deadlineUI.js";
 import notificationManager from "./core/notificationManager.js";
+import { viewModeManager } from "./viewModeManager.js";
 
 class ProjectManager {
     constructor() {
@@ -108,6 +110,7 @@ class ProjectManager {
         return {
             projectsGrid: document.getElementById('projects-grid'),
             projectsList: document.getElementById('projects-list'),
+            projectsContainer: document.getElementById('projects-container') || document.getElementById('projects-grid'),
             paginationContainer: document.getElementById('pagination-controls'),
             searchInput: document.getElementById('project-search'),
             sortSelect: document.getElementById('project-sort'),
@@ -284,6 +287,18 @@ class ProjectManager {
             el.randomProjectBtn.addEventListener('click', () => this.openRandomProject());
         }
 
+        // Listen for view mode changes from viewModeManager
+        window.addEventListener('viewModeChanged', (e) => {
+            this.state.currentPage = 1;
+            this.render();
+        });
+
+        // Listen for sort mode changes from viewModeManager
+        window.addEventListener('sortModeChanged', (e) => {
+            this.state.currentPage = 1;
+            this.render();
+        });
+
         // Listen for deadline updates
         window.addEventListener('deadlineUpdated', () => {
             this.render();
@@ -392,20 +407,28 @@ class ProjectManager {
 
         // Get sort mode and set in visibility engine
         const sortMode = el.sortSelect?.value || 'default';
-        if (sortMode === 'az') filtered.sort((a, b) => a.title.localeCompare(b.title));
-        else if (sortMode === 'za') filtered.sort((a, b) => b.title.localeCompare(a.title));
-        else if (sortMode === 'newest') filtered.reverse();
-        else if (sortMode === 'deadline') filtered = deadlineManager.sortByDeadline(filtered);
-        else if (sortMode === 'importance') filtered = deadlineManager.sortByImportance(filtered);
         this.state.visibilityEngine.setSortMode(sortMode);
 
         // Get filtered and sorted projects from visibility engine
         let filtered = this.state.visibilityEngine.getVisibleProjects();
 
+        // Apply sorting
+        if (sortMode === 'az') filtered.sort((a, b) => a.title.localeCompare(b.title));
+        else if (sortMode === 'za') filtered.sort((a, b) => b.title.localeCompare(a.title));
+        else if (sortMode === 'newest') filtered.reverse();
+        else if (sortMode === 'deadline') filtered = deadlineManager.sortByDeadline(filtered);
+        else if (sortMode === 'importance') filtered = deadlineManager.sortByImportance(filtered);
+
         // Pagination
         const totalPages = Math.ceil(filtered.length / this.config.ITEMS_PER_PAGE);
         const start = (this.state.currentPage - 1) * this.config.ITEMS_PER_PAGE;
         const pageItems = filtered.slice(start, start + this.config.ITEMS_PER_PAGE);
+
+        // Apply view mode classes to main container
+        const mainContainer = el.projectsContainer || el.projectsGrid;
+        if (mainContainer) {
+            mainContainer.className = 'projects-container ' + viewModeManager.getViewModeClass();
+        }
 
         // Grid/List display management
         if (el.projectsGrid) {
