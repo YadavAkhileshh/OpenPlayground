@@ -217,3 +217,175 @@ export function createProjectListCard(project) {
         </div>
     `;
 }
+/**
+ * Generates HTML for a project timeline card (chronological view).
+ * @param {Object} project - The project data object.
+ * @returns {string} The HTML string for the timeline card.
+ */
+export function createProjectTimelineCard(project) {
+    const isBookmarked = window.bookmarksManager?.isBookmarked(project.title);
+    const coverStyle = project.coverStyle || '';
+    const coverClass = project.coverClass || '';
+    const sourceUrl = getSourceCodeUrl(project.link);
+    const deadline = deadlineManager.getProjectDeadline(project.title);
+    const importance = deadline ? deadlineManager.getImportanceMetadata(deadline.importance) : null;
+
+    // Extract or generate date
+    const dateStr = project.dateAdded || new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+    });
+
+    // Create project data for Try It button
+    const projectData = JSON.stringify({
+        title: project.title,
+        link: project.link,
+        description: project.description || '',
+        category: project.category
+    }).replace(/'/g, "\\'");
+
+    return `
+        <div class="timeline-card">
+            <div class="timeline-date">${dateStr}</div>
+            <div class="timeline-content">
+                <div class="timeline-header">
+                    <div class="timeline-icon ${coverClass}" style="${coverStyle}">
+                        <i class="${escapeHtml(project.icon || 'ri-code-s-slash-line')}"></i>
+                    </div>
+                    <div class="timeline-title-wrapper">
+                        <h4 class="timeline-title">${escapeHtml(project.title)}</h4>
+                        <span class="timeline-category">${capitalize(project.category || 'project')}</span>
+                    </div>
+                </div>
+                <p class="timeline-description">${escapeHtml(project.description || '')}</p>
+                ${project.tech ? `<div class="timeline-tech">${project.tech.map(t => `<span>${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+                <div class="timeline-actions">
+                    <button class="btn-sm btn-primary" 
+                            onclick="event.stopPropagation(); window.openCodePlayground && window.openCodePlayground(${projectData.replace(/"/g, '&quot;')});">
+                        <i class="ri-play-circle-line"></i> Try It
+                    </button>
+                    <button class="btn-sm ${isBookmarked ? 'bookmarked' : ''}" 
+                            onclick="event.stopPropagation(); window.toggleProjectBookmark(this, '${escapeHtml(project.title)}', '${escapeHtml(project.link)}', '${escapeHtml(project.category)}', '${escapeHtml(project.description || '')}');">
+                        <i class="${isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line'}"></i>
+                    </button>
+                    <button class="btn-sm" 
+                            onclick="event.stopPropagation(); window.openDeadlineModal('${escapeHtml(project.title)}');">
+                        <i class="ri-calendar-line"></i>
+                    </button>
+                    <a href="${sourceUrl}" target="_blank" class="btn-sm" title="View Source Code">
+                        <i class="ri-github-fill"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Generates HTML for a compact grid card.
+ * @param {Object} project - The project data object.
+ * @returns {string} The HTML string for the compact card.
+ */
+export function createProjectCompactCard(project) {
+    const isBookmarked = window.bookmarksManager?.isBookmarked(project.title);
+    const coverStyle = project.coverStyle || '';
+    const coverClass = project.coverClass || '';
+    const sourceUrl = getSourceCodeUrl(project.link);
+
+    // Create project data for Try It button
+    const projectData = JSON.stringify({
+        title: project.title,
+        link: project.link,
+        description: project.description || '',
+        category: project.category
+    }).replace(/'/g, "\\'");
+
+    return `
+        <div class="compact-card" data-category="${escapeHtml(project.category)}">
+            <div class="compact-card-cover ${coverClass}" style="${coverStyle}">
+                <i class="${escapeHtml(project.icon || 'ri-code-s-slash-line')}"></i>
+            </div>
+            <div class="compact-card-content">
+                <h4 class="compact-card-title" title="${escapeHtml(project.title)}">${escapeHtml(project.title)}</h4>
+                <span class="compact-card-category">${capitalize(project.category)}</span>
+            </div>
+            <div class="compact-card-actions">
+                <button class="compact-btn" 
+                        onclick="event.stopPropagation(); window.openCodePlayground && window.openCodePlayground(${projectData.replace(/"/g, '&quot;')});"
+                        title="Try It">
+                    <i class="ri-play-line"></i>
+                </button>
+                <button class="compact-btn ${isBookmarked ? 'bookmarked' : ''}" 
+                        onclick="event.stopPropagation(); window.toggleProjectBookmark(this, '${escapeHtml(project.title)}', '${escapeHtml(project.link)}', '${escapeHtml(project.category)}', '${escapeHtml(project.description || '')}');"
+                        title="${isBookmarked ? 'Remove bookmark' : 'Add bookmark'}">
+                    <i class="${isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line'}"></i>
+                </button>
+                <a href="${sourceUrl}" target="_blank" class="compact-btn" title="View Source">
+                    <i class="ri-github-fill"></i>
+                </a>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Generates HTML for a large card with extended information.
+ * @param {Object} project - The project data object.
+ * @returns {string} The HTML string for the large card.
+ */
+export function createProjectLargeCard(project) {
+    const isBookmarked = window.bookmarksManager?.isBookmarked(project.title);
+    const techHtml = project.tech?.map(t => `<span>${escapeHtml(t)}</span>`).join('') || '';
+    const coverStyle = project.coverStyle || '';
+    const coverClass = project.coverClass || '';
+    const sourceUrl = getSourceCodeUrl(project.link);
+    const deadline = deadlineManager.getProjectDeadline(project.title);
+    const importance = deadline ? deadlineManager.getImportanceMetadata(deadline.importance) : null;
+
+    // Create project data for Try It button
+    const projectData = JSON.stringify({
+        title: project.title,
+        link: project.link,
+        description: project.description || '',
+        category: project.category
+    }).replace(/'/g, "\\'");
+
+    return `
+        <div class="large-card" data-category="${escapeHtml(project.category)}">
+            <div class="large-card-cover ${coverClass}" style="${coverStyle}">
+                <i class="${escapeHtml(project.icon || 'ri-code-s-slash-line')}"></i>
+                ${deadline ? `<span class="large-card-deadline" style="background-color: ${importance.color};">
+                    <i class="${importance.icon}"></i> ${deadline.deadline}
+                </span>` : ''}
+            </div>
+            <div class="large-card-body">
+                <div class="large-card-header">
+                    <div>
+                        <h3 class="large-card-title">${escapeHtml(project.title)}</h3>
+                        <p class="large-card-category">${capitalize(project.category)}</p>
+                    </div>
+                </div>
+                <p class="large-card-description">${escapeHtml(project.description || '')}</p>
+                ${techHtml ? `<div class="large-card-tech">${techHtml}</div>` : ''}
+                <div class="large-card-actions">
+                    <button class="btn-action" 
+                            onclick="event.stopPropagation(); window.openCodePlayground && window.openCodePlayground(${projectData.replace(/"/g, '&quot;')});">
+                        <i class="ri-play-circle-line"></i> Try It
+                    </button>
+                    <button class="btn-action ${isBookmarked ? 'bookmarked' : ''}" 
+                            onclick="event.stopPropagation(); window.toggleProjectBookmark(this, '${escapeHtml(project.title)}', '${escapeHtml(project.link)}', '${escapeHtml(project.category)}', '${escapeHtml(project.description || '')}');">
+                        <i class="${isBookmarked ? 'ri-bookmark-fill' : 'ri-bookmark-line'}"></i> ${isBookmarked ? 'Saved' : 'Save'}
+                    </button>
+                    <button class="btn-action" 
+                            onclick="event.stopPropagation(); window.openDeadlineModal('${escapeHtml(project.title)}');">
+                        <i class="ri-calendar-line"></i>
+                    </button>
+                    <a href="${sourceUrl}" target="_blank" class="btn-action" title="View on GitHub">
+                        <i class="ri-github-fill"></i> Code
+                    </a>
+                </div>
+            </div>
+        </div>
+    `;
+}
