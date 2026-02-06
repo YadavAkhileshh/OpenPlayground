@@ -132,15 +132,15 @@ class DrawingCanvas {
         }
     }
 
-    stopDrawing() {
+    stopDrawing(e) {
         if (!this.isDrawing) return;
         this.isDrawing = false;
 
         if (this.currentTool !== 'brush' && this.currentTool !== 'eraser') {
             // For shapes, we need to draw the final shape
             const rect = this.canvas.getBoundingClientRect();
-            const endX = event.clientX - rect.left;
-            const endY = event.clientY - rect.top;
+            const endX = e.clientX - rect.left;
+            const endY = e.clientY - rect.top;
             this.drawShape(this.startX, this.startY, endX, endY, this.currentTool, false);
         }
 
