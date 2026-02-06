@@ -1,92 +1,152 @@
 const startBtn = document.getElementById("startBtn");
-const questionEl = document.getElementById("question");
-const optionsEl = document.getElementById("options");
-const fatigueEl = document.getElementById("fatigue");
-const roundEl = document.getElementById("round");
-const timeEl = document.getElementById("time");
-const app = document.querySelector(".app");
+const decisionArea = document.getElementById("decisionArea");
+const optionsBox = document.getElementById("options");
+const questionTitle = document.getElementById("questionTitle");
+const timerBox = document.getElementById("timer");
 
-let round = 1;
-let fatigue = 0;
-let timer;
-let timeLeft;
-let startTime;
+const decisionCountEl = document.getElementById("decisionCount");
+const correctCountEl = document.getElementById("correctCount");
+const avgTimeEl = document.getElementById("avgTime");
+const fatigueScoreEl = document.getElementById("fatigueScore");
+const insightsBox = document.getElementById("insights");
 
-const questions = [
-  "Choose a door",
-  "Pick a color",
-  "Select a path",
-  "Choose a tool",
-  "Pick a number",
-  "Select a symbol",
-  "Choose a direction",
-  "Pick a shape",
-  "Select a pattern",
-  "Make a final choice"
-];
+let decisions = [];
+let startTime = 0;
+let fatigueScore = 0;
+let timerInterval;
 
-startBtn.onclick = () => {
-  startBtn.style.display = "none";
-  nextRound();
-};
+startBtn.addEventListener("click", startSession);
 
-function nextRound() {
-  if (round > 10) {
-    endSimulation();
-    return;
+function startSession() {
+  decisions = [];
+  fatigueScore = 0;
+  updateStats();
+  decisionArea.classList.remove("hidden");
+  insightsBox.classList.add("hidden");
+  nextDecision();
+}
+
+function nextDecision() {
+  clearInterval(timerInterval);
+
+  const difficulty = document.getElementById("difficulty").value;
+  const pressure = document.getElementById("pressure").value;
+
+  const decision = generateDecision(difficulty);
+  renderDecision(decision, pressure);
+}
+
+function generateDecision(difficulty) {
+  const baseOptions = ["Option A", "Option B", "Option C", "Option D"];
+  let correctIndex = Math.floor(Math.random() * baseOptions.length);
+
+  if (difficulty === "hard") {
+    correctIndex = Math.floor(Math.random() * baseOptions.length);
   }
 
-  roundEl.textContent = round;
-  questionEl.textContent = questions[round - 1];
-  optionsEl.innerHTML = "";
+  return {
+    question: "Choose the best option",
+    options: baseOptions,
+    correctIndex
+  };
+}
 
-  const optionCount = fatigue < 30 ? 2 : fatigue < 60 ? 3 : 4;
-  timeLeft = fatigue < 40 ? 5 : fatigue < 70 ? 4 : 3;
-  timeEl.textContent = timeLeft;
-
+function renderDecision(decision, pressure) {
+  questionTitle.textContent = decision.question;
+  optionsBox.innerHTML = "";
   startTime = Date.now();
 
-  for (let i = 0; i < optionCount; i++) {
-    const btn = document.createElement("button");
-    btn.textContent = "Option " + (i + 1);
-    btn.onclick = () => choose();
-    optionsEl.appendChild(btn);
-  }
+  decision.options.forEach((opt, index) => {
+    const btn = document.createElement("div");
+    btn.className = "option";
+    btn.textContent = opt;
+    btn.onclick = () => selectOption(index, decision.correctIndex);
+    optionsBox.appendChild(btn);
+  });
 
-  clearInterval(timer);
-  timer = setInterval(() => {
-    timeLeft--;
-    timeEl.textContent = timeLeft;
-    if (timeLeft <= 0) {
-      choose(true);
-    }
-  }, 1000);
+  if (pressure !== "none") {
+    let timeLeft = pressure === "high" ? 3 : 6;
+    timerBox.textContent = `Time left: ${timeLeft}s`;
 
-  if (fatigue > 60) {
-    app.classList.add("fatigued");
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      timerBox.textContent = `Time left: ${timeLeft}s`;
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        selectOption(-1, decision.correctIndex);
+      }
+    }, 1000);
   } else {
-    app.classList.remove("fatigued");
+    timerBox.textContent = "";
   }
 }
 
-function choose(timeout = false) {
-  clearInterval(timer);
+function selectOption(selected, correct) {
+  const responseTime = Date.now() - startTime;
+  const isCorrect = selected === correct;
 
-  const reactionTime = (Date.now() - startTime) / 1000;
-  fatigue += timeout ? 10 : Math.min(8, reactionTime * 2);
+  decisions.push({ responseTime, isCorrect });
+  updateFatigue(responseTime, isCorrect);
+  updateStats();
 
-  fatigue = Math.min(100, Math.round(fatigue));
-  fatigueEl.textContent = fatigue + "%";
-
-  round++;
-  setTimeout(nextRound, 400);
+  if (decisions.length >= 10) {
+    endSession();
+  } else {
+    nextDecision();
+  }
 }
 
-function endSimulation() {
-  app.classList.remove("fatigued");
-  questionEl.textContent = "Simulation Complete";
-  optionsEl.innerHTML = `
-    <p>Your mind shows signs of <strong>${fatigue < 40 ? "low" : fatigue < 70 ? "moderate" : "high"}</strong> decision fatigue.</p>
-    <p>Take breaks. Fewer decisions = better decisions.</p>
+function updateFatigue(time, correct) {
+  fatigueScore += time > 3000 ? 2 : 1;
+  if (!correct) fatigueScore += 2;
+
+  if (fatigueScore > 15) {
+    document.body.classList.add("fatigued");
+  }
+}
+
+function updateStats() {
+  decisionCountEl.textContent = decisions.length;
+  correctCountEl.textContent = decisions.filter(d => d.isCorrect).length;
+
+  const avg =
+    decisions.reduce((a, b) => a + b.responseTime, 0) /
+    (decisions.length || 1);
+
+  avgTimeEl.textContent = Math.round(avg);
+  fatigueScoreEl.textContent = fatigueScore;
+}
+
+function endSession() {
+  decisionArea.classList.add("hidden");
+  generateInsights();
+  saveSession();
+}
+
+function generateInsights() {
+  const accuracy =
+    decisions.filter(d => d.isCorrect).length / decisions.length;
+
+  let message = "Balanced cognitive performance.";
+
+  if (accuracy < 0.5) message = "Decision quality dropped significantly.";
+  if (fatigueScore > 20) message = "High decision fatigue detected.";
+
+  insightsBox.innerHTML = `
+    <h3>Behavioral Insights</h3>
+    <p>Total Decisions: ${decisions.length}</p>
+    <p>Accuracy: ${(accuracy * 100).toFixed(0)}%</p>
+    <p>${message}</p>
   `;
+  insightsBox.classList.remove("hidden");
+}
+
+function saveSession() {
+  const history = JSON.parse(localStorage.getItem("fatigueSessions")) || [];
+  history.push({
+    date: new Date().toISOString(),
+    fatigueScore,
+    decisions
+  });
+  localStorage.setItem("fatigueSessions", JSON.stringify(history));
 }
