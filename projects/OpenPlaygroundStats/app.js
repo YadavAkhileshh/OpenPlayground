@@ -1,10 +1,21 @@
-// Fetch project-manifest.json and render category analytics
+// Fetch project-manifest.json, then fetch each project's project.json to get categories
 fetch('../../project-manifest.json')
   .then(res => res.json())
-  .then(data => {
+  .then(async data => {
     const counts = {};
-    data.projects.forEach(p => {
-      const cat = p.category || 'Uncategorized';
+    // Get all project.json fetch promises
+    const promises = data.projects.map(async p => {
+      try {
+        const res = await fetch(p.path);
+        if (!res.ok) return 'Uncategorized';
+        const proj = await res.json();
+        return proj.category || 'Uncategorized';
+      } catch {
+        return 'Uncategorized';
+      }
+    });
+    const categories = await Promise.all(promises);
+    categories.forEach(cat => {
       counts[cat] = (counts[cat] || 0) + 1;
     });
     renderChart(counts);
