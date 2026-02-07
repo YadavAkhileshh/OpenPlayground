@@ -1,10 +1,48 @@
-const userData = localStorage.getItem("user");
+const user = JSON.parse(localStorage.getItem("user"));
+const plan = JSON.parse(localStorage.getItem("plan"));
 
-if(!userData){
-  window.location.href = "setup.html";
+if(!user || !plan){
+  window.location.href="setup.html";
+}
+
+const today = new Date().toISOString().split("T")[0];
+
+document.getElementById("title").innerText =
+  `Today's Plan for ${user.name}`;
+
+const taskList = document.getElementById("taskList");
+
+let todayPlan = plan.find(p=>p.date===today);
+
+if(!todayPlan){
+  taskList.innerHTML="<p>No tasks for today</p>";
 }
 else{
-  const user = JSON.parse(userData);
-  document.querySelector("h2").innerText =
-    `Today's Plan for ${user.name}`;
+  todayPlan.tasks.forEach((task,i)=>{
+    if(task.completed===undefined){
+      task.completed=false;
+    }
+
+    const div=document.createElement("div");
+
+    div.innerHTML=`
+      <label>
+        <input type="checkbox" ${task.completed?"checked":""}>
+        ${task.subject} - ${task.unit} (${task.hours}h)
+      </label>
+    `;
+
+    const checkbox=div.querySelector("input");
+
+    checkbox.addEventListener("change",()=>{
+      task.completed=checkbox.checked;
+    });
+
+    taskList.appendChild(div);
+  });
 }
+
+document.getElementById("saveBtn").addEventListener("click",()=>{
+  localStorage.setItem("plan",JSON.stringify(plan));
+  alert("Progress saved");
+});
