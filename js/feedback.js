@@ -162,7 +162,6 @@ const emptyState = document.getElementById('emptyState');
 const loadMore = document.getElementById('loadMore');
 const loadMoreBtn = document.getElementById('loadMoreBtn');
 const emptyStateShare = document.getElementById('emptyStateShare');
-const toast = document.getElementById('toast');
 
 // Global stats elements
 const globalPosts = document.getElementById('globalPosts');
@@ -208,17 +207,25 @@ function loadThemePreference() {
 }
 
 function updateThemeToggle(theme) {
+    // Note: The feedback.html uses a different theme toggle structure (SVG-based) than index.html
+    // If you have a specific slider in your CSS, keep this:
     const slider = document.querySelector('.theme-toggle-slider');
-    if (theme === 'dark') {
-        slider.style.transform = 'translateX(28px)';
-        slider.style.background = 'var(--primary-500)';
-        document.querySelector('.sun').style.opacity = '0.5';
-        document.querySelector('.moon').style.opacity = '1';
-    } else {
-        slider.style.transform = 'translateX(2px)';
-        slider.style.background = 'var(--primary-500)';
-        document.querySelector('.sun').style.opacity = '1';
-        document.querySelector('.moon').style.opacity = '0.5';
+    if (slider) {
+        if (theme === 'dark') {
+            slider.style.transform = 'translateX(28px)';
+            slider.style.background = 'var(--primary-500)';
+            const sun = document.querySelector('.sun');
+            const moon = document.querySelector('.moon');
+            if (sun) sun.style.opacity = '0.5';
+            if (moon) moon.style.opacity = '1';
+        } else {
+            slider.style.transform = 'translateX(2px)';
+            slider.style.background = 'var(--primary-500)';
+            const sun = document.querySelector('.sun');
+            const moon = document.querySelector('.moon');
+            if (sun) sun.style.opacity = '1';
+            if (moon) moon.style.opacity = '0.5';
+        }
     }
 }
 
@@ -660,19 +667,22 @@ async function handleFeedbackSubmit(e) {
     const rating = parseInt(ratingInput.value);
     const message = messageInput.value.trim();
 
-    // Validation
-    if (!category) {
-        showToast('Please select a category', 'error');
+    // Validation using ValidationEngine
+    const validationRules = {
+        category: { required: true },
+        message: { required: true, min: 5, max: CONFIG.MAX_CHARACTERS }
+    };
+
+    const validationResult = window.ValidationEngine.validate({ category, message }, validationRules);
+
+    if (!validationResult.isValid) {
+        const errorMsg = Object.values(validationResult.errors)[0];
+        window.notificationManager.error(errorMsg);
         return;
     }
 
     if (rating === 0 || isNaN(rating)) {
-        showToast('Please select a rating', 'error');
-        return;
-    }
-
-    if (!message) {
-        showToast('Please enter your message', 'error');
+        window.notificationManager.warning('Please select a rating');
         return;
     }
 
@@ -723,9 +733,9 @@ async function handleFeedbackSubmit(e) {
 
         // Show success message
         if (serverResult.success) {
-            showToast('✅ Posted globally! Visible everywhere! 🌍', 'success');
+            window.notificationManager.success('Posted globally! Visible everywhere! 🌍');
         } else {
-            showToast('📱 Posted locally. Will sync when online.', 'info');
+            window.notificationManager.info('Posted locally. Will sync when online.');
         }
 
         // Scroll to feed
@@ -735,21 +745,21 @@ async function handleFeedbackSubmit(e) {
 
     } catch (error) {
         console.error('❌ Error sharing feedback:', error);
-        showToast('Error sharing feedback', 'error');
+        window.notificationManager.error('Error sharing feedback');
     } finally {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     }
 }
 
-function handleFooterFeedbackSubmit(e) {
+async function handleFooterFeedbackSubmit(e) {
     e.preventDefault();
 
     let name = document.getElementById('footerName').value.trim() || 'Anonymous';
     const message = document.getElementById('footerMessage').value.trim();
 
-    if (!message) {
-        showToast('Please enter your feedback', 'error');
+    if (!window.ValidationEngine.isRequired(message)) {
+        window.notificationManager.error('Please enter your feedback');
         return;
     }
 
@@ -791,7 +801,7 @@ function handleFooterFeedbackSubmit(e) {
     renderTrending();
     updateGlobalStats();
 
-    showToast('Thank you for your feedback!', 'success');
+    window.notificationManager.success('Thank you for your feedback!');
 }
 
 function clearForm() {
@@ -1030,12 +1040,12 @@ function handleLike(postId) {
         feedback.likes = Math.max(0, feedback.likes - 1);
         feedback.likedBy = feedback.likedBy.filter(id => id !== state.currentUserId);
         state.likedPosts.delete(postId);
-        showToast('Removed like', 'info');
+        window.notificationManager.info('Removed like');
     } else {
         feedback.likes++;
         feedback.likedBy.push(state.currentUserId);
         state.likedPosts.add(postId);
-        showToast('Liked! ❤️', 'success');
+        window.notificationManager.success('Liked! ❤️');
     }
 
     saveLocalData();
@@ -1073,9 +1083,9 @@ async function refreshFeed() {
 
     try {
         await syncWithGlobalServer();
-        showToast('✅ Feed synced with global server!', 'success');
+        window.notificationManager.success('Feed synced with global server!');
     } catch (error) {
-        showToast('⚠️ Using cached data', 'info');
+        window.notificationManager.info('Using cached data');
     } finally {
         showLoading(false);
     }
@@ -1108,23 +1118,7 @@ function showLoading(show) {
     state.isLoading = show;
 }
 
-function showToast(message, type = 'info') {
-    if (!toast) return;
-
-    toast.textContent = message;
-    toast.className = `toast ${type}`;
-
-    let icon = 'fas fa-info-circle';
-    if (type === 'success') icon = 'fas fa-check-circle';
-    if (type === 'error') icon = 'fas fa-exclamation-circle';
-
-    toast.innerHTML = `<i class="${icon}"></i> <span>${message}</span>`;
-    toast.classList.add('show');
-
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
-}
+// Toast notifications are now handled by NotificationManager
 
 // ===============================
 // Navbar Active Link Management

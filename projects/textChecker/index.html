@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Diff Checker | Compare & Highlight Differences</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 400;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            padding: 25px;
+            gap: 25px;
+        }
+
+        .text-areas {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+        }
+
+        .text-container {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: #11998e;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: 2px solid #e1e5eb;
+            border-radius: 8px;
+            font-size: 16px;
+            line-height: 1.5;
+            resize: vertical;
+            transition: border 0.3s;
+            font-family: 'Courier New', monospace;
+            background-color: #fdfdfd;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #11998e;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 10px 0;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        .btn-primary {
+            background-color: #11998e;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0d7a71;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #f1f3f9;
+            color: #2c3e50;
+            border: 1px solid #ddd;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e4e8f0;
+        }
+
+        .btn-danger {
+            background-color: #ff6b6b;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #ff5252;
+            transform: translateY(-2px);
+        }
+
+        .results-section {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .diff-container {
+            border: 1px solid #e1e5eb;
+            border-radius: 8px;
+            overflow: auto;
+            max-height: 500px;
+            padding: 20px;
+            background-color: #fdfdfd;
+            font-family: 'Courier New', monospace;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .diff-stats {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            gap: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+        }
+
+        .added {
+            background-color: #d4edda;
+            color: #155724;
+            text-decoration: none;
+            padding: 2px 1px;
+            border-radius: 3px;
+        }
+
+        .removed {
+            background-color: #f8d7da;
+            color: #721c24;
+            text-decoration: line-through;
+            padding: 2px 1px;
+            border-radius: 3px;
+        }
+
+        .unchanged {
+            color: #333;
+        }
+
+        .diff-type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .diff-type-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .diff-type-btn.active {
+            background-color: #11998e;
+            color: white;
+            border-color: #11998e;
+        }
+
+        .example-text {
+            font-size: 0.85rem;
+            color: #777;
+            margin-top: 8px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background-color: #11998e;
+            color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            border-top: 1px solid #eee;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 15px;
+            }
+            
+            .text-container {
+                min-width: 100%;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .stat-item {
+                min-width: 100px;
+            }
+        }
+
+        .swap-button {
+            align-self: center;
+            margin-top: 30px;
+            height: 40px;
+            width: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-file-alt"></i> Text Diff Checker</h1>
+            <p class="subtitle">Compare two texts and highlight differences with line-by-line and character-level analysis</p>
+        </header>
+        
+        <div class="content">
+            <div class="text-areas">
+                <div class="text-container">
+                    <h2 class="section-title"><i class="fas fa-file-import"></i> Original Text</h2>
+                    <textarea id="text1" placeholder="Paste or type the original text here...">The quick brown fox jumps over the lazy dog. This is an example sentence for text comparison. We can see how differences are highlighted between two texts.</textarea>
+                    <div class="example-text" id="loadExample1">Load example text 1</div>
+                </div>
+                
+                <div class="text-container">
+                    <h2 class="section-title"><i class="fas fa-file-export"></i> Modified Text</h2>
+                    <textarea id="text2" placeholder="Paste or type the modified text here...">The quick brown fox leaps over the lazy dog. This is an example sentence for text diff checking. We will see how differences are highlighted between two texts.</textarea>
+                    <div class="example-text" id="loadExample2">Load example text 2</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="compareBtn" class="btn-primary">
+                    <i class="fas fa-balance-scale"></i> Compare Texts
+                </button>
+                <button id="clearBtn" class="btn-secondary">
+                    <i class="fas fa-trash-alt"></i> Clear All
+                </button>
+                <button id="swapBtn" class="btn-secondary swap-button" title="Swap texts">
+                    <i class="fas fa-exchange-alt"></i>
+                </button>
+            </div>
+            
+            <div class="diff-type-selector">
+                <div class="diff-type-btn active" data-type="line">Line Comparison</div>
+                <div class="diff-type-btn" data-type="word">Word Comparison</div>
+                <div class="diff-type-btn" data-type="char">Character Comparison</div>
+            </div>
+            
+            <div class="results-section" id="resultsSection">
+                <h2 class="section-title"><i class="fas fa-chart-bar"></i> Comparison Results</h2>
+                
+                <div class="diff-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalDiff">0</div>
+                        <div class="stat-label">Total Differences</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="addedCount">0</div>
+                        <div class="stat-label">Added Content</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="removedCount">0</div>
+                        <div class="stat-label">Removed Content</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="similarity">100%</div>
+                        <div class="stat-label">Similarity</div>
+                    </div>
+                </div>
+                
+                <div class="diff-container" id="diffOutput">
+                    <!-- Diff results will be displayed here -->
+                </div>
+                
+                <div class="controls" style="margin-top: 20px;">
+                    <button id="copyBtn" class="btn-secondary">
+                        <i class="fas fa-copy"></i> Copy Comparison
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Text Diff Checker &copy; 2026 | Highlight differences between texts with precision</p>
+        </footer>
+    </div>
+    
+    <div class="notification" id="notification">Notification message</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const text1 = document.getElementById('text1');
+            const text2 = document.getElementById('text2');
+            const compareBtn = document.getElementById('compareBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const swapBtn = document.getElementById('swapBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const loadExample1 = document.getElementById('loadExample1');
+            const loadExample2 = document.getElementById('loadExample2');
+            const resultsSection = document.getElementById('resultsSection');
+            const diffOutput = document.getElementById('diffOutput');
+            const notification = document.getElementById('notification');
+            const diffTypeBtns = document.querySelectorAll('.diff-type-btn');
+            
+            // Stats elements
+            const totalDiffEl = document.getElementById('totalDiff');
+            const addedCountEl = document.getElementById('addedCount');
+            const removedCountEl = document.getElementById('removedCount');
+            const similarityEl = document.getElementById('similarity');
+            
+            // Example texts
+            const exampleText1 = `The quick brown fox jumps over the lazy dog.
+This is the first example text for comparison.
+We are going to compare it with another text.
+Text diff tools are useful for many applications:
+- Code review
+- Document versioning
+- Plagiarism detection
+- Content editing`;
+
+            const exampleText2 = `The quick brown fox leaps over the lazy dog.
+This is the second example text for comparison.
+We will compare it with the original text.
+Text diff tools are useful for many applications:
+- Code review
+- Document version control
+- Plagiarism detection
+- Content editing and revision`;
+
+            // Current diff type
+            let currentDiffType = 'line';
+            
+            // Load example texts
+            loadExample1.addEventListener('click', function() {
+                text1.value = exampleText1;
+                showNotification('Example text 1 loaded');
+            });
+            
+            loadExample2.addEventListener('click', function() {
+                text2.value = exampleText2;
+                showNotification('Example text 2 loaded');
+            });
+            
+            // Swap texts
+            swapBtn.addEventListener('click', function() {
+                const temp = text1.value;
+                text1.value = text2.value;
+                text2.value = temp;
+                showNotification('Texts swapped');
+                
+                // If results are shown, update comparison
+                if (resultsSection.classList.contains('active')) {
+                    compareTexts();
+                }
+            });
+            
+            // Clear all
+            clearBtn.addEventListener('click', function() {
+                text1.value = '';
+                text2.value = '';
+                resultsSection.classList.remove('active');
+                showNotification('All text cleared');
+            });
+            
+            // Compare texts
+            compareBtn.addEventListener('click', function() {
+                compareTexts();
+            });
+            
+            // Change diff type
+            diffTypeBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    diffTypeBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentDiffType = this.dataset.type;
+                    
+                    // If results are shown, update comparison
+                    if (resultsSection.classList.contains('active')) {
+                        compareTexts();
+                    }
+                });
+            });
+            
+            // Copy comparison results
+            copyBtn.addEventListener('click', function() {
+                const textToCopy = diffOutput.innerText;
+                navigator.clipboard.writeText(textToCopy)
+                    .then(() => showNotification('Comparison copied to clipboard'))
+                    .catch(err => showNotification('Failed to copy text', 'error'));
+            });
+            
+            // Main comparison function
+            function compareTexts() {
+                const text1Value = text1.value.trim();
+                const text2Value = text2.value.trim();
+                
+                if (!text1Value || !text2Value) {
+                    showNotification('Please enter text in both boxes', 'error');
+                    return;
+                }
+                
+                // Show results section
+                resultsSection.classList.add('active');
+                
+                // Perform diff based on selected type
+                let result;
+                let stats;
+                
+                if (currentDiffType === 'line') {
+                    ({result, stats} = lineDiff(text1Value, text2Value));
+                } else if (currentDiffType === 'word') {
+                    ({result, stats} = wordDiff(text1Value, text2Value));
+                } else {
+                    ({result, stats} = charDiff(text1Value, text2Value));
+                }
+                
+                // Update diff output
+                diffOutput.innerHTML = result;
+                
+                // Update stats
+                totalDiffEl.textContent = stats.totalDifferences;
+                addedCountEl.textContent = stats.added;
+                removedCountEl.textContent = stats.removed;
+                similarityEl.textContent = `${stats.similarity}%`;
+                
+                showNotification(`Comparison complete - ${stats.totalDifferences} differences found`);
+            }
+            
+            // Line-by-line diff
+            function lineDiff(text1, text2) {
+                const lines1 = text1.split('\n');
+                const lines2 = text2.split('\n');
+                
+                let result = '';
+                let added = 0;
+                let removed = 0;
+                let unchanged = 0;
+                
+                const maxLines = Math.max(lines1.length, lines2.length);
+                
+                for (let i = 0; i < maxLines; i++) {
+                    const line1 = lines1[i] || '';
+                    const line2 = lines2[i] || '';
+                    
+                    if (line1 === line2) {
+                        result += `<div class="unchanged">${escapeHtml(line1 || '')}</div>`;
+                        unchanged++;
+                    } else {
+                        if (line1 && line2) {
+                            // Both lines exist but are different
+                            const wordDiffResult = simpleWordDiff(line1, line2);
+                            result += `<div>${wordDiffResult}</div>`;
+                            added += wordDiffResult.addedCount;
+                            removed += wordDiffResult.removedCount;
+                        } else if (line1) {
+                            // Line exists only in text1 (removed)
+                            result += `<div class="removed">- ${escapeHtml(line1)}</div>`;
+                            removed++;
+                        } else {
+                            // Line exists only in text2 (added)
+                            result += `<div class="added">+ ${escapeHtml(line2)}</div>`;
+                            added++;
+                        }
+                    }
+                }
+                
+                const totalDifferences = added + removed;
+                const similarity = Math.round((unchanged / maxLines) * 100);
+                
+                return {
+                    result,
+                    stats: {
+                        totalDifferences,
+                        added,
+                        removed,
+                        similarity
+                    }
+                };
+            }
+            
+            // Word-level diff
+            function wordDiff(text1, text2) {
+                const words1 = text1.split(/\s+/);
+                const words2 = text2.split(/\s+/);
+                
+                let result = '';
+                let added = 0;
+                let removed = 0;
+                let unchanged = 0;
+                
+                // Create a simple word-by-word comparison
+                const maxWords = Math.max(words1.length, words2.length);
+                
+                for (let i = 0; i < maxWords; i++) {
+                    const word1 = words1[i];
+                    const word2 = words2[i];
+                    
+                    if (word1 === word2) {
+                        result += `<span class="unchanged">${escapeHtml(word1 || '')} </span>`;
+                        unchanged++;
+                    } else {
+                        if (word1 && word2) {
+                            // Both words exist but are different
+                            result += `<span class="removed">${escapeHtml(word1)}</span> `;
+                            result += `<span class="added">${escapeHtml(word2)}</span> `;
+                            removed++;
+                            added++;
+                        } else if (word1) {
+                            // Word exists only in text1 (removed)
+                            result += `<span class="removed">${escapeHtml(word1)}</span> `;
+                            removed++;
+                        } else {
+                            // Word exists only in text2 (added)
+                            result += `<span class="added">${escapeHtml(word2)}</span> `;
+                            added++;
+                        }
+                    }
+                }
+                
+                const totalDifferences = added + removed;
+                const totalWords = words1.length + words2.length;
+                const similarity = totalWords > 0 ? Math.round(((totalWords - totalDifferences) / totalWords) * 100) : 100;
+                
+                return {
+                    result,
+                    stats: {
+                        totalDifferences,
+                        added,
+                        removed,
+                        similarity
+                    }
+                };
+            }
+            
+            // Character-level diff
+            function charDiff(text1, text2) {
+                let result = '';
+                let added = 0;
+                let removed = 0;
+                let unchanged = 0;
+                
+                const maxChars = Math.max(text1.length, text2.length);
+                
+                for (let i = 0; i < maxChars; i++) {
+                    const char1 = text1[i];
+                    const char2 = text2[i];
+                    
+                    if (char1 === char2) {
+                        result += `<span class="unchanged">${escapeHtml(char1 || '')}</span>`;
+                        unchanged++;
+                    } else {
+                        if (char1 && char2) {
+                            // Both characters exist but are different
+                            result += `<span class="removed">${escapeHtml(char1)}</span>`;
+                            result += `<span class="added">${escapeHtml(char2)}</span>`;
+                            removed++;
+                            added++;
+                        } else if (char1) {
+                            // Character exists only in text1 (removed)
+                            result += `<span class="removed">${escapeHtml(char1)}</span>`;
+                            removed++;
+                        } else {
+                            // Character exists only in text2 (added)
+                            result += `<span class="added">${escapeHtml(char2)}</span>`;
+                            added++;
+                        }
+                    }
+                }
+                
+                const totalDifferences = added + removed;
+                const totalChars = text1.length + text2.length;
+                const similarity = totalChars > 0 ? Math.round(((totalChars - totalDifferences) / totalChars) * 100) : 100;
+                
+                return {
+                    result,
+                    stats: {
+                        totalDifferences,
+                        added,
+                        removed,
+                        similarity
+                    }
+                };
+            }
+            
+            // Simple word-level diff for line comparison
+            function simpleWordDiff(line1, line2) {
+                const words1 = line1.split(/\s+/);
+                const words2 = line2.split(/\s+/);
+                
+                let result = '';
+                let addedCount = 0;
+                let removedCount = 0;
+                
+                // Simple comparison - highlight entire line as changed
+                // In a more advanced version, you could implement a proper diff algorithm here
+                result += `<span class="removed">${escapeHtml(line1)}</span> → <span class="added">${escapeHtml(line2)}</span>`;
+                
+                // Estimate added/removed words
+                const commonWords = words1.filter(word => words2.includes(word)).length;
+                addedCount = Math.max(0, words2.length - commonWords);
+                removedCount = Math.max(0, words1.length - commonWords);
+                
+                return {
+                    result,
+                    addedCount,
+                    removedCount
+                };
+            }
+            
+            // Helper function to escape HTML
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            // Helper function to show notifications
+            function showNotification(message, type = 'success') {
+                notification.textContent = message;
+                notification.className = 'notification';
+                
+                // Set color based on type
+                if (type === 'error') {
+                    notification.style.backgroundColor = '#ff6b6b';
+                } else if (type === 'success') {
+                    notification.style.backgroundColor = '#11998e';
+                }
+                
+                // Show notification
+                notification.classList.add('show');
+                
+                // Hide after 3 seconds
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+            
+            // Auto-compare on page load with example texts
+            compareBtn.click();
+        });
+    </script>
+</body>
+</html>
