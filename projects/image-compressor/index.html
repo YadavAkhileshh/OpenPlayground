@@ -1,0 +1,143 @@
+    <!doctype html>
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <style>
+            body {
+                font-family: Arial, Helvetica, sans-serif;
+                background: #0f0f23;
+                color: #fff;
+                display: flex;
+                justify-content: center;
+                padding: 30px;
+            }
+
+            .container {
+                width: 400px;
+                background: #1a1a3a;
+                padding: 20px;
+                border-radius: 12px;
+            }
+
+            input,
+            button {
+                width: 100%;
+                margin: 10px 0;
+            }
+
+            button {
+                padding: 10px;
+                background: #667eea;
+                border: none;
+                color: #fff;
+                border-radius: 8px;
+            }
+
+            .preview {
+                display: flex;
+                gap: 10px;
+                margin-top: 20px;
+            }
+
+            .preview img {
+                max-width: 100%;
+                border-radius: 7px;
+            }
+
+            a {
+                display: inline-block;
+                margin-top: 5px;
+                color: #64ffda;
+                text-decoration: none;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <h2>Image Compressor</h2>
+            <input type="file" id="upload" accept="image/*" />
+            <label> Quality: <span id="qualityValue">0.7</span> </label>
+            <input type="range" id="quality" min="0.1" max="1" step="0.1" value="0.7" />
+            <button onclick="compressImg()">Compress</button>
+            <div class="preview">
+                <div>
+                    <h4>Original</h4>
+                    <img id="originalImg" />
+                    <p id="originalSize"></p>
+                </div>
+                <div>
+                    <h4>compressed</h4>
+                    <img id="compressedImg" />
+                    <p id="compressedSize"></p>
+                    <a id="download" download="compressed.jpg">Download</a>
+                </div>
+            </div>
+        </div>
+        <canvas id="canvas" hidden></canvas>
+        <script>
+            const upload = document.getElementById("upload");
+
+            const qualitySlider = document.getElementById("quality");
+            const qualityValue = document.getElementById("qualityValue");
+
+            const originalImg = document.getElementById("originalImg");
+            const compressedImg = document.getElementById("compressedImg");
+
+            const originalSize = document.getElementById("originalSize");
+            const compressedSize = document.getElementById("compressedSize");
+
+            const canvas = document.getElementById("canvas");
+            const ctx = canvas.getContext("2d");
+            let imageFile;
+            qualitySlider.addEventListener("input", () => {
+                qualityValue.textContent = qualitySlider.value;
+            });
+            upload.addEventListener("change", () => {
+                imageFile = upload.files[0];
+                if (!imageFile) return;
+                originalSize.textContent = (imageFile.size / 1024).toFixed(2) + " KB";
+                        const reader = new FileReader();
+            reader.onload = () => {
+                originalImg.src = reader.result;
+            };
+            reader.readAsDataURL(imageFile);
+
+            });
+            function compressImg() {
+                if (!imageFile) return alert("Upload an image first");
+
+                const img = new Image();
+                img.src = originalImg.src;
+
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+
+                    ctx.drawImage(img, 0, 0);
+
+                    const quality = parseFloat(qualitySlider.value);
+
+                    canvas.toBlob(
+                        (blob) => {
+                            const url = URL.createObjectURL(blob);
+                            compressedImg.src = url;
+
+                            compressedSize.textContent =
+                                (blob.size / 1024).toFixed(2) + " KB";
+
+                            const download = document.getElementById("download");
+                            download.href = url;
+                        },
+                        "image/jpeg",
+                        quality,
+                    );
+                };
+            }
+        </script>
+    </body>
+
+    </html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Talking Tom Game</title>
+
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    background: linear-gradient(#7ec8ff, #fff);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif;
+}
+
+#game {
+    text-align: center;
+}
+
+#tom {
+    width: 220px;
+    height: 260px;
+    background: #888;
+    border-radius: 50% 50% 45% 45%;
+    position: relative;
+    cursor: pointer;
+    animation: idle 3s infinite;
+}
+
+.eye {
+    width: 30px;
+    height: 30px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 70px;
+}
+
+.eye::after {
+    content: "";
+    width: 12px;
+    height: 12px;
+    background: black;
+    border-radius: 50%;
+    position: absolute;
+    top: 9px;
+    left: 9px;
+}
+
+.eye.left { left: 60px; }
+.eye.right { right: 60px; }
+
+.mouth {
+    width: 60px;
+    height: 20px;
+    background: black;
+    border-radius: 0 0 40px 40px;
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.talking .mouth {
+    animation: talk 0.15s infinite alternate;
+}
+
+@keyframes talk {
+    from { height: 10px; }
+    to { height: 35px; }
+}
+
+@keyframes idle {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(5px); }
+}
+
+#controls {
+    margin-top: 20px;
+}
+
+button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    background: #ff9800;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #e68900;
+}
+
+#text {
+    margin-top: 10px;
+    font-size: 16px;
+}
+</style>
+</head>
+
+<body>
+<div id="game">
+    <div id="tom">
+        <div class="eye left"></div>
+        <div class="eye right"></div>
+        <div class="mouth"></div>
+    </div>
+
+    <div id="controls">
+        <button onclick="startListening()">🎤 Talk to Tom</button>
+        <div id="text">Click the button and speak</div>
+    </div>
+</div>
+
+<script>
+const tom = document.getElementById("tom");
+const textBox = document.getElementById("text");
+
+const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+const recognition = new SpeechRecognition();
+recognition.lang = "en-US";
+
+function startListening() {
+    textBox.innerText = "Listening...";
+    recognition.start();
+}
+
+recognition.onresult = function(event) {
+    const speechText = event.results[0][0].transcript;
+    textBox.innerText = "You said: " + speechText;
+    talk(speechText);
+};
+
+recognition.onerror = () => {
+    textBox.innerText = "Microphone access denied!";
+};
+
+function talk(message) {
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.pitch = 1.3;
+    utterance.rate = 0.9;
+
+    tom.classList.add("talking");
+
+    utterance.onend = () => {
+        tom.classList.remove("talking");
+    };
+
+    speechSynthesis.speak(utterance);
+}
+
+// Click reaction
+tom.addEventListener("click", () => {
+    talk("Hey! That tickles!");
+});
+</script>
+</body>
+</html>

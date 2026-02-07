@@ -1,0 +1,426 @@
+:root {
+    --bg-color: #050510;
+    --text-color: #e0e0e0;
+    --primary: #00f3ff;
+    --secondary: #bd00ff;
+    --danger: #ff0055;
+    --success: #00ff9d;
+    --glass: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --font-ui: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-ui);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Background Effects */
+.scanlines {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        transparent 50%,
+        rgba(0, 0, 0, 0.5) 51%
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.3;
+}
+
+.noise {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.05"/%3E%3C/svg%3E');
+    pointer-events: none;
+    z-index: 9;
+}
+
+/* Layout */
+#app {
+    width: 100%;
+    max-width: 480px;
+    height: 100%;
+    max-height: 850px;
+    position: relative;
+    z-index: 20;
+}
+
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    padding: 2rem;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.screen.active {
+    display: flex;
+    opacity: 1;
+}
+
+/* Intro Screen */
+#intro-screen {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.glitch {
+    font-family: var(--font-mono);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-shadow: 2px 2px var(--danger);
+    margin-bottom: 0.5rem;
+    position: relative;
+}
+
+.subtitle {
+    font-size: 1rem;
+    opacity: 0.8;
+    margin-bottom: 3rem;
+}
+
+.info-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    padding: 1.5rem;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.info-card i {
+    font-size: 1.5rem;
+    color: var(--danger);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.info-card p {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+/* Buttons */
+button {
+    cursor: pointer;
+    border: none;
+    outline: none;
+    transition: all 0.2s;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.primary-btn {
+    background: var(--primary);
+    color: #000;
+    padding: 1rem 2rem;
+    border-radius: 4px;
+    font-weight: bold;
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+}
+
+.primary-btn:hover {
+    background: #ccfcff;
+    box-shadow: 0 0 25px rgba(0, 243, 255, 0.6);
+    transform: translateY(-2px);
+}
+
+.secondary-btn {
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+}
+
+.secondary-btn:hover {
+    background: rgba(0, 243, 255, 0.1);
+}
+
+.ghost-btn {
+    background: transparent;
+    color: #666;
+    padding: 0.8rem;
+}
+
+.ghost-btn:hover {
+    color: var(--text-color);
+}
+
+/* Simulation UI */
+.status-bar {
+    margin-bottom: 2rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+}
+
+.progress-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+#progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--primary);
+    transition: width 0.3s ease;
+}
+
+.modal-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal {
+    width: 100%;
+    background: rgba(22, 33, 62, 0.9);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    max-height: 60vh;
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+    padding: 1.5rem;
+    background: rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.app-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #2a2a40, #1a1a2e);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    color: var(--primary);
+}
+
+.modal-title h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.version {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.4);
+    font-family: var(--font-mono);
+}
+
+.modal-body {
+    padding: 1.5rem;
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-body h3 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 0.5rem;
+}
+
+.scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: rgba(255,255,255,0.8);
+    padding-right: 0.5rem;
+    background: rgba(0,0,0,0.2);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+}
+
+.scroll-area::-webkit-scrollbar {
+    width: 4px;
+}
+
+.scroll-area::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 2px;
+}
+
+.modal-actions {
+    padding: 1.5rem;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    gap: 1rem;
+    flex-direction: column; /* Default stack for mobile */
+}
+
+/* Dark Pattern Styling Helpers */
+.switch-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.6);
+}
+
+.tiny-text {
+    font-size: 0.6rem;
+    color: #444;
+}
+
+.btn-row {
+    display: flex;
+    width: 100%;
+    gap: 1rem;
+}
+
+.btn-full {
+    width: 100%;
+}
+
+/* Results Screen */
+#results-screen {
+    justify-content: center;
+    align-items: center;
+}
+
+.results-container {
+    width: 100%;
+    text-align: center;
+}
+
+.circular-chart {
+    display: block;
+    margin: 10px auto;
+    max-width: 80%;
+    max-height: 250px;
+}
+
+.circle-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 2.8;
+}
+
+.circle {
+    fill: none;
+    stroke-width: 2.8;
+    stroke-linecap: round;
+    transition: stroke-dasharray 1s ease-out;
+}
+
+.percentage {
+    fill: #fff;
+    font-family: var(--font-mono);
+    font-weight: bold;
+    font-size: 0.5em;
+    text-anchor: middle;
+}
+
+.score-circle span {
+    display: block;
+    margin-top: -1rem;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--primary);
+    margin-bottom: 2rem;
+}
+
+.report-card {
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: left;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 2rem;
+    border: 1px solid var(--danger);
+}
+
+.report-card h3 {
+    font-size: 0.9rem;
+    color: var(--danger);
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--danger);
+    padding-bottom: 0.2rem;
+}
+
+#incident-log {
+    list-style: none;
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+}
+
+#incident-log li {
+    margin-bottom: 0.5rem;
+    padding-left: 1rem;
+    position: relative;
+    color: #ffcccc;
+}
+
+#incident-log li::before {
+    content: "!";
+    position: absolute;
+    left: 0;
+    color: var(--danger);
+}
+
+/* Utility Class for Danger/Highlight */
+.text-danger { color: var(--danger); }
+.text-success { color: var(--success); }
