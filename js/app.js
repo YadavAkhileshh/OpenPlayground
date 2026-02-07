@@ -849,8 +849,12 @@ class ProjectManager {
  * GitHub Contributors
  * ----------------------------------------------------------- */
 async function fetchContributors() {
-  const grid = document.getElementById('contributors-grid');
-  if (!grid) return;
+  // Support multiple grids: homepage, about page, and mentors section
+  const gridMain = document.getElementById('contributors-grid');
+  const gridAbout = document.getElementById('about-contributors-grid');
+  const gridMentors = document.getElementById('mentors-grid');
+
+  if (!gridMain && !gridAbout && !gridMentors) return;
 
   try {
     const response = await fetch(
@@ -858,24 +862,52 @@ async function fetchContributors() {
     );
     const contributors = await response.json();
 
-    const humanContributors = contributors.filter(
-      (c) => !c.login.includes('[bot]'),
-    );
+    const humanContributors = Array.isArray(contributors)
+      ? contributors.filter((c) => !c.login.includes('[bot]'))
+      : [];
 
-    grid.innerHTML = humanContributors
+    // Build cards for all contributors
+    const contributorsHtml = humanContributors
       .map(
         (c) => `
             <a href="${c.html_url}" target="_blank" rel="noopener" class="contributor-card">
                 <img src="${c.avatar_url}" alt="${c.login}" loading="lazy" class="contributor-avatar">
                 <span class="contributor-name">${c.login}</span>
-                <span class="contributor-contributions">${c.contributions} commits</span>
             </a>
         `,
       )
       .join('');
+
+    if (gridMain) gridMain.innerHTML = contributorsHtml;
+    if (gridAbout) gridAbout.innerHTML = contributorsHtml;
+
+    // For mentors section, show only the top contributor (YadavAkhilesh)
+    if (gridMentors) {
+      const topContributors = humanContributors
+        .slice()
+        .sort((a, b) => b.contributions - a.contributions)
+        .slice(0, 1);
+
+      const mentorsHtml = topContributors
+        .map(
+          (c) => `
+            <a href="${c.html_url}" target="_blank" rel="noopener" class="contributor-card mentor-card">
+                <img src="${c.avatar_url}" alt="${c.login}" loading="lazy" class="contributor-avatar">
+                <span class="contributor-name">${c.login}</span>
+                <span class="mentor-badge" aria-hidden="true">⭐ Mentor</span>
+            </a>
+          `,
+        )
+        .join('');
+
+      gridMentors.innerHTML = mentorsHtml;
+    }
   } catch (error) {
     console.error('Error fetching contributors:', error);
-    grid.innerHTML = '<p class="error-msg">Unable to load contributors</p>';
+    const fallback = '<p class="error-msg">Unable to load contributors</p>';
+    if (gridMain) gridMain.innerHTML = fallback;
+    if (gridAbout) gridAbout.innerHTML = fallback;
+    if (gridMentors) gridMentors.innerHTML = fallback;
   }
 }
 
