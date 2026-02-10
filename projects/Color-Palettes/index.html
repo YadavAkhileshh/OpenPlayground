@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        :root {
+	--bg-color: #0d0d0d;
+	--text-color: #ffffff;
+	--glass-bg: rgba(255, 255, 255, 0.1);
+	--glass-border: rgba(255, 255, 255, 0.2);
+	--font-main: "Outfit", sans-serif;
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	width: 100vw;
+	height: 100vh;
+	overflow: hidden;
+	background-color: var(--bg-color);
+	font-family: var(--font-main);
+	color: var(--text-color);
+	transition: background-color 1.5s ease;
+}
+
+/* Canvas takes full screen behind UI */
+#liquidCanvas {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 1;
+	/* The core of the liquid effect: Blur + Contrast */
+	filter: blur(12px) contrast(1.5) brightness(1.2);
+	/* Improve performance */
+	transform: translateZ(0);
+}
+
+/* UI Overlay styling */
+.ui-overlay {
+	position: relative;
+	z-index: 10;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	pointer-events: none;
+	/* Let clicks pass through to canvas if needed, but we have buttons */
+}
+
+header {
+	text-align: center;
+	margin-bottom: 2rem;
+	text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+	pointer-events: auto;
+}
+
+.title {
+	font-size: 4rem;
+	font-weight: 800;
+	letter-spacing: -2px;
+	margin-bottom: 0.5rem;
+	background: linear-gradient(to right, #fff, #aaa);
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+	font-size: 1.2rem;
+	font-weight: 300;
+	opacity: 0.8;
+}
+
+/* Palette Display */
+.palette-display {
+	display: flex;
+	gap: 15px;
+	margin-bottom: 3rem;
+	padding: 20px;
+	background: var(--glass-bg);
+	backdrop-filter: blur(10px);
+	border: 1px solid var(--glass-border);
+	border-radius: 20px;
+	pointer-events: auto;
+	box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+.swatch {
+	width: 60px;
+	height: 60px;
+	border-radius: 12px;
+	background-color: var(--color);
+	transition: transform 0.3s ease, background-color 0.8s ease;
+	cursor: pointer;
+	position: relative;
+	overflow: hidden;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.swatch span {
+	font-size: 0.7rem;
+	opacity: 0;
+	transition: opacity 0.3s ease;
+	font-weight: 600;
+	color: rgba(0, 0, 0, 0.7);
+	/* Adaptive color logic would be better but simple dark is ok for light palettes */
+	letter-spacing: 0.5px;
+}
+
+.swatch:hover {
+	transform: scale(1.1);
+}
+
+.swatch:hover span {
+	opacity: 1;
+}
+
+/* Mood Buttons */
+.mood-selector {
+	display: flex;
+	gap: 15px;
+	flex-wrap: wrap;
+	justify-content: center;
+	pointer-events: auto;
+}
+
+.mood-btn {
+	padding: 12px 24px;
+	border: none;
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	color: white;
+	font-family: var(--font-main);
+	font-size: 1rem;
+	font-weight: 500;
+	border-radius: 30px;
+	cursor: pointer;
+	transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+	text-transform: uppercase;
+	letter-spacing: 1px;
+}
+
+.mood-btn:hover {
+	background: rgba(255, 255, 255, 0.2);
+	transform: translateY(-3px);
+	box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.mood-btn.active {
+	background: white;
+	color: black;
+	border-color: white;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+	.title {
+		font-size: 2.5rem;
+	}
+
+	.swatch {
+		width: 40px;
+		height: 40px;
+	}
+
+	.swatch span {
+		display: none;
+	}
+}
+
+    </style>
+</head>
+<body>
+    <!-- Canvas for the fluid simulation -->
+<canvas id="liquidCanvas"></canvas>
+
+<!-- UI Overlay -->
+<main class="ui-overlay">
+	<header>
+		<h1 class="title">Liquid Emotion</h1>
+		<p class="subtitle">Select a mood to generate a palette</p>
+	</header>
+
+	<div class="palette-display" id="paletteDisplay">
+		<!-- Palette colors will be injected here -->
+		<div class="swatch" style="--color: #ffffff;"><span>#FFFFFF</span></div>
+		<div class="swatch" style="--color: #ffffff;"><span>#FFFFFF</span></div>
+		<div class="swatch" style="--color: #ffffff;"><span>#FFFFFF</span></div>
+		<div class="swatch" style="--color: #ffffff;"><span>#FFFFFF</span></div>
+		<div class="swatch" style="--color: #ffffff;"><span>#FFFFFF</span></div>
+	</div>
+
+	<div class="mood-selector">
+		<button class="mood-btn" data-mood="joy">Joy</button>
+		<button class="mood-btn" data-mood="serenity">Serenity</button>
+		<button class="mood-btn" data-mood="energy">Energy</button>
+		<button class="mood-btn" data-mood="melancholy">Melancholy</button>
+		<button class="mood-btn" data-mood="mystery">Mystery</button>
+	</div>
+</main>
+<script>
+    // --- Configuration & State ---
+const canvas = document.getElementById("liquidCanvas");
+const ctx = canvas.getContext("2d");
+
+let width, height;
+let particles = [];
+let mouse = { x: 0, y: 0, isActive: false };
+
+// predefined palettes (The CodePen Challenge "Heart")
+// Each palette has 5 colors (or 6 as per challenge suggestion, but 5 is visually cleaner for this design)
+const PALETTES = {
+	joy: {
+		name: "Joy",
+		colors: ["#FFD166", "#FFD166", "#06D6A0", "#118AB2", "#EF476F"],
+		bg: "#1a1a00" // Deep Gold/Dark Yellowish Black
+	},
+	serenity: {
+		name: "Serenity",
+		colors: ["#E0F7FA", "#B2EBF2", "#80DEEA", "#4DD0E1", "#26C6DA"],
+		bg: "#001a1a" // Deep Teal Black
+	},
+	energy: {
+		name: "Energy",
+		colors: ["#FF5733", "#C70039", "#900C3F", "#FFC300", "#FF5733"],
+		bg: "#1a0505" // Deep Red Black
+	},
+	melancholy: {
+		name: "Melancholy",
+		colors: ["#2B2D42", "#8D99AE", "#EDF2F4", "#EF233C", "#D90429"],
+		bg: "#0a0a0f" // Deep Blue Black
+	},
+	mystery: {
+		name: "Mystery",
+		colors: ["#32004B", "#5D008F", "#8300D4", "#B400FE", "#E1ADFF"],
+		bg: "#0f0016" // Deep Purple Black
+	}
+};
+
+let currentPalette = PALETTES.joy;
+const PARTICLE_COUNT = 150; // Increased for denser fluid
+
+// --- Setup ---
+
+function resize() {
+	width = window.innerWidth;
+	height = window.innerHeight;
+	canvas.width = width;
+	canvas.height = height;
+}
+
+window.addEventListener("resize", resize);
+resize();
+
+// --- Input Handling ---
+// Mouse smoothing
+let targetMouse = { x: 0, y: 0 };
+window.addEventListener("mousemove", (e) => {
+	targetMouse.x = e.clientX;
+	targetMouse.y = e.clientY;
+	mouse.isActive = true;
+});
+
+window.addEventListener("touchstart", (e) => {
+	targetMouse.x = e.touches[0].clientX;
+	targetMouse.y = e.touches[0].clientY;
+	mouse.isActive = true;
+});
+
+window.addEventListener("touchend", () => {
+	mouse.isActive = false;
+});
+
+// --- Particle Logic ---
+
+// --- Color Interpolation Helper ---
+function lerp(start, end, t) {
+	return start * (1 - t) + end * t;
+}
+
+class Particle {
+	constructor() {
+		this.reset(true);
+	}
+
+	reset(initial = false) {
+		this.x = Math.random() * width;
+		this.y = Math.random() * height;
+
+		// Organic organic movement (Perlin-ish via sine/cos later)
+		this.vx = (Math.random() - 0.5) * 1.5;
+		this.vy = (Math.random() - 0.5) * 1.5;
+
+		this.radius = Math.random() * 50 + 30; // Larger particles for better merging
+		this.baseRadius = this.radius;
+
+		// Color State (RGB for smooth lerp)
+		const hex = this.pickColor();
+		this.targetRgb = hexToRgb(hex);
+		this.currentRgb = { ...this.targetRgb }; // Clone
+
+		this.angle = Math.random() * Math.PI * 2;
+		this.speed = Math.random() * 0.01 + 0.005;
+	}
+
+	pickColor() {
+		// Pick random color from current palette
+		const colors = currentPalette.colors;
+		return colors[Math.floor(Math.random() * colors.length)];
+	}
+
+	update() {
+		// --- Color Transition ---
+		// Smoothly interpolate current RGB to target RGB
+		const lerpSpeed = 0.05; // 5% per frame
+		this.currentRgb.r = lerp(this.currentRgb.r, this.targetRgb.r, lerpSpeed);
+		this.currentRgb.g = lerp(this.currentRgb.g, this.targetRgb.g, lerpSpeed);
+		this.currentRgb.b = lerp(this.currentRgb.b, this.targetRgb.b, lerpSpeed);
+
+		// 1. Organic Float (Sine Wave Noise)
+		this.angle += this.speed;
+		this.vx += Math.cos(this.angle) * 0.02;
+		this.vy += Math.sin(this.angle) * 0.02;
+
+		// Friction to prevent over-speeding
+		this.vx *= 0.98;
+		this.vy *= 0.98;
+
+		// Apply velocity
+		this.x += this.vx;
+		this.y += this.vy;
+
+		// 2. Mouse Interaction (Repulsion)
+		// Smooth mouse following
+		mouse.x += (targetMouse.x - mouse.x) * 0.1;
+		mouse.y += (targetMouse.y - mouse.y) * 0.1;
+
+		if (mouse.isActive) {
+			const dx = mouse.x - this.x;
+			const dy = mouse.y - this.y;
+			const distance = Math.sqrt(dx * dx + dy * dy);
+			const forceRadius = 300; // Large radius
+
+			if (distance < forceRadius) {
+				const force = (forceRadius - distance) / forceRadius;
+				const angle = Math.atan2(dy, dx);
+
+				// Repel drastically
+				this.vx -= Math.cos(angle) * force * 1;
+				this.vy -= Math.sin(angle) * force * 1;
+
+				// Shrink slightly when pushed (visual feedback)
+				// this.radius = this.baseRadius * (1 - force * 0.3);
+			}
+		}
+
+		// return radius to normal
+		this.radius += (this.baseRadius - this.radius) * 0.05;
+
+		// 3. Screen Boundaries (Wrap around for fluid feel)
+		const buffer = this.radius * 2;
+		if (this.x < -buffer) this.x = width + buffer;
+		if (this.x > width + buffer) this.x = -buffer;
+		if (this.y < -buffer) this.y = height + buffer;
+		if (this.y > height + buffer) this.y = -buffer;
+	}
+
+	draw() {
+		ctx.beginPath();
+
+		// Just draw simple circles, the CSS filter handles the blending/liquid look
+		// Using gradient here is actually counter-productive to the 'flat' liquid look if we use strong blur+contrast.
+		// But for 'glowing' liquid, gradient is good.
+		// Let's stick to gradient for depth.
+
+		const gradient = ctx.createRadialGradient(
+			this.x,
+			this.y,
+			0,
+			this.x,
+			this.y,
+			this.radius
+		);
+
+		// Construct CSS color string from current RGB values
+		const colorString = `rgb(${Math.round(this.currentRgb.r)}, ${Math.round(
+			this.currentRgb.g
+		)}, ${Math.round(this.currentRgb.b)})`;
+
+		gradient.addColorStop(0, colorString);
+		gradient.addColorStop(0.7, colorString);
+		gradient.addColorStop(1, "rgba(0,0,0,0)"); // Soft edge important for merging
+
+		ctx.fillStyle = gradient;
+
+		// 'screen' or 'lighter' is key for the glowing blobs
+		ctx.globalCompositeOperation = "screen";
+		ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.globalCompositeOperation = "source-over";
+	}
+}
+
+function initParticles() {
+	particles = [];
+	for (let i = 0; i < PARTICLE_COUNT; i++) {
+		particles.push(new Particle());
+	}
+}
+
+// --- Hex to RGB helper for Color Transition (Optional enhancement) ---
+function hexToRgb(hex) {
+	// Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+	var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+	hex = hex.replace(shorthandRegex, function (m, r, g, b) {
+		return r + r + g + g + b + b;
+	});
+
+	var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+	return result
+		? {
+				r: parseInt(result[1], 16),
+				g: parseInt(result[2], 16),
+				b: parseInt(result[3], 16)
+		  }
+		: null;
+}
+
+// --- Animation Loop ---
+
+function animate() {
+	// Clear with a trail effect for extra "fluidity"
+	// ctx.clearRect(0, 0, width, height);
+
+	// Use semi-transparent clear for trails?
+	// Actually for 'blob' simulation we usually clear fully.
+	ctx.clearRect(0, 0, width, height);
+
+	// Update and draw particles
+	particles.forEach((p) => {
+		p.update();
+		p.draw();
+	});
+
+	requestAnimationFrame(animate);
+}
+
+// --- UI Logic ---
+
+const moodButtons = document.querySelectorAll(".mood-btn");
+const swatchContainer = document.getElementById("paletteDisplay");
+const swatches = swatchContainer.querySelectorAll(".swatch");
+
+function setMood(moodKey) {
+	if (!PALETTES[moodKey]) return;
+
+	currentPalette = PALETTES[moodKey];
+
+	// Update Active Button
+	moodButtons.forEach((btn) => btn.classList.remove("active"));
+	document.querySelector(`[data-mood="${moodKey}"]`)?.classList.add("active");
+
+	// Update Background
+	document.body.style.backgroundColor = currentPalette.bg;
+
+	// Update Particles
+	// To make it look cool, we assign each particle a random color from the NEW palette
+	particles.forEach((p) => {
+		const newHex = p.pickColor();
+		p.targetRgb = hexToRgb(newHex);
+		// We do NOT set currentRgb here, let it lerp naturally in update()
+	});
+
+	// Update Palette UI
+	swatches.forEach((swatch, index) => {
+		const color = currentPalette.colors[index % currentPalette.colors.length];
+		swatch.style.setProperty("--color", color);
+		swatch.querySelector("span").innerText = color;
+
+		// Copy to clipboard feature
+		swatch.onclick = () => {
+			navigator.clipboard.writeText(color).then(() => {
+				const span = swatch.querySelector("span");
+				const oldText = span.innerText;
+				span.innerText = "COPIED!";
+				setTimeout(() => (span.innerText = oldText), 1000);
+			});
+		};
+	});
+}
+
+// Initialize
+moodButtons.forEach((btn) => {
+	btn.addEventListener("click", () => {
+		const mood = btn.getAttribute("data-mood");
+		setMood(mood);
+	});
+});
+
+initParticles();
+setMood("joy"); // Default
+animate();
+
+</script>
+</body>
+</html>
