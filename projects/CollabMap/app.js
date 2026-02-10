@@ -11,8 +11,7 @@ addNodeBtn.addEventListener('click', function() {
         id: nodeId++,
         x: 50 + Math.random() * 300,
         y: 50 + Math.random() * 200,
-        text: 'New Node',
-        color: randomColor()
+        text: 'New Node'
     };
     nodes.push(node);
     renderNodes();
@@ -20,12 +19,11 @@ addNodeBtn.addEventListener('click', function() {
 
 function renderNodes() {
     mindmapCanvas.innerHTML = '';
-    nodes.forEach(node => {
+    nodes.forEach((node, idx) => {
         const div = document.createElement('div');
         div.className = 'mindmap-node';
         div.style.left = node.x + 'px';
         div.style.top = node.y + 'px';
-        div.style.background = node.color;
         div.textContent = node.text;
         div.draggable = true;
         div.addEventListener('dragstart', e => {
@@ -57,11 +55,7 @@ mindmapCanvas.addEventListener('drop', function(e) {
     }
 });
 
-function randomColor() {
-    // 3 shades of black
-    const colors = ['#222222', '#444444', '#666666'];
-    return colors[Math.floor(Math.random() * colors.length)];
-}
+
 
 exportBtn.addEventListener('click', function() {
     alert('Export as image/PDF feature requires backend or canvas rendering.');
