@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CraftAI - DIY Project Maker</title>
+    
+
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .hidden { display: none; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white border-b sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="showView('home')">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
+                    <i data-lucide="sparkles"></i>
+                </div>
+                <h1 class="font-bold text-xl tracking-tight">CraftAI</h1>
+            </div>
+            <nav class="flex gap-4">
+                <button onclick="showView('home')" class="text-sm font-medium text-slate-500 hover:text-indigo-600">Discover</button>
+                <button onclick="showView('gallery')" class="text-sm font-medium text-slate-500 hover:text-indigo-600">
+                    My Projects <span id="gallery-count" class="bg-slate-100 px-1.5 py-0.5 rounded text-xs">0</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        
+        <!-- Loading View -->
+        <div id="view-loading" class="hidden flex flex-col items-center justify-center py-20 animate-fade-in">
+            <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <h2 class="text-xl font-semibold">Designing your masterpiece...</h2>
+            <p id="loading-status" class="text-slate-500">Our AI artisan is gathering materials and ideas.</p>
+        </div>
+
+        <!-- Home View -->
+        <div id="view-home" class="space-y-8 animate-fade-in">
+            <div class="text-center space-y-2">
+                <h2 class="text-3xl font-extrabold sm:text-4xl">What will you make today?</h2>
+                <p class="text-slate-500 text-lg">Select a category to start your next creative journey.</p>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="category-grid"></div>
+        </div>
+
+        <!-- Generator View -->
+        <div id="view-generator" class="hidden max-w-xl mx-auto bg-white rounded-3xl p-8 border border-slate-200 shadow-sm animate-fade-in">
+            <button onclick="showView('home')" class="text-indigo-600 font-medium mb-6 flex items-center gap-1 hover:underline">
+                ← Back to Categories
+            </button>
+            
+            <div class="space-y-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div id="gen-icon-bg" class="p-2 rounded-lg text-white bg-indigo-500">
+                        <i id="gen-icon" data-lucide="hammer"></i>
+                    </div>
+                    <h2 id="gen-title" class="text-2xl font-bold">Project</h2>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Skill Level</label>
+                    <div class="flex gap-2" id="difficulty-buttons">
+                        <button onclick="setDifficulty('Easy')" class="diff-btn flex-1 py-2 px-4 rounded-full text-sm font-medium border bg-indigo-600 text-white border-indigo-600">Easy</button>
+                        <button onclick="setDifficulty('Intermediate')" class="diff-btn flex-1 py-2 px-4 rounded-full text-sm font-medium border bg-white border-slate-200">Intermediate</button>
+                        <button onclick="setDifficulty('Advanced')" class="diff-btn flex-1 py-2 px-4 rounded-full text-sm font-medium border bg-white border-slate-200">Advanced</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Materials you have (optional)</label>
+                    <textarea id="input-materials" class="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none h-32 resize-none" placeholder="e.g. glass jars, old newspapers, acrylic paint..."></textarea>
+                </div>
+
+                <button id="generate-btn" onclick="generateProject()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95">
+                    <i data-lucide="lightbulb" class="text-yellow-400"></i>
+                    Generate DIY Plan
+                </button>
+            </div>
+        </div>
+
+        <!-- Result View -->
+        <div id="view-result" class="hidden animate-fade-in">
+            <div class="grid md:grid-cols-5 gap-8">
+                <div class="md:col-span-2 space-y-6">
+                    <div class="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm">
+                        <img id="result-image" src="" alt="Project" class="w-full h-auto hidden">
+                        <div id="image-placeholder" class="aspect-square bg-slate-100 flex items-center justify-center">
+                            <i data-lucide="image" class="text-slate-300 w-12 h-12"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex items-center gap-3 text-slate-600">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                            <span id="result-time" class="font-medium">--</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-slate-600">
+                            <i data-lucide="dumbbell" class="w-4 h-4"></i>
+                            <span id="result-difficulty" class="font-medium">--</span>
+                        </div>
+                        <hr>
+                        <div>
+                            <h4 class="font-bold text-sm uppercase text-slate-400 mb-3 tracking-wider">Materials</h4>
+                            <ul id="result-materials" class="space-y-2 text-sm"></ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:col-span-3 space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <h2 id="result-project-title" class="text-3xl font-extrabold">Project Title</h2>
+                        <button onclick="saveProject()" class="flex items-center gap-2 bg-indigo-50 text-indigo-600 px-4 py-2 rounded-full font-bold hover:bg-indigo-100 transition-colors">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Save Project
+                        </button>
+                    </div>
+                    <div id="result-steps" class="space-y-4"></div>
+                    <div class="bg-indigo-600 rounded-3xl p-6 text-white shadow-xl flex gap-4 items-center">
+                        <div class="bg-white/20 p-3 rounded-2xl"><i data-lucide="lightbulb" class="text-yellow-300"></i></div>
+                        <div>
+                            <h4 class="font-bold text-lg">Pro Tip</h4>
+                            <p id="result-tip" class="text-indigo-50"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gallery View -->
+        <div id="view-gallery" class="hidden space-y-8 animate-fade-in">
+            <div class="flex items-center justify-between">
+                <h2 class="text-3xl font-bold">My Craft Library</h2>
+                <button onclick="showView('home')" class="text-indigo-600 font-semibold">Create New +</button>
+            </div>
+            <div id="gallery-grid" class="grid md:grid-cols-2 gap-6"></div>
+        </div>
+
+    </main>
+
+    <!-- Custom Modal for Errors -->
+    <div id="error-modal" class="hidden fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl">
+            <h3 class="text-xl font-bold text-red-600 mb-2">Error Details</h3>
+            <p id="error-message" class="text-slate-600 mb-6 text-sm overflow-auto max-h-40 p-2 bg-slate-50 rounded"></p>
+            <button onclick="closeError()" class="w-full bg-slate-900 text-white py-2 rounded-lg font-bold">Close</button>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+
+    <script>
+        // REPLACE THE STRING BELOW WITH YOUR KEY
+
+        console.log("API KEY:", apiKey);
+
+        
+
+
+        let currentCategory = null;
+        let currentDifficulty = 'Easy';
+        let currentProjectData = null;
+        let currentImageData = null;
+        let savedProjects = [];
+
+        const CRAFT_CATEGORIES = [
+            { id: 'upcycling', name: 'Upcycling', icon: 'trash-2', color: 'bg-green-500' },
+            { id: 'painting', name: 'Painting', icon: 'palette', color: 'bg-blue-500' },
+            { id: 'paper', name: 'Paper Crafts', icon: 'scissors', color: 'bg-yellow-500' },
+            { id: 'home-decor', name: 'Home Decor', icon: 'hammer', color: 'bg-purple-500' },
+            { id: 'gifts', name: 'Handmade Gifts', icon: 'heart', color: 'bg-pink-500' }
+        ];
+
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            let lastError;
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    const data = await response.json();
+                    
+                    if (response.ok) return data;
+                    
+                    // Specific API Error Handling
+                    if (data.error) {
+                        throw new Error(`API Error (${response.status}): ${data.error.message}`);
+                    }
+                    
+                    if (response.status !== 429 && response.status < 500) {
+                        throw new Error(`HTTP Error ${response.status}`);
+                    }
+                } catch (e) {
+                    lastError = e;
+                    if (i === maxRetries - 1) throw e;
+                }
+                await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
+            }
+            throw lastError;
+        }
+
+        function init() {
+            renderCategories();
+            lucide.createIcons();
+            const saved = localStorage.getItem('craft_projects');
+            if (saved) {
+                savedProjects = JSON.parse(saved);
+                document.getElementById('gallery-count').innerText = savedProjects.length;
+            }
+        }
+
+        function renderCategories() {
+            const grid = document.getElementById('category-grid');
+            grid.innerHTML = CRAFT_CATEGORIES.map(cat => `
+                <button onclick="selectCategory('${cat.id}')" class="group bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 text-left">
+                    <div class="${cat.color} w-12 h-12 rounded-lg flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
+                        <i data-lucide="${cat.icon}"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">${cat.name}</h3>
+                    <p class="text-xs text-slate-400 mt-1 uppercase">Start Project</p>
+                </button>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function showView(viewId) {
+            ['home', 'generator', 'result', 'gallery', 'loading'].forEach(v => {
+                document.getElementById('view-' + v).classList.add('hidden');
+            });
+            document.getElementById('view-' + viewId).classList.remove('hidden');
+            if (viewId === 'gallery') renderGallery();
+        }
+
+        function showError(msg) {
+            document.getElementById('error-message').innerText = msg;
+            document.getElementById('error-modal').classList.remove('hidden');
+            showView('generator');
+        }
+
+        function closeError() {
+            document.getElementById('error-modal').classList.add('hidden');
+        }
+
+        function selectCategory(catId) {
+            currentCategory = CRAFT_CATEGORIES.find(c => c.id === catId);
+            document.getElementById('gen-title').innerText = currentCategory.name + ' Project';
+            document.getElementById('gen-icon-bg').className = `p-2 rounded-lg text-white ${currentCategory.color}`;
+            document.getElementById('gen-icon').setAttribute('data-lucide', currentCategory.icon);
+            lucide.createIcons();
+            showView('generator');
+        }
+
+        function setDifficulty(level) {
+            currentDifficulty = level;
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                if (btn.innerText === level) {
+                    btn.className = 'diff-btn flex-1 py-2 px-4 rounded-full text-sm font-medium border bg-indigo-600 text-white border-indigo-600';
+                } else {
+                    btn.className = 'diff-btn flex-1 py-2 px-4 rounded-full text-sm font-medium border bg-white border-slate-200';
+                }
+            });
+        }
+
+        async function generateProject() {
+            if (!apiKey || apiKey.trim() === "") {
+                showError("API Key is missing. Please add your key to the 'apiKey' variable in the script.");
+                return;
+            }
+
+            const materialsInput = document.getElementById('input-materials').value;
+            showView('loading');
+            document.getElementById('loading-status').innerText = "Our AI artisan is gathering materials and ideas...";
+
+            const systemPrompt = "You are a DIY expert. Return structured JSON.";
+            const userQuery = `Create a ${currentDifficulty} level DIY project for category "${currentCategory.name}". Materials: ${materialsInput || 'basic supplies'}. JSON format: title, timeEstimate, materialsList (array), toolsNeeded (array), instructions (array of {title, description}), proTip.`;
+
+            try {
+                // Fetch Content
+                const textData = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userQuery }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+                
+                if (!textData.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    throw new Error("Invalid response from Gemini AI.");
+                }
+
+                currentProjectData = JSON.parse(textData.candidates[0].content.parts[0].text);
+
+                // Fetch Image
+                document.getElementById('loading-status').innerText = "Visualizing the finished product...";
+                try {
+                    const imgData = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            instances: { prompt: `A professional, high-quality, aesthetic photograph of a completed DIY craft project: ${currentProjectData.title}. Clean background, studio lighting.` },
+                            parameters: { sampleCount: 1 }
+                        })
+                    });
+                    currentImageData = imgData.predictions?.[0]?.bytesBase64Encoded 
+                        ? `data:image/png;base64,${imgData.predictions[0].bytesBase64Encoded}` 
+                        : null;
+                } catch (imgErr) {
+                    console.warn("Image generation failed, continuing with text only.", imgErr);
+                    currentImageData = null;
+                }
+
+                displayResult();
+            } catch (e) {
+                console.error(e);
+                showError(e.message);
+            }
+        }
+
+        function displayResult() {
+            document.getElementById('result-project-title').innerText = currentProjectData.title;
+            document.getElementById('result-time').innerText = currentProjectData.timeEstimate;
+            document.getElementById('result-difficulty').innerText = currentDifficulty + ' Level';
+            document.getElementById('result-tip').innerText = currentProjectData.proTip;
+
+            const matList = document.getElementById('result-materials');
+            matList.innerHTML = currentProjectData.materialsList.map(m => `<li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></div>${m}</li>`).join('');
+
+            const stepsDiv = document.getElementById('result-steps');
+            stepsDiv.innerHTML = currentProjectData.instructions.map((s, i) => `
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex gap-4">
+                    <div class="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold shrink-0">${i + 1}</div>
+                    <div>
+                        <h3 class="font-bold text-lg mb-1">${s.title}</h3>
+                        <p class="text-slate-600 leading-relaxed">${s.description}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            const imgEl = document.getElementById('result-image');
+            const placeholderEl = document.getElementById('image-placeholder');
+            if (currentImageData) {
+                imgEl.src = currentImageData;
+                imgEl.classList.remove('hidden');
+                placeholderEl.classList.add('hidden');
+            } else {
+                imgEl.classList.add('hidden');
+                placeholderEl.classList.remove('hidden');
+            }
+
+            showView('result');
+        }
+
+        function saveProject() {
+            const projectToSave = { 
+                ...currentProjectData, 
+                image: currentImageData, 
+                id: Date.now(),
+                difficulty: currentDifficulty 
+            };
+            savedProjects.unshift(projectToSave);
+            localStorage.setItem('craft_projects', JSON.stringify(savedProjects));
+            document.getElementById('gallery-count').innerText = savedProjects.length;
+            showView('gallery');
+        }
+
+        function renderGallery() {
+            const grid = document.getElementById('gallery-grid');
+            if (savedProjects.length === 0) {
+                grid.innerHTML = '<div class="col-span-full py-20 text-center text-slate-400 border-2 border-dashed rounded-3xl">No projects saved yet.</div>';
+                return;
+            }
+            grid.innerHTML = savedProjects.map(p => `
+                <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm group">
+                    <div class="aspect-video bg-slate-100">
+                        ${p.image ? `<img src="${p.image}" class="w-full h-full object-cover">` : '<div class="w-full h-full flex items-center justify-center"><i data-lucide="image" class="text-slate-300"></i></div>'}
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-2">${p.title}</h3>
+                        <div class="flex items-center gap-4 text-xs text-slate-500 mb-4 font-semibold uppercase">
+                            <span>${p.timeEstimate}</span>
+                            <span>${p.difficulty}</span>
+                        </div>
+                        <button onclick="viewSaved(${p.id})" class="w-full border py-2 rounded-xl hover:bg-slate-50 transition-colors">View Details</button>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function viewSaved(id) {
+            const project = savedProjects.find(p => p.id === id);
+            currentProjectData = project;
+            currentImageData = project.image;
+            currentDifficulty = project.difficulty;
+            displayResult();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
