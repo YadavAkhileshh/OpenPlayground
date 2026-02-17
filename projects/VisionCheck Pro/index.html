@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionCheck Pro - Digital Eye Exam</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        /* Snellen Font - High contrast, specific scaling */
+        .snellen-font {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+        }
+
+        .chart-line {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .chart-line:hover {
+            background-color: #f1f5f9;
+            transform: scale(1.02);
+        }
+
+        /* Simulating physical size for Snellen Chart */
+        .optotype-20-200 { font-size: 88px; line-height: 1; }
+        .optotype-20-100 { font-size: 44px; line-height: 1; }
+        .optotype-20-70  { font-size: 32px; line-height: 1; }
+        .optotype-20-50  { font-size: 22px; line-height: 1; }
+        .optotype-20-40  { font-size: 18px; line-height: 1; }
+        .optotype-20-30  { font-size: 14px; line-height: 1; }
+        .optotype-20-20  { font-size: 9px; line-height: 1; }
+
+        .modal {
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .amsler-grid {
+            display: grid;
+            grid-template-columns: repeat(20, 1fr);
+            width: 300px;
+            height: 300px;
+            border: 1px solid #000;
+        }
+        .amsler-cell {
+            border: 0.1px solid #ccc;
+        }
+        .amsler-center {
+            width: 8px;
+            height: 8px;
+            background: black;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800">
+
+    <!-- Navigation Header -->
+    <header class="bg-white border-b sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">V</div>
+                <h1 class="text-xl font-bold tracking-tight">VisionCheck <span class="text-blue-600">Pro</span></h1>
+            </div>
+            <div id="distance-indicator" class="text-sm font-medium text-slate-500">Distance: 10ft (3m)</div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 md:p-8">
+        
+        <!-- Setup Instructions -->
+        <section id="setup" class="bg-white rounded-2xl shadow-sm border p-6 mb-8 text-center">
+            <h2 class="text-2xl font-semibold mb-4">Complete Eye Screening</h2>
+            <p class="text-slate-500 mb-6">This improved test covers Acuity, Astigmatism, and Macular health.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 text-left">
+                <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <p class="text-blue-800 font-bold mb-1">📏 Calibration</p>
+                    <p class="text-xs text-blue-600 leading-relaxed">Adjust your distance based on the screen size for accuracy.</p>
+                </div>
+                <div class="p-4 bg-green-50 rounded-xl border border-green-100">
+                    <p class="text-green-800 font-bold mb-1">💡 Lighting</p>
+                    <p class="text-xs text-green-600 leading-relaxed">Turn off nearby lamps to avoid reflections on the glass.</p>
+                </div>
+                <div class="p-4 bg-purple-50 rounded-xl border border-purple-100">
+                    <p class="text-purple-800 font-bold mb-1">👁️ Methodology</p>
+                    <p class="text-xs text-purple-600 leading-relaxed">Cover one eye. Do not squint. Be honest with yourself!</p>
+                </div>
+            </div>
+            <button onclick="startTest()" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-full font-bold shadow-lg shadow-blue-200 transition-all hover:-translate-y-1">Start Full Exam</button>
+        </section>
+
+        <!-- The Exam Area -->
+        <div id="exam-container" class="hidden space-y-8">
+            
+            <!-- Step 1: Visual Acuity (Snellen) -->
+            <div id="step-acuity" class="step bg-white rounded-2xl shadow-lg border p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">1. Snellen Acuity Test</h2>
+                        <p class="text-sm text-slate-500">Click the line that becomes difficult to read.</p>
+                    </div>
+                    <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">Part 1/3</span>
+                </div>
+
+                <div class="snellen-container flex flex-col items-center border-y py-10 space-y-6 bg-white overflow-hidden">
+                    <div class="chart-line p-2 rounded optotype-20-200 snellen-font" onclick="nextStep('astigmatism', 200)">E</div>
+                    <div class="chart-line p-2 rounded optotype-20-100 snellen-font text-center" onclick="nextStep('astigmatism', 100)">F P</div>
+                    <div class="chart-line p-2 rounded optotype-20-70 snellen-font text-center" onclick="nextStep('astigmatism', 70)">T O Z</div>
+                    <div class="chart-line p-2 rounded optotype-20-50 snellen-font text-center" onclick="nextStep('astigmatism', 50)">L P E D</div>
+                    <div class="chart-line p-2 rounded optotype-20-40 snellen-font text-center" onclick="nextStep('astigmatism', 40)">P E C F D</div>
+                    <div class="chart-line p-2 rounded optotype-20-30 snellen-font text-center" onclick="nextStep('astigmatism', 30)">E D F C Z P</div>
+                    <div class="chart-line p-2 rounded optotype-20-20 snellen-font text-center" onclick="nextStep('astigmatism', 20)">F E L O P Z D</div>
+                </div>
+            </div>
+
+            <!-- Step 2: Astigmatism Dial -->
+            <div id="step-astigmatism" class="step hidden bg-white rounded-2xl shadow-lg border p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">2. Astigmatism Screening</h2>
+                        <p class="text-sm text-slate-500">Do any lines appear darker or blurrier than others?</p>
+                    </div>
+                    <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">Part 2/3</span>
+                </div>
+
+                <div class="flex flex-col items-center py-6">
+                    <svg viewBox="0 0 200 200" class="w-64 h-64">
+                        <circle cx="100" cy="100" r="95" fill="none" stroke="#eee" stroke-width="1"/>
+                        <g id="dial-lines" stroke="black" stroke-width="2">
+                            <!-- Lines generated via JS -->
+                        </g>
+                    </svg>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-8 w-full max-w-sm">
+                        <button onclick="recordAstigmatism(false)" class="p-4 border-2 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition text-center">
+                            <span class="block font-bold">All Equal</span>
+                            <span class="text-xs text-slate-500">Lines look uniform</span>
+                        </button>
+                        <button onclick="recordAstigmatism(true)" class="p-4 border-2 rounded-xl hover:border-red-500 hover:bg-red-50 transition text-center">
+                            <span class="block font-bold">Uneven Lines</span>
+                            <span class="text-xs text-slate-500">Some are darker/blurry</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Amsler Grid -->
+            <div id="step-amsler" class="step hidden bg-white rounded-2xl shadow-lg border p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">3. Amsler Grid (Macular Health)</h2>
+                        <p class="text-sm text-slate-500">Stare at the center dot. Are any lines wavy or missing?</p>
+                    </div>
+                    <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">Part 3/3</span>
+                </div>
+
+                <div class="flex flex-col items-center py-6">
+                    <div class="relative amsler-grid bg-white">
+                        <!-- JS fills cells -->
+                        <div class="amsler-center"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-8 w-full max-w-sm">
+                        <button onclick="calculateFinalResults(false)" class="p-4 border-2 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition text-center">
+                            <span class="block font-bold">Grid is Straight</span>
+                        </button>
+                        <button onclick="calculateFinalResults(true)" class="p-4 border-2 rounded-xl hover:border-red-500 hover:bg-red-50 transition text-center">
+                            <span class="block font-bold">Wavy/Distorted</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Final Results Screen -->
+            <div id="step-results" class="step hidden bg-white rounded-2xl shadow-xl border overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white text-center">
+                    <p class="uppercase tracking-widest text-sm opacity-80 mb-2">Comprehensive Report</p>
+                    <h2 class="text-5xl font-black" id="result-score">20/20</h2>
+                </div>
+                
+                <div class="p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="border rounded-2xl p-5 bg-slate-50">
+                            <p class="text-xs font-bold text-slate-400 uppercase mb-2">Acuity Power</p>
+                            <p class="text-3xl font-bold text-slate-900" id="result-power">0.00 D</p>
+                            <p class="text-xs text-slate-500 mt-2">Estimated Spherical</p>
+                        </div>
+                        <div class="border rounded-2xl p-5 bg-slate-50">
+                            <p class="text-xs font-bold text-slate-400 uppercase mb-2">Astigmatism</p>
+                            <p class="text-xl font-bold" id="result-astigmatism">Not Detected</p>
+                            <p class="text-xs text-slate-500 mt-2">Cylindrical Check</p>
+                        </div>
+                        <div class="border rounded-2xl p-5 bg-slate-50">
+                            <p class="text-xs font-bold text-slate-400 uppercase mb-2">Macular Health</p>
+                            <p class="text-xl font-bold" id="result-amsler">Normal</p>
+                            <p class="text-xs text-slate-500 mt-2">Central Vision</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border rounded-2xl p-6 mb-8">
+                        <h3 class="font-bold text-lg mb-2">Professional Summary</h3>
+                        <p class="text-slate-600 leading-relaxed" id="result-summary"></p>
+                    </div>
+
+                    <div class="bg-amber-50 border border-amber-200 p-5 rounded-2xl flex gap-4">
+                        <span class="text-3xl">👨‍⚕️</span>
+                        <div class="text-sm text-amber-900">
+                            <strong>Important:</strong> This digital tool is a screening aid, not a medical diagnosis. Factors like screen brightness, resolution, and distance from the monitor can skew results by up to 30%. Please see an eye doctor annually.
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex gap-4 justify-center">
+                        <button onclick="location.reload()" class="bg-slate-100 text-slate-700 px-8 py-3 rounded-xl font-bold hover:bg-slate-200 transition">Retest</button>
+                        <button onclick="window.print()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition">Save Report</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="processing-modal" class="modal fixed inset-0 flex items-center justify-center z-[100] hidden">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center">
+            <div class="relative w-16 h-16 mx-auto mb-4">
+                <div class="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <h3 class="text-xl font-bold mb-2">Compiling Eye Data</h3>
+            <p class="text-slate-500 text-sm">Cross-referencing Snellen acuity with refractive estimates...</p>
+        </div>
+    </div>
+
+    <script>
+        let testData = {
+            acuity: 20,
+            astigmatism: false,
+            amsler: false
+        };
+
+        // Initialize components
+        window.onload = () => {
+            const dial = document.getElementById('dial-lines');
+            for (let i = 0; i < 180; i += 15) {
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                const x1 = 100 + 80 * Math.cos(i * Math.PI / 180);
+                const y1 = 100 + 80 * Math.sin(i * Math.PI / 180);
+                const x2 = 100 - 80 * Math.cos(i * Math.PI / 180);
+                const y2 = 100 - 80 * Math.sin(i * Math.PI / 180);
+                line.setAttribute("x1", x1);
+                line.setAttribute("y1", y1);
+                line.setAttribute("x2", x2);
+                line.setAttribute("y2", y2);
+                dial.appendChild(line);
+            }
+
+            const amsler = document.querySelector('.amsler-grid');
+            for (let i = 0; i < 400; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'amsler-cell';
+                amsler.appendChild(cell);
+            }
+        };
+
+        function startTest() {
+            document.getElementById('setup').classList.add('hidden');
+            document.getElementById('exam-container').classList.remove('hidden');
+        }
+
+        function nextStep(stepId, value) {
+            if (value) testData.acuity = value;
+            
+            document.querySelectorAll('.step').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`step-${stepId}`).classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function recordAstigmatism(hasIt) {
+            testData.astigmatism = hasIt;
+            nextStep('amsler');
+        }
+
+        function calculateFinalResults(amslerIssue) {
+            testData.amsler = amslerIssue;
+            
+            const modal = document.getElementById('processing-modal');
+            modal.classList.remove('hidden');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                showReport();
+            }, 1500);
+        }
+
+        function showReport() {
+            document.querySelectorAll('.step').forEach(s => s.classList.add('hidden'));
+            const res = document.getElementById('step-results');
+            res.classList.remove('hidden');
+
+            const den = testData.acuity;
+            document.getElementById('result-score').innerText = `20/${den}`;
+            
+            // Power logic
+            let power = "0.00 D";
+            if (den > 20) {
+                // Approximate conversion
+                const diopters = (den / 20) * 0.5 - 0.5;
+                power = `-${diopters.toFixed(2)} D`;
+            }
+            document.getElementById('result-power').innerText = power;
+
+            // Astigmatism UI
+            const astiEl = document.getElementById('result-astigmatism');
+            astiEl.innerText = testData.astigmatism ? "Possible" : "Not Detected";
+            astiEl.className = testData.astigmatism ? "text-xl font-bold text-red-600" : "text-xl font-bold text-green-600";
+
+            // Amsler UI
+            const amslerEl = document.getElementById('result-amsler');
+            amslerEl.innerText = testData.amsler ? "Distortion Found" : "Normal";
+            amslerEl.className = testData.amsler ? "text-xl font-bold text-red-600" : "text-xl font-bold text-green-600";
+
+            // Summary Text
+            let summary = `Based on your selection of the 20/${den} line, you have ${den === 20 ? 'normal' : 'decreased'} visual acuity. `;
+            if (testData.astigmatism) summary += "The lines in the dial appeared uneven, suggesting your cornea might have an irregular curve (Astigmatism). ";
+            if (testData.amsler) summary += "You reported wavy lines in the grid, which could be an early sign of macular health issues. ";
+            
+            if (den > 40 || testData.astigmatism || testData.amsler) {
+                summary += "We strongly recommend booking an appointment with an optometrist for a comprehensive dilated exam.";
+            } else {
+                summary += "Your vision parameters screened within the standard range. Continue monitoring yearly.";
+            }
+            
+            document.getElementById('result-summary').innerText = summary;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

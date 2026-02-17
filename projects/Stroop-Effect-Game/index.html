@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    
+</head>
+<style>
+:root {
+	--bg: White;
+	--ink: Black;
+	--muted: DimGray;
+	--hairline: Gainsboro;
+	--panel: WhiteSmoke;
+	--shadow: LightGray;
+	--correct: LimeGreen;
+	--wrong: Red;
+
+	--radius: 16px;
+	--radius-sm: 12px;
+	--space: 16px;
+
+	--font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial,
+		sans-serif;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font-family: var(--font);
+	background: var(--bg);
+	color: var(--ink);
+	min-height: 100vh;
+	display: grid;
+	place-items: center;
+}
+
+.app {
+	width: min(720px, 94vw);
+	padding: 18px 0 28px;
+}
+
+.top {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 10px 10px 14px;
+	border-bottom: 1px solid var(--hairline);
+}
+
+.stats {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.stat {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	padding: 8px 12px;
+	border: 1px solid var(--hairline);
+	border-radius: 999px;
+	background: var(--panel);
+	min-width: 92px;
+	justify-content: space-between;
+}
+
+.label {
+	font-size: 0.72rem;
+	color: var(--muted);
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+}
+
+.value {
+	font-size: 1rem;
+	font-weight: 800;
+}
+
+.game {
+	display: grid;
+	gap: 18px;
+	padding: 22px 10px 0;
+}
+
+.card {
+	border: 1px solid var(--hairline);
+	border-radius: var(--radius);
+	background: White;
+	padding: 26px 18px 18px;
+}
+
+.prompt {
+	text-align: center;
+	font-weight: 900;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	font-size: clamp(2.4rem, 7vw, 4rem);
+	line-height: 1.05;
+	margin: 8px 0 10px;
+}
+
+.hint {
+	text-align: center;
+	color: var(--muted);
+	font-size: 0.95rem;
+	margin: 0;
+}
+
+.buttons {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.colorBtn {
+	cursor: pointer;
+	border: 1px solid var(--hairline);
+	border-radius: var(--radius-sm);
+	padding: 14px 12px;
+	font-weight: 900;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+	box-shadow: 0 1px 0 var(--shadow);
+	transform: translateY(0);
+	transition: transform 80ms ease, filter 120ms ease;
+}
+
+.colorBtn:hover {
+	transform: translateY(-1px);
+	filter: brightness(1.03);
+}
+
+.colorBtn:active {
+	transform: translateY(1px);
+}
+
+.overlay {
+	position: fixed;
+	inset: 0;
+	background: WhiteSmoke;
+	display: grid;
+	place-items: center;
+}
+
+.hidden {
+	display: none;
+}
+
+.modal {
+	width: min(520px, 92vw);
+	border: 1px solid var(--hairline);
+	border-radius: var(--radius);
+	background: White;
+	padding: 20px 18px;
+	text-align: center;
+}
+
+.modal h2 {
+	margin: 6px 0 6px;
+	font-size: 1.4rem;
+}
+
+.modal p {
+	margin: 0 0 14px;
+	color: var(--muted);
+}
+
+.reStart {
+	cursor: pointer;
+	border: 1px solid var(--ink);
+	background: var(--ink);
+	color: var(--bg);
+	border-radius: 999px;
+	padding: 10px 14px;
+	font-weight: 800;
+	letter-spacing: 0.02em;
+}
+
+.reStart:hover {
+	filter: brightness(1.05);
+}
+
+.card.correct {
+	outline: 3px solid var(--correct);
+	outline-offset: 2px;
+}
+
+.card.wrong {
+	outline: 3px solid var(--wrong);
+	outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+	body {
+		min-height: 100dvh;
+		display: block;
+	}
+
+	.app {
+		width: 100%;
+		height: 100dvh;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.top {
+		flex: 0 0 auto;
+		padding: 12px 10px;
+		gap: 8px;
+		position: sticky;
+	}
+
+	.game {
+		flex: 1;
+		height: 100%;
+		display: grid;
+		grid-template-rows: 1fr 1fr;
+		gap: 10px;
+		padding: 10px;
+		min-height: 0;
+	}
+
+	.card {
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding: 14px 12px;
+	}
+
+	.prompt {
+		font-size: clamp(2.2rem, 10vw, 3.6rem);
+		margin: 0 0 10px;
+	}
+
+	.hint {
+		margin: 0;
+		font-size: 0.95rem;
+	}
+
+	.buttons {
+		height: 100%;
+		align-content: stretch;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-auto-rows: 1fr;
+		gap: 10px;
+	}
+
+	.colorBtn {
+		height: 100%;
+		padding: 10px;
+		font-size: 1rem;
+		border-radius: var(--radius-sm);
+	}
+
+	.stats {
+		width: 100%;
+		justify-content: space-between;
+	}
+
+	.stat {
+		min-width: 0;
+		flex: 1 1 auto;
+	}
+}
+
+</style>
+<body>
+    <div class="app">
+	<header class="top">
+		<div class="stats">
+			<div class="stat">
+				<div class="label">Time</div>
+				<div class="value" id="time">30</div>
+			</div>
+
+			<div class="stat">
+				<div class="label">Score</div>
+				<div class="value" id="score">0</div>
+			</div>
+
+			<div class="stat">
+				<div class="label">Mistakes</div>
+				<div class="value"><span id="mistakes">0</span>/3</div>
+			</div>
+		</div>
+	</header>
+
+	<main class="game">
+		<div id="card" class="card" aria-live="polite">
+			<div id="prompt" class="prompt">GET READY</div>
+			<div class="hint">Pick the button that matches the <b>INK COLOR</b>.</div>
+		</div>
+
+		<div id="buttons" class="buttons"></div>
+	</main>
+
+	<div id="overlay" class="overlay hidden">
+		<div class="modal">
+			<h2 id="endTitle">Game Over</h2>
+			<p id="endText">Your score: 0</p>
+			<button id="restartBtn" class="reStart">Play again</button>
+		</div>
+	</div>
+</div>
+<script>
+    const GAME_SECONDS = 30;
+const MAX_MISTAKES = 3;
+
+const ALL_NAMED_COLORS = [
+	"AliceBlue",
+	"AntiqueWhite",
+	"Aqua",
+	"Aquamarine",
+	"Azure",
+	"Beige",
+	"Bisque",
+	"Black",
+	"BlanchedAlmond",
+	"Blue",
+	"BlueViolet",
+	"Brown",
+	"BurlyWood",
+	"CadetBlue",
+	"Chartreuse",
+	"Chocolate",
+	"Coral",
+	"CornflowerBlue",
+	"Cornsilk",
+	"Crimson",
+	"Cyan",
+	"DarkBlue",
+	"DarkCyan",
+	"DarkGoldenRod",
+	"DarkGray",
+	"DarkGrey",
+	"DarkGreen",
+	"DarkKhaki",
+	"DarkMagenta",
+	"DarkOliveGreen",
+	"DarkOrange",
+	"DarkOrchid",
+	"DarkRed",
+	"DarkSalmon",
+	"DarkSeaGreen",
+	"DarkSlateBlue",
+	"DarkSlateGray",
+	"DarkSlateGrey",
+	"DarkTurquoise",
+	"DarkViolet",
+	"DeepPink",
+	"DeepSkyBlue",
+	"DimGray",
+	"DimGrey",
+	"DodgerBlue",
+	"FireBrick",
+	"FloralWhite",
+	"ForestGreen",
+	"Fuchsia",
+	"Gainsboro",
+	"GhostWhite",
+	"Gold",
+	"GoldenRod",
+	"Gray",
+	"Grey",
+	"Green",
+	"GreenYellow",
+	"HoneyDew",
+	"HotPink",
+	"IndianRed",
+	"Indigo",
+	"Ivory",
+	"Khaki",
+	"Lavender",
+	"LavenderBlush",
+	"LawnGreen",
+	"LemonChiffon",
+	"LightBlue",
+	"LightCoral",
+	"LightCyan",
+	"LightGoldenRodYellow",
+	"LightGray",
+	"LightGrey",
+	"LightGreen",
+	"LightPink",
+	"LightSalmon",
+	"LightSeaGreen",
+	"LightSkyBlue",
+	"LightSlateGray",
+	"LightSlateGrey",
+	"LightSteelBlue",
+	"LightYellow",
+	"Lime",
+	"LimeGreen",
+	"Linen",
+	"Magenta",
+	"Maroon",
+	"MediumAquaMarine",
+	"MediumBlue",
+	"MediumOrchid",
+	"MediumPurple",
+	"MediumSeaGreen",
+	"MediumSlateBlue",
+	"MediumSpringGreen",
+	"MediumTurquoise",
+	"MediumVioletRed",
+	"MidnightBlue",
+	"MintCream",
+	"MistyRose",
+	"Moccasin",
+	"NavajoWhite",
+	"Navy",
+	"OldLace",
+	"Olive",
+	"OliveDrab",
+	"Orange",
+	"OrangeRed",
+	"Orchid",
+	"PaleGoldenRod",
+	"PaleGreen",
+	"PaleTurquoise",
+	"PaleVioletRed",
+	"PapayaWhip",
+	"PeachPuff",
+	"Peru",
+	"Pink",
+	"Plum",
+	"PowderBlue",
+	"Purple",
+	"RebeccaPurple",
+	"Red",
+	"RosyBrown",
+	"RoyalBlue",
+	"SaddleBrown",
+	"Salmon",
+	"SandyBrown",
+	"SeaGreen",
+	"SeaShell",
+	"Sienna",
+	"Silver",
+	"SkyBlue",
+	"SlateBlue",
+	"SlateGray",
+	"SlateGrey",
+	"Snow",
+	"SpringGreen",
+	"SteelBlue",
+	"Tan",
+	"Teal",
+	"Thistle",
+	"Tomato",
+	"Turquoise",
+	"Violet",
+	"Wheat",
+	"White",
+	"WhiteSmoke",
+	"Yellow",
+	"YellowGreen"
+];
+
+let COLORS = [];
+
+const timeEl = document.getElementById("time");
+const scoreEl = document.getElementById("score");
+const mistakesEl = document.getElementById("mistakes");
+const cardEl = document.getElementById("card");
+const promptEl = document.getElementById("prompt");
+const buttonsEl = document.getElementById("buttons");
+
+const overlay = document.getElementById("overlay");
+const endTitle = document.getElementById("endTitle");
+const endText = document.getElementById("endText");
+const restartBtn = document.getElementById("restartBtn");
+
+let score = 0;
+let mistakes = 0;
+let timeLeft = GAME_SECONDS;
+let running = false;
+let tickInterval = null;
+
+let currentInkIndex = 0;
+let currentWordIndex = 0;
+
+function randInt(max) {
+	return Math.floor(Math.random() * max);
+}
+
+function pickRandomColors(count = 6) {
+	const shuffled = [...ALL_NAMED_COLORS].sort(() => Math.random() - 0.5);
+	return shuffled.slice(0, count).map((name) => ({
+		name,
+		value: name
+	}));
+}
+
+function pickNewPrompt() {
+	currentInkIndex = randInt(COLORS.length);
+	currentWordIndex = randInt(COLORS.length);
+
+	if (Math.random() < 0.75) {
+		while (currentWordIndex === currentInkIndex) {
+			currentWordIndex = randInt(COLORS.length);
+		}
+	}
+
+	promptEl.textContent = COLORS[currentWordIndex].name;
+	promptEl.style.color = COLORS[currentInkIndex].value;
+}
+
+function updateHUD() {
+	timeEl.textContent = timeLeft;
+	scoreEl.textContent = score;
+	mistakesEl.textContent = mistakes;
+}
+
+function startGame() {
+	if (tickInterval) {
+		clearInterval(tickInterval);
+		tickInterval = null;
+	}
+
+	score = 0;
+	mistakes = 0;
+	timeLeft = GAME_SECONDS;
+	running = true;
+
+	COLORS = pickRandomColors(6);
+	buildButtons();
+
+	updateHUD();
+	overlay.classList.add("hidden");
+
+	pickNewPrompt();
+
+	tickInterval = setInterval(() => {
+		timeLeft -= 1;
+		updateHUD();
+		if (timeLeft <= 0) endGame("time");
+	}, 1000);
+}
+
+function buildButtons() {
+	buttonsEl.innerHTML = "";
+
+	COLORS.forEach((c, idx) => {
+		const btn = document.createElement("button");
+		btn.className = "colorBtn";
+		btn.textContent = c.name;
+		btn.style.background = c.value;
+		btn.style.color = [
+			"White",
+			"Ivory",
+			"Snow",
+			"WhiteSmoke",
+			"LemonChiffon",
+			"LightYellow",
+			"HoneyDew",
+			"Azure",
+			"MintCream",
+			"FloralWhite"
+		].includes(c.name)
+			? "Black"
+			: "White";
+
+		btn.addEventListener("click", () => {
+			if (!running) return;
+
+			const correct = idx === currentInkIndex;
+			flashFeedback(correct);
+
+			if (correct) {
+				score += 1;
+				updateHUD();
+				pickNewPrompt();
+			} else {
+				mistakes += 1;
+				updateHUD();
+
+				if (mistakes >= MAX_MISTAKES) {
+					endGame("mistakes");
+				} else {
+					pickNewPrompt();
+				}
+			}
+		});
+
+		buttonsEl.appendChild(btn);
+	});
+}
+
+function flashFeedback(isCorrect) {
+	cardEl.classList.remove("correct", "wrong");
+
+	cardEl.classList.add(isCorrect ? "correct" : "wrong");
+
+	window.clearTimeout(flashFeedback._t);
+	flashFeedback._t = window.setTimeout(() => {
+		cardEl.classList.remove("correct", "wrong"); 
+	}, 300);
+}
+
+function endGame(reason = "Time!") {
+	running = false;
+	clearInterval(tickInterval);
+	tickInterval = null;
+
+	endTitle.textContent =
+		reason === "mistakes" ? "Do you suffer from color blindness?" : "Nice try!";
+	endText.textContent = `Your score: ${score}`;
+	overlay.classList.remove("hidden");
+}
+
+updateHUD();
+
+window.addEventListener("load", startGame);
+restartBtn.addEventListener("click", startGame);
+
+</script>
+</body>
+</html>
