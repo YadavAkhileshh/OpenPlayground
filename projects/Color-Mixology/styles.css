@@ -1,0 +1,1181 @@
+/* --- Reset & Base --- */
+*,
+*::before,
+*::after {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+:root {
+	/* NES-inspired color palette */
+	--bg-dark: #0f0f23;
+	--bg-surface: #1a1a2e;
+	--bg-panel: #16213e;
+	--border-pixel: #3a3a5c;
+	--border-light: #5a5a8c;
+	--text-primary: #e8e8f0;
+	--text-secondary: #a0a0c0;
+	--text-muted: #606080;
+	--nes-red: #e74040;
+	--nes-orange: #f0a030;
+	--nes-yellow: #f8f858;
+	--nes-green: #58d854;
+	--nes-cyan: #58f8f8;
+	--nes-blue: #4878f8;
+	--nes-purple: #a878f8;
+	--nes-pink: #f878f8;
+	--nes-white: #f8f8f8;
+	--nes-black: #080820;
+
+	--font-pixel: "Press Start 2P", monospace;
+	--pixel: 4px;
+	/* base pixel size for borders */
+	--transition-fast: 0.15s steps(3);
+	--transition-smooth: 0.3s steps(5);
+}
+
+html {
+	scroll-behavior: smooth;
+	image-rendering: pixelated;
+}
+
+body {
+	font-family: var(--font-pixel);
+	background: var(--bg-dark);
+	color: var(--text-primary);
+	min-height: 100vh;
+	overflow-x: hidden;
+	line-height: 1.8;
+	font-size: 10px;
+	/* Scanline effect */
+	background-image: repeating-linear-gradient(
+		0deg,
+		transparent,
+		transparent 2px,
+		rgba(0, 0, 0, 0.15) 2px,
+		rgba(0, 0, 0, 0.15) 4px
+	);
+	background-attachment: fixed;
+}
+
+/* ===== PIXEL BORDER UTILITY =====
+   Uses box-shadow to create stepped pixel borders like NES/SNES UI
+*/
+.pixel-border {
+	box-shadow:
+        /* outer border */ var(--pixel) 0 0 0 var(--border-pixel),
+		calc(var(--pixel) * -1) 0 0 0 var(--border-pixel),
+		0 var(--pixel) 0 0 var(--border-pixel),
+		0 calc(var(--pixel) * -1) 0 0 var(--border-pixel),
+		/* corners */ var(--pixel) var(--pixel) 0 0 var(--border-pixel),
+		calc(var(--pixel) * -1) var(--pixel) 0 0 var(--border-pixel),
+		var(--pixel) calc(var(--pixel) * -1) 0 0 var(--border-pixel),
+		calc(var(--pixel) * -1) calc(var(--pixel) * -1) 0 0 var(--border-pixel);
+}
+
+/* --- Ambient Background (pixel stars) --- */
+.ambient-bg {
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	overflow: hidden;
+}
+
+.ambient-orb {
+	position: absolute;
+	border-radius: 0;
+	/* No rounded anything in pixel art! */
+	width: 6px;
+	height: 6px;
+	opacity: 0.6;
+	animation: pixelTwinkle 2s steps(2) infinite;
+}
+
+.ambient-orb--1 {
+	background: var(--nes-yellow);
+	top: 10%;
+	left: 15%;
+	animation-delay: 0s;
+}
+
+.ambient-orb--2 {
+	background: var(--nes-cyan);
+	top: 30%;
+	right: 20%;
+	animation-delay: -0.7s;
+}
+
+.ambient-orb--3 {
+	background: var(--nes-pink);
+	bottom: 25%;
+	left: 40%;
+	animation-delay: -1.4s;
+}
+
+@keyframes pixelTwinkle {
+	0%,
+	100% {
+		opacity: 0.3;
+		transform: scale(1);
+	}
+
+	50% {
+		opacity: 1;
+		transform: scale(1.5);
+	}
+}
+
+/* --- Header --- */
+.header {
+	position: relative;
+	z-index: 1;
+	text-align: center;
+	padding: 2.5rem 1rem 1.5rem;
+}
+
+.header__icon {
+	font-size: 2rem;
+	margin-bottom: 0.75rem;
+	animation: iconBounce 1s steps(4) infinite;
+	display: inline-block;
+}
+
+@keyframes iconBounce {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+
+	50% {
+		transform: translateY(-8px);
+	}
+}
+
+.header__title {
+	line-height: 1.4;
+	margin-bottom: 1rem;
+}
+
+.header__title-line1 {
+	display: block;
+	font-size: clamp(1rem, 4vw, 1.6rem);
+	color: var(--nes-cyan);
+	text-shadow: 3px 3px 0 var(--nes-blue), -1px -1px 0 rgba(0, 0, 0, 0.5);
+	letter-spacing: 0.1em;
+}
+
+.header__title-line2 {
+	display: block;
+	font-size: clamp(1.2rem, 5vw, 2.2rem);
+	color: var(--nes-yellow);
+	text-shadow: 3px 3px 0 var(--nes-orange), -1px -1px 0 rgba(0, 0, 0, 0.5);
+	letter-spacing: 0.05em;
+	margin-top: 0.5rem;
+}
+
+.header__subtitle {
+	font-size: 0.55rem;
+	color: var(--text-secondary);
+	line-height: 2;
+}
+
+.header__subtitle code {
+	background: var(--bg-panel);
+	border: 2px solid var(--border-pixel);
+	padding: 0.2em 0.5em;
+	color: var(--nes-green);
+	font-family: var(--font-pixel);
+	font-size: 0.55rem;
+}
+
+/* --- Station (Main Layout) --- */
+.station {
+	position: relative;
+	z-index: 1;
+	max-width: 1000px;
+	margin: 0 auto;
+	padding: 0 1rem 2rem;
+	display: flex;
+	flex-direction: column;
+	gap: 2rem;
+}
+
+/* --- Panel Base Style (NES dialog box) --- */
+.shelf,
+.mixer,
+.result,
+.gallery {
+	background: var(--bg-panel);
+	border: 4px solid var(--border-light);
+	outline: 4px solid var(--bg-dark);
+	padding: 1.5rem;
+	position: relative;
+}
+
+/* Inner pixel highlight on panels */
+.shelf::before,
+.mixer::before,
+.result::before,
+.gallery::before {
+	content: "";
+	position: absolute;
+	top: 4px;
+	left: 4px;
+	right: 4px;
+	bottom: 4px;
+	border: 2px solid rgba(255, 255, 255, 0.06);
+	pointer-events: none;
+}
+
+/* --- Shelf (Bottles) --- */
+.shelf__title,
+.gallery__title,
+.result__title {
+	font-family: var(--font-pixel);
+	font-size: 0.65rem;
+	color: var(--nes-yellow);
+	margin-bottom: 1rem;
+	text-align: center;
+	text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+}
+
+.shelf__bottles {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0.6rem;
+}
+
+/* --- Bottle (Pixel Art Style) --- */
+.bottle {
+	--bottle-color: #ff6b6b;
+	position: relative;
+	width: 52px;
+	cursor: pointer;
+	transition: transform var(--transition-fast);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+}
+
+.bottle:hover {
+	transform: translateY(-6px);
+}
+
+.bottle:active {
+	transform: translateY(-2px);
+}
+
+.bottle.bottle--selected {
+	transform: translateY(-10px);
+}
+
+.bottle__cap {
+	width: 12px;
+	height: 8px;
+	background: #c0c0c0;
+	border: 2px solid #808080;
+	position: relative;
+	z-index: 2;
+}
+
+.bottle__neck {
+	width: 10px;
+	height: 10px;
+	background: rgba(255, 255, 255, 0.1);
+	border: 2px solid var(--border-pixel);
+}
+
+.bottle__body {
+	width: 36px;
+	height: 48px;
+	background: var(--bg-surface);
+	border: 3px solid var(--border-pixel);
+	position: relative;
+	overflow: hidden;
+}
+
+.bottle__liquid {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 78%;
+	background: var(--bottle-color);
+}
+
+/* Pixel shine: just a solid rectangle */
+.bottle__liquid::after {
+	content: "";
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 6px;
+	height: 6px;
+	background: rgba(255, 255, 255, 0.35);
+}
+
+.bottle__shine {
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 4px;
+	height: 50%;
+	background: rgba(255, 255, 255, 0.15);
+	pointer-events: none;
+}
+
+.bottle__label {
+	font-size: 0.4rem;
+	color: var(--text-muted);
+	text-align: center;
+	max-width: 52px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	transition: color var(--transition-fast);
+	font-family: var(--font-pixel);
+}
+
+.bottle:hover .bottle__label {
+	color: var(--nes-white);
+}
+
+.bottle--selected .bottle__label {
+	color: var(--nes-cyan);
+}
+
+/* Pixel glow — small colored square under bottle */
+.bottle__glow {
+	position: absolute;
+	bottom: -4px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 20px;
+	height: 4px;
+	opacity: 0;
+	transition: opacity var(--transition-fast);
+	pointer-events: none;
+	background: var(--bottle-color);
+}
+
+.bottle:hover .bottle__glow,
+.bottle--selected .bottle__glow {
+	opacity: 0.6;
+}
+
+/* --- Mixer Section --- */
+.mixer {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.5rem;
+}
+
+.mixer__slots {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	width: 100%;
+	justify-content: center;
+	flex-wrap: wrap;
+}
+
+/* --- Pour Slot --- */
+.pour-slot {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.4rem;
+	min-width: 110px;
+}
+
+.pour-slot__label {
+	font-size: 0.5rem;
+	color: var(--nes-orange);
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.pour-slot__glass {
+	width: 80px;
+	height: 80px;
+	border: 3px solid var(--border-pixel);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+	overflow: hidden;
+	cursor: pointer;
+	background: var(--bg-surface);
+	transition: border-color var(--transition-fast);
+}
+
+.pour-slot__glass:hover {
+	border-color: var(--nes-cyan);
+}
+
+.pour-slot__glass.pour-slot__glass--filled {
+	border-color: var(--border-light);
+}
+
+.pour-slot__liquid {
+	position: absolute;
+	inset: 0;
+	opacity: 0;
+	transition: opacity 0.3s steps(4);
+}
+
+.pour-slot__liquid.pour-slot__liquid--visible {
+	opacity: 1;
+}
+
+.pour-slot__empty {
+	font-size: 0.4rem;
+	color: var(--text-muted);
+	text-align: center;
+	pointer-events: none;
+	transition: opacity var(--transition-fast);
+	line-height: 1.6;
+}
+
+.pour-slot__glass--filled .pour-slot__empty {
+	opacity: 0;
+}
+
+.pour-slot__color-name {
+	font-size: 0.45rem;
+	color: var(--text-secondary);
+	font-family: var(--font-pixel);
+}
+
+.pour-slot__picker {
+	width: 32px;
+	height: 24px;
+	border: 2px solid var(--border-pixel);
+	cursor: pointer;
+	background: var(--bg-surface);
+	padding: 0;
+}
+
+.pour-slot__picker::-webkit-color-swatch-wrapper {
+	padding: 2px;
+}
+
+.pour-slot__picker::-webkit-color-swatch {
+	border: none;
+}
+
+/* --- Proportion Slider --- */
+.mixer__proportion {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.4rem;
+	min-width: 140px;
+}
+
+.proportion__display {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.proportion__val {
+	min-width: 42px;
+	text-align: center;
+	font-size: 0.6rem;
+}
+
+.proportion__val--left {
+	color: var(--nes-red);
+}
+
+.proportion__val--right {
+	color: var(--nes-cyan);
+}
+
+.proportion__divider {
+	font-size: 1rem;
+	animation: iconBounce 1.5s steps(4) infinite;
+}
+
+.proportion__slider {
+	width: 100%;
+	-webkit-appearance: none;
+	appearance: none;
+	height: 8px;
+	background: var(--bg-surface);
+	border: 2px solid var(--border-pixel);
+	outline: none;
+	cursor: pointer;
+}
+
+.proportion__slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	width: 16px;
+	height: 20px;
+	background: var(--nes-white);
+	border: 2px solid var(--border-pixel);
+	cursor: pointer;
+}
+
+.proportion__slider::-webkit-slider-thumb:hover {
+	background: var(--nes-yellow);
+}
+
+.proportion__labels {
+	display: flex;
+	justify-content: space-between;
+	width: 100%;
+	font-size: 0.4rem;
+	color: var(--text-muted);
+}
+
+/* --- Color Space Selector --- */
+.mixer__colorspace {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.5rem;
+	width: 100%;
+}
+
+.colorspace__label {
+	font-size: 0.5rem;
+	color: var(--nes-orange);
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.colorspace__options {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+	justify-content: center;
+}
+
+.colorspace__btn {
+	padding: 0.4em 0.8em;
+	border: 2px solid var(--border-pixel);
+	background: var(--bg-surface);
+	color: var(--text-secondary);
+	font-size: 0.45rem;
+	font-family: var(--font-pixel);
+	cursor: pointer;
+	transition: var(--transition-fast);
+}
+
+.colorspace__btn:hover {
+	border-color: var(--nes-cyan);
+	color: var(--nes-white);
+	background: var(--bg-panel);
+}
+
+.colorspace__btn--active {
+	border-color: var(--nes-cyan);
+	background: var(--nes-blue);
+	color: var(--nes-white);
+}
+
+/* --- Mix Button (NES START Button style) --- */
+.mixer__btn {
+	position: relative;
+	padding: 0.8em 2em;
+	border: 4px solid var(--nes-white);
+	background: var(--nes-red);
+	color: var(--nes-white);
+	font-size: 0.7rem;
+	font-family: var(--font-pixel);
+	cursor: pointer;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+	transition: var(--transition-fast);
+	box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.4);
+	animation: btnPulse 2s steps(2) infinite;
+}
+
+@keyframes btnPulse {
+	0%,
+	100% {
+		border-color: var(--nes-white);
+	}
+
+	50% {
+		border-color: var(--nes-yellow);
+	}
+}
+
+.mixer__btn:hover {
+	background: var(--nes-orange);
+	transform: translate(0, -2px);
+	box-shadow: 4px 6px 0 0 rgba(0, 0, 0, 0.4);
+}
+
+.mixer__btn:active {
+	transform: translate(2px, 2px);
+	box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Hide the old shine effect */
+.mixer__btn-shine {
+	display: none;
+}
+
+/* --- Result Section --- */
+.result {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.2rem;
+}
+
+/* --- Cocktail Glass (Pixel Art Style) --- */
+.result__glass-wrap {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding-top: 0.5rem;
+}
+
+.cocktail-glass {
+	width: 120px;
+	height: 90px;
+	position: relative;
+	overflow: hidden;
+	/* Pixel art trapezoid using clip-path with steps */
+	clip-path: polygon(
+		8% 0%,
+		92% 0%,
+		88% 10%,
+		12% 10%,
+		84% 20%,
+		16% 20%,
+		80% 30%,
+		20% 30%,
+		76% 40%,
+		24% 40%,
+		72% 50%,
+		28% 50%,
+		68% 60%,
+		32% 60%,
+		64% 70%,
+		36% 70%,
+		60% 80%,
+		40% 80%,
+		56% 90%,
+		44% 90%,
+		52% 100%,
+		48% 100%
+	);
+	background: var(--bg-surface);
+	border: 3px solid var(--border-pixel);
+}
+
+.cocktail-glass__liquid {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 0%;
+	transition: height 0.8s steps(8), background-color 0.3s steps(4);
+}
+
+.cocktail-glass__liquid.cocktail-glass__liquid--filled {
+	height: 85%;
+}
+
+.cocktail-glass__reflection {
+	position: absolute;
+	top: 6px;
+	left: 25%;
+	width: 6px;
+	height: 6px;
+	background: rgba(255, 255, 255, 0.25);
+	pointer-events: none;
+}
+
+.cocktail-glass__bubbles {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+/* Pixel bubbles */
+.bubble {
+	position: absolute;
+	border-radius: 0;
+	/* Square pixels! */
+	background: rgba(255, 255, 255, 0.3);
+	animation: bubbleRise 2.5s steps(10) infinite;
+}
+
+@keyframes bubbleRise {
+	0% {
+		transform: translateY(0);
+		opacity: 0.6;
+	}
+
+	100% {
+		transform: translateY(-80px);
+		opacity: 0;
+	}
+}
+
+.cocktail-glass__stem {
+	width: 6px;
+	height: 40px;
+	background: var(--border-pixel);
+	margin: 0 auto;
+}
+
+.cocktail-glass__base {
+	width: 50px;
+	height: 8px;
+	background: var(--border-pixel);
+	margin: 0 auto;
+}
+
+.cocktail-glass__garnish {
+	position: absolute;
+	top: -8px;
+	right: 8px;
+	font-size: 1.4rem;
+	transform: rotate(15deg);
+	opacity: 0;
+	transition: opacity var(--transition-fast);
+	/* Pixelated emoji */
+	image-rendering: pixelated;
+}
+
+.cocktail-glass__garnish.cocktail-glass__garnish--visible {
+	opacity: 1;
+	animation: garnishBounce 0.5s steps(4);
+}
+
+@keyframes garnishBounce {
+	0% {
+		transform: rotate(15deg) translateY(-12px);
+		opacity: 0;
+	}
+
+	100% {
+		transform: rotate(15deg) translateY(0);
+		opacity: 1;
+	}
+}
+
+/* --- Result Info --- */
+.result__info {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	width: 100%;
+	max-width: 500px;
+}
+
+.result__swatch {
+	width: 48px;
+	height: 48px;
+	border: 3px solid var(--border-light);
+	flex-shrink: 0;
+	transition: background-color 0.3s steps(4);
+}
+
+.result__details {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 0.3rem;
+	position: relative;
+}
+
+.result__hex {
+	font-size: 0.7rem;
+	color: var(--nes-white);
+	text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.result__code-wrap {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+
+.result__code {
+	font-size: 0.4rem;
+	color: var(--nes-green);
+	background: var(--nes-black);
+	padding: 0.4em 0.6em;
+	border: 2px solid var(--border-pixel);
+	flex: 1;
+	overflow-x: auto;
+	white-space: nowrap;
+	font-family: var(--font-pixel);
+	line-height: 1.8;
+}
+
+.result__copy {
+	background: var(--bg-surface);
+	border: 2px solid var(--border-pixel);
+	color: var(--text-secondary);
+	padding: 0.3em 0.5em;
+	cursor: pointer;
+	font-size: 0.7rem;
+	transition: var(--transition-fast);
+	flex-shrink: 0;
+}
+
+.result__copy:hover {
+	background: var(--nes-blue);
+	border-color: var(--nes-cyan);
+	color: var(--nes-white);
+}
+
+.result__copied {
+	position: absolute;
+	bottom: -20px;
+	right: 0;
+	font-size: 0.4rem;
+	color: var(--nes-green);
+	opacity: 0;
+	transition: opacity var(--transition-fast);
+	pointer-events: none;
+	text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.result__copied.result__copied--show {
+	opacity: 1;
+}
+
+/* --- Gradient Preview --- */
+.result__gradient-wrap {
+	width: 100%;
+	max-width: 500px;
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+	opacity: 0;
+	transition: opacity 0.3s steps(4);
+}
+
+.result__gradient-wrap.result__gradient-wrap--visible {
+	opacity: 1;
+}
+
+.result__gradient-label {
+	font-size: 0.45rem;
+	color: var(--nes-orange);
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.result__gradient {
+	height: 32px;
+	border: 3px solid var(--border-pixel);
+	/* Pixelate the gradient! */
+	image-rendering: pixelated;
+}
+
+.result__gradient-code {
+	font-size: 0.35rem;
+	color: var(--text-muted);
+	word-break: break-all;
+	font-family: var(--font-pixel);
+	line-height: 1.8;
+}
+
+/* --- Gallery --- */
+.gallery__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+	gap: 0.5rem;
+}
+
+.gallery__item {
+	aspect-ratio: 1;
+	border: 3px solid var(--border-pixel);
+	position: relative;
+	overflow: hidden;
+	cursor: pointer;
+	transition: transform var(--transition-fast);
+	animation: galleryPopIn 0.3s steps(4);
+}
+
+@keyframes galleryPopIn {
+	from {
+		transform: scale(0);
+	}
+
+	to {
+		transform: scale(1);
+	}
+}
+
+.gallery__item:hover {
+	transform: scale(1.15);
+	border-color: var(--nes-yellow);
+	z-index: 2;
+}
+
+.gallery__item-label {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	padding: 0.2em;
+	font-size: 0.35rem;
+	text-align: center;
+	background: rgba(0, 0, 0, 0.7);
+	color: var(--nes-white);
+	font-family: var(--font-pixel);
+	opacity: 0;
+	transition: opacity var(--transition-fast);
+}
+
+.gallery__item:hover .gallery__item-label {
+	opacity: 1;
+}
+
+/* --- Shaker Overlay --- */
+.shaker-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 100;
+	background: rgba(8, 8, 32, 0.92);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s steps(3);
+}
+
+.shaker-overlay.shaker-overlay--active {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.shaker {
+	position: relative;
+	width: 70px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.shaker__top {
+	width: 32px;
+	height: 24px;
+	background: #a0a0a0;
+	border: 3px solid #707070;
+	position: relative;
+	z-index: 2;
+}
+
+.shaker__body {
+	width: 56px;
+	height: 90px;
+	background: var(--bg-surface);
+	border: 3px solid var(--border-light);
+	position: relative;
+	overflow: hidden;
+}
+
+.shaker__liquid {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 60%;
+	transition: background-color 0.3s steps(4);
+}
+
+.shaker__shine {
+	position: absolute;
+	top: 10px;
+	left: 6px;
+	width: 6px;
+	height: 60px;
+	background: rgba(255, 255, 255, 0.1);
+	pointer-events: none;
+}
+
+.shaker__particles {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+/* Pixel particles — square! */
+.shaker-particle {
+	position: absolute;
+	border-radius: 0;
+	animation: shakerParticle 1s steps(8) forwards;
+}
+
+@keyframes shakerParticle {
+	0% {
+		transform: translate(0, 0);
+		opacity: 1;
+	}
+
+	100% {
+		transform: translate(var(--tx), var(--ty));
+		opacity: 0;
+	}
+}
+
+.shaker-overlay--active .shaker {
+	animation: shakerShake 0.35s steps(4) 3;
+}
+
+@keyframes shakerShake {
+	0%,
+	100% {
+		transform: rotate(0deg) translateY(0);
+	}
+
+	25% {
+		transform: rotate(-12deg) translateY(-8px);
+	}
+
+	75% {
+		transform: rotate(12deg) translateY(-8px);
+	}
+}
+
+/* --- Pour Animation --- */
+.pour-slot__glass.pour-slot__glass--pouring {
+	animation: pourFlash 0.4s steps(2);
+}
+
+@keyframes pourFlash {
+	0%,
+	100% {
+		border-color: var(--border-pixel);
+	}
+
+	50% {
+		border-color: var(--nes-yellow);
+	}
+}
+
+/* --- Result reveal --- */
+.result.result--revealed .cocktail-glass {
+	animation: glassAppear 0.5s steps(5);
+}
+
+@keyframes glassAppear {
+	0% {
+		transform: scale(0.5);
+		opacity: 0;
+	}
+
+	100% {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+/* --- Footer --- */
+.footer {
+	position: relative;
+	z-index: 1;
+	text-align: center;
+	padding: 1.5rem;
+	color: var(--text-muted);
+	font-size: 0.45rem;
+}
+
+.footer strong {
+	color: var(--nes-purple);
+}
+
+/* --- Responsive --- */
+@media (max-width: 640px) {
+	.mixer__slots {
+		flex-direction: column;
+	}
+
+	.mixer__proportion {
+		order: 3;
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+
+	.proportion__slider {
+		max-width: 180px;
+	}
+
+	.result__info {
+		flex-direction: column;
+		text-align: center;
+	}
+
+	.cocktail-glass {
+		width: 90px;
+		height: 70px;
+	}
+
+	.bottle {
+		width: 44px;
+	}
+
+	.bottle__body {
+		width: 30px;
+		height: 40px;
+	}
+
+	.gallery__grid {
+		grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+	}
+}
+
+/* --- no-select --- */
+.no-select {
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+/* --- Scrollbar (pixel style) --- */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--border-pixel);
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--border-light);
+}
+
+/* --- Extra: blinking cursor for retro feel --- */
+@keyframes blink {
+	0%,
+	100% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0;
+	}
+}

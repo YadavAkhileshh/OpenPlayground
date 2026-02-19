@@ -1,0 +1,416 @@
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Create beautiful, accessible color palettes with WCAG contrast checking">
+  <meta name="theme-color" content="#0f0f12">
+  <meta name="color-scheme" content="dark">
+
+  <!-- Security Headers -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+
+  <!-- Preconnect for fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <title>Palette Lab - Accessible Color Palette Builder</title>
+<link rel="stylesheet" href="style.css">
+  <!-- Critical CSS inline for performance -->
+  <style>
+    /* Critical path CSS */
+    :root {
+      --bg-primary: #0f0f12;
+      --text-primary: #ffffff;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .app-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+
+  <!-- Deferred stylesheets -->
+  <link rel="stylesheet" href="css/main.css" media="print" onload="this.media='all'">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <noscript>
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+      .app-loading {
+        display: none !important;
+      }
+
+      .no-js-message {
+        padding: 2rem;
+        text-align: center;
+      }
+    </style>
+  </noscript>
+</head>
+
+<body>
+  <!-- Loading State -->
+  <div class="app-loading" id="appLoading" aria-label="Loading application">
+    <div class="spinner" aria-hidden="true"></div>
+  </div>
+
+  <!-- No-JS Fallback -->
+  <noscript>
+    <div class="no-js-message">
+      <h1>Palette Lab</h1>
+      <p>This application requires JavaScript to function. Please enable JavaScript in your browser settings.</p>
+    </div>
+  </noscript>
+
+  <!-- Main Application -->
+  <div class="app" id="app" hidden>
+    <!-- Skip Link for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Header -->
+    <header class="header" role="banner">
+      <div class="header__brand">
+        <svg class="header__logo" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+          <defs>
+            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#6366f1" />
+              <stop offset="100%" stop-color="#a855f7" />
+            </linearGradient>
+          </defs>
+          <path d="M16 2L2 16l14 14 14-14L16 2zm0 4l10 10-10 10L6 16l10-10z" fill="url(#logoGradient)" />
+        </svg>
+        <h1 class="header__title">Palette Lab</h1>
+      </div>
+      <p class="header__tagline">Create accessible color palettes in seconds</p>
+      <p class="header__hint">
+        Press <kbd>Space</kbd> to generate • <kbd>Ctrl+Z</kbd> to undo • <kbd>Ctrl+Y</kbd> to redo
+      </p>
+    </header>
+
+    <!-- Main Content -->
+    <main id="main-content" class="main">
+      <!-- Controls Panel -->
+      <section class="panel controls" aria-labelledby="controls-heading">
+        <h2 id="controls-heading" class="sr-only">Palette Controls</h2>
+
+        <div class="controls__grid">
+          <!-- Generation Mode -->
+          <div class="form-group">
+            <label for="generationMode" class="form-label">Harmony</label>
+            <select id="generationMode" class="form-select" data-control="mode">
+              <option value="random">Random</option>
+              <option value="monochromatic">Monochromatic</option>
+              <option value="analogous">Analogous</option>
+              <option value="complementary">Complementary</option>
+              <option value="split-complementary">Split Complementary</option>
+              <option value="triadic">Triadic</option>
+              <option value="tetradic">Tetradic</option>
+            </select>
+          </div>
+
+          <!-- Base Color -->
+          <div class="form-group">
+            <label for="baseColor" class="form-label">Base Color</label>
+            <div class="color-input">
+              <input type="color" id="baseColor" value="#6366f1" class="color-input__picker" data-control="base-picker" aria-describedby="baseColorHelp">
+              <input type="text" id="baseColorHex" value="#6366F1" class="color-input__text" data-control="base-hex" pattern="^#[0-9A-Fa-f]{6}$" maxlength="7" spellcheck="false" autocomplete="off" aria-describedby="baseColorHelp">
+              <span id="baseColorHelp" class="form-help" aria-live="polite"></span>
+            </div>
+          </div>
+
+          <!-- Color Tone -->
+          <div class="form-group">
+            <label for="colorTone" class="form-label">Tone</label>
+            <select id="colorTone" class="form-select" data-control="tone">
+              <option value="vibrant">Vibrant</option>
+              <option value="pastel">Pastel</option>
+              <option value="muted">Muted</option>
+              <option value="earth">Earth</option>
+              <option value="jewel">Jewel</option>
+              <option value="neon">Neon</option>
+            </select>
+          </div>
+
+          <!-- Color Count -->
+          <div class="form-group">
+            <label for="colorCount" class="form-label">Colors</label>
+            <select id="colorCount" class="form-select" data-control="count">
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6" selected>6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="controls__actions">
+          <button type="button" class="btn btn--primary" data-action="generate" aria-keyshortcuts="Space">
+            <svg class="btn__icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <path fill="currentColor" d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 12.5a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11zm.75-8.25v2h2v1.5h-2v2h-1.5v-2h-2v-1.5h2v-2h1.5z" />
+            </svg>
+            <span>Generate</span>
+          </button>
+
+          <button type="button" class="btn btn--secondary" data-action="undo" aria-keyshortcuts="Control+Z" disabled>
+            <svg class="btn__icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <path fill="currentColor" d="M4.5 6.5L1 10l3.5 3.5V11h5a4 4 0 0 0 0-8h-3v1.5h3a2.5 2.5 0 0 1 0 5h-5V6.5z" />
+            </svg>
+            <span>Undo</span>
+          </button>
+
+          <button type="button" class="btn btn--secondary" data-action="redo" aria-keyshortcuts="Control+Y" disabled>
+            <svg class="btn__icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <path fill="currentColor" d="M11.5 6.5L15 10l-3.5 3.5V11h-5a4 4 0 0 1 0-8h3v1.5h-3a2.5 2.5 0 0 0 0 5h5V6.5z" />
+            </svg>
+            <span>Redo</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Palette Section -->
+      <section class="panel palette" aria-labelledby="palette-heading">
+        <div class="panel__header">
+          <h2 id="palette-heading" class="panel__title">Your Palette</h2>
+          <output class="palette__info" aria-live="polite" data-output="palette-info"></output>
+        </div>
+
+        <div class="palette__grid" id="paletteGrid" role="list" aria-label="Color swatches" data-container="palette">
+          <!-- Swatches rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- Accessibility Checker -->
+      <section class="panel contrast-checker" aria-labelledby="contrast-heading">
+        <h2 id="contrast-heading" class="panel__title">
+          <svg class="panel__icon" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+            <path fill="currentColor" d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM3.5 10a6.5 6.5 0 0 1 6.5-6.5v13A6.5 6.5 0 0 1 3.5 10z" />
+          </svg>
+          Contrast Checker
+        </h2>
+
+        <div class="contrast-checker__controls">
+          <div class="form-group">
+            <label for="fgColor" class="form-label">Text Color</label>
+            <div class="color-select">
+              <span class="color-select__preview" data-preview="fg"></span>
+              <select id="fgColor" class="form-select" data-control="fg-color">
+                <!-- Options populated dynamically -->
+              </select>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn--icon" data-action="swap-colors" aria-label="Swap text and background colors">
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+              <path fill="currentColor" d="M6 4l-4 4 4 4V9h8V7H6V4zm8 12l4-4-4-4v3H6v2h8v3z" />
+            </svg>
+          </button>
+
+          <div class="form-group">
+            <label for="bgColor" class="form-label">Background</label>
+            <div class="color-select">
+              <span class="color-select__preview" data-preview="bg"></span>
+              <select id="bgColor" class="form-select" data-control="bg-color">
+                <!-- Options populated dynamically -->
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="contrast-checker__results" aria-live="polite">
+          <div class="contrast-ratio" data-output="ratio">
+            <span class="contrast-ratio__value">--</span>
+            <span class="contrast-ratio__label">Contrast Ratio</span>
+          </div>
+
+          <div class="wcag-badges" role="list" aria-label="WCAG Compliance">
+            <div class="wcag-badge" data-badge="aa-normal" role="listitem">
+              <span class="wcag-badge__level">AA</span>
+              <span class="wcag-badge__size">Normal</span>
+              <span class="wcag-badge__status">--</span>
+            </div>
+            <div class="wcag-badge" data-badge="aa-large" role="listitem">
+              <span class="wcag-badge__level">AA</span>
+              <span class="wcag-badge__size">Large</span>
+              <span class="wcag-badge__status">--</span>
+            </div>
+            <div class="wcag-badge" data-badge="aaa-normal" role="listitem">
+              <span class="wcag-badge__level">AAA</span>
+              <span class="wcag-badge__size">Normal</span>
+              <span class="wcag-badge__status">--</span>
+            </div>
+            <div class="wcag-badge" data-badge="aaa-large" role="listitem">
+              <span class="wcag-badge__level">AAA</span>
+              <span class="wcag-badge__size">Large</span>
+              <span class="wcag-badge__status">--</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="contrast-preview" data-container="contrast-preview">
+          <p class="contrast-preview__large">Large Text (18pt+)</p>
+          <p class="contrast-preview__normal">Normal text - The quick brown fox jumps over the lazy dog.</p>
+          <button type="button" class="contrast-preview__button">Sample Button</button>
+        </div>
+      </section>
+
+      <!-- Live Preview -->
+      <section class="panel preview" aria-labelledby="preview-heading">
+        <h2 id="preview-heading" class="panel__title">Live Preview</h2>
+
+        <div class="preview__grid">
+          <article class="preview-card" data-container="preview-card">
+            <header class="preview-card__header">
+              <h3 class="preview-card__title">Card Component</h3>
+              <span class="preview-card__badge">Featured</span>
+            </header>
+            <p class="preview-card__body">
+              See how your palette looks in a real UI component. Colors are automatically applied based on contrast.
+            </p>
+            <footer class="preview-card__footer">
+              <button type="button" class="preview-card__btn preview-card__btn--primary">Primary</button>
+              <button type="button" class="preview-card__btn preview-card__btn--secondary">Secondary</button>
+            </footer>
+          </article>
+
+          <div class="preview-stats" data-container="preview-stats">
+            <div class="preview-stat">
+              <span class="preview-stat__value">2.4K</span>
+              <span class="preview-stat__label">Views</span>
+            </div>
+            <div class="preview-stat">
+              <span class="preview-stat__value">186</span>
+              <span class="preview-stat__label">Likes</span>
+            </div>
+            <div class="preview-stat">
+              <span class="preview-stat__value">24</span>
+              <span class="preview-stat__label">Shares</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Export Section -->
+      <section class="panel export" aria-labelledby="export-heading">
+        <h2 id="export-heading" class="panel__title">Export</h2>
+
+        <div class="export__tabs" role="tablist" aria-label="Export format">
+          <button type="button" class="export__tab is-active" role="tab" aria-selected="true" data-format="css">
+            CSS
+          </button>
+          <button type="button" class="export__tab" role="tab" aria-selected="false" data-format="scss">
+            SCSS
+          </button>
+          <button type="button" class="export__tab" role="tab" aria-selected="false" data-format="tailwind">
+            Tailwind
+          </button>
+          <button type="button" class="export__tab" role="tab" aria-selected="false" data-format="json">
+            JSON
+          </button>
+        </div>
+
+        <div class="export__output" role="tabpanel">
+          <pre class="export__code"><code data-output="export-code"></code></pre>
+          <button type="button" class="btn btn--copy" data-action="copy-export" aria-label="Copy code to clipboard">
+            <span class="btn__text">Copy</span>
+            <span class="btn__success">Copied!</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+      <p>Made with ❤️ by <a href="https://github.com/oathanrex" target="_blank" rel="noopener noreferrer">Oathan Rex</p>
+    </footer>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer" role="region" aria-label="Notifications" aria-live="polite">
+    <!-- Toasts inserted dynamically -->
+  </div>
+
+  <!-- Swatch Template -->
+  <template id="swatchTemplate">
+    <article class="swatch" role="listitem">
+      <div class="swatch__color">
+        <input type="color" class="swatch__picker" aria-label="Edit color">
+        <span class="swatch__label">Click to edit</span>
+        <div class="swatch__actions">
+          <button type="button" class="swatch__btn" data-action="lock" aria-pressed="false">
+            <svg class="icon-unlock" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <path fill="currentColor" d="M11 1a3 3 0 0 0-3 3v3H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1H9V4a2 2 0 1 1 4 0v1h1.5V4A3.5 3.5 0 0 0 11 1z" />
+            </svg>
+            <svg class="icon-lock" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <path fill="currentColor" d="M8 1a3 3 0 0 0-3 3v3H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-2V4a3 3 0 0 0-3-3zm0 1.5A1.5 1.5 0 0 1 9.5 4v3h-3V4A1.5 1.5 0 0 1 8 2.5z" />
+            </svg>
+            <span class="sr-only">Lock color</span>
+          </button>
+          <button type="button" class="swatch__btn" data-action="delete" aria-label="Remove color">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <path fill="currentColor" d="M4.5 3l.5-1h6l.5 1H14v1H2V3h2.5zM3 5h10l-.5 9.5a1 1 0 0 1-1 .5H4.5a1 1 0 0 1-1-.5L3 5z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="swatch__info">
+        <button type="button" class="swatch__hex" data-action="copy">
+          <span class="swatch__value"></span>
+          <svg class="swatch__copy-icon" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <path fill="currentColor" d="M4 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 1.5a.5.5 0 0 0-.5.5v8a.5.5 0 0 0 .5.5h6a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H4z" />
+          </svg>
+        </button>
+        <div class="swatch__formats">
+          <button type="button" class="swatch__format" data-format="rgb" data-action="copy"></button>
+          <button type="button" class="swatch__format" data-format="hsl" data-action="copy"></button>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <!-- Toast Template -->
+  <template id="toastTemplate">
+    <div class="toast" role="status">
+      <span class="toast__icon" aria-hidden="true"></span>
+      <span class="toast__message"></span>
+      <button type="button" class="toast__close" aria-label="Dismiss">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+          <path fill="currentColor" d="M4.5 3.5l7 7m0-7l-7 7" stroke="currentColor" stroke-width="1.5" />
+        </svg>
+      </button>
+    </div>
+  </template>
+
+  <!-- Scripts -->
+  <script type="module" src="app.js"></script>
+</body>
+
+</html>

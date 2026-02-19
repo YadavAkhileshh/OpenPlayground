@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KBC Ultimate - Trivia Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
+
+        :root {
+            --kbc-blue: #020631;
+            --kbc-gold: #d4af37;
+            --kbc-purple: #1a0b4d;
+            --kbc-highlight: #22c55e;
+            --kbc-wrong: #ef4444;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle, var(--kbc-purple) 0%, var(--kbc-blue) 100%);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        .hex-button {
+            clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%);
+            background: linear-gradient(90deg, #1e293b 0%, #334155 100%);
+            border: 2px solid var(--kbc-gold);
+            transition: all 0.3s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .hex-button:hover:not(.disabled) {
+            background: var(--kbc-gold);
+            color: var(--kbc-blue);
+            transform: scale(1.02);
+        }
+
+        .hex-button.correct {
+            background: var(--kbc-highlight) !important;
+            border-color: #fff;
+        }
+
+        .hex-button.wrong {
+            background: var(--kbc-wrong) !important;
+            border-color: #fff;
+        }
+
+        .money-item {
+            transition: all 0.3s ease;
+        }
+
+        .money-item.active {
+            background: var(--kbc-gold);
+            color: var(--kbc-blue);
+            font-weight: 800;
+            transform: translateX(-10px);
+            border-radius: 4px;
+        }
+
+        .money-item.safe {
+            color: #fff;
+            text-shadow: 0 0 5px var(--kbc-gold);
+            border-left: 3px solid var(--kbc-gold);
+            padding-left: 8px;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .lifeline-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--kbc-gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .lifeline-btn:hover:not(.used) {
+            background: var(--kbc-gold);
+            color: var(--kbc-blue);
+        }
+
+        .lifeline-btn.used {
+            opacity: 0.3;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+
+        #timer-circle {
+            transition: stroke-dashoffset 1s linear;
+        }
+
+        /* Cheque Design */
+        .cheque-card {
+            background: #fdfdfd;
+            color: #333;
+            padding: 30px;
+            border: 10px solid #d4af37;
+            border-radius: 5px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            font-family: 'serif';
+        }
+        .cheque-font {
+            font-family: 'Dancing Script', cursive;
+            border-bottom: 1px dashed #999;
+            color: #1e293b;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center">
+
+    <div id="game-app" class="w-full max-w-6xl h-full md:h-[90vh] grid grid-cols-1 md:grid-cols-4 gap-4 p-4">
+        <div class="md:col-span-3 flex flex-col justify-between space-y-4">
+            <div class="flex justify-between items-center glass p-4 rounded-xl">
+                <div class="flex gap-3" id="lifelines">
+                    <button onclick="useLifeline('5050')" id="ll-5050" class="lifeline-btn">50:50</button>
+                    <button onclick="useLifeline('flip')" id="ll-flip" class="lifeline-btn">FLIP</button>
+                    <button onclick="useLifeline('double')" id="ll-double" class="lifeline-btn">2X</button>
+                </div>
+                
+                <div class="relative flex items-center justify-center">
+                    <svg class="w-20 h-20 transform -rotate-90">
+                        <circle cx="40" cy="40" r="35" stroke="rgba(255,255,255,0.1)" stroke-width="5" fill="transparent" />
+                        <circle id="timer-circle" cx="40" cy="40" r="35" stroke="var(--kbc-gold)" stroke-width="5" fill="transparent" 
+                                stroke-dasharray="220" stroke-dashoffset="0" />
+                    </svg>
+                    <span id="timer-text" class="absolute text-2xl font-bold">30</span>
+                </div>
+
+                <div class="text-right">
+                    <p class="text-xs uppercase opacity-70">Winning Amount</p>
+                    <p id="current-prize" class="text-xl font-bold text-yellow-400">₹ 0</p>
+                </div>
+            </div>
+
+            <div class="flex-grow flex flex-col justify-center items-center px-4">
+                <div id="question-box" class="w-full glass p-8 rounded-2xl border-l-4 border-yellow-500 mb-8 text-center">
+                    <h2 id="question-text" class="text-xl md:text-2xl font-semibold leading-relaxed">
+                        Initializing Game...
+                    </h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full" id="options-container">
+                    <button class="hex-button p-4 text-left px-12 group" onclick="handleAnswer(0)">
+                        <span class="text-yellow-400 font-bold mr-2">A:</span> <span class="opt-text"></span>
+                    </button>
+                    <button class="hex-button p-4 text-left px-12 group" onclick="handleAnswer(1)">
+                        <span class="text-yellow-400 font-bold mr-2">B:</span> <span class="opt-text"></span>
+                    </button>
+                    <button class="hex-button p-4 text-left px-12 group" onclick="handleAnswer(2)">
+                        <span class="text-yellow-400 font-bold mr-2">C:</span> <span class="opt-text"></span>
+                    </button>
+                    <button class="hex-button p-4 text-left px-12 group" onclick="handleAnswer(3)">
+                        <span class="text-yellow-400 font-bold mr-2">D:</span> <span class="opt-text"></span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="message-bar" class="h-12 text-center text-lg font-medium text-yellow-200"></div>
+        </div>
+
+        <div class="hidden md:flex flex-col glass rounded-xl p-4 overflow-y-auto">
+            <h3 class="text-center font-bold border-b border-white/10 pb-2 mb-2 text-yellow-500 uppercase tracking-widest">Milestones</h3>
+            <div id="money-ladder" class="flex flex-col-reverse gap-1 text-sm"></div>
+        </div>
+    </div>
+
+    <!-- Overlay Layer -->
+    <div id="overlay" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-6 overflow-y-auto">
+        <div id="overlay-content" class="max-w-2xl w-full glass p-10 rounded-3xl border-2 border-yellow-500/30 text-center">
+            <div id="normal-overlay">
+                <h1 id="overlay-title" class="text-4xl font-extrabold mb-4 text-yellow-500">KBC ULTIMATE</h1>
+                <p id="overlay-desc" class="mb-8 opacity-80 text-lg">Are you ready to become a Virtual Crorepati?</p>
+                
+                <div id="name-input-section" class="mb-6 hidden">
+                    <input type="text" id="player-name" placeholder="Enter your full name" 
+                           class="w-full bg-white/10 border border-yellow-500/50 p-4 rounded-xl text-white text-center focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                </div>
+
+                <button id="start-btn" onclick="startGame()" class="w-full bg-yellow-500 text-blue-900 font-bold py-4 px-8 rounded-full text-xl hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/20">
+                    START GAME
+                </button>
+            </div>
+
+            <!-- Virtual Cheque Section -->
+            <div id="cheque-section" class="hidden text-left">
+                <div class="cheque-card">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="font-bold text-lg text-blue-900">STATE BANK OF TRIVIA</div>
+                        <div class="text-right text-xs">DATE: <span id="cheque-date"></span></div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <span class="text-sm italic">Pay to:</span> 
+                        <span id="cheque-payee" class="text-2xl cheque-font ml-4 px-4 inline-block min-w-[200px]"></span>
+                    </div>
+
+                    <div class="mb-6">
+                        <span class="text-sm italic">The sum of:</span>
+                        <span id="cheque-amount-text" class="text-xl cheque-font ml-4 block mt-2"></span>
+                    </div>
+
+                    <div class="flex justify-between items-end mt-10">
+                        <div class="border border-gray-400 p-2 text-xl font-bold bg-gray-100">
+                            ₹ <span id="cheque-amount-num"></span>
+                        </div>
+                        <div class="text-center">
+                            <div class="cheque-font text-lg">Amitabh Bachchan</div>
+                            <div class="text-[10px] border-top border-gray-400 pt-1 uppercase">Authorised Signatory</div>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="location.reload()" class="mt-8 w-full bg-white text-blue-900 font-bold py-3 rounded-xl">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(freq, type, duration, vol = 0.1) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const SFX = {
+            click: () => playTone(600, 'sine', 0.1),
+            correct: () => {
+                playTone(400, 'sine', 0.2);
+                setTimeout(() => playTone(800, 'sine', 0.5), 100);
+            },
+            wrong: () => {
+                playTone(200, 'sawtooth', 0.5);
+            },
+            tick: () => playTone(1000, 'sine', 0.05, 0.03),
+            levelUp: () => {
+                [440, 554, 659, 880].forEach((f, i) => {
+                    setTimeout(() => playTone(f, 'square', 0.4, 0.05), i * 100);
+                });
+            }
+        };
+
+        const moneyLadder = [
+            "₹ 1,000", "₹ 2,000", "₹ 3,000", "₹ 5,000", "₹ 10,000",
+            "₹ 20,000", "₹ 40,000", "₹ 80,000", "₹ 1,60,000", "₹ 3,20,000",
+            "₹ 6,40,000", "₹ 12,50,000", "₹ 25,00,000", "₹ 50,00,000", "₹ 7,00,00,000"
+        ];
+        
+        const safePoints = [4, 9, 14]; // Milestone indices
+
+        const masterPool = [
+            // Level 0 (Question 1-3)
+            { q: "Which planet is known as the Red Planet?", a: ["Venus", "Mars", "Jupiter", "Saturn"], c: 1, lv: 0 },
+            { q: "What is the capital of France?", a: ["Berlin", "Madrid", "Paris", "Rome"], c: 2, lv: 0 },
+            { q: "Which gas do plants absorb from the atmosphere?", a: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"], c: 2, lv: 0 },
+            // Level 1 (Question 4-6)
+            { q: "Who wrote 'Romeo and Juliet'?", a: ["Charles Dickens", "William Shakespeare", "Mark Twain", "Leo Tolstoy"], c: 1, lv: 1 },
+            { q: "What is the largest ocean on Earth?", a: ["Atlantic", "Indian", "Arctic", "Pacific"], c: 3, lv: 1 },
+            { q: "Which animal is the 'Ship of the Desert'?", a: ["Horse", "Elephant", "Camel", "Donkey"], c: 2, lv: 1 },
+            // Level 2 (Question 7-9)
+            { q: "In which year did India gain Independence?", a: ["1942", "1945", "1947", "1950"], c: 2, lv: 2 },
+            { q: "Which is the smallest country in the world?", a: ["Monaco", "Vatican City", "Maldives", "San Marino"], c: 1, lv: 2 },
+            { q: "The 'Iron Man of India' refers to whom?", a: ["B.R. Ambedkar", "Jawaharlal Nehru", "Sardar Vallabhbhai Patel", "Subhash Bose"], c: 2, lv: 2 },
+            // Level 3 (Question 10-12)
+            { q: "What is the chemical symbol for Gold?", a: ["Gd", "Ag", "Au", "Fe"], c: 2, lv: 3 },
+            { q: "Which of these is NOT a primary color?", a: ["Red", "Blue", "Green", "Yellow"], c: 2, lv: 3 },
+            { q: "World No Tobacco Day is observed on?", a: ["May 31", "June 5", "April 22", "May 1"], c: 0, lv: 3 },
+            // Level 4 (Question 13-14)
+            { q: "Who was the first woman Nobel Prize winner?", a: ["Mother Teresa", "Marie Curie", "Jane Addams", "Alva Myrdal"], c: 1, lv: 4 },
+            { q: "Which Indian state has the longest coastline?", a: ["Maharashtra", "Tamil Nadu", "Gujarat", "Andhra Pradesh"], c: 2, lv: 4 },
+            { q: "What is the currency of Japan?", a: ["Won", "Yuan", "Yen", "Baht"], c: 2, lv: 4 },
+            // Level 5 (Jackpot)
+            { q: "Who discovered Penicillin?", a: ["Alexander Fleming", "Louis Pasteur", "Gregor Mendel", "Marie Curie"], c: 0, lv: 5 },
+            { q: "Which element has the highest melting point?", a: ["Gold", "Iron", "Tungsten", "Carbon"], c: 2, lv: 5 },
+            { q: "The first Indian to win an individual Olympic Gold?", a: ["Leander Paes", "Abhinav Bindra", "Neeraj Chopra", "R. Rathore"], c: 1, lv: 5 }
+        ];
+
+        let currentStep = 0;
+        let timer = 30;
+        let timerInterval;
+        let isDoubleDip = false;
+        let doubleDipStrikes = 0;
+        let usedLifelines = { '5050': false, 'flip': false, 'double': false };
+        let currentQuestion = null;
+        let usedQuestions = [];
+
+        function initLadder() {
+            const ladder = document.getElementById('money-ladder');
+            ladder.innerHTML = '';
+            moneyLadder.forEach((amount, index) => {
+                const div = document.createElement('div');
+                div.className = `money-item p-2 flex justify-between items-center ${safePoints.includes(index) ? 'safe' : ''}`;
+                div.id = `step-${index}`;
+                div.innerHTML = `<span>${index + 1}</span> <span>${amount}</span>`;
+                ladder.appendChild(div);
+            });
+        }
+
+        function startGame() {
+            audioCtx.resume();
+            document.getElementById('overlay').classList.add('hidden');
+            currentStep = 0;
+            usedQuestions = [];
+            usedLifelines = { '5050': false, 'flip': false, 'double': false };
+            resetLifelineUI();
+            loadQuestion();
+            SFX.levelUp();
+        }
+
+        function resetLifelineUI() {
+            Object.keys(usedLifelines).forEach(id => {
+                document.getElementById(`ll-${id}`).classList.remove('used');
+            });
+        }
+
+        function loadQuestion() {
+            // Logic for strictly tiered difficulty based on current step
+            let difficulty = 0;
+            if (currentStep >= 3) difficulty = 1;
+            if (currentStep >= 6) difficulty = 2;
+            if (currentStep >= 9) difficulty = 3;
+            if (currentStep >= 12) difficulty = 4;
+            if (currentStep >= 14) difficulty = 5;
+
+            const available = masterPool.filter(q => q.lv === difficulty && !usedQuestions.includes(q.q));
+            
+            // Fallback if pool is empty for that specific level
+            if (available.length === 0) {
+                const secondary = masterPool.filter(q => !usedQuestions.includes(q.q));
+                currentQuestion = secondary[Math.floor(Math.random() * secondary.length)];
+            } else {
+                currentQuestion = available[Math.floor(Math.random() * available.length)];
+            }
+
+            usedQuestions.push(currentQuestion.q);
+            
+            document.getElementById('question-text').innerText = currentQuestion.q;
+            const buttons = document.querySelectorAll('.hex-button');
+            buttons.forEach((btn, i) => {
+                btn.classList.remove('correct', 'wrong', 'disabled');
+                btn.style.opacity = "1";
+                btn.style.pointerEvents = 'auto';
+                btn.querySelector('.opt-text').innerText = currentQuestion.a[i];
+            });
+
+            document.getElementById('message-bar').innerText = "";
+            updateLadderUI();
+            startTimer();
+        }
+
+        function updateLadderUI() {
+            document.querySelectorAll('.money-item').forEach(el => el.classList.remove('active'));
+            const currentEl = document.getElementById(`step-${currentStep}`);
+            if (currentEl) currentEl.classList.add('active');
+            
+            document.getElementById('current-prize').innerText = currentStep > 0 ? moneyLadder[currentStep - 1] : "₹ 0";
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timer = currentStep > 9 ? 60 : 30; 
+            const fullTime = timer;
+            const circle = document.getElementById('timer-circle');
+            
+            timerInterval = setInterval(() => {
+                timer--;
+                document.getElementById('timer-text').innerText = timer;
+                const offset = 220 - (timer / fullTime) * 220;
+                circle.style.strokeDashoffset = offset;
+
+                if (timer <= 5) SFX.tick();
+                if (timer <= 0) {
+                    clearInterval(timerInterval);
+                    gameOver("Time's Up!");
+                }
+            }, 1000);
+        }
+
+        function handleAnswer(index) {
+            SFX.click();
+            clearInterval(timerInterval);
+            const buttons = document.querySelectorAll('.hex-button');
+            buttons.forEach(btn => btn.style.pointerEvents = 'none');
+
+            if (index === currentQuestion.c) {
+                buttons[index].classList.add('correct');
+                SFX.correct();
+                isDoubleDip = false;
+                
+                setTimeout(() => {
+                    if (currentStep === moneyLadder.length - 1) {
+                        currentStep++; // For the cheque amount
+                        showWinSequence();
+                    } else {
+                        currentStep++;
+                        loadQuestion();
+                    }
+                }, 1500);
+            } else {
+                if (isDoubleDip && doubleDipStrikes === 0) {
+                    buttons[index].classList.add('wrong', 'disabled');
+                    buttons[index].style.opacity = "0.2";
+                    doubleDipStrikes++;
+                    document.getElementById('message-bar').innerText = "Double Dip: Final chance!";
+                    buttons.forEach((btn, i) => {
+                       if(!btn.classList.contains('disabled')) btn.style.pointerEvents = 'auto';
+                    });
+                    return;
+                }
+
+                buttons[index].classList.add('wrong');
+                buttons[currentQuestion.c].classList.add('correct');
+                SFX.wrong();
+                
+                setTimeout(() => {
+                    gameOver("Wrong Answer!");
+                }, 2000);
+            }
+        }
+
+        function useLifeline(type) {
+            if (usedLifelines[type]) return;
+            SFX.click();
+            usedLifelines[type] = true;
+            document.getElementById(`ll-${type}`).classList.add('used');
+
+            if (type === '5050') {
+                const buttons = document.querySelectorAll('.hex-button');
+                const indices = [0, 1, 2, 3].filter(i => i !== currentQuestion.c);
+                indices.sort(() => Math.random() - 0.5);
+                indices.slice(0, 2).forEach(idx => {
+                    buttons[idx].style.opacity = "0.2";
+                    buttons[idx].style.pointerEvents = 'none';
+                    buttons[idx].classList.add('disabled');
+                });
+            } 
+            else if (type === 'flip') {
+                loadQuestion();
+            } 
+            else if (type === 'double') {
+                isDoubleDip = true;
+                doubleDipStrikes = 0;
+                document.getElementById('message-bar').innerText = "Double Dip Active";
+            }
+        }
+
+        function gameOver(reason) {
+            clearInterval(timerInterval);
+            let finalPrize = "₹ 0";
+            for (let i = safePoints.length - 1; i >= 0; i--) {
+                if (currentStep > safePoints[i]) {
+                    finalPrize = moneyLadder[safePoints[i]];
+                    break;
+                }
+            }
+            
+            showChequeScreen(reason, finalPrize);
+        }
+
+        function showWinSequence() {
+            showChequeScreen("KBC CHAMPION!", moneyLadder[14]);
+        }
+
+        function showChequeScreen(title, prize) {
+            document.getElementById('normal-overlay').classList.add('hidden');
+            document.getElementById('cheque-section').classList.remove('hidden');
+            document.getElementById('overlay').classList.remove('hidden');
+            document.getElementById('name-input-section').classList.remove('hidden');
+            document.getElementById('start-btn').classList.add('hidden');
+            
+            document.getElementById('overlay-title').innerText = title;
+            document.getElementById('cheque-amount-num').innerText = prize.replace('₹ ', '');
+            document.getElementById('cheque-amount-text').innerText = convertAmountToText(prize);
+            document.getElementById('cheque-date').innerText = new Date().toLocaleDateString();
+
+            // Setup real-time name writing
+            const nameInput = document.getElementById('player-name');
+            const chequePayee = document.getElementById('cheque-payee');
+            nameInput.addEventListener('input', () => {
+                chequePayee.innerText = nameInput.value || "Your Name Here";
+            });
+            chequePayee.innerText = "Valued Winner";
+        }
+
+        function convertAmountToText(prize) {
+            if (prize.includes('7,00,00,000')) return "Seven Crore Rupees Only";
+            if (prize.includes('50,00,000')) return "Fifty Lakh Rupees Only";
+            if (prize.includes('10,000')) return "Ten Thousand Rupees Only";
+            if (prize.includes('3,20,000')) return "Three Lakh Twenty Thousand Rupees Only";
+            return prize + " Only";
+        }
+
+        window.onload = () => {
+            initLadder();
+        };
+    </script>
+</body>
+</html>
