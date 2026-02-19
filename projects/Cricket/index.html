@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Championship - Pro Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #1a202c;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 500px;
+            margin: 0 auto;
+            background: linear-gradient(to bottom, #4ade80, #166534);
+            border: 8px solid #2d3748;
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: default;
+        }
+        .pitch {
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 100%;
+            background: #fde68a;
+            border-left: 4px solid #f59e0b;
+            border-right: 4px solid #f59e0b;
+        }
+        .crease {
+            position: absolute;
+            bottom: 60px;
+            width: 100%;
+            height: 2px;
+            background: white;
+        }
+        #ball {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b);
+            border-radius: 50%;
+            display: none;
+            z-index: 50;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            pointer-events: none;
+        }
+        #batsman {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 40;
+            transition: left 0.05s linear;
+        }
+        #bat {
+            position: absolute;
+            bottom: 20px;
+            width: 10px;
+            height: 55px;
+            background: #78350f;
+            border: 1px solid #451a03;
+            transform-origin: bottom center;
+            transition: transform 0.1s ease-out;
+        }
+        .stumps {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+        }
+        .stump {
+            width: 4px;
+            height: 40px;
+            background: #fbbf24;
+            border-radius: 2px;
+        }
+        .bails {
+            position: absolute;
+            top: -2px;
+            width: 100%;
+            height: 4px;
+            background: #b45309;
+        }
+        .score-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #4ade80;
+            min-width: 140px;
+            pointer-events: none;
+        }
+        .msg-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            text-align: center;
+            display: none;
+            z-index: 100;
+            border: 3px solid #4ade80;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        #hit-feedback {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-shadow: 2px 2px 0 #000;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="mb-4 text-center">
+        <h1 class="text-3xl font-bold text-green-400">CRICKET CHAMPION PRO</h1>
+        <p class="text-sm text-gray-400">Use Arrow Keys to Move & Space to Swing</p>
+    </div>
+
+    <div id="game-container">
+        <!-- The Pitch -->
+        <div class="pitch">
+            <div class="crease"></div>
+        </div>
+
+        <!-- Stumps -->
+        <div class="stumps">
+            <div class="bails"></div>
+            <div class="stump"></div>
+            <div class="stump"></div>
+            <div class="stump"></div>
+        </div>
+
+        <!-- Player -->
+        <div id="batsman">
+            <svg width="60" height="80" viewBox="0 0 60 80">
+                <circle cx="30" cy="15" r="10" fill="#fef3c7" /> 
+                <rect x="20" y="25" width="20" height="30" fill="#ffffff" rx="5" /> 
+                <rect x="22" y="55" width="6" height="20" fill="#ffffff" /> 
+                <rect x="32" y="55" width="6" height="20" fill="#ffffff" /> 
+            </svg>
+            <div id="bat"></div>
+        </div>
+
+        <!-- The Ball -->
+        <div id="ball"></div>
+
+        <!-- Score Info -->
+        <div class="score-panel">
+            <div class="text-xs uppercase text-green-400">Score</div>
+            <div id="display-runs" class="text-2xl font-bold">0</div>
+            <div class="text-xs uppercase text-red-400 mt-2">Wickets</div>
+            <div id="display-wickets" class="text-xl font-bold">0</div>
+            <div class="text-xs mt-2 text-gray-400">Balls: <span id="display-balls">0</span></div>
+        </div>
+
+        <!-- Message UI -->
+        <div id="msg-box" class="msg-box">
+            <h2 id="msg-title" class="text-4xl font-bold mb-4 text-yellow-400">OUT!</h2>
+            <p id="msg-desc" class="mb-6 text-lg">The ball hit the stumps!</p>
+            <button onclick="resetGame()" class="bg-green-600 hover:bg-green-500 px-8 py-3 rounded-full font-bold text-white transition-all transform hover:scale-105">PLAY AGAIN</button>
+        </div>
+        
+        <div id="hit-feedback" class="text-6xl font-black text-white opacity-0 transition-all pointer-events-none">4!</div>
+    </div>
+
+    <div class="mt-6 flex gap-4">
+        <button id="bowl-btn" class="bg-blue-600 hover:bg-blue-500 px-10 py-4 rounded-xl font-bold shadow-xl transition-all transform active:scale-95">BOWL NEXT BALL</button>
+    </div>
+
+    <script>
+        // Game State
+        const state = {
+            runs: 0,
+            wickets: 0,
+            balls: 0,
+            isBallInPlay: false,
+            isBeingHit: false,
+            batsmanX: 0, 
+            ballX: 0,
+            ballY: 0,
+            ballSpeedY: 7,
+            swing: 0,
+            isOut: false,
+            gameLoop: null
+        };
+
+        const ballEl = document.getElementById('ball');
+        const batsmanEl = document.getElementById('batsman');
+        const batEl = document.getElementById('bat');
+        const bowlBtn = document.getElementById('bowl-btn');
+        const msgBox = document.getElementById('msg-box');
+        const hitFeedback = document.getElementById('hit-feedback');
+
+        // Controls
+        document.addEventListener('keydown', (e) => {
+            if (state.isOut) return;
+            
+            if (e.key === 'ArrowLeft') {
+                state.batsmanX = Math.max(-45, state.batsmanX - 12);
+            } else if (e.key === 'ArrowRight') {
+                state.batsmanX = Math.min(45, state.batsmanX + 12);
+            } else if (e.key === ' ' || e.key === 'Spacebar') {
+                swingBat();
+            }
+            updateBatsmanPosition();
+        });
+
+        function updateBatsmanPosition() {
+            batsmanEl.style.left = `calc(50% + ${state.batsmanX}px)`;
+        }
+
+        function swingBat() {
+            // Can swing anytime, but only registers hit if ball is in play
+            batEl.style.transform = 'rotate(-110deg)';
+            
+            if (state.isBallInPlay && !state.isBeingHit) {
+                const distX = Math.abs(state.ballX - state.batsmanX);
+                const distY = state.ballY;
+
+                // Hit Detection Zone
+                if (distY > 370 && distY < 460 && distX < 35) {
+                    hitBall();
+                }
+            }
+
+            setTimeout(() => {
+                batEl.style.transform = 'rotate(0deg)';
+            }, 150);
+        }
+
+        function hitBall() {
+            state.isBallInPlay = false;
+            state.isBeingHit = true;
+            if(state.gameLoop) clearInterval(state.gameLoop);
+            
+            const hitPower = Math.random();
+            let runs = 1;
+            if (hitPower > 0.85) runs = 6;
+            else if (hitPower > 0.65) runs = 4;
+            else if (hitPower > 0.35) runs = 2;
+            
+            state.runs += runs;
+            showFeedback(runs);
+            updateScore();
+            
+            const angle = (Math.random() - 0.5) * 6;
+            const hitInterval = setInterval(() => {
+                state.ballY -= 18;
+                state.ballX += angle * 4;
+                updateBallStyle();
+                
+                if (state.ballY < -100) {
+                    clearInterval(hitInterval);
+                    state.isBeingHit = false;
+                    resetBall();
+                }
+            }, 20);
+        }
+
+        function showFeedback(runs) {
+            hitFeedback.innerText = runs + "!";
+            hitFeedback.style.opacity = "1";
+            hitFeedback.style.transform = "translate(-50%, -120%) scale(1.5)";
+            setTimeout(() => {
+                hitFeedback.style.opacity = "0";
+                hitFeedback.style.transform = "translate(-50%, -50%) scale(1)";
+            }, 800);
+        }
+
+        function updateBallStyle() {
+            ballEl.style.left = `calc(50% + ${state.ballX}px)`;
+            ballEl.style.top = `${state.ballY}px`;
+            // Visual perspective
+            const scale = 0.4 + (Math.max(0, state.ballY) / 500) * 0.7;
+            ballEl.style.transform = `scale(${scale}) translateX(-50%)`;
+        }
+
+        function bowlBall() {
+            if (state.isBallInPlay || state.isOut || state.isBeingHit) return;
+            
+            state.isBallInPlay = true;
+            state.balls++;
+            updateScore();
+            
+            // Bot logic: randomize bowling
+            state.ballY = -20;
+            state.ballX = (Math.random() - 0.5) * 70; 
+            state.ballSpeedY = 8 + Math.random() * 6;
+            state.swing = (Math.random() - 0.5) * 2;
+            
+            ballEl.style.display = 'block';
+            updateBallStyle();
+            
+            state.gameLoop = setInterval(() => {
+                state.ballY += state.ballSpeedY;
+                state.ballX += state.swing;
+                updateBallStyle();
+
+                // Wicket check (Clean Bowled)
+                if (state.ballY > 450 && state.ballY < 490) {
+                    if (Math.abs(state.ballX) < 16 && state.isBallInPlay) {
+                        clearInterval(state.gameLoop);
+                        wicket();
+                    }
+                }
+
+                // Ball missed or gone past
+                if (state.ballY > 520) {
+                    clearInterval(state.gameLoop);
+                    resetBall();
+                }
+            }, 20);
+        }
+
+        function wicket() {
+            state.isBallInPlay = false;
+            state.wickets++;
+            updateScore();
+            
+            ballEl.style.background = "yellow";
+            
+            setTimeout(() => {
+                if (state.wickets >= 3) {
+                    state.isOut = true;
+                    msgBox.style.display = 'block';
+                    document.getElementById('msg-title').innerText = "ALL OUT!";
+                    document.getElementById('msg-desc').innerText = `Final Score: ${state.runs} runs in ${state.balls} balls.`;
+                } else {
+                    resetBall();
+                }
+            }, 800);
+        }
+
+        function resetBall() {
+            state.isBallInPlay = false;
+            state.isBeingHit = false;
+            ballEl.style.display = 'none';
+            ballEl.style.background = "radial-gradient(circle at 30% 30%, #ef4444, #991b1b)";
+        }
+
+        function resetGame() {
+            state.runs = 0;
+            state.wickets = 0;
+            state.balls = 0;
+            state.isOut = false;
+            state.isBeingHit = false;
+            state.batsmanX = 0;
+            updateScore();
+            updateBatsmanPosition();
+            msgBox.style.display = 'none';
+            resetBall();
+        }
+
+        function updateScore() {
+            document.getElementById('display-runs').innerText = state.runs;
+            document.getElementById('display-wickets').innerText = state.wickets;
+            document.getElementById('display-balls').innerText = state.balls;
+        }
+
+        bowlBtn.addEventListener('click', bowlBall);
+
+        // Initial setup
+        updateBatsmanPosition();
+    </script>
+</body>
+</html>

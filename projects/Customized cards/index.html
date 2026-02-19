@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boutique AI Greeting Cards</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Great+Vibes&family=Montserrat:wght@300;400;600&family=Playfair+Display:ital,wght@0,700;1,700&family=Pacifico&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --accent: #f43f5e;
+        }
+        
+        body {
+            background-color: #f1f5f9;
+            font-family: 'Montserrat', sans-serif;
+            color: #1e293b;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .card-canvas {
+            aspect-ratio: 4 / 5;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            background-color: white;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+
+        .card-canvas:hover {
+            transform: translateY(-5px) scale(1.01);
+        }
+
+        /* Typography Slots */
+        .font-dancing { font-family: 'Dancing Script', cursive; }
+        .font-vibes { font-family: 'Great Vibes', cursive; }
+        .font-playfair { font-family: 'Playfair Display', serif; }
+        .font-pacifico { font-family: 'Pacifico', cursive; }
+        .font-cinzel { font-family: 'Cinzel', serif; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+
+        .loader {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .event-chip {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .event-chip.active {
+            background-color: #6366f1;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Premium Header -->
+    <header class="glass-panel border-b border-slate-200 py-4 px-8 flex justify-between items-center sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-xl text-white shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight text-slate-800">CardStudio <span class="text-indigo-600">Pro</span></h1>
+                <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-semibold">AI Design Suite</p>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <button id="downloadBtn" class="bg-slate-900 hover:bg-black text-white px-6 py-2.5 rounded-full text-sm font-semibold transition-all flex items-center gap-2 shadow-md">
+                <span>Export Design</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        
+        <!-- Sidebar: Enhanced Controls -->
+        <aside class="w-full lg:w-[400px] bg-white border-r border-slate-100 p-8 overflow-y-auto custom-scrollbar shadow-sm">
+            <div class="space-y-10">
+                
+                <!-- 1. Event Presets -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-[0.15em]">Choose Occasion</label>
+                    <div class="flex flex-wrap gap-2" id="eventSelector">
+                        <span class="event-chip active text-xs px-4 py-2 rounded-full border border-slate-200 hover:border-indigo-300" data-event="birthday">Birthday</span>
+                        <span class="event-chip text-xs px-4 py-2 rounded-full border border-slate-200 hover:border-indigo-300" data-event="wedding">Wedding</span>
+                        <span class="event-chip text-xs px-4 py-2 rounded-full border border-slate-200 hover:border-indigo-300" data-event="holiday">Holiday</span>
+                        <span class="event-chip text-xs px-4 py-2 rounded-full border border-slate-200 hover:border-indigo-300" data-event="anniversary">Anniversary</span>
+                        <span class="event-chip text-xs px-4 py-2 rounded-full border border-slate-200 hover:border-indigo-300" data-event="thankyou">Thank You</span>
+                        <span class="event-chip text-xs px-4 py-2 rounded-full border border-slate-200 hover:border-indigo-300" data-event="custom">Custom</span>
+                    </div>
+                </div>
+
+                <!-- 2. Message -->
+                <div class="space-y-4">
+                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-[0.15em]">Personalize Text</label>
+                    <input type="text" id="headlineInput" class="w-full bg-slate-50 p-4 rounded-xl border-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium text-slate-700" placeholder="Card Headline">
+                    <textarea id="bodyInput" rows="4" class="w-full bg-slate-50 p-4 rounded-xl border-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none text-slate-600" placeholder="Write your heartfelt message..."></textarea>
+                </div>
+
+                <!-- 3. Visuals -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-[0.15em]">Visual Aesthetics</label>
+                    <div class="grid grid-cols-3 gap-2 mb-6">
+                        <button class="font-btn p-3 border border-slate-100 rounded-xl hover:bg-slate-50 text-[10px] font-semibold" data-font="font-dancing">Elegant</button>
+                        <button class="font-btn p-3 border border-slate-100 rounded-xl hover:bg-slate-50 text-[10px] font-semibold" data-font="font-cinzel">Majestic</button>
+                        <button class="font-btn p-3 border border-slate-100 rounded-xl hover:bg-slate-50 text-[10px] font-semibold" data-font="font-pacifico">Bold</button>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                        <span class="text-xs font-semibold text-slate-500">Theme Color</span>
+                        <div class="flex gap-2 items-center">
+                            <div class="flex -space-x-1">
+                                <button class="color-btn w-6 h-6 rounded-full border-2 border-white ring-1 ring-slate-200" style="background: #1e293b" data-color="#1e293b"></button>
+                                <button class="color-btn w-6 h-6 rounded-full border-2 border-white ring-1 ring-slate-200" style="background: #e11d48" data-color="#e11d48"></button>
+                                <button class="color-btn w-6 h-6 rounded-full border-2 border-white ring-1 ring-slate-200" style="background: #0891b2" data-color="#0891b2"></button>
+                            </div>
+                            <input type="color" id="customColor" class="w-8 h-8 rounded-lg border-none cursor-pointer bg-transparent">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. AI Illustration -->
+                <div class="p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
+                    <div class="flex items-center gap-2 mb-3">
+                        <svg class="text-indigo-600" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                        <span class="text-xs font-bold text-indigo-900 uppercase tracking-widest">AI Artwork</span>
+                    </div>
+                    <div class="relative group">
+                        <input type="text" id="imagePrompt" placeholder="Vibrant cherry blossoms..." class="w-full p-4 pr-12 bg-white rounded-xl border-none shadow-sm focus:ring-2 focus:ring-indigo-500 text-sm">
+                        <button id="generateBtn" class="absolute right-2 top-2 p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all shadow-md active:scale-95">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        </button>
+                    </div>
+                    <div id="genStatus" class="hidden mt-4 flex items-center gap-3 text-[11px] font-bold text-indigo-600 animate-pulse">
+                        <div class="loader"></div>
+                        <span>PAINTING YOUR VISION...</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Preview Area: More Aesthetic -->
+        <section class="flex-1 bg-[#f8fafc] flex items-center justify-center p-12 overflow-y-auto">
+            <div id="cardCaptureArea" class="relative max-w-lg w-full group">
+                
+                <!-- Card Container -->
+                <div id="cardElement" class="card-canvas w-full rounded-2xl flex flex-col items-center justify-center text-center p-14 bg-cover bg-center overflow-hidden">
+                    
+                    <!-- Glassy Overlay -->
+                    <div id="cardOverlay" class="absolute inset-0 bg-white/60 backdrop-blur-[2px] transition-all duration-700 opacity-0"></div>
+                    
+                    <!-- Decorative Border -->
+                    <div id="cardBorder" class="absolute inset-6 border-[1px] border-slate-200/50 rounded-xl z-0 pointer-events-none"></div>
+
+                    <!-- Content -->
+                    <div class="relative z-10 w-full space-y-8">
+                        <h2 id="cardHeadline" class="text-5xl sm:text-6xl font-dancing leading-tight drop-shadow-sm transition-all duration-500">
+                            Happy Birthday
+                        </h2>
+                        
+                        <div class="flex items-center justify-center gap-4 py-2">
+                            <div class="h-[1px] w-8 bg-slate-300"></div>
+                            <div id="cardIcon" class="text-slate-400 opacity-50">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            </div>
+                            <div class="h-[1px] w-8 bg-slate-300"></div>
+                        </div>
+
+                        <p id="cardBody" class="text-xl text-slate-600 leading-relaxed font-light max-w-xs mx-auto">
+                            Wishing you a day filled with laughter, love, and endless joy.
+                        </p>
+                    </div>
+
+                    <!-- Subtle Pattern -->
+                    <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: radial-gradient(#000 1px, transparent 1px); background-size: 20px 20px;"></div>
+                </div>
+
+                <!-- Reflection Effect Overlay -->
+                <div class="absolute inset-0 rounded-2xl pointer-events-none bg-gradient-to-tr from-white/10 to-transparent opacity-50"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl shadow-2xl transform translate-y-32 transition-transform duration-500 z-[100] flex items-center gap-4 text-sm font-semibold">
+        <div class="bg-indigo-500 p-1 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <span id="toastMsg">Action complete!</span>
+    </div>
+
+    <script>
+        const apiKey = "";
+        
+        // Event Configurations
+        const events = {
+            birthday: {
+                headline: "Happy Birthday",
+                body: "Wishing you a day filled with laughter, love, and endless joy. You deserve the best!",
+                font: "font-dancing",
+                color: "#e11d48",
+                icon: "cake"
+            },
+            wedding: {
+                headline: "A Perfect Match",
+                body: "To a lifetime of love and happiness. May your journey together be as beautiful as your wedding day.",
+                font: "font-cinzel",
+                color: "#1e293b",
+                icon: "rings"
+            },
+            holiday: {
+                headline: "Season's Greetings",
+                body: "Warmest thoughts and best wishes for a wonderful holiday season and a happy new year.",
+                font: "font-playfair",
+                color: "#15803d",
+                icon: "tree"
+            },
+            anniversary: {
+                headline: "Cheers to Us",
+                body: "Another year of making memories together. I wouldn't want to walk this path with anyone else.",
+                font: "font-vibes",
+                color: "#be185d",
+                icon: "heart"
+            },
+            thankyou: {
+                headline: "Gratitude",
+                body: "Just wanted to send a little note to say how much I appreciate everything you do. Thank you!",
+                font: "font-montserrat",
+                color: "#0891b2",
+                icon: "star"
+            },
+            custom: {
+                headline: "Custom Greeting",
+                body: "Start typing to create your own unique message here.",
+                font: "font-pacifico",
+                color: "#6366f1",
+                icon: "sparkles"
+            }
+        };
+
+        const state = { ...events.birthday };
+
+        // DOM
+        const els = {
+            headlineInput: document.getElementById('headlineInput'),
+            bodyInput: document.getElementById('bodyInput'),
+            cardHeadline: document.getElementById('cardHeadline'),
+            cardBody: document.getElementById('cardBody'),
+            cardElement: document.getElementById('cardElement'),
+            cardOverlay: document.getElementById('cardOverlay'),
+            imagePrompt: document.getElementById('imagePrompt'),
+            generateBtn: document.getElementById('generateBtn'),
+            genStatus: document.getElementById('genStatus'),
+            downloadBtn: document.getElementById('downloadBtn'),
+            toast: document.getElementById('toast'),
+            eventChips: document.querySelectorAll('.event-chip')
+        };
+
+        function init() {
+            // Text Inputs
+            els.headlineInput.value = state.headline;
+            els.bodyInput.value = state.body;
+
+            els.headlineInput.addEventListener('input', (e) => {
+                state.headline = e.target.value;
+                updateCard();
+            });
+            els.bodyInput.addEventListener('input', (e) => {
+                state.body = e.target.value;
+                updateCard();
+            });
+
+            // Event Selection
+            els.eventChips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const type = chip.dataset.event;
+                    els.eventChips.forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    
+                    // Apply Preset
+                    Object.assign(state, events[type]);
+                    els.headlineInput.value = state.headline;
+                    els.bodyInput.value = state.body;
+                    updateCard();
+                });
+            });
+
+            // Fonts & Colors
+            document.querySelectorAll('.font-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.font = btn.dataset.font;
+                    updateCard();
+                });
+            });
+
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.color = btn.dataset.color;
+                    updateCard();
+                });
+            });
+
+            document.getElementById('customColor').addEventListener('input', (e) => {
+                state.color = e.target.value;
+                updateCard();
+            });
+
+            els.generateBtn.addEventListener('click', handleImageGeneration);
+            
+            els.downloadBtn.addEventListener('click', () => {
+                showToast("Layout prepared for export!");
+            });
+
+            updateCard();
+        }
+
+        async function handleImageGeneration() {
+            const prompt = els.imagePrompt.value.trim();
+            if (!prompt) return showToast("Enter a prompt for the artist.");
+
+            els.genStatus.classList.remove('hidden');
+            els.generateBtn.disabled = true;
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ instances: [{ prompt: prompt }], parameters: { sampleCount: 1 } })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const img = `data:image/png;base64,${data.predictions[0].bytesBase64Encoded}`;
+                    els.cardElement.style.backgroundImage = `url(${img})`;
+                    els.cardOverlay.classList.remove('opacity-0');
+                    els.cardOverlay.classList.add('opacity-70');
+                    showToast("Masterpiece generated!");
+                } else {
+                    throw new Error("Generation failed");
+                }
+            } catch (err) {
+                showToast("AI took a break. Try again in a moment.");
+            } finally {
+                els.genStatus.classList.add('hidden');
+                els.generateBtn.disabled = false;
+            }
+        }
+
+        function updateCard() {
+            els.cardHeadline.textContent = state.headline;
+            els.cardBody.textContent = state.body;
+            els.cardHeadline.className = `text-5xl sm:text-6xl leading-tight drop-shadow-sm transition-all duration-500 ${state.font}`;
+            els.cardHeadline.style.color = state.color;
+            els.cardBody.style.color = state.color + 'CC'; // Slight transparency for body
+        }
+
+        function showToast(msg) {
+            document.getElementById('toastMsg').textContent = msg;
+            els.toast.classList.remove('translate-y-32');
+            setTimeout(() => els.toast.classList.add('translate-y-32'), 3000);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

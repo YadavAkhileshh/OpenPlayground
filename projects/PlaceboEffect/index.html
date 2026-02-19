@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Placebo Effect Simulator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --pastel-blue: #b8d4ff;
+            --pastel-green: #d4f1d4;
+            --pastel-purple: #e6d4ff;
+            --pastel-yellow: #fff9d6;
+            --pastel-lavender: #f0e6ff;
+            --pastel-pink: #ffd6e0;
+            --pastel-coral: #ffd8d8;
+            --pastel-mint: #d4f1e8;
+            --treatment-color: #6a8caf;
+            --placebo-color: #c5a3ff;
+            --symptom-color: #ff9b7a;
+            --improvement-color: #7acb9a;
+            --text-dark: #5a5a8a;
+            --text-light: #7a7aaa;
+            --shadow: rgba(0, 0, 0, 0.08);
+            --shadow-hover: rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--pastel-lavender), var(--pastel-mint));
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 20px var(--shadow);
+            border: 3px solid white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-decoration {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        .decoration-1 {
+            background-color: var(--treatment-color);
+            top: -40px;
+            left: -40px;
+        }
+
+        .decoration-2 {
+            background-color: var(--placebo-color);
+            bottom: -40px;
+            right: -40px;
+        }
+
+        header > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            background: linear-gradient(45deg, var(--treatment-color), var(--placebo-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            flex: 1;
+            min-width: 300px;
+            background-color: rgba(255, 255, 255, 0.85);
+            border-radius: 25px;
+            padding: 25px;
+            box-shadow: 0 10px 20px var(--shadow);
+            border: 3px solid white;
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px dashed var(--pastel-purple);
+        }
+
+        .panel-title i {
+            margin-right: 12px;
+            color: var(--text-dark);
+            font-size: 1.5rem;
+        }
+
+        .panel-title h2 {
+            font-size: 1.6rem;
+            color: var(--text-dark);
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px var(--shadow);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card.belief {
+            background: linear-gradient(135deg, var(--pastel-purple), #f2eaff);
+            border-left: 5px solid var(--placebo-color);
+        }
+
+        .stat-card.symptoms {
+            background: linear-gradient(135deg, var(--pastel-pink), #ffeef2);
+            border-left: 5px solid var(--symptom-color);
+        }
+
+        .stat-card.improvement {
+            background: linear-gradient(135deg, var(--pastel-green), #e8f5e8);
+            border-left: 5px solid var(--improvement-color);
+        }
+
+        .stat-card.effectiveness {
+            background: linear-gradient(135deg, var(--pastel-yellow), #fffce8);
+            border-left: 5px solid #e9c46a;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .belief .stat-value {
+            color: var(--placebo-color);
+        }
+
+        .symptoms .stat-value {
+            color: var(--symptom-color);
+        }
+
+        .improvement .stat-value {
+            color: var(--improvement-color);
+        }
+
+        .effectiveness .stat-value {
+            color: #e9c46a;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: var(--text-dark);
+            font-weight: 700;
+        }
+
+        .progress-container {
+            margin-top: 25px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .progress-bar {
+            height: 12px;
+            background-color: #f0f0f0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease;
+        }
+
+        .treatment-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .treatment-card {
+            padding: 25px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px var(--shadow);
+            border: 3px solid transparent;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .treatment-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 25px var(--shadow-hover);
+        }
+
+        .treatment-card.active {
+            transform: translateY(-5px);
+            border-width: 3px;
+        }
+
+        .treatment-card.real {
+            background: linear-gradient(135deg, var(--pastel-blue), #e3eeff);
+            border-color: var(--treatment-color);
+        }
+
+        .treatment-card.placebo {
+            background: linear-gradient(135deg, var(--pastel-purple), #f2eaff);
+            border-color: var(--placebo-color);
+        }
+
+        .treatment-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .real .treatment-icon {
+            background-color: var(--treatment-color);
+        }
+
+        .placebo .treatment-icon {
+            background-color: var(--placebo-color);
+        }
+
+        .treatment-name {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .treatment-desc {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .treatment-label {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: white;
+            position: relative;
+            z-index: 1;
+        }
+
+        .real .treatment-label {
+            background-color: var(--treatment-color);
+        }
+
+        .placebo .treatment-label {
+            background-color: var(--placebo-color);
+        }
+
+        .simulator-container {
+            display: none;
+            flex-direction: column;
+            min-height: 600px;
+        }
+
+        .simulator-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .patient-info {
+            background-color: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 5px 15px var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .patient-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--pastel-blue), var(--pastel-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+        }
+
+        .patient-details h3 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            color: var(--text-dark);
+        }
+
+        .patient-details p {
+            color: var(--text-light);
+        }
+
+        .treatment-info {
+            background-color: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 5px 15px var(--shadow);
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .treatment-name-large {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .treatment-type {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: white;
+            margin-top: 5px;
+        }
+
+        .real-treatment .treatment-type {
+            background-color: var(--treatment-color);
+        }
+
+        .placebo-treatment .treatment-type {
+            background-color: var(--placebo-color);
+        }
+
+        .simulator-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+            flex: 1;
+        }
+
+        @media (max-width: 992px) {
+            .simulator-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .symptoms-panel {
+            background-color: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 5px 15px var(--shadow);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .symptoms-list {
+            list-style-type: none;
+            flex: 1;
+            margin-top: 20px;
+        }
+
+        .symptom-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 15px;
+            background-color: rgba(255, 155, 122, 0.1);
+            border-left: 5px solid var(--symptom-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .symptom-item.improving {
+            background-color: rgba(122, 203, 154, 0.1);
+            border-left-color: var(--improvement-color);
+        }
+
+        .symptom-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .symptom-severity {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .severity-bar {
+            width: 100px;
+            height: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .severity-fill {
+            height: 100%;
+            border-radius: 5px;
+            background: linear-gradient(90deg, var(--symptom-color), var(--improvement-color));
+        }
+
+        .severity-value {
+            font-weight: 700;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .treatment-panel {
+            background-color: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 5px 15px var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .treatment-visual {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            color: white;
+            margin-bottom: 30px;
+            position: relative;
+            box-shadow: 0 15px 30px var(--shadow-hover);
+        }
+
+        .treatment-visual.real {
+            background: linear-gradient(135deg, var(--treatment-color), #8ec5fc);
+        }
+
+        .treatment-visual.placebo {
+            background: linear-gradient(135deg, var(--placebo-color), #c5a3ff);
+        }
+
+        .treatment-dose {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+        }
+
+        .belief-meter {
+            width: 100%;
+            margin-top: 30px;
+        }
+
+        .meter-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .meter-bar {
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .meter-fill {
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, var(--pastel-blue), var(--placebo-color));
+            transition: width 0.5s ease;
+        }
+
+        .meter-indicators {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            pointer-events: none;
+        }
+
+        .meter-indicator {
+            width: 2px;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .meter-values {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 18px 35px;
+            border: none;
+            border-radius: 60px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px var(--shadow);
+            min-width: 180px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--treatment-color), var(--placebo-color));
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: var(--text-dark);
+            border: 3px solid var(--pastel-purple);
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px var(--shadow-hover);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn i {
+            margin-right: 12px;
+            font-size: 1.2rem;
+        }
+
+        .results-container {
+            background-color: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 10px 20px var(--shadow);
+            display: none;
+        }
+
+        .results-title {
+            text-align: center;
+            margin-bottom: 25px;
+            color: var(--text-dark);
+            font-size: 2rem;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .result-card {
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px var(--shadow);
+        }
+
+        .result-card.belief-card {
+            background-color: rgba(197, 163, 255, 0.1);
+            border-top: 5px solid var(--placebo-color);
+        }
+
+        .result-card.improvement-card {
+            background-color: rgba(122, 203, 154, 0.1);
+            border-top: 5px solid var(--improvement-color);
+        }
+
+        .result-card.placebo-effect-card {
+            background-color: rgba(106, 140, 175, 0.1);
+            border-top: 5px solid var(--treatment-color);
+        }
+
+        .result-card.explanation-card {
+            background-color: rgba(233, 196, 106, 0.1);
+            border-top: 5px solid #e9c46a;
+        }
+
+        .result-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+        }
+
+        .result-label {
+            font-size: 1.1rem;
+            color: var(--text-dark);
+            font-weight: 700;
+        }
+
+        .result-desc {
+            margin-top: 15px;
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+
+        .explanation-section {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 30px;
+            border-left: 5px solid var(--placebo-color);
+        }
+
+        .explanation-title {
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+        }
+
+        .explanation-text {
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: var(--text-dark);
+        }
+
+        .key-factors {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .factor-card {
+            padding: 20px;
+            border-radius: 15px;
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 5px 15px var(--shadow);
+        }
+
+        .factor-title {
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--placebo-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .factor-desc {
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px;
+            margin-top: 40px;
+            color: var(--text-light);
+            font-size: 0.95rem;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            border: 3px solid white;
+        }
+
+        .back-button {
+            margin-bottom: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-dark);
+            font-weight: 600;
+            cursor: pointer;
+            padding: 10px 20px;
+            border-radius: 15px;
+            background-color: white;
+            box-shadow: 0 5px 15px var(--shadow);
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            transform: translateX(-5px);
+            background-color: var(--pastel-lavender);
+        }
+
+        .study-info {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 5px solid var(--treatment-color);
+        }
+
+        .study-title {
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .simulator-header {
+                flex-direction: column;
+            }
+            
+            .patient-info, .treatment-info {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-decoration decoration-1"></div>
+            <div class="header-decoration decoration-2"></div>
+            
+            <h1><i class="fas fa-pills"></i> Placebo Effect Simulator</h1>
+            <p class="subtitle">Experience how belief, expectation, and psychological factors can influence perceived treatment outcomes. This simulator demonstrates the power of the mind in healing.</p>
+        </header>
+
+        <div class="main-content">
+            <div class="panel">
+                <div class="panel-title">
+                    <i class="fas fa-chart-line"></i>
+                    <h2>Placebo Effect Overview</h2>
+                </div>
+                
+                <div class="stats-container">
+                    <div class="stat-card belief">
+                        <div class="stat-value" id="belief-level">65%</div>
+                        <div class="stat-label">Belief in Treatment</div>
+                    </div>
+                    
+                    <div class="stat-card symptoms">
+                        <div class="stat-value" id="symptom-severity">72</div>
+                        <div class="stat-label">Symptom Severity</div>
+                    </div>
+                    
+                    <div class="stat-card improvement">
+                        <div class="stat-value" id="improvement-rate">38%</div>
+                        <div class="stat-label">Improvement Rate</div>
+                    </div>
+                    
+                    <div class="stat-card effectiveness">
+                        <div class="stat-value" id="placebo-effect">42%</div>
+                        <div class="stat-label">Placebo Effect Strength</div>
+                    </div>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-label">
+                        <span>Treatment Effectiveness</span>
+                        <span id="effectiveness-percent">65%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="effectiveness-bar" style="width: 65%; background: linear-gradient(90deg, var(--treatment-color), var(--placebo-color));"></div>
+                    </div>
+                </div>
+                
+                <div class="study-info">
+                    <div class="study-title">
+                        <i class="fas fa-flask"></i> Did You Know?
+                    </div>
+                    <p style="color: var(--text-light); line-height: 1.6;">
+                        In clinical studies, placebos can be effective for 15-72% of patients, depending on the condition and context. The placebo effect is a real psychological and physiological phenomenon.
+                    </p>
+                </div>
+                
+                <div class="panel-title" style="margin-top: 30px;">
+                    <i class="fas fa-prescription-bottle"></i>
+                    <h2>Select a Treatment</h2>
+                </div>
+                
+                <div class="treatment-selector" id="treatment-selector">
+                    <div class="treatment-card real active" data-treatment="real">
+                        <div class="treatment-icon">
+                            <i class="fas fa-capsules"></i>
+                        </div>
+                        <div class="treatment-name">NeuroRelief</div>
+                        <div class="treatment-desc">A clinically-proven medication for headache relief with active pharmaceutical ingredients.</div>
+                        <div class="treatment-label">Active Treatment</div>
+                    </div>
+                    
+                    <div class="treatment-card placebo" data-treatment="placebo">
+                        <div class="treatment-icon">
+                            <i class="fas fa-tablets"></i>
+                        </div>
+                        <div class="treatment-name">PlaceboCalm</div>
+                        <div class="treatment-desc">Appears identical to NeuroRelief but contains only inactive ingredients (sugar pills).</div>
+                        <div class="treatment-label">Placebo</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel simulator-container" id="simulator-container">
+                <div class="back-button" id="back-button">
+                    <i class="fas fa-arrow-left"></i> Back to Treatment Selection
+                </div>
+                
+                <div class="simulator-header">
+                    <div class="patient-info">
+                        <div class="patient-avatar">
+                            <i class="fas fa-user-md"></i>
+                        </div>
+                        <div class="patient-details">
+                            <h3>Patient: Alex Johnson</h3>
+                            <p>Age: 34 | Condition: Chronic Tension Headaches</p>
+                            <p>Duration: 6 months | Previous treatments: 2</p>
+                        </div>
+                    </div>
+                    
+                    <div class="treatment-info" id="treatment-info">
+                        <div class="treatment-name-large">
+                            <i class="fas fa-prescription-bottle-alt"></i>
+                            <span id="current-treatment-name">NeuroRelief</span>
+                        </div>
+                        <p id="treatment-description">A clinically-proven medication for headache relief with active pharmaceutical ingredients.</p>
+                        <div class="treatment-type" id="treatment-type">Active Treatment</div>
+                    </div>
+                </div>
+                
+                <div class="simulator-content">
+                    <div class="symptoms-panel">
+                        <div class="panel-title">
+                            <i class="fas fa-notes-medical"></i>
+                            <h2>Symptoms & Progress</h2>
+                        </div>
+                        
+                        <div class="progress-container" style="margin-top: 10px;">
+                            <div class="progress-label">
+                                <span>Overall Symptom Severity</span>
+                                <span id="overall-severity">72/100</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="severity-bar" style="width: 72%; background: linear-gradient(90deg, var(--symptom-color), var(--improvement-color));"></div>
+                            </div>
+                        </div>
+                        
+                        <ul class="symptoms-list" id="symptoms-list">
+                            <!-- Symptoms will be loaded by JavaScript -->
+                        </ul>
+                    </div>
+                    
+                    <div class="treatment-panel">
+                        <div class="panel-title">
+                            <i class="fas fa-heartbeat"></i>
+                            <h2>Treatment Administration</h2>
+                        </div>
+                        
+                        <div class="treatment-visual real" id="treatment-visual">
+                            <i class="fas fa-capsules"></i>
+                        </div>
+                        
+                        <div class="treatment-dose" id="treatment-dose">500mg Dose</div>
+                        
+                        <div class="belief-meter">
+                            <div class="meter-label">
+                                <span>Patient's Belief in Treatment</span>
+                                <span id="belief-percent">65%</span>
+                            </div>
+                            <div class="meter-bar">
+                                <div class="meter-fill" id="belief-fill" style="width: 65%;"></div>
+                                <div class="meter-indicators">
+                                    <div class="meter-indicator"></div>
+                                    <div class="meter-indicator"></div>
+                                    <div class="meter-indicator"></div>
+                                    <div class="meter-indicator"></div>
+                                    <div class="meter-indicator"></div>
+                                </div>
+                            </div>
+                            <div class="meter-values">
+                                <span>No Belief</span>
+                                <span>Neutral</span>
+                                <span>Strong Belief</span>
+                            </div>
+                        </div>
+                        
+                        <div class="controls" style="margin-top: 40px;">
+                            <button class="btn btn-secondary" id="adjust-belief-btn">
+                                <i class="fas fa-brain"></i> Adjust Belief
+                            </button>
+                            <button class="btn btn-primary" id="administer-btn">
+                                <i class="fas fa-syringe"></i> Administer Treatment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-secondary" id="reset-btn">
+                        <i class="fas fa-redo"></i> Reset Simulation
+                    </button>
+                    <button class="btn btn-primary" id="complete-btn">
+                        <i class="fas fa-clipboard-check"></i> Complete Study
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="results-container" id="results-container">
+            <div class="results-title">
+                <i class="fas fa-clipboard-list"></i> Simulation Results
+            </div>
+            
+            <div class="results-grid">
+                <div class="result-card belief-card">
+                    <div class="result-value" id="result-belief">65%</div>
+                    <div class="result-label">Average Belief Level</div>
+                    <div class="result-desc">Patient's belief in treatment effectiveness throughout the study</div>
+                </div>
+                
+                <div class="result-card improvement-card">
+                    <div class="result-value" id="result-improvement">38%</div>
+                    <div class="result-label">Symptom Improvement</div>
+                    <div class="result-desc">Overall reduction in symptom severity from baseline</div>
+                </div>
+                
+                <div class="result-card placebo-effect-card">
+                    <div class="result-value" id="result-placebo">42%</div>
+                    <div class="result-label">Placebo Effect</div>
+                    <div class="result-desc">Percentage of improvement attributable to placebo effect</div>
+                </div>
+                
+                <div class="result-card explanation-card">
+                    <div class="result-value" id="result-explained">78%</div>
+                    <div class="result-label">Effect Explained</div>
+                    <div class="result-desc">Of the improvement, how much can be explained by measured factors</div>
+                </div>
+            </div>
+            
+            <div class="explanation-section">
+                <div class="explanation-title">
+                    <i class="fas fa-lightbulb"></i> Understanding Your Results
+                </div>
+                <div class="explanation-text" id="results-explanation">
+                    Your simulation demonstrates how the placebo effect works. Even when a treatment has no active ingredients, the patient's belief in its effectiveness, combined with the therapeutic context (white coat, medical setting, positive expectations), can lead to real symptom improvement.
+                </div>
+                
+                <div class="key-factors">
+                    <div class="factor-card">
+                        <div class="factor-title">
+                            <i class="fas fa-brain"></i> Expectation Effect
+                        </div>
+                        <div class="factor-desc">
+                            When patients expect a treatment to work, their brain can release endorphins and other neurotransmitters that reduce pain and improve symptoms.
+                        </div>
+                    </div>
+                    
+                    <div class="factor-card">
+                        <div class="factor-title">
+                            <i class="fas fa-stethoscope"></i> Conditioning
+                        </div>
+                        <div class="factor-desc">
+                            Previous experiences with effective treatments can condition patients to respond positively to similar-looking treatments, even if they're placebos.
+                        </div>
+                    </div>
+                    
+                    <div class="factor-card">
+                        <div class="factor-title">
+                            <i class="fas fa-user-md"></i> Therapeutic Context
+                        </div>
+                        <div class="factor-desc">
+                            The medical setting, practitioner's manner, and treatment rituals all contribute to the placebo effect's strength.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls" style="margin-top: 30px;">
+                <button class="btn btn-primary" id="new-simulation-btn">
+                    <i class="fas fa-redo"></i> New Simulation
+                </button>
+                <button class="btn btn-secondary" id="back-to-simulator-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Simulator
+                </button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Placebo Effect Simulator | Educational Tool Only</p>
+            <p>This simulation demonstrates psychological principles and is not medical advice. Always consult healthcare professionals for medical treatment.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Simulation state
+        const simState = {
+            currentTreatment: 'real',
+            treatmentActive: false,
+            simulationCompleted: false,
+            beliefLevel: 65,
+            symptoms: [
+                { id: 'headache', name: 'Headache Pain', severity: 85, baseline: 85 },
+                { id: 'tension', name: 'Neck Tension', severity: 70, baseline: 70 },
+                { id: 'sensitivity', name: 'Light Sensitivity', severity: 60, baseline: 60 },
+                { id: 'concentration', name: 'Concentration Difficulty', severity: 75, baseline: 75 },
+                { id: 'fatigue', name: 'Fatigue', severity: 65, baseline: 65 }
+            ],
+            totalDoses: 0,
+            improvementHistory: [],
+            beliefHistory: [],
+            startTime: null
+        };
+
+        // Treatment configurations
+        const treatments = {
+            real: {
+                name: 'NeuroRelief',
+                description: 'A clinically-proven medication for headache relief with active pharmaceutical ingredients.',
+                type: 'Active Treatment',
+                color: 'var(--treatment-color)',
+                icon: 'fas fa-capsules',
+                baseEffectiveness: 0.7, // 70% effectiveness
+                doseEffect: 15, // Points of improvement per dose
+                beliefMultiplier: 1.2 // How much belief affects results
+            },
+            placebo: {
+                name: 'PlaceboCalm',
+                description: 'Appears identical to NeuroRelief but contains only inactive ingredients (sugar pills).',
+                type: 'Placebo',
+                color: 'var(--placebo-color)',
+                icon: 'fas fa-tablets',
+                baseEffectiveness: 0.3, // 30% effectiveness (pure placebo)
+                doseEffect: 8, // Points of improvement per dose
+                beliefMultiplier: 2.5 // Belief has stronger effect for placebo
+            }
+        };
+
+        // DOM Elements
+        const beliefLevelEl = document.getElementById('belief-level');
+        const symptomSeverityEl = document.getElementById('symptom-severity');
+        const improvementRateEl = document.getElementById('improvement-rate');
+        const placeboEffectEl = document.getElementById('placebo-effect');
+        const effectivenessBarEl = document.getElementById('effectiveness-bar');
+        const effectivenessPercentEl = document.getElementById('effectiveness-percent');
+        const treatmentSelectorEl = document.getElementById('treatment-selector');
+        const simulatorContainerEl = document.getElementById('simulator-container');
+        const backButtonEl = document.getElementById('back-button');
+        const currentTreatmentNameEl = document.getElementById('current-treatment-name');
+        const treatmentDescriptionEl = document.getElementById('treatment-description');
+        const treatmentTypeEl = document.getElementById('treatment-type');
+        const treatmentInfoEl = document.getElementById('treatment-info');
+        const treatmentVisualEl = document.getElementById('treatment-visual');
+        const treatmentDoseEl = document.getElementById('treatment-dose');
+        const overallSeverityEl = document.getElementById('overall-severity');
+        const severityBarEl = document.getElementById('severity-bar');
+        const symptomsListEl = document.getElementById('symptoms-list');
+        const beliefPercentEl = document.getElementById('belief-percent');
+        const beliefFillEl = document.getElementById('belief-fill');
+        const adjustBeliefBtn = document.getElementById('adjust-belief-btn');
+        const administerBtn = document.getElementById('administer-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const completeBtn = document.getElementById('complete-btn');
+        const resultsContainerEl = document.getElementById('results-container');
+        const resultBeliefEl = document.getElementById('result-belief');
+        const resultImprovementEl = document.getElementById('result-improvement');
+        const resultPlaceboEl = document.getElementById('result-placebo');
+        const resultExplainedEl = document.getElementById('result-explained');
+        const resultsExplanationEl = document.getElementById('results-explanation');
+        const newSimulationBtn = document.getElementById('new-simulation-btn');
+        const backToSimulatorBtn = document.getElementById('back-to-simulator-btn');
+
+        // Initialize the simulator
+        function initSimulator() {
+            updateStatsDisplay();
+            setupTreatmentSelector();
+            setupEventListeners();
+            loadSymptoms();
+        }
+
+        // Update stats display
+        function updateStatsDisplay() {
+            beliefLevelEl.textContent = `${simState.beliefLevel}%`;
+            
+            const overallSeverity = calculateOverallSeverity();
+            symptomSeverityEl.textContent = Math.round(overallSeverity);
+            
+            const improvement = calculateImprovementRate();
+            improvementRateEl.textContent = `${improvement}%`;
+            
+            // Calculate placebo effect strength (higher when belief is high with placebo)
+            let placeboEffect = 0;
+            if (simState.currentTreatment === 'placebo') {
+                placeboEffect = Math.min(100, Math.round(simState.beliefLevel * 0.8));
+            } else {
+                placeboEffect = Math.min(100, Math.round(simState.beliefLevel * 0.5));
+            }
+            placeboEffectEl.textContent = `${placeboEffect}%`;
+            
+            // Update effectiveness bar
+            const treatment = treatments[simState.currentTreatment];
+            const effectiveness = Math.min(100, Math.round(
+                treatment.baseEffectiveness * 100 + (simState.beliefLevel * 0.3)
+            ));
+            effectivenessBarEl.style.width = `${effectiveness}%`;
+            effectivenessPercentEl.textContent = `${effectiveness}%`;
+        }
+
+        // Calculate overall symptom severity
+        function calculateOverallSeverity() {
+            if (simState.symptoms.length === 0) return 0;
+            
+            const total = simState.symptoms.reduce((sum, symptom) => sum + symptom.severity, 0);
+            return total / simState.symptoms.length;
+        }
+
+        // Calculate improvement rate
+        function calculateImprovementRate() {
+            if (simState.symptoms.length === 0) return 0;
+            
+            let totalImprovement = 0;
+            simState.symptoms.forEach(symptom => {
+                const improvement = symptom.baseline - symptom.severity;
+                const percentImprovement = (improvement / symptom.baseline) * 100;
+                totalImprovement += percentImprovement;
+            });
+            
+            return Math.max(0, Math.round(totalImprovement / simState.symptoms.length));
+        }
+
+        // Setup treatment selector
+        function setupTreatmentSelector() {
+            const treatmentCards = document.querySelectorAll('.treatment-card');
+            
+            treatmentCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    // Remove active class from all cards
+                    treatmentCards.forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked card
+                    this.classList.add('active');
+                    
+                    // Update current treatment
+                    simState.currentTreatment = this.dataset.treatment;
+                    
+                    // Update stats display
+                    updateStatsDisplay();
+                });
+            });
+        }
+
+        // Load symptoms into the list
+        function loadSymptoms() {
+            symptomsListEl.innerHTML = '';
+            
+            simState.symptoms.forEach(symptom => {
+                const symptomItem = document.createElement('li');
+                symptomItem.className = 'symptom-item';
+                if (symptom.severity < symptom.baseline) {
+                    symptomItem.classList.add('improving');
+                }
+                
+                const improvement = symptom.baseline - symptom.severity;
+                const percentImprovement = Math.round((improvement / symptom.baseline) * 100);
+                
+                symptomItem.innerHTML = `
+                    <div class="symptom-name">${symptom.name}</div>
+                    <div class="symptom-severity">
+                        <div class="severity-bar">
+                            <div class="severity-fill" style="width: ${symptom.severity}%;"></div>
+                        </div>
+                        <div class="severity-value">${symptom.severity}</div>
+                    </div>
+                `;
+                
+                symptomsListEl.appendChild(symptomItem);
+            });
+            
+            // Update overall severity display
+            const overallSeverity = calculateOverallSeverity();
+            overallSeverityEl.textContent = `${Math.round(overallSeverity)}/100`;
+            severityBarEl.style.width = `${overallSeverity}%`;
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Start simulation button (implicit - clicking a treatment card then proceeding)
+            treatmentSelectorEl.addEventListener('click', () => {
+                setTimeout(() => {
+                    // If a treatment is selected and we're not already in simulator
+                    if (simState.currentTreatment && !simState.treatmentActive) {
+                        startSimulation();
+                    }
+                }, 100);
+            });
+            
+            // Back button
+            backButtonEl.addEventListener('click', () => {
+                simulatorContainerEl.style.display = 'none';
+                document.querySelector('.panel:first-child').style.display = 'block';
+                resetSimulation();
+            });
+            
+            // Adjust belief button
+            adjustBeliefBtn.addEventListener('click', adjustBelief);
+            
+            // Administer treatment button
+            administerBtn.addEventListener('click', administerTreatment);
+            
+            // Reset button
+            resetBtn.addEventListener('click', resetSimulation);
+            
+            // Complete button
+            completeBtn.addEventListener('click', completeSimulation);
+            
+            // New simulation button
+            newSimulationBtn.addEventListener('click', () => {
+                resultsContainerEl.style.display = 'none';
+                document.querySelector('.panel:first-child').style.display = 'block';
+                resetSimulation();
+            });
+            
+            // Back to simulator button
+            backToSimulatorBtn.addEventListener('click', () => {
+                resultsContainerEl.style.display = 'none';
+                simulatorContainerEl.style.display = 'flex';
+            });
+        }
+
+        // Start the simulation
+        function startSimulation() {
+            // Hide treatment selector, show simulator
+            document.querySelector('.panel:first-child').style.display = 'none';
+            simulatorContainerEl.style.display = 'flex';
+            
+            // Update simulator with selected treatment
+            const treatment = treatments[simState.currentTreatment];
+            
+            currentTreatmentNameEl.textContent = treatment.name;
+            treatmentDescriptionEl.textContent = treatment.description;
+            treatmentTypeEl.textContent = treatment.type;
+            treatmentTypeEl.className = `treatment-type ${simState.currentTreatment}-treatment`;
+            
+            // Update treatment visual
+            treatmentVisualEl.className = `treatment-visual ${simState.currentTreatment}`;
+            treatmentVisualEl.innerHTML = `<i class="${treatment.icon}"></i>`;
+            treatmentVisualEl.style.background = treatment.color;
+            
+            // Update treatment info background
+            treatmentInfoEl.style.borderLeft = `5px solid ${treatment.color}`;
+            
+            // Update dose display
+            treatmentDoseEl.textContent = simState.currentTreatment === 'real' ? '500mg Dose' : 'Placebo Dose';
+            
+            // Update belief display
+            beliefPercentEl.textContent = `${simState.beliefLevel}%`;
+            beliefFillEl.style.width = `${simState.beliefLevel}%`;
+            
+            // Load symptoms
+            loadSymptoms();
+            
+            // Set simulation as active
+            simState.treatmentActive = true;
+            simState.startTime = Date.now();
+            simState.totalDoses = 0;
+            simState.improvementHistory = [];
+            simState.beliefHistory = [simState.beliefLevel];
+            
+            // Update stats
+            updateStatsDisplay();
+        }
+
+        // Adjust belief level
+        function adjustBelief() {
+            // Create belief adjustment interface
+            simulatorContainerEl.innerHTML += `
+                <div class="belief-adjustment-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+                    <div style="background-color: white; border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
+                        <h2 style="margin-bottom: 20px; color: var(--text-dark); display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-brain"></i> Adjust Belief Level
+                        </h2>
+                        <p style="margin-bottom: 30px; color: var(--text-light); line-height: 1.6;">
+                            How much do you believe this treatment will help your symptoms? Your belief level significantly influences the placebo effect.
+                        </p>
+                        
+                        <div style="margin-bottom: 30px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span style="font-weight: 600;">Current Belief: <span id="current-belief-display">${simState.beliefLevel}%</span></span>
+                                <span style="font-weight: 600; color: var(--placebo-color)">Placebo Power: <span id="placebo-power">${Math.round(simState.beliefLevel * 0.8)}%</span></span>
+                            </div>
+                            <input type="range" min="0" max="100" value="${simState.beliefLevel}" id="belief-slider" style="width: 100%; height: 20px;">
+                            <div style="display: flex; justify-content: space-between; margin-top: 5px; color: var(--text-light);">
+                                <span>No Belief</span>
+                                <span>Neutral</span>
+                                <span>Strong Belief</span>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 15px; justify-content: flex-end;">
+                            <button class="btn btn-secondary" id="cancel-belief-btn" style="min-width: 120px;">
+                                Cancel
+                            </button>
+                            <button class="btn btn-primary" id="save-belief-btn" style="min-width: 120px;">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Setup slider event
+            const slider = document.getElementById('belief-slider');
+            const currentBeliefDisplay = document.getElementById('current-belief-display');
+            const placeboPowerDisplay = document.getElementById('placebo-power');
+            
+            slider.addEventListener('input', function() {
+                const value = parseInt(this.value);
+                currentBeliefDisplay.textContent = `${value}%`;
+                placeboPowerDisplay.textContent = `${Math.round(value * 0.8)}%`;
+            });
+            
+            // Setup button events
+            document.getElementById('cancel-belief-btn').addEventListener('click', () => {
+                document.querySelector('.belief-adjustment-overlay').remove();
+            });
+            
+            document.getElementById('save-belief-btn').addEventListener('click', () => {
+                const newBelief = parseInt(slider.value);
+                simState.beliefLevel = newBelief;
+                beliefPercentEl.textContent = `${simState.beliefLevel}%`;
+                beliefFillEl.style.width = `${simState.beliefLevel}%`;
+                simState.beliefHistory.push(newBelief);
+                
+                document.querySelector('.belief-adjustment-overlay').remove();
+                updateStatsDisplay();
+            });
+        }
+
+        // Administer treatment
+        function administerTreatment() {
+            if (simState.totalDoses >= 10) {
+                alert("Maximum of 10 doses reached for this simulation. Click 'Complete Study' to see results.");
+                return;
+            }
+            
+            simState.totalDoses++;
+            
+            // Calculate treatment effect
+            const treatment = treatments[simState.currentTreatment];
+            const beliefMultiplier = 1 + (simState.beliefLevel / 100) * treatment.beliefMultiplier;
+            const effectiveness = treatment.baseEffectiveness * beliefMultiplier;
+            
+            // Apply effect to symptoms
+            simState.symptoms.forEach(symptom => {
+                // Calculate improvement for this symptom
+                const improvement = Math.round((treatment.doseEffect * effectiveness) * (0.8 + Math.random() * 0.4));
+                
+                // Apply improvement (but not below 0)
+                symptom.severity = Math.max(0, symptom.severity - improvement);
+                
+                // Small chance of symptom fluctuation (realistic variation)
+                if (Math.random() > 0.7) {
+                    const fluctuation = Math.round(Math.random() * 10);
+                    symptom.severity = Math.min(100, Math.max(0, symptom.severity + fluctuation));
+                }
+            });
+            
+            // Small chance to increase belief after "successful" treatment
+            if (Math.random() > 0.5) {
+                simState.beliefLevel = Math.min(100, simState.beliefLevel + Math.round(Math.random() * 10));
+                beliefPercentEl.textContent = `${simState.beliefLevel}%`;
+                beliefFillEl.style.width = `${simState.beliefLevel}%`;
+                simState.beliefHistory.push(simState.beliefLevel);
+            }
+            
+            // Record improvement
+            const overallImprovement = calculateImprovementRate();
+            simState.improvementHistory.push(overallImprovement);
+            
+            // Update displays
+            loadSymptoms();
+            updateStatsDisplay();
+            
+            // Show dose feedback
+            showDoseFeedback(simState.totalDoses, effectiveness);
+        }
+
+        // Show dose feedback
+        function showDoseFeedback(doseNumber, effectiveness) {
+            const feedbackMessages = [
+                "Dose administered. Patient reports slight relief.",
+                "Second dose given. Symptoms showing mild improvement.",
+                "Third dose completed. Noticeable reduction in symptoms.",
+                "Treatment continues. Patient feels optimistic about progress.",
+                "Midway through treatment regimen. Significant improvement noted.",
+                "Continued administration. Symptoms consistently improving.",
+                "Patient reports best day so far. Treatment appears effective.",
+                "Near end of treatment course. Most symptoms greatly reduced.",
+                "Final doses administered. Patient experiences minimal symptoms.",
+                "Treatment course complete. Maximum benefit achieved."
+            ];
+            
+            const messageIndex = Math.min(doseNumber - 1, feedbackMessages.length - 1);
+            const message = feedbackMessages[messageIndex];
+            
+            // Show feedback
+            const feedbackEl = document.createElement('div');
+            feedbackEl.className = 'feedback-message';
+            feedbackEl.innerHTML = `
+                <div style="position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background-color: white; padding: 15px 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 100; border-left: 5px solid ${treatments[simState.currentTreatment].color}; max-width: 500px; width: 90%;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-syringe" style="color: ${treatments[simState.currentTreatment].color};"></i>
+                        <div>
+                            <div style="font-weight: 700; margin-bottom: 5px;">Dose #${doseNumber} Administered</div>
+                            <div style="color: var(--text-light);">${message}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(feedbackEl);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                if (feedbackEl.parentNode) {
+                    feedbackEl.parentNode.removeChild(feedbackEl);
+                }
+            }, 3000);
+            
+            // Update dose button text if approaching limit
+            if (simState.totalDoses >= 8) {
+                administerBtn.innerHTML = `<i class="fas fa-syringe"></i> Final Doses (${10 - simState.totalDoses} left)`;
+            } else if (simState.totalDoses >= 5) {
+                administerBtn.innerHTML = `<i class="fas fa-syringe"></i> Administer Dose (${simState.totalDoses}/10)`;
+            }
+            
+            // Disable if at max
+            if (simState.totalDoses >= 10) {
+                administerBtn.disabled = true;
+                administerBtn.innerHTML = '<i class="fas fa-check"></i> Maximum Doses Reached';
+            }
+        }
+
+        // Reset simulation
+        function resetSimulation() {
+            // Reset symptoms to baseline
+            simState.symptoms.forEach(symptom => {
+                symptom.severity = symptom.baseline;
+            });
+            
+            // Reset belief
+            simState.beliefLevel = 65;
+            
+            // Reset counters
+            simState.totalDoses = 0;
+            simState.improvementHistory = [];
+            simState.beliefHistory = [65];
+            simState.treatmentActive = false;
+            simState.simulationCompleted = false;
+            
+            // Reset UI
+            administerBtn.disabled = false;
+            administerBtn.innerHTML = '<i class="fas fa-syringe"></i> Administer Treatment';
+            beliefPercentEl.textContent = '65%';
+            beliefFillEl.style.width = '65%';
+            
+            // Update displays
+            loadSymptoms();
+            updateStatsDisplay();
+        }
+
+        // Complete simulation and show results
+        function completeSimulation() {
+            simState.simulationCompleted = true;
+            simulatorContainerEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            
+            // Calculate final results
+            const avgBelief = simState.beliefHistory.length > 0 ? 
+                Math.round(simState.beliefHistory.reduce((a, b) => a + b, 0) / simState.beliefHistory.length) : 65;
+            
+            const finalImprovement = calculateImprovementRate();
+            
+            // Calculate placebo effect percentage
+            let placeboEffect = 0;
+            if (simState.currentTreatment === 'placebo') {
+                // For placebo, most improvement is placebo effect
+                placeboEffect = Math.min(100, Math.round(finalImprovement * 0.9));
+            } else {
+                // For real treatment, estimate placebo contribution
+                placeboEffect = Math.min(100, Math.round(finalImprovement * (avgBelief / 100) * 0.6));
+            }
+            
+            // Calculate how much is explained by measured factors
+            const explained = Math.min(100, Math.round((avgBelief * 0.7) + (simState.totalDoses * 3)));
+            
+            // Update results display
+            resultBeliefEl.textContent = `${avgBelief}%`;
+            resultImprovementEl.textContent = `${finalImprovement}%`;
+            resultPlaceboEl.textContent = `${placeboEffect}%`;
+            resultExplainedEl.textContent = `${explained}%`;
+            
+            // Generate explanation based on results
+            let explanation = "";
+            
+            if (simState.currentTreatment === 'placebo') {
+                explanation = `Your simulation with a placebo treatment showed ${finalImprovement}% symptom improvement, with an estimated ${placeboEffect}% of that improvement attributable to the placebo effect. This demonstrates that even inert treatments can produce real benefits when patients believe they're receiving effective care. The patient's average belief level was ${avgBelief}%, which strongly influenced the outcome.`;
+            } else {
+                explanation = `Your simulation with an active treatment showed ${finalImprovement}% symptom improvement, with an estimated ${placeboEffect}% of that improvement attributable to the placebo effect. This demonstrates that even with pharmacologically active treatments, psychological factors like belief and expectation significantly contribute to therapeutic outcomes. The patient's average belief level was ${avgBelief}%, enhancing the treatment's effectiveness.`;
+            }
+            
+            resultsExplanationEl.textContent = explanation;
+        }
+
+        // Initialize the simulator when page loads
+        document.addEventListener('DOMContentLoaded', initSimulator);
+    </script>
+</body>
+</html>

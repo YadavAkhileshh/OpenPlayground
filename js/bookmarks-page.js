@@ -389,22 +389,22 @@ function renderBookmarks() {
     // Show empty state or bookmarks
     if (count === 0) {
         container.innerHTML = '';
-        if (emptyState) {
-            emptyState.style.display = 'flex';
-            const emptyTitle = emptyState.querySelector('h3');
-            const emptyText = emptyState.querySelector('p');
-            
-            if (currentCollection === 'all') {
-                if (emptyTitle) emptyTitle.textContent = 'No bookmarks yet';
-                if (emptyText) emptyText.textContent = 'Start exploring projects and bookmark your favorites to find them here!';
-            } else {
-                if (emptyTitle) emptyTitle.textContent = 'Collection is empty';
-                if (emptyText) emptyText.textContent = 'Drag and drop projects here or add them from the project cards.';
-            }
-        }
+        
+        const mainSection = document.querySelector('.bookmarks-main');
+        const layout = document.querySelector('.bookmarks-layout');
+        
+        if (mainSection) mainSection.classList.add('empty');
+        if (layout) layout.classList.add('empty-layout');
+        
+        if (emptyState) emptyState.style.display = 'flex';
         return;
     }
-    
+
+    const mainSection = document.querySelector('.bookmarks-main');
+    if (mainSection) {
+        mainSection.classList.remove('empty');
+    }
+
     if (emptyState) emptyState.style.display = 'none';
     container.innerHTML = '';
     

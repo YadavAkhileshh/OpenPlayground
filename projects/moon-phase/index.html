@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌙 moon phases · interactive tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #0b1120 0%, #1a2635 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 1.5rem;
+            color: #eaf0f8;
+        }
+
+        .moon-card {
+            max-width: 1000px;
+            width: 100%;
+            background: rgba(18, 28, 40, 0.75);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-radius: 3.5rem;
+            padding: 2.2rem 2.2rem 2.8rem;
+            box-shadow: 0 40px 70px -15px rgba(0, 8, 20, 0.8), 0 0 0 1px rgba(120, 180, 240, 0.15);
+            border: 1px solid rgba(210, 230, 255, 0.08);
+        }
+
+        /* header */
+        .phase-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2.5rem;
+        }
+
+        .title-section h1 {
+            font-size: 2.5rem;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #f0f6ff, #b3d0f0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .title-section h1 span {
+            font-size: 2.8rem;
+        }
+
+        .date-badge {
+            background: #1e3349;
+            padding: 0.6rem 1.5rem;
+            border-radius: 60px;
+            font-weight: 500;
+            border: 1px solid #3b5777;
+            color: #dbecff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            font-size: 1.1rem;
+        }
+
+        /* main moon display */
+        .moon-view {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 2.5rem;
+            margin-bottom: 2.8rem;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .moon-canvas-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas#moonPhaseCanvas {
+            width: 240px;
+            height: 240px;
+            display: block;
+            border-radius: 50%;
+            box-shadow: 0 20px 35px -5px rgba(0, 0, 0, 0.8), 0 0 0 2px #2b455e, 0 0 0 5px rgba(100, 160, 220, 0.2);
+            background: #0a0f18;
+            transition: box-shadow 0.2s;
+        }
+
+        .phase-label-large {
+            margin-top: 1rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+            background: #1e334e;
+            padding: 0.4rem 2rem;
+            border-radius: 60px;
+            border: 1px solid #597eaa;
+            color: #ffefcf;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 8px #00000040;
+        }
+
+        .phase-details-panel {
+            flex: 1;
+            min-width: 250px;
+            background: rgba(8, 18, 30, 0.7);
+            border-radius: 2.5rem;
+            padding: 2rem 2rem;
+            border: 1px solid #2c4b6b;
+            box-shadow: inset 0 2px 5px #00000055, 0 10px 20px -8px black;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed #38536b;
+            padding: 0.9rem 0;
+            font-size: 1.2rem;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: #9cb8d4;
+            font-weight: 400;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: #ffe8b7;
+            text-align: right;
+        }
+
+        .illumination-bar {
+            margin: 1.2rem 0 0.5rem;
+            background: #162736;
+            height: 24px;
+            border-radius: 40px;
+            overflow: hidden;
+            border: 1px solid #37597b;
+        }
+
+        #illumFill {
+            height: 100%;
+            width: 75%;
+            background: linear-gradient(90deg, #ffe9a7, #fff3d1);
+            border-radius: 40px;
+            box-shadow: 0 0 10px #ffd38c;
+        }
+
+        /* slider & controls */
+        .control-panel {
+            background: rgba(8, 16, 26, 0.6);
+            border-radius: 4rem;
+            padding: 1.8rem 2rem;
+            border: 1px solid #2a4a6a;
+            margin-bottom: 1rem;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            color: #b7d0ea;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        input[type=range] {
+            width: 100%;
+            height: 10px;
+            background: #1e3750;
+            border-radius: 20px;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 28px;
+            height: 28px;
+            background: #ffecbb;
+            border-radius: 50%;
+            border: 3px solid #14293b;
+            box-shadow: 0 4px 12px black;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .quick-phases {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+        }
+
+        .phase-chip {
+            background: #1b3045;
+            border: 1px solid #456e91;
+            color: #d9ecff;
+            padding: 0.5rem 1.3rem;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .phase-chip:hover {
+            background: #274c6b;
+            border-color: #86b5dc;
+            color: white;
+        }
+
+        .phase-chip.active-chip {
+            background: #c6dffc;
+            border-color: white;
+            color: #0a1d2c;
+            font-weight: 700;
+            box-shadow: 0 0 15px #acd4ff;
+        }
+
+        .today-btn {
+            background: #355e83;
+            border: none;
+            color: white;
+            padding: 0.7rem 2rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            border: 1px solid #8bb9df;
+            transition: 0.1s;
+            margin-left: 1rem;
+        }
+
+        .today-btn:hover {
+            background: #487eaa;
+        }
+
+        .footer-note {
+            text-align: center;
+            color: #6f91af;
+            font-size: 0.9rem;
+            margin-top: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="moon-card">
+        <div class="phase-header">
+            <div class="title-section">
+                <h1>
+                    <span>🌖</span> moon phase tracker
+                </h1>
+            </div>
+            <div class="date-badge" id="currentDateDisplay"></div>
+        </div>
+
+        <!-- main visual + details -->
+        <div class="moon-view">
+            <div class="moon-canvas-container">
+                <canvas id="moonPhaseCanvas" width="400" height="400"></canvas>
+                <div class="phase-label-large" id="phaseNameLabel">Waxing Gibbous</div>
+            </div>
+            <div class="phase-details-panel">
+                <div class="detail-row">
+                    <span class="detail-label">illumination</span>
+                    <span class="detail-value" id="illumPercent">82%</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">moon age</span>
+                    <span class="detail-value" id="moonAge">10.2 days</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">next full moon</span>
+                    <span class="detail-value" id="nextFull">in 5 days</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">next new moon</span>
+                    <span class="detail-value" id="nextNew">in 19 days</span>
+                </div>
+                <!-- illumination bar -->
+                <div class="illumination-bar">
+                    <div id="illumFill" style="width: 0%;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 0.3rem; color: #9bb7d6; font-size: 0.9rem;">
+                    <span>🌑 new</span>
+                    <span>🌕 full</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- slider control -->
+        <div class="control-panel">
+            <div class="slider-container">
+                <div class="slider-labels">
+                    <span>new moon</span>
+                    <span>first quarter</span>
+                    <span>full moon</span>
+                    <span>last quarter</span>
+                </div>
+                <input type="range" id="phaseSlider" min="0" max="100" value="65" step="0.1">
+                <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; align-items: center;">
+                    <span style="color:#b7cde2;">🌑</span>
+                    <span style="color:#b7cde2;">🌓</span>
+                    <span style="color:#b7cde2;">🌕</span>
+                    <span style="color:#b7cde2;">🌗</span>
+                    <span style="color:#b7cde2;">🌑</span>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: center; margin-top: 2rem; flex-wrap: wrap; gap: 0.8rem;">
+                <div class="quick-phases" id="quickPhaseContainer">
+                    <!-- dynamically filled by js -->
+                </div>
+                <button class="today-btn" id="todayBtn">📅 today's phase</button>
+            </div>
+        </div>
+        <div class="footer-note">
+            ⏵ drag slider to explore the lunar cycle · click any phase name to jump
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ----- moon phase calculation utilities (simplified, angle-based) -----
+            // We map lunation [0..1) to phase: 0=new, 0.25=first quarter, 0.5=full, 0.75=last quarter
+
+            const canvas = document.getElementById('moonPhaseCanvas');
+            const ctx = canvas.getContext('2d');
+            const phaseNameLabel = document.getElementById('phaseNameLabel');
+            const illumPercentSpan = document.getElementById('illumPercent');
+            const moonAgeSpan = document.getElementById('moonAge');
+            const nextFullSpan = document.getElementById('nextFull');
+            const nextNewSpan = document.getElementById('nextNew');
+            const illumFill = document.getElementById('illumFill');
+            const phaseSlider = document.getElementById('phaseSlider');
+            const currentDateDisplay = document.getElementById('currentDateDisplay');
+            const quickContainer = document.getElementById('quickPhaseContainer');
+
+            // phase names array
+            const phaseNames = [
+                "New Moon",
+                "Waxing Crescent",
+                "First Quarter",
+                "Waxing Gibbous",
+                "Full Moon",
+                "Waning Gibbous",
+                "Last Quarter",
+                "Waning Crescent"
+            ];
+
+            // map lunation (0..1) to phase index 0-7
+            function lunationToPhaseIndex(lunation) {
+                // lunation 0 = new moon, 0.5 = full moon.
+                // Normalize to 0-1, then to 8 bins
+                const idx = Math.floor((lunation % 1) * 8) % 8;
+                return idx;
+            }
+
+            // get phase name from lunation (0-1)
+            function getPhaseName(lunation) {
+                return phaseNames[lunationToPhaseIndex(lunation)];
+            }
+
+            // calculate illumination percentage (0-1) from lunation (0-1)
+            // illumination = 50% * (1 - cos(2*pi*lunation)) -> 0 at new, 1 at full.
+            function illuminationFromLunation(lunation) {
+                return 0.5 * (1 - Math.cos(2 * Math.PI * lunation));
+            }
+
+            // age in days (assuming 29.53 days cycle)
+            const CYCLE_DAYS = 29.53058867;
+
+            function daysFromLunation(lunation) {
+                return (lunation * CYCLE_DAYS).toFixed(1);
+            }
+
+            // draw moon on canvas given lunation (0..1)
+            function drawMoon(lunation) {
+                const w = canvas.width;
+                const h = canvas.height;
+                ctx.clearRect(0, 0, w, h);
+                
+                // background (space)
+                ctx.fillStyle = '#0a0f18';
+                ctx.fillRect(0, 0, w, h);
+                
+                // draw outer glow
+                ctx.shadowColor = '#c0d8ff';
+                ctx.shadowBlur = 30;
+                ctx.beginPath();
+                ctx.arc(w/2, h/2, 170, 0, 2 * Math.PI);
+                ctx.fillStyle = '#182536';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = 'transparent';
+
+                // main moon circle (dark base)
+                ctx.beginPath();
+                ctx.arc(w/2, h/2, 160, 0, 2 * Math.PI);
+                ctx.fillStyle = '#1e293b';
+                ctx.fill();
+                ctx.strokeStyle = '#56759b';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // calculate phase angle: lunation 0 = new (fully dark), 0.5 = full (fully bright)
+                // we'll draw illuminated portion as a white ellipse offset.
+                // we use terminator at x = cos(2pi*lunation) * radius
+                const rad = 160;
+                const centerX = w/2;
+                const centerY = h/2;
+                
+                // terminator position: from -rad (new: fully dark left) to +rad (full: fully bright)
+                // we map illumination such that lunation 0-> terminator = -rad (all dark), 0.5-> +rad (all bright)
+                // but for drawing we can do it using clipping.
+                // simpler: use composite operation to draw illuminated part as a white circle clipped by half-plane
+                
+                // first, draw the dark part (shadowed) — we draw gray background, but we already filled with #1e293b.
+                // Then draw illuminated area (white/yellowish) with proper terminator.
+                
+                // determine direction: waxing (0->0.5) illuminated on the right side, waning (0.5->1) illuminated on left.
+                const t = (lunation % 1.0);
+                
+                // angle of illumination: 0° at new, 180° at full. terminator line perpendicular.
+                // we use clipping region: for waxing (0-0.5), illuminated side is right half (x > centerX + offset)
+                // but offset moves terminator.
+                
+                // terminator offset from center: maps from -rad (new) to +rad (full) and back.
+                let offset;
+                if (t <= 0.5) {
+                    // waxing: offset goes from -rad to +rad
+                    offset = -rad + (t * 2) * (2 * rad); // at t=0 -> -rad, t=0.5 -> +rad
+                } else {
+                    // waning: offset goes from +rad back to -rad
+                    offset = rad - ((t - 0.5) * 2) * (2 * rad); // t=0.5->+rad, t=1->-rad
+                }
+                
+                // terminator line x = centerX + offset; but we want illuminated side opposite the sun.
+                // for waxing: sun on right -> illuminated right side (x > centerX+offset) 
+                // for waning: sun on left (after full) -> illuminated left side (x < centerX+offset)
+                
+                ctx.save();
+                // clip to moon circle
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, rad, 0, 2*Math.PI);
+                ctx.clip();
+
+                // draw illuminated overlay
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, rad, 0, 2*Math.PI);
+                
+                // gradient fill for illuminated part (soft)
+                const grad = ctx.createLinearGradient(centerX-50, centerY-50, centerX+80, centerY+80);
+                grad.addColorStop(0, '#fafaf0');
+                grad.addColorStop(0.8, '#ffe6aa');
+                
+                // we fill the whole circle then clip to illuminated region using composite.
+                // simpler: we set fillStyle but restrict drawing with clipping region based on terminator.
+                ctx.fillStyle = grad;
+                
+                // define clipping for illuminated region:
+                ctx.save();
+                ctx.beginPath();
+                if (t <= 0.5) { // waxing: right side illuminated
+                    // rectangle from terminator line to right edge
+                    ctx.rect(centerX + offset, centerY - rad*2, rad*2, rad*4);
+                } else { // waning: left side illuminated
+                    ctx.rect(centerX - rad*2, centerY - rad*2, rad*2 - offset + rad, rad*4); // left side up to terminator
+                }
+                ctx.clip();
+                
+                // fill illuminated area
+                ctx.fill();
+                ctx.restore();
+
+                // restore canvas state
+                ctx.restore();
+
+                // add specular/highlight
+                ctx.beginPath();
+                ctx.arc(centerX-25, centerY-25, 20, 0, 2*Math.PI);
+                ctx.fillStyle = '#ffffff10';
+                ctx.fill();
+
+                // draw tiny stars around? optional but nice.
+            }
+
+            // update all UI based on lunation (0..1)
+            function updateFromLunation(lunation) {
+                // ensure within 0-1
+                lunation = lunation % 1.0;
+                if (lunation < 0) lunation += 1.0;
+
+                // phase name
+                const phaseIdx = lunationToPhaseIndex(lunation);
+                const phaseName = phaseNames[phaseIdx];
+                phaseNameLabel.textContent = phaseName;
+
+                // illumination percent
+                const illum = illuminationFromLunation(lunation);
+                const illumPercent = Math.round(illum * 100);
+                illumPercentSpan.textContent = illumPercent + '%';
+                illumFill.style.width = illumPercent + '%';
+
+                // moon age in days
+                const ageDays = (lunation * CYCLE_DAYS).toFixed(1);
+                moonAgeSpan.textContent = ageDays + ' days';
+
+                // next full / new moon estimation: days until next full (lunation 0.5)
+                let daysToFull, daysToNew;
+                if (lunation <= 0.5) {
+                    daysToFull = ((0.5 - lunation) * CYCLE_DAYS).toFixed(1);
+                } else {
+                    daysToFull = ((1.5 - lunation) * CYCLE_DAYS).toFixed(1);
+                }
+                if (lunation <= 1.0) {
+                    daysToNew = ((1.0 - lunation) * CYCLE_DAYS).toFixed(1);
+                } else {
+                    daysToNew = ((2.0 - lunation) * CYCLE_DAYS).toFixed(1);
+                }
+                nextFullSpan.textContent = `in ${daysToFull} days`;
+                nextNewSpan.textContent = `in ${daysToNew} days`;
+
+                // draw canvas
+                drawMoon(lunation);
+
+                // sync slider without triggering event loop
+                phaseSlider.value = lunation * 100;
+
+                // highlight active quick chip
+                document.querySelectorAll('.phase-chip').forEach(chip => {
+                    const chipLun = parseFloat(chip.dataset.lunation);
+                    if (Math.abs(chipLun - lunation) < 0.01) chip.classList.add('active-chip');
+                    else chip.classList.remove('active-chip');
+                });
+            }
+
+            // handle slider input
+            function onSliderChange() {
+                const val = parseFloat(phaseSlider.value) / 100;
+                updateFromLunation(val);
+            }
+
+            // compute today's lunation (simplified: using a fixed reference date: known new moon: 2024-10-02 18:49 UTC? we use simple epoch)
+            // new moon reference: 2023-01-21 20:53 UTC (known). Let's set epoch for easier: 2023-01-22 00:00 as new? but anyway we want demo.
+            // use a simpler fixed offset: for demo purposes, set a known lunation for today.
+            function getTodaysLunation() {
+                // using Jan 1 2025 as new moon approx (actual new moon Jan 11 2025, but we want something)
+                // we'll use a fixed reference to make it look reasonable: choose new moon on 2025-01-11.
+                const refNewMoon = new Date('2025-01-11T00:00:00Z').getTime();
+                const now = new Date().getTime();
+                const diffDays = (now - refNewMoon) / (1000 * 3600 * 24);
+                const lunation = (diffDays / CYCLE_DAYS) % 1.0;
+                return lunation >= 0 ? lunation : lunation + 1.0;
+            }
+
+            // set today's date display
+            function updateDateDisplay() {
+                const today = new Date();
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                currentDateDisplay.textContent = today.toLocaleDateString(undefined, options);
+            }
+
+            // create quick phase chips
+            function initQuickChips() {
+                const quickPhases = [
+                    { name: '🌑 new', lunation: 0.0 },
+                    { name: '🌒 waxing crescent', lunation: 0.125 },
+                    { name: '🌓 first quarter', lunation: 0.25 },
+                    { name: '🌔 waxing gibbous', lunation: 0.375 },
+                    { name: '🌕 full', lunation: 0.5 },
+                    { name: '🌖 waning gibbous', lunation: 0.625 },
+                    { name: '🌗 last quarter', lunation: 0.75 },
+                    { name: '🌘 waning crescent', lunation: 0.875 }
+                ];
+                quickContainer.innerHTML = '';
+                quickPhases.forEach(p => {
+                    const chip = document.createElement('span');
+                    chip.className = 'phase-chip';
+                    chip.textContent = p.name;
+                    chip.dataset.lunation = p.lunation;
+                    chip.addEventListener('click', () => {
+                        updateFromLunation(p.lunation);
+                    });
+                    quickContainer.appendChild(chip);
+                });
+            }
+
+            // event listeners
+            phaseSlider.addEventListener('input', onSliderChange);
+
+            document.getElementById('todayBtn').addEventListener('click', () => {
+                const todaysLunation = getTodaysLunation();
+                updateFromLunation(todaysLunation);
+            });
+
+            // initial set
+            updateDateDisplay();
+            initQuickChips();
+
+            // set initial lunation: start with waxing gibbous (around 0.4)
+            const startLunation = 0.4; // waxing gibbous
+            updateFromLunation(startLunation);
+        })();
+    </script>
+</body>
+</html>

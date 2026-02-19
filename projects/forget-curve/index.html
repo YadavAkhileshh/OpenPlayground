@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgetting Curve Interactive Tool</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: #f0f8ff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00c9ff, #92fe9d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 201, 255, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-title {
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+            color: #92fe9d;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            font-size: 1.8rem;
+        }
+
+        .chart-container {
+            height: 350px;
+            margin-top: 10px;
+        }
+
+        .curve-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #00c9ff;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .control-value {
+            font-weight: 700;
+            color: #92fe9d;
+        }
+
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #00c9ff;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 201, 255, 0.7);
+        }
+
+        .memory-exercise {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .exercise-instructions {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .word-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 25px;
+            justify-content: center;
+        }
+
+        .word-item {
+            background: rgba(0, 201, 255, 0.2);
+            border: 2px solid rgba(0, 201, 255, 0.5);
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .word-item:hover {
+            background: rgba(0, 201, 255, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .word-item.selected {
+            background: rgba(146, 254, 157, 0.3);
+            border-color: #92fe9d;
+            color: #92fe9d;
+        }
+
+        .word-item.missing {
+            background: rgba(255, 75, 75, 0.2);
+            border-color: #ff4b4b;
+            color: #ff4b4b;
+        }
+
+        .exercise-controls {
+            display: flex;
+            gap: 15px;
+            margin-top: auto;
+        }
+
+        .btn {
+            padding: 14px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #00c9ff, #0083b0);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(0, 201, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .results-container {
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            display: none;
+        }
+
+        .results-container.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #92fe9d;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .info-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .info-card h3 {
+            color: #00c9ff;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-card p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .tip-list {
+            padding-left: 20px;
+        }
+
+        .tip-list li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .highlight {
+            color: #92fe9d;
+            font-weight: 600;
+        }
+
+        .review-schedule {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .review-time {
+            background: rgba(0, 201, 255, 0.1);
+            border: 1px solid rgba(0, 201, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .review-time.active {
+            background: rgba(146, 254, 157, 0.2);
+            border-color: #92fe9d;
+        }
+
+        .review-label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #00c9ff;
+        }
+
+        .review-time.active .review-label {
+            color: #92fe9d;
+        }
+
+        .review-desc {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .timer {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffcc00;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .exercise-stage {
+            display: none;
+        }
+
+        .exercise-stage.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .counter {
+            display: inline-block;
+            background: rgba(0, 201, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            color: #00c9ff;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-brain"></i> The Forgetting Curve</h1>
+            <p class="subtitle">Explore how memory decays over time and learn evidence-based techniques to improve long-term retention through strategic repetition.</p>
+        </header>
+
+        <div class="main-content">
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-chart-line"></i> Forgetting Curve Visualization</h2>
+                <div class="chart-container">
+                    <canvas id="forgettingChart"></canvas>
+                </div>
+                
+                <div class="curve-controls">
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Initial Memory Strength:</span>
+                            <span class="control-value" id="strengthValue">100%</span>
+                        </div>
+                        <input type="range" min="50" max="100" value="100" class="slider" id="strengthSlider">
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Decay Rate:</span>
+                            <span class="control-value" id="decayValue">56%</span>
+                        </div>
+                        <input type="range" min="10" max="80" value="56" class="slider" id="decaySlider">
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Review Sessions:</span>
+                            <span class="control-value" id="reviewValue">3</span>
+                        </div>
+                        <input type="range" min="0" max="5" value="3" class="slider" id="reviewSlider">
+                    </div>
+                </div>
+                
+                <div class="review-schedule">
+                    <div class="review-time" id="review1">
+                        <div class="review-label">20 minutes</div>
+                        <div class="review-desc">First review</div>
+                    </div>
+                    <div class="review-time" id="review2">
+                        <div class="review-label">1 day</div>
+                        <div class="review-desc">Second review</div>
+                    </div>
+                    <div class="review-time" id="review3">
+                        <div class="review-label">1 week</div>
+                        <div class="review-desc">Third review</div>
+                    </div>
+                    <div class="review-time" id="review4">
+                        <div class="review-label">1 month</div>
+                        <div class="review-desc">Fourth review</div>
+                    </div>
+                    <div class="review-time" id="review5">
+                        <div class="review-label">6 months</div>
+                        <div class="review-desc">Fifth review</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card memory-exercise">
+                <h2 class="card-title"><i class="fas fa-memory"></i> Memory Retention Exercise</h2>
+                
+                <div class="exercise-stage active" id="study-stage">
+                    <div class="exercise-instructions">
+                        <p><span class="highlight">Study these 10 words for 30 seconds</span>. Try to remember as many as possible. After the timer ends, you'll be asked to recall them.</p>
+                        <div class="timer" id="study-timer">30</div>
+                    </div>
+                    
+                    <div class="word-list" id="study-words">
+                        <!-- Words will be generated by JavaScript -->
+                    </div>
+                    
+                    <div class="exercise-controls">
+                        <button class="btn btn-primary" id="start-study-btn">
+                            <i class="fas fa-play"></i> Start Study Time
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="exercise-stage" id="recall-stage">
+                    <div class="exercise-instructions">
+                        <p><span class="highlight">Type the words you remember</span> in the box below, separated by commas. You have 60 seconds to recall as many as possible.</p>
+                        <div class="timer" id="recall-timer">60</div>
+                    </div>
+                    
+                    <div class="word-list" id="recall-words">
+                        <!-- User will type words here -->
+                    </div>
+                    
+                    <textarea id="recall-input" placeholder="Type the words you remember here, separated by commas..." rows="4"></textarea>
+                    
+                    <div class="exercise-controls">
+                        <button class="btn btn-primary" id="submit-recall-btn">
+                            <i class="fas fa-check"></i> Submit Recall
+                        </button>
+                        <button class="btn btn-secondary" id="back-to-study-btn">
+                            <i class="fas fa-redo"></i> Study Again
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="exercise-stage" id="results-stage">
+                    <div class="exercise-instructions">
+                        <p><span class="highlight">Your Recall Results</span>. See how many words you remembered and compare with the forgetting curve prediction.</p>
+                    </div>
+                    
+                    <div class="results-container" id="results-container">
+                        <div class="result-stats">
+                            <div class="stat">
+                                <div class="stat-value" id="recall-score">0</div>
+                                <div class="stat-label">Words Recalled</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" id="recall-percentage">0%</div>
+                                <div class="stat-label">Recall Rate</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" id="curve-prediction">58%</div>
+                                <div class="stat-label">Curve Prediction</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value" id="memory-score">0</div>
+                                <div class="stat-label">Memory Score</div>
+                            </div>
+                        </div>
+                        
+                        <div class="word-list" id="results-words">
+                            <!-- Results will be shown here -->
+                        </div>
+                    </div>
+                    
+                    <div class="exercise-controls">
+                        <button class="btn btn-primary" id="retry-exercise-btn">
+                            <i class="fas fa-sync-alt"></i> Try Again
+                        </button>
+                        <button class="btn btn-secondary" id="learn-more-btn">
+                            <i class="fas fa-graduation-cap"></i> Learn More
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-card">
+                <h3><i class="fas fa-history"></i> The Science Behind the Forgetting Curve</h3>
+                <p>The <span class="highlight">forgetting curve</span> was first described by German psychologist Hermann Ebbinghaus in 1885. He discovered that memory retention declines exponentially over time if no attempt is made to retain the information.</p>
+                <p>Key findings from Ebbinghaus's research:</p>
+                <ul class="tip-list">
+                    <li>We forget approximately <span class="highlight">56%</span> of information after one hour</li>
+                    <li><span class="highlight">66%</span> is forgotten after one day</li>
+                    <li><span class="highlight">75%</span> is forgotten after six days</li>
+                    <li>Without review, only about <span class="highlight">20-30%</span> remains after a month</li>
+                </ul>
+            </div>
+            
+            <div class="info-card">
+                <h3><i class="fas fa-lightbulb"></i> How to Combat the Forgetting Curve</h3>
+                <p>Research shows that <span class="highlight">spaced repetition</span> is the most effective way to flatten the forgetting curve and improve long-term memory retention.</p>
+                <p>Effective strategies include:</p>
+                <ul class="tip-list">
+                    <li><span class="highlight">Review shortly after learning</span> (within 20-60 minutes)</li>
+                    <li><span class="highlight">Schedule follow-up reviews</span> at increasing intervals</li>
+                    <li><span class="highlight">Use active recall</span> instead of passive re-reading</li>
+                    <li><span class="highlight">Interleave different subjects</span> to strengthen memory</li>
+                    <li><span class="highlight">Teach the material</span> to someone else</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chart and data variables
+        let forgettingChart;
+        let currentWords = [];
+        let userRecalledWords = [];
+        let studyTimerInterval, recallTimerInterval;
+        
+        // Chart data configuration
+        const chartConfig = {
+            type: 'line',
+            data: {
+                labels: ['Now', '20 min', '1 hour', '9 hours', '1 day', '2 days', '6 days', '1 month', '6 months'],
+                datasets: [
+                    {
+                        label: 'Memory Retention Without Review',
+                        data: [100, 58, 44, 36, 33, 28, 25, 21, 20],
+                        borderColor: '#ff4b4b',
+                        backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Memory Retention With Review',
+                        data: [100, 100, 85, 80, 100, 90, 85, 100, 95],
+                        borderColor: '#92fe9d',
+                        backgroundColor: 'rgba(146, 254, 157, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        borderDash: [5, 5]
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#f0f8ff',
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.parsed.y}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#f0f8ff'
+                        }
+                    },
+                    y: {
+                        min: 0,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#f0f8ff',
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        // Initialize the chart
+        function initChart() {
+            const ctx = document.getElementById('forgettingChart').getContext('2d');
+            forgettingChart = new Chart(ctx, chartConfig);
+            
+            // Update review highlights
+            updateReviewHighlights(3);
+        }
+
+        // Update the chart based on slider values
+        function updateChart() {
+            const strength = parseInt(document.getElementById('strengthSlider').value) / 100;
+            const decay = parseInt(document.getElementById('decaySlider').value) / 100;
+            const reviews = parseInt(document.getElementById('reviewSlider').value);
+            
+            // Update display values
+            document.getElementById('strengthValue').textContent = `${strength * 100}%`;
+            document.getElementById('decayValue').textContent = `${decay * 100}%`;
+            document.getElementById('reviewValue').textContent = reviews;
+            
+            // Calculate new forgetting curve data
+            const baseData = [100];
+            for (let i = 1; i < chartConfig.data.labels.length; i++) {
+                // Exponential decay formula: retention = initial * e^(-decay * time)
+                // Simplified for this visualization
+                const timeFactor = i * 0.5;
+                const retention = 100 * strength * Math.exp(-decay * timeFactor);
+                baseData.push(Math.max(5, Math.round(retention)));
+            }
+            
+            // Calculate review curve data
+            const reviewData = [100];
+            const reviewPoints = [0, 1, 2, 4, 7]; // Corresponding to review times
+            
+            for (let i = 1; i < chartConfig.data.labels.length; i++) {
+                let retention = baseData[i];
+                
+                // Apply review boosts
+                for (let r = 0; r < Math.min(reviews, reviewPoints.length); r++) {
+                    if (i >= reviewPoints[r]) {
+                        // Boost retention at and after review points
+                        retention = Math.min(100, retention + (100 - retention) * 0.7);
+                    }
+                }
+                
+                // Add some natural decay even with reviews
+                if (i > 0) {
+                    retention = retention * 0.98;
+                }
+                
+                reviewData.push(Math.max(baseData[i], Math.round(retention)));
+            }
+            
+            // Update chart data
+            forgettingChart.data.datasets[0].data = baseData;
+            forgettingChart.data.datasets[1].data = reviewData;
+            forgettingChart.update();
+            
+            // Update review highlights
+            updateReviewHighlights(reviews);
+        }
+
+        // Update review time highlights
+        function updateReviewHighlights(reviewCount) {
+            // Reset all
+            document.querySelectorAll('.review-time').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Activate based on count
+            for (let i = 1; i <= reviewCount; i++) {
+                const reviewEl = document.getElementById(`review${i}`);
+                if (reviewEl) {
+                    reviewEl.classList.add('active');
+                }
+            }
+        }
+
+        // Generate random words for memory exercise
+        function generateRandomWords(count) {
+            const wordList = [
+                'apple', 'river', 'mountain', 'book', 'computer', 'guitar', 'ocean', 'forest', 
+                'keyboard', 'window', 'garden', 'candle', 'mirror', 'piano', 'bicycle', 'diamond',
+                'volcano', 'whisper', 'journey', 'horizon', 'library', 'crystal', 'galaxy', 'sunset',
+                'fountain', 'comet', 'lantern', 'meadow', 'symphony', 'treasure', 'waterfall', 'cascade',
+                'pyramid', 'carousel', 'kaleidoscope', 'lighthouse', 'obsidian', 'pendulum', 'quicksilver',
+                'rainbow', 'telescope', 'universe', 'vortex', 'whirlpool', 'xylophone', 'zenith', 'arcade'
+            ];
+            
+            // Shuffle and select random words
+            const shuffled = [...wordList].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+
+        // Initialize memory exercise
+        function initMemoryExercise() {
+            currentWords = generateRandomWords(10);
+            
+            // Clear previous word lists
+            document.getElementById('study-words').innerHTML = '';
+            document.getElementById('results-words').innerHTML = '';
+            
+            // Populate study words
+            currentWords.forEach(word => {
+                const wordEl = document.createElement('div');
+                wordEl.className = 'word-item';
+                wordEl.textContent = word;
+                document.getElementById('study-words').appendChild(wordEl);
+            });
+            
+            // Reset stages
+            document.getElementById('study-stage').classList.add('active');
+            document.getElementById('recall-stage').classList.remove('active');
+            document.getElementById('results-stage').classList.remove('active');
+            document.getElementById('results-container').classList.remove('active');
+            
+            // Clear recall input
+            document.getElementById('recall-input').value = '';
+            
+            // Reset timers
+            document.getElementById('study-timer').textContent = '30';
+            document.getElementById('recall-timer').textContent = '60';
+            
+            // Clear intervals
+            clearInterval(studyTimerInterval);
+            clearInterval(recallTimerInterval);
+        }
+
+        // Start study timer
+        function startStudyTimer() {
+            let timeLeft = 30;
+            const timerEl = document.getElementById('study-timer');
+            const startBtn = document.getElementById('start-study-btn');
+            
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Studying...';
+            
+            studyTimerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(studyTimerInterval);
+                    endStudyTime();
+                }
+            }, 1000);
+        }
+
+        // End study time and transition to recall
+        function endStudyTime() {
+            document.getElementById('study-stage').classList.remove('active');
+            document.getElementById('recall-stage').classList.add('active');
+            
+            // Start recall timer automatically
+            startRecallTimer();
+        }
+
+        // Start recall timer
+        function startRecallTimer() {
+            let timeLeft = 60;
+            const timerEl = document.getElementById('recall-timer');
+            
+            recallTimerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(recallTimerInterval);
+                    submitRecall();
+                }
+            }, 1000);
+        }
+
+        // Submit recall and show results
+        function submitRecall() {
+            clearInterval(recallTimerInterval);
+            
+            // Get user input
+            const input = document.getElementById('recall-input').value;
+            userRecalledWords = input.split(',').map(word => word.trim().toLowerCase()).filter(word => word.length > 0);
+            
+            // Calculate results
+            const correctWords = userRecalledWords.filter(word => currentWords.includes(word));
+            const recallCount = correctWords.length;
+            const recallPercentage = Math.round((recallCount / currentWords.length) * 100);
+            
+            // Calculate curve prediction based on time (simulated)
+            // After 1-2 minutes, Ebbinghaus predicted ~44% retention
+            const curvePrediction = 44;
+            
+            // Calculate memory score (combination of recall and speed)
+            const timeUsed = 60 - parseInt(document.getElementById('recall-timer').textContent);
+            const speedBonus = timeUsed < 30 ? 20 : timeUsed < 50 ? 10 : 0;
+            const memoryScore = recallCount * 10 + speedBonus;
+            
+            // Update results display
+            document.getElementById('recall-score').textContent = `${recallCount}/${currentWords.length}`;
+            document.getElementById('recall-percentage').textContent = `${recallPercentage}%`;
+            document.getElementById('curve-prediction').textContent = `${curvePrediction}%`;
+            document.getElementById('memory-score').textContent = memoryScore;
+            
+            // Show results words
+            const resultsWordsEl = document.getElementById('results-words');
+            resultsWordsEl.innerHTML = '';
+            
+            currentWords.forEach(word => {
+                const wordEl = document.createElement('div');
+                wordEl.className = 'word-item';
+                wordEl.textContent = word;
+                
+                if (correctWords.includes(word)) {
+                    wordEl.classList.add('selected');
+                    wordEl.innerHTML += ' <i class="fas fa-check"></i>';
+                } else if (userRecalledWords.includes(word)) {
+                    // Word was recalled but not in original list (incorrect)
+                    wordEl.classList.add('missing');
+                    wordEl.innerHTML += ' <i class="fas fa-times"></i>';
+                } else {
+                    // Word was not recalled
+                    wordEl.style.opacity = '0.6';
+                }
+                
+                resultsWordsEl.appendChild(wordEl);
+            });
+            
+            // Transition to results stage
+            document.getElementById('recall-stage').classList.remove('active');
+            document.getElementById('results-stage').classList.add('active');
+            document.getElementById('results-container').classList.add('active');
+            
+            // Add motivational message
+            let message = '';
+            if (recallPercentage >= 80) {
+                message = "Excellent memory! You're beating the forgetting curve.";
+            } else if (recallPercentage >= 60) {
+                message = "Good recall! With spaced repetition, you could retain even more.";
+            } else if (recallPercentage >= 40) {
+                message = "Average recall - this matches what Ebbinghaus predicted after an hour.";
+            } else {
+                message = "Try using memory techniques like chunking or visualization to improve.";
+            }
+            
+            document.querySelector('#results-stage .exercise-instructions p').innerHTML = 
+                `<span class="highlight">Your Recall Results</span>. ${message}`;
+        }
+
+        // Initialize event listeners
+        function initEventListeners() {
+            // Chart control sliders
+            document.getElementById('strengthSlider').addEventListener('input', updateChart);
+            document.getElementById('decaySlider').addEventListener('input', updateChart);
+            document.getElementById('reviewSlider').addEventListener('input', updateChart);
+            
+            // Memory exercise buttons
+            document.getElementById('start-study-btn').addEventListener('click', startStudyTimer);
+            document.getElementById('submit-recall-btn').addEventListener('click', submitRecall);
+            document.getElementById('back-to-study-btn').addEventListener('click', () => {
+                document.getElementById('recall-stage').classList.remove('active');
+                document.getElementById('study-stage').classList.add('active');
+                document.getElementById('start-study-btn').disabled = false;
+                document.getElementById('start-study-btn').innerHTML = '<i class="fas fa-play"></i> Start Study Time';
+                document.getElementById('study-timer').textContent = '30';
+                clearInterval(recallTimerInterval);
+            });
+            document.getElementById('retry-exercise-btn').addEventListener('click', initMemoryExercise);
+            document.getElementById('learn-more-btn').addEventListener('click', () => {
+                alert("To learn more about the forgetting curve and memory techniques, check out resources on spaced repetition, active recall, and cognitive psychology. The key is to review information at strategically spaced intervals!");
+            });
+        }
+
+        // Initialize the application
+        function initApp() {
+            initChart();
+            initMemoryExercise();
+            initEventListeners();
+            
+            // Set initial chart values
+            updateChart();
+        }
+
+        // Start the application when page loads
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

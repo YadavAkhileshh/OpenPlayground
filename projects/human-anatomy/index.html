@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧬 human anatomy · interactive explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a232f 0%, #10161f 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
+            padding: 1.2rem;
+            color: #edf4ff;
+        }
+
+        .anatomy-app {
+            max-width: 1300px;
+            width: 100%;
+            background: rgba(18, 25, 36, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 3rem;
+            padding: 2rem 2rem 2.5rem;
+            box-shadow: 0 30px 60px -15px #00000080, 0 0 0 1px #2a3f55 inset, 0 0 0 2px rgba(100, 160, 240, 0.1);
+            border: 1px solid #2d4a6b;
+        }
+
+        /* header */
+        .app-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+
+        .title h1 {
+            font-size: 2.4rem;
+            font-weight: 550;
+            letter-spacing: -0.5px;
+            background: linear-gradient(140deg, #f0f8ff, #b9d9ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .system-selector {
+            background: #0f1c2c;
+            padding: 0.4rem;
+            border-radius: 60px;
+            border: 1px solid #335477;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+
+        .sys-btn {
+            background: transparent;
+            border: none;
+            color: #b5cef0;
+            padding: 0.7rem 1.5rem;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+            white-space: nowrap;
+        }
+
+        .sys-btn.active {
+            background: #2d5279;
+            color: white;
+            box-shadow: 0 4px 10px #0a1b30;
+        }
+
+        .sys-btn:hover {
+            background: #233b57;
+            color: #ecf5ff;
+        }
+
+        /* main row: diagram + info panel */
+        .explorer-main {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .diagram-area {
+            flex: 2;
+            min-width: 350px;
+            background: #0b141f;
+            border-radius: 2.5rem;
+            padding: 1.8rem 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #314f70;
+            box-shadow: inset 0 0 30px #00000060;
+        }
+
+        .svg-container {
+            width: 100%;
+            max-width: 550px;
+            transition: all 0.2s;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 8px 12px #00000080);
+        }
+
+        /* interactive SVG paths */
+        .organ {
+            transition: fill 0.15s, stroke 0.15s;
+            cursor: pointer;
+        }
+
+        .organ:hover {
+            filter: brightness(1.2);
+            stroke: #ffd966;
+            stroke-width: 2px;
+        }
+
+        .organ.selected {
+            stroke: #ffc107;
+            stroke-width: 3px;
+            filter: drop-shadow(0 0 8px #ffbb33);
+        }
+
+        .info-panel {
+            flex: 1;
+            min-width: 280px;
+            background: rgba(8, 18, 30, 0.8);
+            border-radius: 2.5rem;
+            padding: 2rem 1.8rem;
+            border: 1px solid #365e86;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 20px 30px -10px black;
+        }
+
+        .organ-name {
+            font-size: 2.3rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            line-height: 1.2;
+            color: #fff4db;
+        }
+
+        .system-tag {
+            display: inline-block;
+            background: #1f476b;
+            padding: 0.3rem 1.3rem;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 1.8rem;
+            border: 1px solid #6e9ed4;
+            color: #d8ecff;
+        }
+
+        .info-section {
+            margin-bottom: 2rem;
+        }
+
+        .info-section h3 {
+            font-size: 1.1rem;
+            color: #aac9f0;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .info-section p {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #d1e2fa;
+            font-weight: 300;
+            background: #0e1e2f;
+            padding: 1rem 1.2rem;
+            border-radius: 1.5rem;
+            border: 1px solid #2d4f71;
+        }
+
+        .fun-fact {
+            background: #16344d;
+            border-left: 6px solid #f4c542;
+            padding: 1rem;
+            border-radius: 1.5rem;
+            color: #ffefcf;
+            margin: 1.5rem 0;
+        }
+
+        .footer-note {
+            display: flex;
+            justify-content: space-between;
+            color: #6c8fb0;
+            font-size: 0.9rem;
+            border-top: 1px dashed #2f4d70;
+            padding-top: 1.2rem;
+            margin-top: 0.8rem;
+        }
+        .footer-note span {
+            color: #c5dcfc;
+        }
+    </style>
+</head>
+<body>
+    <div class="anatomy-app">
+        <div class="app-header">
+            <div class="title">
+                <h1>
+                    <span>🫀</span> human anatomy explorer
+                </h1>
+            </div>
+            <div class="system-selector" id="systemSelector">
+                <button class="sys-btn active" data-system="all">all</button>
+                <button class="sys-btn" data-system="cardiovascular">cardiovascular</button>
+                <button class="sys-btn" data-system="respiratory">respiratory</button>
+                <button class="sys-btn" data-system="digestive">digestive</button>
+                <button class="sys-btn" data-system="nervous">nervous</button>
+            </div>
+        </div>
+
+        <div class="explorer-main">
+            <!-- diagram area with SVG -->
+            <div class="diagram-area">
+                <div class="svg-container" id="svgContainer">
+                    <!-- SVG inline for simplicity and styling -->
+                    <svg viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- simplified human body silhouette (outline) -->
+                        <path d="M200,50 Q220,45 240,60 Q260,80 260,120 Q260,140 250,160 Q260,180 270,210 Q280,240 270,270 Q260,300 240,320 Q250,340 250,370 Q250,400 230,420 Q210,440 200,440 Q190,440 170,420 Q150,400 150,370 Q150,340 160,320 Q140,300 130,270 Q120,240 130,210 Q140,180 150,160 Q140,140 140,120 Q140,80 160,60 Q180,45 200,50 Z" fill="#182b3b" stroke="#3d6185" stroke-width="2"/>
+                        
+                        <!-- HEART (cardiovascular) -->
+                        <path id="organ-heart" class="organ" data-system="cardiovascular" d="M210,200 Q220,180 240,180 Q260,180 270,200 Q280,220 260,240 Q240,260 210,240 Q180,260 160,240 Q140,220 150,200 Q160,180 180,180 Q200,180 210,200 Z" fill="#b22234" stroke="#8b0000" stroke-width="1.5"/>
+                        
+                        <!-- LUNGS (respiratory) left -->
+                        <path id="organ-left-lung" class="organ" data-system="respiratory" d="M150,150 Q140,120 160,110 Q180,100 190,120 Q200,140 180,160 Q170,170 150,150 Z" fill="#6b8e9c" stroke="#2c4f5e" stroke-width="1.5"/>
+                        <!-- LUNGS right -->
+                        <path id="organ-right-lung" class="organ" data-system="respiratory" d="M230,150 Q220,120 240,110 Q260,100 280,120 Q290,140 270,160 Q260,170 230,150 Z" fill="#6b8e9c" stroke="#2c4f5e" stroke-width="1.5"/>
+                        
+                        <!-- BRAIN (nervous) -->
+                        <path id="organ-brain" class="organ" data-system="nervous" d="M170,40 Q150,20 200,20 Q250,20 240,50 Q250,70 220,80 Q200,90 170,75 Q150,60 170,40 Z" fill="#d4b595" stroke="#8b6b4f" stroke-width="1.5"/>
+                        
+                        <!-- STOMACH (digestive) -->
+                        <path id="organ-stomach" class="organ" data-system="digestive" d="M180,250 Q160,240 170,280 Q180,310 200,320 Q220,310 230,280 Q240,250 210,250 Q200,240 180,250 Z" fill="#7eaa7e" stroke="#2d6b2d" stroke-width="1.5"/>
+                        
+                        <!-- LIVER (digestive) -->
+                        <path id="organ-liver" class="organ" data-system="digestive" d="M240,220 Q260,200 280,220 Q290,240 270,260 Q250,270 240,250 Q230,235 240,220 Z" fill="#b0875f" stroke="#6d4f2f" stroke-width="1.5"/>
+                        
+                        <!-- KIDNEYS (urinary, but we'll add as 'digestive' or own, put both) -->
+                        <path id="organ-left-kidney" class="organ" data-system="digestive" d="M130,290 Q120,280 140,270 Q150,270 150,290 Q150,300 130,290 Z" fill="#b58b6b" stroke="#6d4f2f" stroke-width="1.5"/>
+                        <path id="organ-right-kidney" class="organ" data-system="digestive" d="M270,290 Q260,280 280,270 Q290,270 290,290 Q290,300 270,290 Z" fill="#b58b6b" stroke="#6d4f2f" stroke-width="1.5"/>
+                        
+                        <!-- INTESTINES (digestive) simple representation -->
+                        <path id="organ-intestines" class="organ" data-system="digestive" d="M190,330 Q170,340 190,360 Q210,380 230,360 Q250,340 220,330 Q210,320 190,330 Z" fill="#a5b89c" stroke="#4d6b3a" stroke-width="1.5"/>
+                        
+                        <!-- SPINAL CORD (nervous) -->
+                        <path id="organ-spine" class="organ" data-system="nervous" d="M195,140 L200,280 L205,140" stroke="#b8a287" stroke-width="12" stroke-linecap="round" fill="none" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- info panel (dynamic) -->
+            <div class="info-panel" id="infoPanel">
+                <div class="organ-name" id="organName">Heart</div>
+                <div class="system-tag" id="organSystem">cardiovascular</div>
+                
+                <div class="info-section">
+                    <h3>📖 description</h3>
+                    <p id="organDesc">A muscular pump that circulates blood through the body. Beats about 100,000 times per day.</p>
+                </div>
+
+                <div class="info-section">
+                    <h3>⚡ key function</h3>
+                    <p id="organFunction">Delivers oxygen and nutrients to tissues; removes carbon dioxide and wastes.</p>
+                </div>
+
+                <div class="fun-fact" id="funFact">
+                    💡 your heart can pump blood to every cell while you sleep — it never rests.
+                </div>
+
+                <div class="footer-note">
+                    <span>🔍 click any organ</span>
+                    <span id="extraFact">❤️‍🩹 beats ~3.5 billion times in a lifetime</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ----- anatomy database -----
+            const organData = {
+                'organ-heart': {
+                    name: 'Heart',
+                    system: 'cardiovascular',
+                    desc: 'A fist-sized muscular organ located slightly left of the chest.',
+                    function: 'Pumps blood through the circulatory system. It has four chambers: left/right atrium and ventricles.',
+                    funFact: '💓 your heart creates enough pressure to squirt blood 30 feet!',
+                    extra: 'resting heart rate: 60–100 bpm'
+                },
+                'organ-left-lung': {
+                    name: 'Left Lung',
+                    system: 'respiratory',
+                    desc: 'The left lung is slightly smaller than the right to make room for the heart.',
+                    function: 'Exchanges oxygen and carbon dioxide between air and blood (external respiration).',
+                    funFact: '🫁 lungs contain about 2,400 kilometres of airways and 300 million alveoli.',
+                    extra: 'left lung has 2 lobes, right lung has 3 lobes.'
+                },
+                'organ-right-lung': {
+                    name: 'Right Lung',
+                    system: 'respiratory',
+                    desc: 'Larger than the left lung, divided into three lobes.',
+                    function: 'Supplies oxygen to the blood and removes carbon dioxide.',
+                    funFact: '🫁 if unfolded, the lungs would cover a tennis court!',
+                    extra: 'diaphragm contraction draws air in.'
+                },
+                'organ-brain': {
+                    name: 'Brain',
+                    system: 'nervous',
+                    desc: 'The control center of the body, composed of ~86 billion neurons.',
+                    function: 'Processes sensory information, regulates body functions, enables thought and emotion.',
+                    funFact: '🧠 while awake, your brain generates enough electricity to light a small bulb.',
+                    extra: 'cerebrum · cerebellum · brainstem'
+                },
+                'organ-stomach': {
+                    name: 'Stomach',
+                    system: 'digestive',
+                    desc: 'J-shaped organ that receives food from the esophagus.',
+                    function: 'Secretes acid and enzymes to digest proteins; churns food into chyme.',
+                    funFact: '🥘 stomach lining renews itself every few days to avoid digesting itself.',
+                    extra: 'holds up to 1–1.5 liters.'
+                },
+                'organ-liver': {
+                    name: 'Liver',
+                    system: 'digestive',
+                    desc: 'The largest internal organ (about 1.5 kg).',
+                    function: 'Detoxifies blood, produces bile, stores glucose, synthesizes proteins.',
+                    funFact: '🧪 more than 500 vital functions have been identified in the liver.',
+                    extra: 'only organ that can regenerate.'
+                },
+                'organ-left-kidney': {
+                    name: 'Left Kidney',
+                    system: 'digestive', // we group kidney here for simplicity but it's urinary
+                    desc: 'Bean-shaped organ located toward the back of the abdominal cavity.',
+                    function: 'Filters blood to produce urine, regulates electrolytes and blood pressure.',
+                    funFact: '💧 kidneys filter about 150 litres of blood daily to make 1–2 litres of urine.',
+                    extra: 'left kidney sits slightly higher than right.'
+                },
+                'organ-right-kidney': {
+                    name: 'Right Kidney',
+                    system: 'digestive',
+                    desc: 'Similar to left, but slightly lower due to the liver.',
+                    function: 'Same: filtration, waste removal, fluid balance.',
+                    funFact: '🫘 each kidney contains about 1 million nephrons.',
+                    extra: 'kidneys also produce hormones.'
+                },
+                'organ-intestines': {
+                    name: 'Intestines',
+                    system: 'digestive',
+                    desc: 'Small intestine (~6m) and large intestine (~1.5m).',
+                    function: 'Absorb nutrients and water; form and eliminate stool.',
+                    funFact: '🌿 the large intestine houses trillions of bacteria (gut microbiome).',
+                    extra: 'small intestine has villi to increase surface area.'
+                },
+                'organ-spine': {
+                    name: 'Spinal Cord',
+                    system: 'nervous',
+                    desc: 'Long bundle of nerves running from brainstem to lower back.',
+                    function: 'Transmits signals between brain and body; controls reflexes.',
+                    funFact: '⚡ protected by 33 vertebrae; a reflex arc takes only 0.02 seconds.',
+                    extra: 'about 45 cm long.'
+                }
+            };
+
+            // DOM elements
+            const organs = document.querySelectorAll('.organ');
+            const infoName = document.getElementById('organName');
+            const infoSystem = document.getElementById('organSystem');
+            const infoDesc = document.getElementById('organDesc');
+            const infoFunction = document.getElementById('organFunction');
+            const funFactSpan = document.getElementById('funFact');
+            const extraFactSpan = document.getElementById('extraFact');
+
+            // system filter buttons
+            const sysButtons = document.querySelectorAll('.sys-btn');
+            let activeSystem = 'all';   // 'all', 'cardiovascular', etc
+
+            // currently selected organ id
+            let currentSelectedId = 'organ-heart'; // default
+
+            // --- functions ---
+            function updateInfoPanel(organId) {
+                const data = organData[organId];
+                if (!data) return;
+
+                infoName.textContent = data.name;
+                infoSystem.textContent = data.system;
+                infoDesc.textContent = data.desc;
+                infoFunction.textContent = data.function;
+                funFactSpan.innerHTML = `💡 ${data.funFact}`;
+                extraFactSpan.textContent = data.extra;
+            }
+
+            function clearSelectedHighlight() {
+                organs.forEach(org => org.classList.remove('selected'));
+            }
+
+            function setSelected(organId) {
+                clearSelectedHighlight();
+                const organEl = document.getElementById(organId);
+                if (organEl) {
+                    organEl.classList.add('selected');
+                    currentSelectedId = organId;
+                    updateInfoPanel(organId);
+                }
+            }
+
+            // filter organs by system
+            function applySystemFilter(system) {
+                activeSystem = system;
+                organs.forEach(org => {
+                    const organSystem = org.dataset.system;
+                    if (system === 'all' || organSystem === system) {
+                        org.style.display = 'block'; // SVG elements visibility
+                        org.style.opacity = '1';
+                    } else {
+                        org.style.display = 'block'; // keep in layout but fade
+                        org.style.opacity = '0.25';
+                    }
+                });
+
+                // if currently selected organ is hidden, try to pick first visible
+                const currentEl = document.getElementById(currentSelectedId);
+                if (currentEl && (system !== 'all' && currentEl.dataset.system !== system)) {
+                    // select first visible organ
+                    const firstVisible = Array.from(organs).find(org => {
+                        return (system === 'all' || org.dataset.system === system);
+                    });
+                    if (firstVisible) {
+                        setSelected(firstVisible.id);
+                    } else {
+                        // fallback to heart
+                        setSelected('organ-heart');
+                    }
+                } else if (!currentEl) {
+                    setSelected('organ-heart');
+                }
+                // update active button style
+                sysButtons.forEach(btn => {
+                    const btnSys = btn.dataset.system;
+                    if (btnSys === system) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                });
+            }
+
+            // --- event listeners ---
+            organs.forEach(organ => {
+                organ.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const organId = organ.getAttribute('id');
+                    setSelected(organId);
+                });
+            });
+
+            sysButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const system = btn.dataset.system;
+                    applySystemFilter(system);
+                });
+            });
+
+            // initial default: select heart, ensure all visible
+            setSelected('organ-heart');
+            // set active system to 'all'
+            applySystemFilter('all');
+
+            // bonus: click on background (svg container) doesn't change.
+        })();
+    </script>
+</body>
+</html>

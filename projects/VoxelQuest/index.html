@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoxelQuest</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="hud">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="game-title">VOXELQUEST</div>
+                <div class="level-info">
+                    <div>LEVEL <span id="levelDisplay">1</span></div>
+                    <div class="score">SCORE: <span id="scoreDisplay">0</span></div>
+                </div>
+            </div>
+
+            <!-- Bottom HUD -->
+            <div class="bottom-hud">
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <div class="stat-label">HEALTH</div>
+                        <div class="stat-value" id="healthValue">100</div>
+                        <div class="health-bar-container">
+                            <div class="bar health-bar" id="healthBar" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-box">
+                        <div class="stat-label">AMMUNITION</div>
+                        <div class="stat-value" id="ammoValue">30 / 90</div>
+                        <div class="ammo-bar-container">
+                            <div class="bar ammo-bar" id="ammoBar" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-box">
+                        <div class="stat-label">TARGETS</div>
+                        <div class="stat-value" id="enemiesValue">0</div>
+                        <div style="font-size: 11px; opacity: 0.7; margin-top: 5px;">ENEMIES REMAINING</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weapon Display -->
+            <div class="weapon-display">
+                <div class="weapon-name">PLASMA RIFLE</div>
+                <div class="ammo-count" id="weaponAmmo">30</div>
+                <div class="reload-indicator" id="reloadText" style="display: none;">RELOADING...</div>
+            </div>
+
+            <!-- Crosshair -->
+            <div class="crosshair" id="crosshair"></div>
+
+            <!-- Minimap -->
+            <div class="minimap-container">
+                <div class="minimap-title">RADAR</div>
+                <canvas id="minimap" width="160" height="160"></canvas>
+            </div>
+
+            <!-- Kill Feed -->
+            <div class="kill-feed" id="killFeed"></div>
+
+            <!-- Damage Vignette -->
+            <div class="damage-vignette" id="damageVignette"></div>
+
+            <!-- Notification -->
+            <div class="notification" id="notification"></div>
+
+            <!-- FPS Counter -->
+            <div class="fps-counter">FPS: <span id="fpsDisplay">60</span></div>
+        </div>
+    </div>
+
+    <!-- Main Menu -->
+    <div class="menu-screen" id="mainMenu">
+        <div class="menu-logo">VOXELQUEST</div>
+        <div class="menu-subtitle">RETRO FPS EXPERIENCE</div>
+        <div class="menu-buttons">
+            <button class="menu-btn" onclick="game.startGame()">START MISSION</button>
+            <button class="menu-btn" onclick="game.showInstructions()">CONTROLS</button>
+            <button class="menu-btn" onclick="game.toggleQuality()">GRAPHICS: <span id="qualityText">HIGH</span></button>
+        </div>
+        <div class="menu-controls">
+            WASD - MOVE | MOUSE - AIM | CLICK - SHOOT | R - RELOAD<br>
+            TAB - TOGGLE RADAR | ESC - PAUSE
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions" id="instructions">
+        <h2>MISSION BRIEFING</h2>
+        
+        <h3>CONTROLS</h3>
+        <div class="control-grid">
+            <div class="control-key">W A S D</div>
+            <div class="control-desc">Move Forward / Left / Back / Right</div>
+            
+            <div class="control-key">MOUSE</div>
+            <div class="control-desc">Look Around & Aim</div>
+            
+            <div class="control-key">LEFT CLICK</div>
+            <div class="control-desc">Fire Weapon</div>
+            
+            <div class="control-key">R</div>
+            <div class="control-desc">Reload Weapon</div>
+            
+            <div class="control-key">TAB</div>
+            <div class="control-desc">Toggle Radar</div>
+            
+            <div class="control-key">ESC</div>
+            <div class="control-desc">Pause Game</div>
+        </div>
+
+        <h3>OBJECTIVE</h3>
+        <p style="line-height: 1.8; opacity: 0.9;">
+            Eliminate all hostile entities in each sector. Collect health packs and ammunition 
+            to survive. Each sector increases in difficulty. Stay alert and maintain situational 
+            awareness using your radar.
+        </p>
+
+        <button class="menu-btn close-btn" onclick="game.hideInstructions()">UNDERSTOOD</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div class="end-screen" id="gameOverScreen">
+        <div class="end-title failure">MISSION FAILED</div>
+        <div class="end-stats">
+            <div class="end-stat">
+                <div class="end-stat-value" style="color: var(--secondary);" id="finalLevel">1</div>
+                <div class="end-stat-label">LEVEL REACHED</div>
+            </div>
+            <div class="end-stat">
+                <div class="end-stat-value" style="color: var(--danger);" id="finalKills">0</div>
+                <div class="end-stat-label">ENEMIES ELIMINATED</div>
+            </div>
+            <div class="end-stat">
+                <div class="end-stat-value" style="color: var(--warning);" id="finalScore">0</div>
+                <div class="end-stat-label">FINAL SCORE</div>
+            </div>
+        </div>
+        <div class="menu-buttons">
+            <button class="menu-btn" onclick="game.restart()">RETRY MISSION</button>
+            <button class="menu-btn" onclick="game.returnToMenu()">MAIN MENU</button>
+        </div>
+    </div>
+
+    <!-- Level Complete Screen -->
+    <div class="end-screen" id="levelCompleteScreen">
+        <div class="end-title success">SECTOR CLEARED</div>
+        <div class="end-stats">
+            <div class="end-stat">
+                <div class="end-stat-value" style="color: var(--primary);" id="levelKills">0</div>
+                <div class="end-stat-label">ENEMIES ELIMINATED</div>
+            </div>
+            <div class="end-stat">
+                <div class="end-stat-value" style="color: var(--secondary);" id="levelTime">0:00</div>
+                <div class="end-stat-label">TIME ELAPSED</div>
+            </div>
+            <div class="end-stat">
+                <div class="end-stat-value" style="color: var(--warning);" id="levelBonus">+0</div>
+                <div class="end-stat-label">BONUS POINTS</div>
+            </div>
+        </div>
+        <button class="menu-btn" onclick="game.nextLevel()">CONTINUE TO NEXT SECTOR</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

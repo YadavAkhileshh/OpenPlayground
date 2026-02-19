@@ -96,11 +96,19 @@ class ComponentLoader {
     }
 
     async loadAllComponents() {
+        // Load different components depending on the current page.
+        // Avoid loading index-only sections (hero/projects/contribute) on other pages like about.html.
+        const currentPath = window.location.pathname || '';
+        const isIndex = currentPath.endsWith('/') || currentPath.endsWith('index.html');
+
         const componentMap = [
             { name: 'header', selector: '#header-placeholder' },
-            { name: 'hero', selector: '#hero-placeholder' },
-            { name: 'projects', selector: '#projects-placeholder' },
-            { name: 'contribute', selector: '#contribute-placeholder' },
+            // Only inject the hero/projects/contribute sections on the homepage
+            ...(isIndex ? [
+                { name: 'hero', selector: '#hero-placeholder' },
+                { name: 'projects', selector: '#projects-placeholder' },
+                { name: 'contribute', selector: '#contribute-placeholder' }
+            ] : []),
             { name: 'footer', selector: '#footer-placeholder' },
             { name: 'chatbot', selector: '#chatbot-placeholder' }
         ];
