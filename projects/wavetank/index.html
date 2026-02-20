@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WaveTank — 2D Wave Simulation</title>
+  <meta name="description" content="Interactive 2D wave equation simulator with diffraction, barriers, and depth-dependent wave speed." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Header ───────────────────────────────────────────────────────── -->
+  <header id="header">
+    <div class="header-brand">
+      <div class="brand-icon">🌊</div>
+      <div class="brand-text">
+        <h1>WAVETANK</h1>
+        <p>2D Wave Equation Simulator</p>
+      </div>
+    </div>
+
+    <div class="header-stats">
+      <div class="stat-pill">FPS <strong id="stat-fps">60</strong></div>
+      <div class="stat-pill">Tool <strong id="stat-tool">ripple</strong></div>
+    </div>
+
+    <div class="header-actions">
+      <button class="hbtn" id="btn-clear">🗑 Clear Waves</button>
+      <button class="hbtn danger" id="btn-reset">↺ Reset All</button>
+    </div>
+  </header>
+
+  <!-- ── Main Layout ──────────────────────────────────────────────────── -->
+  <div id="main">
+
+    <!-- Left Toolbar: Tools -->
+    <nav id="sidebar-left">
+      <p class="sidebar-label">Tools</p>
+
+      <button class="tool-btn active" id="tool-ripple" title="Ripple: click to add wave disturbance">
+        💧<span class="tool-label">Ripple</span>
+      </button>
+
+      <button class="tool-btn" id="tool-barrier" title="Barrier: draw solid walls">
+        🧱<span class="tool-label">Wall</span>
+      </button>
+
+      <button class="tool-btn" id="tool-depth" title="Depth: paint shallow/deep zones">
+        🌊<span class="tool-label">Depth</span>
+      </button>
+
+      <div class="tool-sep"></div>
+
+      <button class="tool-btn" id="tool-eraser" title="Eraser: remove barriers and depth">
+        🗑<span class="tool-label">Erase</span>
+      </button>
+    </nav>
+
+    <!-- Canvas -->
+    <div id="canvas-container">
+      <div id="canvas-wrapper">
+        <canvas id="wave-canvas" width="512" height="512"></canvas>
+      </div>
+    </div>
+
+    <!-- Right Panel: Controls -->
+    <aside id="sidebar-right">
+
+      <!-- Wave Physics -->
+      <div class="panel-section">
+        <div class="panel-title">Wave Physics</div>
+
+        <div class="control-row">
+          <div class="control-label">Damping <span id="damping-val">0.9970</span></div>
+          <input type="range" id="damping-slider" min="0.980" max="0.9999" step="0.0001" value="0.997" />
+        </div>
+
+        <div class="control-row">
+          <div class="control-label">Amplitude <span id="amplitude-val">0.80</span></div>
+          <input type="range" id="amplitude-slider" min="0.05" max="2.0" step="0.05" value="0.8" />
+        </div>
+
+        <div class="control-row">
+          <div class="control-label">Sim Speed <span id="speed-val">×3</span></div>
+          <input type="range" id="speed-slider" min="1" max="8" step="1" value="3" />
+        </div>
+      </div>
+
+      <!-- Auto Pulse -->
+      <div class="panel-section">
+        <div class="panel-title">Auto Pulse</div>
+
+        <button class="btn" id="auto-pulse-btn">▶ Auto Pulse</button>
+
+        <div class="control-row">
+          <div class="control-label">Rate <span id="pulse-rate-val">30 fps⁻¹</span></div>
+          <input type="range" id="pulse-rate-slider" min="5" max="60" step="1" value="30" />
+        </div>
+      </div>
+
+      <!-- Tools Configuration -->
+      <div class="panel-section">
+        <div class="panel-title">Brush</div>
+
+        <div class="control-row">
+          <div class="control-label">Size <span id="brush-val">3px</span></div>
+          <input type="range" id="brush-slider" min="1" max="20" step="1" value="3" />
+        </div>
+
+        <div class="control-row">
+          <div class="control-label">Depth Paint <span id="depth-val-out">80% shallow</span></div>
+          <input type="range" id="depth-value-slider" min="0" max="255" step="5" value="50" />
+        </div>
+      </div>
+
+      <!-- Visualisation -->
+      <div class="panel-section">
+        <div class="panel-title">Visualisation</div>
+
+        <div class="control-row">
+          <div class="control-label">Color Map</div>
+          <select id="colormap-select">
+            <option value="ocean"    selected>🌊 Ocean</option>
+            <option value="plasma"        >🔮 Plasma</option>
+            <option value="heatwave"      >🔥 Heatwave</option>
+            <option value="grayscale"     >◐ Grayscale</option>
+          </select>
+        </div>
+
+        <button class="btn" id="depth-overlay-btn">🗺 Depth Overlay: Off</button>
+      </div>
+
+      <!-- Grid Resolution -->
+      <div class="panel-section">
+        <div class="panel-title">Resolution</div>
+        <div class="control-label" style="font-size:0.7rem; color: var(--text-muted); margin-bottom:4px;">
+          Changing resolution resets the grid.
+        </div>
+        <select id="resolution-select">
+          <option value="128">128 × 128 — Fast</option>
+          <option value="256" selected>256 × 256 — Default</option>
+          <option value="384">384 × 384 — Sharp</option>
+          <option value="512">512 × 512 — Ultra</option>
+        </select>
+      </div>
+
+      <!-- Actions -->
+      <div class="panel-section">
+        <div class="panel-title">Actions</div>
+        <div class="btn-row">
+          <button class="btn" id="btn-clear-2">🗑 Clear</button>
+          <button class="btn danger" id="btn-reset-2">↺ Reset</button>
+        </div>
+      </div>
+
+    </aside>
+  </div><!-- #main -->
+</div><!-- #app -->
+
+<script type="module" src="js/main.js"></script>
+<script>
+  // Wire secondary action buttons to the same listeners
+  window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btn-clear-2')?.addEventListener('click',
+      () => document.getElementById('btn-clear')?.click());
+    document.getElementById('btn-reset-2')?.addEventListener('click',
+      () => document.getElementById('btn-reset')?.click());
+
+    // Depth overlay button label toggle
+    const btn = document.getElementById('depth-overlay-btn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const on = btn.classList.contains('active');
+        btn.textContent = on ? '🗺 Depth Overlay: On' : '🗺 Depth Overlay: Off';
+      });
+    }
+  });
+</script>
+</body>
+</html>
