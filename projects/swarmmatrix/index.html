@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwarmMatrix: Emergent Logistics</title>
+
+    <!-- CSS Modules -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/typography.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/canvas.css">
+    <link rel="stylesheet" href="css/panels.css">
+    <link rel="stylesheet" href="css/controls.css">
+    <link rel="stylesheet" href="css/buttons.css">
+    <link rel="stylesheet" href="css/sliders.css">
+    <link rel="stylesheet" href="css/toggles.css">
+    <link rel="stylesheet" href="css/monitor.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/debug.css">
+    <link rel="stylesheet" href="css/tools.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Render Layer -->
+        <main id="canvas-container">
+            <!-- Layers defined in JS to ensure ordering 
+                 1. Background
+                 2. Pheromone Heatmap
+                 3. Obstacles
+                 4. Resources
+                 5. Agents
+                 6. Debug Vectors -->
+            <canvas id="simulation-canvas"></canvas>
+            <canvas id="ui-overlay-canvas"></canvas>
+        </main>
+
+        <!-- UI Layer -->
+        <div id="ui-layer" class="pointer-events-none">
+            
+            <!-- Header -->
+            <header class="top-panel pointer-events-auto panel-glass">
+                <div class="brand">
+                    <span class="logo-icon"></span>
+                    <h1>SwarmMatrix</h1>
+                    <span class="version">v1.0.0</span>
+                </div>
+                <div class="mission-status">
+                    <span class="status-indicator active"></span>
+                    <span class="status-text">SYSTEM ONLINE</span>
+                </div>
+            </header>
+
+            <!-- Monitor Panel -->
+            <aside class="right-panel pointer-events-auto panel-glass">
+                <div class="panel-section">
+                    <h2>Telemetry</h2>
+                    <div class="monitor-grid">
+                        <div class="metric-box">
+                            <span class="metric-label">FPS</span>
+                            <span class="metric-value font-mono" id="fps-display">00</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">AGENTS</span>
+                            <span class="metric-value font-mono" id="agent-count-display">0</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">TICK</span>
+                            <span class="metric-value font-mono" id="tick-display">0</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">ENTROPY</span>
+                            <span class="metric-value font-mono" id="entropy-display">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>Environment Settings</h2>
+                    <div class="slider-group">
+                        <label for="flow-rate-slider">Pheromone Evaporation</label>
+                        <input type="range" id="evaporate-slider" min="0" max="100" value="50">
+                        <span class="slider-val" id="evaporate-val">0.05</span>
+                    </div>
+                    <div class="slider-group">
+                        <label for="agent-speed-slider">Agent Speed Limit</label>
+                        <input type="range" id="agent-speed-slider" min="1" max="10" value="4" step="0.5">
+                        <span class="slider-val" id="agent-speed-val">4.0</span>
+                    </div>
+                    <div class="slider-group">
+                        <label for="noise-field-slider">Perlin Noise</label>
+                        <input type="range" id="noise-field-slider" min="0" max="100" value="20">
+                        <span class="slider-val" id="noise-field-val">0.2</span>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>Behavior Weights</h2>
+                    <div class="slider-group">
+                        <label for="align-weight">Alignment</label>
+                        <input type="range" id="align-weight" min="0" max="50" value="10">
+                        <span class="slider-val" id="align-val">1.0</span>
+                    </div>
+                    <div class="slider-group">
+                        <label for="cohesion-weight">Cohesion</label>
+                        <input type="range" id="cohesion-weight" min="0" max="50" value="10">
+                        <span class="slider-val" id="cohesion-val">1.0</span>
+                    </div>
+                    <div class="slider-group">
+                        <label for="separation-weight">Separation</label>
+                        <input type="range" id="separation-weight" min="0" max="50" value="15">
+                        <span class="slider-val" id="separation-val">1.5</span>
+                    </div>
+                    <div class="slider-group">
+                        <label for="gradient-weight">Gradient Focus</label>
+                        <input type="range" id="gradient-weight" min="0" max="100" value="25">
+                        <span class="slider-val" id="gradient-val">2.5</span>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>Debug Overlays</h2>
+                    <div class="toggle-group">
+                        <label for="debug-vectors">Show Steering Vectors</label>
+                        <label class="switch">
+                            <input type="checkbox" id="debug-vectors">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-group">
+                        <label for="debug-heatmap">Show Pheromone Heatmap</label>
+                        <label class="switch">
+                            <input type="checkbox" id="debug-heatmap" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-group">
+                        <label for="debug-spatial">Show Spatial Hash Grid</label>
+                        <label class="switch">
+                            <input type="checkbox" id="debug-spatial">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Tools Panel -->
+            <div class="left-panel pointer-events-auto panel-glass">
+                <div class="toolbar vertical-toolbar">
+                    <button class="tool-btn active" data-tool="select" title="Select / Inspect">
+                        <span class="icon">🔍</span>
+                    </button>
+                    <button class="tool-btn" data-tool="obstacle" title="Draw Obstacle">
+                        <span class="icon">🧱</span>
+                    </button>
+                    <button class="tool-btn" data-tool="resource_source" title="Place Resource Source">
+                        <span class="icon">💎</span>
+                    </button>
+                    <button class="tool-btn" data-tool="resource_sink" title="Place Resource Sink">
+                        <span class="icon">🏭</span>
+                    </button>
+                    <button class="tool-btn" data-tool="pheromone_brush" title="Pheromone Brush">
+                        <span class="icon">🖌️</span>
+                    </button>
+                    <button class="tool-btn" data-tool="erase" title="Eraser">
+                        <span class="icon">🧽</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Bottom Controls -->
+            <footer class="bottom-panel pointer-events-auto panel-glass">
+                <div class="playback-controls">
+                    <button class="icon-btn" id="btn-reset" title="Reset Simulation">🔄</button>
+                    <button class="icon-btn" id="btn-play-pause" title="Play/Pause">⏸️</button>
+                    <button class="icon-btn" id="btn-step" title="Step Forward">⏭️</button>
+                    <button class="icon-btn" id="btn-clear-pheromones" title="Clear Pheromones">💨</button>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Core Scripts -->
+    <script type="module" src="js/core/config.js"></script>
+    <script type="module" src="js/core/math.js"></script>
+    <script type="module" src="js/core/vector.js"></script>
+    <script type="module" src="js/core/color.js"></script>
+    <script type="module" src="js/core/utils.js"></script>
+    <script type="module" src="js/core/events.js"></script>
+    <script type="module" src="js/core/state.js"></script>
+
+    <!-- Simulation Scripts -->
+    <script type="module" src="js/simulation/pheromoneTypes.js"></script>
+    <script type="module" src="js/simulation/diffusionSolver.js"></script>
+    <script type="module" src="js/simulation/pheromoneGrid.js"></script>
+    <script type="module" src="js/simulation/spatialHash.js"></script>
+    <script type="module" src="js/simulation/behavior.js"></script>
+    <script type="module" src="js/simulation/steering.js"></script>
+    <script type="module" src="js/simulation/agent.js"></script>
+    <script type="module" src="js/simulation/agentPool.js"></script>
+    <script type="module" src="js/simulation/agentEngine.js"></script>
+    <script type="module" src="js/simulation/obstacle.js"></script>
+    <script type="module" src="js/simulation/obstacleManager.js"></script>
+    <script type="module" src="js/simulation/resource.js"></script>
+    <script type="module" src="js/simulation/resourceManager.js"></script>
+    <script type="module" src="js/simulation/simulation.js"></script>
+
+    <!-- Render Scripts -->
+    <script type="module" src="js/render/camera.js"></script>
+    <script type="module" src="js/render/agentRenderer.js"></script>
+    <script type="module" src="js/render/pheromoneRenderer.js"></script>
+    <script type="module" src="js/render/heatmapRenderer.js"></script>
+    <script type="module" src="js/render/obstacleRenderer.js"></script>
+    <script type="module" src="js/render/resourceRenderer.js"></script>
+    <script type="module" src="js/render/debugRenderer.js"></script>
+    <script type="module" src="js/render/renderer.js"></script>
+
+    <!-- UI Scripts -->
+    <script type="module" src="js/ui/uiManager.js"></script>
+    <script type="module" src="js/ui/toolManager.js"></script>
+    <script type="module" src="js/ui/monitor.js"></script>
+    <script type="module" src="js/ui/controls.js"></script>
+    <script type="module" src="js/ui/mouseHandler.js"></script>
+
+    <script type="module" src="js/core/loop.js"></script>
+    <script type="module" src="js/core/app.js"></script>
+</body>
+</html>
