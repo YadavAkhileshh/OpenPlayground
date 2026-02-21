@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Email Architect | Pro (Local Engine)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #f8fafc;
+        }
+
+        .loader {
+            border-top: 3px solid var(--primary);
+            border-right: 3px solid transparent;
+            animation: spinner 0.8s linear infinite;
+        }
+
+        @keyframes spinner {
+            to { transform: rotate(360deg); }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .editable-canvas:focus {
+            outline: none;
+            background: rgba(99, 102, 241, 0.02);
+        }
+
+        .variant-tab.active {
+            background-color: white;
+            color: #6366f1;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+<body class="text-slate-900 min-h-screen">
+
+    <div class="max-w-7xl mx-auto px-6 py-10 md:py-12">
+        <!-- Main Navigation Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between mb-12 gap-8">
+            <div class="flex items-center gap-5">
+                <div class="bg-indigo-600 p-3.5 rounded-2xl shadow-2xl shadow-indigo-200 text-white">
+                    <i data-lucide="shield-check" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">Architect <span class="text-indigo-600">Pro</span></h1>
+                    <p class="text-sm text-slate-500 font-semibold tracking-wide flex items-center gap-2 uppercase">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Hybrid Engine v1.2
+                    </p>
+                </div>
+            </div>
+            
+            <nav class="flex bg-white/50 backdrop-blur-md p-1.5 rounded-2xl shadow-sm border border-slate-200">
+                <button onclick="switchTab('generator')" id="tab-generator" class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all bg-indigo-600 text-white shadow-lg">
+                    <i data-lucide="zap" class="w-4 h-4"></i> Create
+                </button>
+                <button onclick="switchTab('history')" id="tab-history" class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800">
+                    <i data-lucide="archive" class="w-4 h-4"></i> History <span id="history-count" class="ml-1 px-2.5 py-0.5 bg-slate-100 rounded-full text-[10px]">0</span>
+                </button>
+            </nav>
+        </header>
+
+        <!-- Application Content -->
+        <main id="view-generator" class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <!-- Configuration Sidebar -->
+            <aside class="lg:col-span-4 space-y-8">
+                <section class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 space-y-6">
+                    <div class="flex items-center justify-between text-indigo-600">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="layout" class="w-5 h-5"></i>
+                            <h2 class="text-xs font-black uppercase tracking-[0.2em]">Composer</h2>
+                        </div>
+                        <button onclick="resetInputs()" class="text-[10px] font-bold text-slate-400 hover:text-red-500 transition-colors">RESET</button>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-400 ml-1">Recipient Name</label>
+                            <input id="recipient" type="text" placeholder="e.g. Sarah Jenkins" class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all text-sm font-medium">
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-400 ml-1">Context (Key Details)</label>
+                            <textarea id="context" rows="4" placeholder="Briefly state the goal, e.g. 'Requesting a refund for late delivery' or 'Pitching my freelance services'..." class="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all text-sm font-medium resize-none custom-scrollbar"></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-400 ml-1">Tone</label>
+                                <select id="tone" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer">
+                                    <option value="professional">Professional</option>
+                                    <option value="casual">Casual</option>
+                                    <option value="urgent">Urgent</option>
+                                    <option value="apologetic">Apologetic</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-400 ml-1">Length</label>
+                                <select id="length" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer">
+                                    <option value="concise">Concise</option>
+                                    <option value="standard">Standard</option>
+                                    <option value="detailed">Thorough</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button id="btn-generate" onclick="generateEmail()" class="group w-full py-4.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl flex items-center justify-center gap-3 shadow-2xl shadow-indigo-200 transition-all active:scale-[0.97] mt-4 relative overflow-hidden">
+                            <i data-lucide="zap" class="w-5 h-5"></i>
+                            <span id="btn-text">Architect Draft</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Scenarios Library -->
+                <section class="bg-slate-900 p-8 rounded-[2rem] text-white">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-400">Scenario Library</h3>
+                        <span class="text-[10px] text-white/30 font-bold">12 Presets</span>
+                    </div>
+                    <div class="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar" id="template-list">
+                        <!-- Templates Injected Here -->
+                    </div>
+                </section>
+
+                <!-- Local Settings -->
+                <section class="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-4">Your Signature</h3>
+                    <textarea id="signature" rows="3" placeholder="Kind regards,&#10;Alex Smith&#10;CEO at CloudTech" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white outline-none transition-all"></textarea>
+                </section>
+            </aside>
+
+            <!-- Preview/Canvas Section -->
+            <section class="lg:col-span-8 h-full">
+                <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 flex flex-col h-full min-h-[700px] overflow-hidden">
+                    <!-- Top Bar -->
+                    <div class="px-8 py-5 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <span id="canvas-status" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Local Engine Ready</span>
+                            <div id="variant-selector" class="hidden flex bg-slate-200/50 p-1 rounded-lg gap-1">
+                                <button onclick="selectVariant(0)" class="variant-tab active px-3 py-1 text-[10px] font-bold rounded shadow-sm transition-all">V1</button>
+                                <button onclick="selectVariant(1)" class="variant-tab px-3 py-1 text-[10px] font-bold rounded transition-all">V2</button>
+                                <button onclick="selectVariant(2)" class="variant-tab px-3 py-1 text-[10px] font-bold rounded transition-all text-slate-500">V3</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3" id="actions-bar" style="display: none;">
+                            <button onclick="copyToClipboard()" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-indigo-600 hover:border-indigo-600 transition-all text-xs font-bold shadow-sm">
+                                <i data-lucide="copy" class="w-4 h-4"></i> <span id="copy-btn-text">Copy All</span>
+                            </button>
+                            <button onclick="openInMail()" class="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Email Canvas -->
+                    <div id="email-canvas" class="p-12 flex-1 flex flex-col overflow-y-auto custom-scrollbar">
+                        <div class="flex-1 flex flex-col items-center justify-center text-center opacity-20">
+                            <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+                                <i data-lucide="mail-open" class="w-10 h-10"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-2">No Draft Selected</h3>
+                            <p class="max-w-xs mx-auto text-sm font-medium">Use the left panel to configure your parameters or choose a scenario to start drafting.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Footer -->
+                    <div id="footer-actions" class="px-12 py-6 bg-slate-50 border-t border-slate-100 hidden">
+                        <div class="flex justify-between items-center">
+                            <div class="flex gap-6 items-center">
+                                <div class="flex flex-col">
+                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Words</span>
+                                    <span id="word-count" class="text-sm font-bold text-slate-700">0</span>
+                                </div>
+                                <div class="h-6 w-[1px] bg-slate-200"></div>
+                                <div class="flex flex-col">
+                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Tone Analysis</span>
+                                    <span id="tone-indicator" class="text-sm font-bold text-indigo-600">Checking...</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="modifyDraft('shorter')" class="px-4 py-2 text-[10px] font-black uppercase text-slate-500 hover:text-slate-800 transition-all">Shorter</button>
+                                <button onclick="modifyDraft('longer')" class="px-4 py-2 text-[10px] font-black uppercase text-slate-500 hover:text-slate-800 transition-all">Longer</button>
+                                <button onclick="generateEmail()" class="px-5 py-2.5 bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-200 transition-all flex items-center gap-2">
+                                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Regen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- History View -->
+        <section id="view-history" class="hidden fade-in-up">
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden min-h-[600px]">
+                <div class="p-10 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-slate-900">Archive</h2>
+                        <p class="text-sm font-medium text-slate-400">All local drafts are saved in your session.</p>
+                    </div>
+                    <button onclick="clearHistory()" class="px-6 py-3 bg-red-50 text-red-600 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-red-100 transition-all">Clear Session History</button>
+                </div>
+                <div id="history-container" class="divide-y divide-slate-100">
+                    <!-- History Injected Here -->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const TEMPLATES = [
+            { id: 1, name: 'Cold Pitch', context: 'Proposing my web design services to help increase their online sales conversion.' },
+            { id: 2, name: 'Job Application', context: 'Applying for the Project Manager role. Mentioning 6 years of experience in Agile.' },
+            { id: 3, name: 'Meeting Sync', context: 'Scheduling a recurring sync for the Q3 marketing budget planning.' },
+            { id: 4, name: 'Resignation', context: 'Leaving my role for a new opportunity. Grateful for the team. 2 weeks notice.' },
+            { id: 5, name: 'Project Update', context: 'Confirming that Milestone A is finished. Ready for the client review session.' },
+            { id: 6, name: 'Refund Request', context: 'Order #4029 arrived damaged. Requesting a full refund or replacement.' },
+            { id: 7, name: 'Thank You', context: 'Following up after the interview. Loved the discussion about company culture.' },
+            { id: 8, name: 'Sales Follow-up', context: 'Checking in on the proposal sent last week. Any questions regarding pricing?' },
+            { id: 9, name: 'Recommendation', context: 'Writing a letter for Sarah for her Graduate school application.' },
+            { id: 10, name: 'Late Payment', context: 'Politely reminding the client that invoice #102 is now 14 days overdue.' },
+            { id: 11, name: 'Introduction', context: 'Introducing Mike from Marketing to Jane from Product Design.' },
+            { id: 12, name: 'Out of Office', context: 'I am away until Monday. Please contact support for urgent issues.' }
+        ];
+
+        let history = [];
+        let currentDrafts = []; // Store current variants
+        let activeVariantIndex = 0;
+
+        function init() {
+            lucide.createIcons();
+            renderTemplates();
+            // Load custom signature if exists in memory
+            const savedSig = localStorage.getItem('architect_signature');
+            if (savedSig) document.getElementById('signature').value = savedSig;
+        }
+
+        function renderTemplates() {
+            const container = document.getElementById('template-list');
+            container.innerHTML = TEMPLATES.map(t => `
+                <button onclick="applyTemplate(${t.id})" class="w-full text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all group flex justify-between items-center">
+                    <div class="flex-1">
+                        <span class="text-[10px] font-black text-indigo-400 block mb-1 uppercase tracking-wider">${t.name}</span>
+                        <p class="text-[10px] text-white/40 line-clamp-1">${t.context}</p>
+                    </div>
+                    <i data-lucide="plus" class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all text-white"></i>
+                </button>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function applyTemplate(id) {
+            const t = TEMPLATES.find(x => x.id === id);
+            document.getElementById('context').value = t.context;
+            // Scroll top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetInputs() {
+            document.getElementById('recipient').value = '';
+            document.getElementById('context').value = '';
+        }
+
+        function switchTab(tab) {
+            document.getElementById('view-generator').classList.toggle('hidden', tab !== 'generator');
+            document.getElementById('view-history').classList.toggle('hidden', tab !== 'history');
+            const genBtn = document.getElementById('tab-generator');
+            const histBtn = document.getElementById('tab-history');
+
+            if (tab === 'generator') {
+                genBtn.className = 'flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all bg-indigo-600 text-white shadow-lg';
+                histBtn.className = 'flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800';
+            } else {
+                histBtn.className = 'flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all bg-indigo-600 text-white shadow-lg';
+                genBtn.className = 'flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-800';
+                renderHistory();
+            }
+        }
+
+        // --- ENHANCED LOCAL ENGINE ---
+        function generateEmail() {
+            const context = document.getElementById('context').value;
+            const recipient = document.getElementById('recipient').value || "[Name]";
+            const tone = document.getElementById('tone').value;
+            const length = document.getElementById('length').value;
+
+            if (!context) return;
+
+            const canvas = document.getElementById('email-canvas');
+            const btnText = document.getElementById('btn-text');
+            btnText.innerText = "Architecting...";
+            canvas.innerHTML = `<div class="flex-1 flex flex-col items-center justify-center h-full space-y-4"><div class="loader w-12 h-12 rounded-full"></div><p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Generating Variants...</p></div>`;
+
+            setTimeout(() => {
+                // Generate 3 variants
+                currentDrafts = [
+                    buildDraftLocally(recipient, context, tone, length, 'standard'),
+                    buildDraftLocally(recipient, context, tone, length, 'bold'),
+                    buildDraftLocally(recipient, context, tone, length, 'concise')
+                ];
+                
+                activeVariantIndex = 0;
+                history.unshift({ ...currentDrafts[0], timestamp: new Date(), id: Date.now() });
+                
+                updateHistoryCount();
+                renderDraft();
+                btnText.innerText = "Architect Draft";
+            }, 800);
+        }
+
+        function buildDraftLocally(name, context, tone, length, style) {
+            let subject = "";
+            let body = "";
+
+            const signature = document.getElementById('signature').value || "Best,\n[Your Name]";
+
+            const greetings = {
+                professional: [`Dear ${name},`, `Greetings ${name},`, `Hello ${name},`],
+                casual: [`Hi ${name},`, `Hey ${name}!`, `Hi there ${name},`],
+                urgent: [`Hi ${name},`, `${name} —`, `Important: ${name},`],
+                apologetic: [`Dear ${name},`, `Hi ${name},`, `To ${name},`]
+            };
+
+            const intros = {
+                professional: "I hope this email finds you well. I am writing regarding ",
+                casual: "Just reaching out because ",
+                urgent: "I'm sending this as a quick follow-up on ",
+                apologetic: "I wanted to reach out and personally address "
+            };
+
+            const styles = {
+                standard: "This is a priority for us and I would like to ensure we are aligned.",
+                bold: "I'm confident we can make significant progress here and would love to move fast.",
+                concise: "Wanted to touch base and get this sorted quickly."
+            };
+
+            const greeting = greetings[tone][Math.floor(Math.random() * 3)];
+            
+            // Build Subject
+            subject = context.split(' ').slice(0, 5).join(' ');
+            if (tone === 'urgent') subject = "URGENT: " + subject;
+            if (tone === 'apologetic') subject = "Regarding: " + subject;
+
+            // Build Body
+            let core = context.trim();
+            let filler = length === 'detailed' ? "\n\nI believe it's important to provide some additional context. " + styles[style] : "";
+            let callToAction = "\n\nPlease let me know your thoughts on this. Looking forward to hearing from you.";
+
+            body = `${greeting}\n\n${intros[tone]}${core}.${filler}${callToAction}\n\n${signature}`;
+
+            return { subject, body, tone, length };
+        }
+
+        function renderDraft() {
+            const draft = currentDrafts[activeVariantIndex];
+            document.getElementById('actions-bar').style.display = 'flex';
+            document.getElementById('footer-actions').classList.remove('hidden');
+            document.getElementById('variant-selector').classList.remove('hidden');
+            
+            const canvas = document.getElementById('email-canvas');
+            canvas.innerHTML = `
+                <div class="fade-in-up space-y-8 max-w-2xl mx-auto">
+                    <div class="space-y-2">
+                        <span class="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">Subject</span>
+                        <h2 class="text-2xl font-extrabold text-slate-900 border-b border-transparent focus:border-indigo-100 outline-none p-1 transition-all" contenteditable="true" id="edit-subject">${draft.subject}</h2>
+                    </div>
+                    <div class="text-slate-700 leading-relaxed text-lg whitespace-pre-wrap editable-canvas p-1 min-h-[300px]" contenteditable="true" id="edit-body" oninput="updateMetrics()">
+${draft.body}
+                    </div>
+                </div>
+            `;
+            updateMetrics();
+            updateVariantTabs();
+            lucide.createIcons();
+        }
+
+        function selectVariant(idx) {
+            activeVariantIndex = idx;
+            renderDraft();
+        }
+
+        function updateVariantTabs() {
+            const tabs = document.querySelectorAll('.variant-tab');
+            tabs.forEach((tab, i) => {
+                tab.classList.toggle('active', i === activeVariantIndex);
+            });
+        }
+
+        function updateMetrics() {
+            const text = document.getElementById('edit-body').innerText;
+            const count = text.trim() ? text.trim().split(/\s+/).length : 0;
+            document.getElementById('word-count').innerText = count;
+            document.getElementById('tone-indicator').innerText = document.getElementById('tone').value.toUpperCase();
+        }
+
+        function copyToClipboard() {
+            const subject = document.getElementById('edit-subject').innerText;
+            const body = document.getElementById('edit-body').innerText;
+            const fullText = `Subject: ${subject}\n\n${body}`;
+            
+            const el = document.createElement('textarea');
+            el.value = fullText;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            const btnText = document.getElementById('copy-btn-text');
+            btnText.innerText = "Copied!";
+            setTimeout(() => btnText.innerText = "Copy All", 2000);
+        }
+
+        function openInMail() {
+            const subject = encodeURIComponent(document.getElementById('edit-subject').innerText);
+            const body = encodeURIComponent(document.getElementById('edit-body').innerText);
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        }
+
+        function modifyDraft(action) {
+            // Simple string manipulation for local engine
+            let body = document.getElementById('edit-body').innerText;
+            if (action === 'shorter') {
+                body = body.split('. ').slice(0, -1).join('. ') + '.';
+            } else {
+                body += "\n\nI am happy to discuss this further if you have any additional questions or concerns.";
+            }
+            document.getElementById('edit-body').innerText = body;
+            updateMetrics();
+        }
+
+        function updateHistoryCount() {
+            document.getElementById('history-count').innerText = history.length;
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-container');
+            if (history.length === 0) {
+                container.innerHTML = `
+                    <div class="p-20 flex flex-col items-center justify-center text-center">
+                        <i data-lucide="inbox" class="w-12 h-12 text-slate-200 mb-4"></i>
+                        <p class="text-sm font-bold text-slate-300 uppercase">Archive Empty</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+            container.innerHTML = history.map(item => `
+                <div class="p-8 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition-all cursor-pointer group" onclick="restoreDraft(${item.id})">
+                    <div class="max-w-xl">
+                        <div class="flex gap-2 mb-2">
+                            <span class="text-[9px] font-black bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded uppercase">${item.tone}</span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase">${new Date(item.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                        <h4 class="text-lg font-bold text-slate-800 line-clamp-1">${item.subject}</h4>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all"></i>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function restoreDraft(id) {
+            const restored = history.find(h => h.id === id);
+            currentDrafts = [restored, restored, restored]; // Simple restore
+            activeVariantIndex = 0;
+            switchTab('generator');
+            renderDraft();
+        }
+
+        function clearHistory() {
+            if(confirm("Delete all session history?")) {
+                history = [];
+                updateHistoryCount();
+                renderHistory();
+            }
+        }
+
+        // Save signature to local storage when changed
+        document.getElementById('signature').addEventListener('input', (e) => {
+            localStorage.setItem('architect_signature', e.target.value);
+        });
+
+        window.onload = init;
+    </script>
+</body>
+</html>
