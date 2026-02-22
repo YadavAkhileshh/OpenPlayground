@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Bubble Shooter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+        
+        :root {
+            --bg-dark: #0f172a;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            margin: 0;
+            overflow: hidden;
+            touch-action: none;
+            color: white;
+        }
+
+        /* Animated Background Blobs */
+        .bg-blob {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            filter: blur(80px);
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.15;
+            animation: move 20s infinite alternate;
+        }
+
+        @keyframes move {
+            from { transform: translate(-10%, -10%) scale(1); }
+            to { transform: translate(20%, 20%) scale(1.2); }
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        canvas {
+            background: var(--glass);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 95vw;
+            max-height: 85vh;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 0.5rem 1.25rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        /* Pinned Corners */
+        .corner-ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        #game-over-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            padding: 14px 32px;
+            border-radius: 16px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: none;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+            pointer-events: auto;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -5px rgba(99, 102, 241, 0.6);
+        }
+
+        .stat-label {
+            font-size: 0.6rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: -2px;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            background: linear-gradient(to bottom, #fff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-blob" style="top: -10%; left: -10%;"></div>
+<div class="bg-blob" style="bottom: -10%; right: -10%; animation-delay: -5s; background: linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%);"></div>
+
+<div id="game-container">
+    <!-- Corner UI -->
+    <div class="corner-ui">
+        <div class="glass-panel text-left">
+            <div class="stat-label">Score</div>
+            <div id="score-val" class="stat-value">0000</div>
+        </div>
+        <div class="glass-panel text-right">
+            <div class="stat-label">Level</div>
+            <div id="level-val" class="stat-value">1</div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="mt-6 text-sm font-medium tracking-widest text-slate-500 hidden md:block uppercase opacity-50">
+        Aim with mouse • Left click to fire
+    </div>
+</div>
+
+<div id="game-over-modal">
+    <div class="glass-panel p-12 border-2 border-indigo-500/30">
+        <h2 class="text-6xl font-black mb-2 tracking-tighter italic">GAME OVER</h2>
+        <p class="text-indigo-300 mb-8 font-light text-lg">Final Score <span id="final-score" class="font-bold text-white">0</span></p>
+        <button class="btn" onclick="resetGame()">Re-Launch</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score-val');
+    const levelEl = document.getElementById('level-val');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const finalScoreEl = document.getElementById('final-score');
+
+    const BUBBLE_RADIUS = 22;
+    const ROW_HEIGHT = 38; 
+    const COLS = 10;
+    const ROWS = 16;
+    
+    const COLORS = [
+        { main: '#ff3e3e', light: '#ff8a8a', shadow: '#8b0000' }, 
+        { main: '#2ecc71', light: '#82e0aa', shadow: '#186a3b' }, 
+        { main: '#3498db', light: '#85c1e9', shadow: '#1a5276' }, 
+        { main: '#f1c40f', light: '#f7dc6f', shadow: '#7d6608' }, 
+        { main: '#9b59b6', light: '#c39bd3', shadow: '#4a235a' }, 
+        { main: '#e67e22', light: '#f0b27a', shadow: '#6e3f11' }
+    ];
+
+    let score = 0;
+    let level = 1;
+    let grid = [];
+    let projectile = null;
+    let nextColorIndex = Math.floor(Math.random() * COLORS.length);
+    let isGameOver = false;
+    let mouse = { x: 0, y: 0 };
+    let animations = [];
+    let particles = [];
+
+    function init() {
+        canvas.width = COLS * BUBBLE_RADIUS * 2 + BUBBLE_RADIUS;
+        canvas.height = ROWS * ROW_HEIGHT + BUBBLE_RADIUS * 2;
+        resetGame();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function resetGame() {
+        score = 0;
+        level = 1;
+        isGameOver = false;
+        grid = [];
+        animations = [];
+        particles = [];
+        gameOverModal.style.display = 'none';
+        updateUI();
+        
+        for (let r = 0; r < ROWS; r++) {
+            grid[r] = [];
+            for (let c = 0; c < COLS; c++) {
+                grid[r][c] = (r < 6) ? Math.floor(Math.random() * COLORS.length) : -1;
+            }
+        }
+        spawnProjectile();
+    }
+
+    function spawnProjectile() {
+        projectile = {
+            x: canvas.width / 2,
+            y: canvas.height - BUBBLE_RADIUS - 20,
+            colorIndex: nextColorIndex,
+            vx: 0,
+            vy: 0,
+            active: false
+        };
+        nextColorIndex = Math.floor(Math.random() * COLORS.length);
+    }
+
+    function updateUI() {
+        scoreEl.innerText = score.toString().padStart(4, '0');
+        levelEl.innerText = level;
+    }
+
+    function getBubblePos(r, c) {
+        let x = c * BUBBLE_RADIUS * 2 + BUBBLE_RADIUS;
+        if (r % 2 === 1) x += BUBBLE_RADIUS;
+        let y = r * ROW_HEIGHT + BUBBLE_RADIUS;
+        return { x, y };
+    }
+
+    function getGridPos(x, y) {
+        let r = Math.round((y - BUBBLE_RADIUS) / ROW_HEIGHT);
+        let offset = (r % 2 === 1) ? BUBBLE_RADIUS : 0;
+        let c = Math.round((x - BUBBLE_RADIUS - offset) / (BUBBLE_RADIUS * 2));
+        return { r, c };
+    }
+
+    function createParticles(x, y, color) {
+        for (let i = 0; i < 8; i++) {
+            particles.push({
+                x, y,
+                vx: (Math.random() - 0.5) * 10,
+                vy: (Math.random() - 0.5) * 10,
+                radius: Math.random() * 4 + 2,
+                color: color.main,
+                life: 1
+            });
+        }
+    }
+
+    function drawBubble(x, y, colorIndex, scale = 1, alpha = 1) {
+        const color = COLORS[colorIndex];
+        if (!color || alpha <= 0 || scale <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+
+        const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, BUBBLE_RADIUS * 1.2);
+        glow.addColorStop(0, color.main + '44');
+        glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(0, 0, Math.max(0.1, BUBBLE_RADIUS * 1.2), 0, Math.PI * 2);
+        ctx.fill();
+
+        const grad = ctx.createRadialGradient(-BUBBLE_RADIUS * 0.3, -BUBBLE_RADIUS * 0.3, 2, 0, 0, BUBBLE_RADIUS);
+        grad.addColorStop(0, color.light);
+        grad.addColorStop(0.5, color.main);
+        grad.addColorStop(1, color.shadow);
+        
+        ctx.beginPath();
+        ctx.arc(0, 0, Math.max(0.1, BUBBLE_RADIUS), 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.ellipse(-BUBBLE_RADIUS * 0.4, -BUBBLE_RADIUS * 0.4, Math.max(0.1, BUBBLE_RADIUS * 0.3), Math.max(0.1, BUBBLE_RADIUS * 0.15), Math.PI / 4, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (projectile && !projectile.active && !isGameOver) {
+            const angle = Math.atan2(mouse.y - projectile.y, mouse.x - projectile.x);
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([8, 12]);
+            ctx.moveTo(projectile.x, projectile.y);
+            const lineX = projectile.x + Math.cos(angle) * 120;
+            const lineY = projectile.y + Math.sin(angle) * 120;
+            const grad = ctx.createLinearGradient(projectile.x, projectile.y, lineX, lineY);
+            grad.addColorStop(0, 'rgba(99, 102, 241, 0.5)');
+            grad.addColorStop(1, 'transparent');
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 3;
+            ctx.lineTo(lineX, lineY);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                if (grid[r] && grid[r][c] !== -1) {
+                    const pos = getBubblePos(r, c);
+                    drawBubble(pos.x, pos.y, grid[r][c]);
+                }
+            }
+        }
+
+        if (projectile) {
+            drawBubble(projectile.x, projectile.y, projectile.colorIndex);
+            
+            const previewX = canvas.width - 45;
+            const previewY = canvas.height - 45;
+            ctx.save();
+            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            ctx.beginPath();
+            ctx.arc(previewX, previewY, 30, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            drawBubble(previewX, previewY, nextColorIndex, 0.7);
+        }
+
+        particles = particles.filter(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.02;
+            if (p.life > 0) {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                // Safety fix for IndexSizeError: ensure radius is never negative
+                const r = Math.max(0.01, p.radius * p.life);
+                ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                return true;
+            }
+            return false;
+        });
+
+        animations = animations.filter(anim => {
+            anim.life -= 0.08;
+            if (anim.life > 0) {
+                drawBubble(anim.x, anim.y, anim.colorIndex, 1 + (1 - anim.life) * 0.5, anim.life);
+                return true;
+            }
+            return false;
+        });
+    }
+
+    function update() {
+        if (isGameOver) return;
+
+        if (projectile && projectile.active) {
+            projectile.x += projectile.vx;
+            projectile.y += projectile.vy;
+
+            if (projectile.x - BUBBLE_RADIUS <= 0 || projectile.x + BUBBLE_RADIUS >= canvas.width) {
+                projectile.vx *= -1;
+                projectile.x = projectile.x < BUBBLE_RADIUS ? BUBBLE_RADIUS : canvas.width - BUBBLE_RADIUS;
+            }
+
+            if (projectile.y - BUBBLE_RADIUS <= 0) {
+                snapToGrid();
+            }
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (grid[r] && grid[r][c] !== -1) {
+                        const pos = getBubblePos(r, c);
+                        const dist = Math.hypot(projectile.x - pos.x, projectile.y - pos.y);
+                        if (dist < BUBBLE_RADIUS * 1.7) {
+                            snapToGrid();
+                            return;
+                        }
+                    }
+                }
+            }
+
+            if (projectile.y < -50) spawnProjectile();
+        }
+    }
+
+    function snapToGrid() {
+        const { r, c } = getGridPos(projectile.x, projectile.y);
+        const targetR = Math.max(0, Math.min(ROWS - 1, r));
+        const targetC = Math.max(0, Math.min(COLS - 1, c));
+
+        if (grid[targetR]) {
+            grid[targetR][targetC] = projectile.colorIndex;
+            
+            const matches = findMatches(targetR, targetC, projectile.colorIndex);
+            if (matches.length >= 3) {
+                popBubbles(matches);
+                dropFloatingBubbles();
+            }
+
+            if (targetR >= ROWS - 2) {
+                endGame();
+            } else {
+                spawnProjectile();
+            }
+        } else {
+            spawnProjectile();
+        }
+    }
+
+    function findMatches(r, c, color, matches = []) {
+        const key = `${r},${c}`;
+        if (matches.includes(key)) return matches;
+        matches.push(key);
+        getNeighbors(r, c).forEach(n => {
+            if (grid[n.r] && grid[n.r][n.c] === color) findMatches(n.r, n.c, color, matches);
+        });
+        return matches;
+    }
+
+    function getNeighbors(r, c) {
+        const neighbors = [];
+        const isOdd = r % 2 === 1;
+        const directions = isOdd ? 
+            [[0, -1], [0, 1], [-1, 0], [-1, 1], [1, 0], [1, 1]] : 
+            [[0, -1], [0, 1], [-1, -1], [-1, 0], [1, -1], [1, 0]];
+
+        directions.forEach(d => {
+            const nr = r + d[0], nc = c + d[1];
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) neighbors.push({ r: nr, c: nc });
+        });
+        return neighbors;
+    }
+
+    function popBubbles(matches) {
+        matches.forEach(m => {
+            const [r, c] = m.split(',').map(Number);
+            if (grid[r] && grid[r][c] !== -1) {
+                const pos = getBubblePos(r, c);
+                const colorIdx = grid[r][c];
+                animations.push({ x: pos.x, y: pos.y, colorIndex: colorIdx, life: 1 });
+                createParticles(pos.x, pos.y, COLORS[colorIdx]);
+                grid[r][c] = -1;
+                score += 15;
+            }
+        });
+        updateUI();
+    }
+
+    function dropFloatingBubbles() {
+        const connected = new Set();
+        for (let c = 0; c < COLS; c++) {
+            if (grid[0] && grid[0][c] !== -1) traverseConnected(0, c, connected);
+        }
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                if (grid[r] && grid[r][c] !== -1 && !connected.has(`${r},${c}`)) {
+                    const pos = getBubblePos(r, c);
+                    const colorIdx = grid[r][c];
+                    animations.push({ x: pos.x, y: pos.y, colorIndex: colorIdx, life: 1 });
+                    createParticles(pos.x, pos.y, COLORS[colorIdx]);
+                    grid[r][c] = -1;
+                    score += 30;
+                }
+            }
+        }
+        updateUI();
+    }
+
+    function traverseConnected(r, c, connected) {
+        const key = `${r},${c}`;
+        if (connected.has(key)) return;
+        connected.add(key);
+        getNeighbors(r, c).forEach(n => {
+            if (grid[n.r] && grid[n.r][n.c] !== -1) traverseConnected(n.r, n.c, connected);
+        });
+    }
+
+    function endGame() {
+        isGameOver = true;
+        finalScoreEl.innerText = score;
+        gameOverModal.style.display = 'flex';
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    canvas.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        mouse.y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    });
+
+    canvas.addEventListener('mousedown', () => {
+        if (!projectile || projectile.active || isGameOver) return;
+        const angle = Math.atan2(mouse.y - projectile.y, mouse.x - projectile.x);
+        const speed = 14;
+        projectile.vx = Math.cos(angle) * speed;
+        projectile.vy = Math.sin(angle) * speed;
+        projectile.active = true;
+    });
+
+    canvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+        mouse.y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', e => {
+        if (!projectile || projectile.active || isGameOver) return;
+        const angle = Math.atan2(mouse.y - projectile.y, mouse.x - projectile.x);
+        const speed = 14;
+        projectile.vx = Math.cos(angle) * speed;
+        projectile.vy = Math.sin(angle) * speed;
+        projectile.active = true;
+    });
+
+    window.onload = init;
+</script>
+</body>
+</html>
