@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Happy Glass Clone</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f0f4f8;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            display: block;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            pointer-events: none;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 10;
+        }
+        .btn {
+            pointer-events: auto;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #cbd5e1;
+            transition: all 0.1s;
+            user-select: none;
+        }
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #cbd5e1;
+        }
+        #message-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            display: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="ui-overlay">
+        <div id="level-indicator" class="bg-blue-500 text-white p-3 rounded-lg shadow-lg font-bold">Level: 1</div>
+        <div class="flex gap-2">
+            <div id="reset-btn" class="btn text-red-500">Reset</div>
+            <div id="next-btn" class="btn text-green-500 hidden">Next Level</div>
+        </div>
+    </div>
+
+    <div id="message-box">
+        <h2 id="msg-title" class="text-3xl font-bold mb-4 text-blue-600">Great Job!</h2>
+        <p id="msg-text" class="mb-6 text-gray-600">The glass is happy now!</p>
+        <button id="msg-btn" class="bg-blue-500 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-blue-600 transition">Continue</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+</div>
+
+<script>
+    const { Engine, Render, Runner, World, Bodies, Composite, Events, Vector, Body } = Matter;
+
+    // --- Configuration ---
+    const config = {
+        width: 400,
+        height: 600,
+        waterColor: '#3498db',
+        glassColor: '#2c3e50',
+        lineColor: '#576574',
+        particleRadius: 4,
+        maxParticles: 80,
+        fillThreshold: 35 // How many particles needed to win
+    };
+
+    // --- State ---
+    let engine, render, runner;
+    let currentLevel = 0;
+    let particles = [];
+    let drawnLines = [];
+    let isDrawing = false;
+    let currentPath = [];
+    let glassParts = [];
+    let spawnerPos = { x: 200, y: 50 };
+    let winTriggered = false;
+    let gameActive = true;
+
+    const levels = [
+        {
+            spawner: { x: 100, y: 80 },
+            glass: { x: 300, y: 500 },
+            obstacles: []
+        },
+        {
+            spawner: { x: 50, y: 50 },
+            glass: { x: 350, y: 500 },
+            obstacles: [{ x: 200, y: 300, w: 200, h: 20, r: 0.2 }]
+        },
+        {
+            spawner: { x: 200, y: 50 },
+            glass: { x: 200, y: 520 },
+            obstacles: [
+                { x: 100, y: 300, w: 150, h: 20, r: 0.5 },
+                { x: 300, y: 300, w: 150, h: 20, r: -0.5 }
+            ]
+        },
+        {
+            spawner: { x: 350, y: 50 },
+            glass: { x: 50, y: 500 },
+            obstacles: [
+                { x: 200, y: 250, w: 20, h: 300, r: 0 }
+            ]
+        },
+        {
+            spawner: { x: 200, y: 50 },
+            glass: { x: 200, y: 520 },
+            obstacles: [
+                { x: 200, y: 200, w: 50, h: 50, r: 0.78 },
+                { x: 100, y: 400, w: 200, h: 20, r: 0.2 },
+                { x: 300, y: 400, w: 200, h: 20, r: -0.2 }
+            ]
+        }
+    ];
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function init() {
+        canvas.width = config.width;
+        canvas.height = config.height;
+
+        engine = Engine.create({
+            enableSleeping: false
+        });
+        
+        // Lower gravity for better "water" feel
+        engine.world.gravity.y = 0.8;
+
+        runner = Runner.create();
+        Runner.run(runner, engine);
+
+        loadLevel(0);
+        loop();
+
+        // Input Listeners
+        canvas.addEventListener('mousedown', startDrawing);
+        window.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startDrawing(e.touches[0]);
+        }, { passive: false });
+        window.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            draw(e.touches[0]);
+        }, { passive: false });
+        window.addEventListener('touchend', stopDrawing);
+
+        document.getElementById('reset-btn').onclick = () => loadLevel(currentLevel);
+        document.getElementById('next-btn').onclick = nextLevel;
+        document.getElementById('msg-btn').onclick = nextLevel;
+    }
+
+    function loadLevel(idx) {
+        currentLevel = idx;
+        World.clear(engine.world);
+        particles = [];
+        drawnLines = [];
+        winTriggered = false;
+        gameActive = true;
+        
+        document.getElementById('level-indicator').innerText = `Level: ${currentLevel + 1}`;
+        document.getElementById('message-box').style.display = 'none';
+        document.getElementById('next-btn').classList.add('hidden');
+
+        const lvl = levels[currentLevel];
+        spawnerPos = lvl.spawner;
+
+        // Create Glass
+        createGlass(lvl.glass.x, lvl.glass.y);
+
+        // Create Static Obstacles
+        lvl.obstacles.forEach(obs => {
+            const body = Bodies.rectangle(obs.x, obs.y, obs.w, obs.h, {
+                isStatic: true,
+                angle: obs.r || 0,
+                render: { fillStyle: '#95a5a6' },
+                chamfer: { radius: 5 }
+            });
+            World.add(engine.world, body);
+        });
+
+        // Invisible Bounds
+        const ground = Bodies.rectangle(config.width/2, config.height + 50, config.width, 100, { isStatic: true });
+        const leftWall = Bodies.rectangle(-50, config.height/2, 100, config.height, { isStatic: true });
+        const rightWall = Bodies.rectangle(config.width + 50, config.height/2, 100, config.height, { isStatic: true });
+        World.add(engine.world, [ground, leftWall, rightWall]);
+    }
+
+    function createGlass(x, y) {
+        const thickness = 8;
+        const width = 80;
+        const height = 90;
+
+        const bottom = Bodies.rectangle(x, y + height/2, width, thickness, { 
+            isStatic: true, 
+            render: { fillStyle: config.glassColor },
+            label: 'glass_bottom'
+        });
+        const left = Bodies.rectangle(x - width/2, y, thickness, height, { 
+            isStatic: true, 
+            render: { fillStyle: config.glassColor },
+            chamfer: { radius: 4 }
+        });
+        const right = Bodies.rectangle(x + width/2, y, thickness, height, { 
+            isStatic: true, 
+            render: { fillStyle: config.glassColor },
+            chamfer: { radius: 4 }
+        });
+
+        glassParts = [bottom, left, right];
+        World.add(engine.world, glassParts);
+    }
+
+    function spawnWater() {
+        if (!gameActive || particles.length >= config.maxParticles) return;
+
+        const p = Bodies.circle(spawnerPos.x + (Math.random()*4-2), spawnerPos.y, config.particleRadius, {
+            friction: 0.01,
+            restitution: 0.1,
+            density: 0.001,
+            render: { fillStyle: config.waterColor },
+            label: 'water'
+        });
+        
+        particles.push(p);
+        World.add(engine.world, p);
+    }
+
+    function startDrawing(e) {
+        if (!gameActive) return;
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX || e.pageX) - rect.left;
+        const y = (e.clientY || e.pageY) - rect.top;
+        currentPath = [{ x, y }];
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX || e.pageX) - rect.left;
+        const y = (e.clientY || e.pageY) - rect.top;
+
+        const lastPoint = currentPath[currentPath.length - 1];
+        const dist = Math.hypot(x - lastPoint.x, y - lastPoint.y);
+
+        if (dist > 10) {
+            currentPath.push({ x, y });
+            
+            // Create a physical segment
+            const midX = (x + lastPoint.x) / 2;
+            const midY = (y + lastPoint.y) / 2;
+            const angle = Math.atan2(y - lastPoint.y, x - lastPoint.x);
+            
+            const segment = Bodies.rectangle(midX, midY, dist + 2, 6, {
+                isStatic: true,
+                angle: angle,
+                render: { fillStyle: config.lineColor },
+                chamfer: { radius: 3 }
+            });
+            
+            drawnLines.push(segment);
+            World.add(engine.world, segment);
+        }
+    }
+
+    function stopDrawing() {
+        isDrawing = false;
+    }
+
+    function checkWin() {
+        if (winTriggered) return;
+
+        const glassPos = levels[currentLevel].glass;
+        // Simple check: how many particles are inside the glass bounds?
+        let inGlassCount = 0;
+        particles.forEach(p => {
+            if (p.position.y > glassPos.y - 40 && 
+                p.position.y < glassPos.y + 40 &&
+                p.position.x > glassPos.x - 35 &&
+                p.position.x < glassPos.x + 35) {
+                inGlassCount++;
+            }
+        });
+
+        if (inGlassCount >= config.fillThreshold) {
+            winTriggered = true;
+            gameActive = false;
+            setTimeout(showWinUI, 500);
+        }
+    }
+
+    function showWinUI() {
+        const box = document.getElementById('message-box');
+        const title = document.getElementById('msg-title');
+        const text = document.getElementById('msg-text');
+        
+        if (currentLevel < levels.length - 1) {
+            title.innerText = "Level Complete!";
+            text.innerText = "The glass is happy!";
+        } else {
+            title.innerText = "You Win!";
+            text.innerText = "You completed all levels!";
+            document.getElementById('msg-btn').innerText = "Play Again";
+        }
+        
+        box.style.display = 'block';
+        document.getElementById('next-btn').classList.remove('hidden');
+    }
+
+    function nextLevel() {
+        if (currentLevel < levels.length - 1) {
+            loadLevel(currentLevel + 1);
+        } else {
+            loadLevel(0);
+        }
+    }
+
+    function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Water Spawner Visual
+        ctx.fillStyle = '#34495e';
+        ctx.beginPath();
+        ctx.arc(spawnerPos.x, spawnerPos.y - 10, 15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = config.waterColor;
+        ctx.fillRect(spawnerPos.x - 5, spawnerPos.y - 10, 10, 15);
+
+        // Water Spawning Logic
+        if (frameCount % 4 === 0) spawnWater();
+
+        // Render Bodies
+        const bodies = Composite.allBodies(engine.world);
+        bodies.forEach(body => {
+            if (body.label === 'water') {
+                ctx.fillStyle = config.waterColor;
+                ctx.beginPath();
+                ctx.arc(body.position.x, body.position.y, config.particleRadius, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.save();
+                ctx.translate(body.position.x, body.position.y);
+                ctx.rotate(body.angle);
+                ctx.fillStyle = body.render.fillStyle || '#ccc';
+                
+                // Draw rectangles (obstacles, glass, lines)
+                if (body.parts.length <= 1) {
+                    const { min, max } = body.bounds;
+                    const w = max.x - min.x;
+                    const h = max.y - min.y;
+                    // We simplify since Matter bodies might be rotated
+                    // Using internal vertices for accurate drawing
+                    ctx.beginPath();
+                    ctx.moveTo(body.vertices[0].x - body.position.x, body.vertices[0].y - body.position.y);
+                    for (let i = 1; i < body.vertices.length; i++) {
+                        ctx.lineTo(body.vertices[i].x - body.position.x, body.vertices[i].y - body.position.y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        });
+
+        // Glass Face (Emoji)
+        const glassX = levels[currentLevel].glass.x;
+        const glassY = levels[currentLevel].glass.y;
+        
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(winTriggered ? '😊' : '☹️', glassX, glassY + 10);
+
+        // Dotted Target Line
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = '#3498db88';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(glassX - 35, glassY - 10);
+        ctx.lineTo(glassX + 35, glassY - 10);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        checkWin();
+        frameCount++;
+        requestAnimationFrame(loop);
+    }
+
+    let frameCount = 0;
+    init();
+
+</script>
+</body>
+</html>
