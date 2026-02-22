@@ -848,7 +848,7 @@ class ProjectManager {
 /* -----------------------------------------------------------
  * GitHub Contributors
  * ----------------------------------------------------------- */
-async function fetchContributors() {
+const fetchContributors = async () => {
   // Support multiple grids: homepage, about page, and mentors section
   const gridMain = document.getElementById('contributors-grid');
   const gridAbout = document.getElementById('about-contributors-grid');
@@ -914,7 +914,7 @@ async function fetchContributors() {
 /**
  * Global Bookmark Toggle Wrapper
  */
-window.toggleProjectBookmark = function (btn, title, link, category, description) {
+window.toggleProjectBookmark = (btn, title, link, category, description) => {
     if (!window.bookmarksManager) return;
 
     const project = { title, link, category, description };
@@ -1088,7 +1088,7 @@ window.showCollectionDropdown = function (
  * Global Sandbox Preview Handler
  * Feature #1334: Project Playground Sandbox & Live Preview
  */
-window.openSandboxPreview = function (btn) {
+window.openSandboxPreview = (btn) => {
   if (!window.sandboxEngine) {
     console.warn('Sandbox engine not loaded');
     return;
@@ -1109,7 +1109,7 @@ window.openSandboxPreview = function (btn) {
  * Global Compare Toggle Handler
  * Feature #1333: Project Comparison
  */
-window.handleCompareToggle = function (checkbox, projectJson) {
+window.handleCompareToggle = (checkbox, projectJson) => {
   if (!window.comparisonEngine) {
     console.warn('Comparison engine not loaded');
     return;
@@ -1151,7 +1151,7 @@ window.ProjectManager = ProjectManager;
 window.fetchContributors = fetchContributors;
 
 // Initialize ProjectManager - handles both immediate and event-based loading
-function initProjectManager() {
+const initProjectManager = () => {
   if (window.projectManagerInstance?.state.initialized) return;
 
   const projectsGrid = document.getElementById('projects-grid');
@@ -1174,7 +1174,7 @@ document.addEventListener('componentLoaded', (e) => {
 
 // Initialize Command Palette
 let commandPalette = null;
-function initCommandPalette() {
+const initCommandPalette = () => {
   const manager = window.projectManagerInstance;
   if (manager && !commandPalette) {
     commandPalette = new CommandPalette(manager);
@@ -1218,7 +1218,7 @@ console.log('%c🚀 OpenPlayground Unified Logic Active', 'color:#6366f1;font-we
 /**
  * Global function to check for project insight deep links in the URL
  */
-function checkInsightDeepLink() {
+const checkInsightDeepLink = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const projectTitle = urlParams.get('insight');
     if (projectTitle && typeof window.openInsightsPanel === 'function') {

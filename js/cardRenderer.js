@@ -10,7 +10,7 @@ import { deadlineManager } from './projectDeadlineManager.js';
  * @param {string} str - The string to escape.
  * @returns {string} The escaped string.
  */
-function escapeHtml(str) {
+const escapeHtml = (str) => {
     if (!str) return '';
     const div = document.createElement('div');
     div.textContent = str;
@@ -22,7 +22,7 @@ function escapeHtml(str) {
  * @param {string} str - The string to capitalize.
  * @returns {string} The capitalized string.
  */
-function capitalize(str) {
+const capitalize = (str) => {
     if (!str) return '';
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
@@ -32,7 +32,7 @@ function capitalize(str) {
  * @param {string} link - The relative link to the project.
  * @returns {string} The absolute GitHub URL.
  */
-function getSourceCodeUrl(link) {
+const getSourceCodeUrl = (link) => {
     if (!link) return 'https://github.com/YadavAkhileshh/OpenPlayground';
 
     let path = link;
@@ -51,7 +51,7 @@ function getSourceCodeUrl(link) {
  * @param {string} projectTitle - The title of the project
  * @returns {string} HTML string for deadline indicator or empty string
  */
-function getDeadlineIndicator(projectTitle) {
+const getDeadlineIndicator = (projectTitle) => {
     const deadline = deadlineManager.getProjectDeadline(projectTitle);
     if (!deadline) return '';
 

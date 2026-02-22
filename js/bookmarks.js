@@ -406,7 +406,7 @@ class BookmarksManager {
 window.bookmarksManager = new BookmarksManager();
 
 // Update bookmark count badge in navbar
-function updateBookmarkBadge() {
+const updateBookmarkBadge = () => {
     const badge = document.getElementById('bookmark-count-badge');
     if (badge) {
         const count = window.bookmarksManager.getBookmarkCount();
@@ -426,7 +426,7 @@ document.addEventListener('bookmarksCleared', updateBookmarkBadge);
 // Collection Dropdown for Project Cards
 // ==========================================
 
-function createCollectionDropdown(projectTitle, buttonElement) {
+const createCollectionDropdown = (projectTitle, buttonElement) => {
     // Remove any existing dropdown
     const existingDropdown = document.querySelector('.collection-dropdown');
     if (existingDropdown) {
@@ -532,7 +532,7 @@ function createCollectionDropdown(projectTitle, buttonElement) {
 // Create Collection Modal
 // ==========================================
 
-function showCreateCollectionModal(projectTitleToAdd = null) {
+const showCreateCollectionModal = (projectTitleToAdd = null) => {
     // Remove existing modal
     const existingModal = document.querySelector('.collection-modal-overlay');
     if (existingModal) existingModal.remove();
@@ -677,20 +677,20 @@ window.showCreateCollectionModal = showCreateCollectionModal;
 // Helper Functions
 // ==========================================
 
-function escapeHtml(str) {
+const escapeHtml = (str) => {
     if (!str) return '';
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
 }
 
-function escapeHtmlAttr(str) {
+const escapeHtmlAttr = (str) => {
     if (!str) return '';
     return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 // Add bookmark buttons to existing static cards
-function addBookmarkButtonsToCards() {
+const addBookmarkButtonsToCards = () => {
     const cards = document.querySelectorAll('.projects-container .card, .projects-section .card');
 
     cards.forEach(card => {
