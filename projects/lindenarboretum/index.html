@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LindenArboretum</title>
+    
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/controls.css">
+    <link rel="stylesheet" href="css/animations.css">
+    
+    <!-- 
+      LindenArboretum: A Complex L-System Generator with Wind Physics.
+      This project generates highly detailed alien vegetation using 
+      recursive string rewriting systems and custom turtle graphics.
+    -->
+    
+</head>
+<body>
+
+    <!--
+        Main container for the application.
+        The layout is divided into a full-screen canvas for rendering
+        and an overlaid UI panel for user controls and rule editing.
+    -->
+    <div id="app-container">
+        
+        <!-- 
+            The glowing dark canvas where all rendering occurs.
+            This element receives our custom matrix and turtle
+            graphics operations to render the fractal structures.
+        -->
+        <canvas id="render-canvas"></canvas>
+
+        <!--
+            Post-processing overlay for scanline effects, chromatic 
+            aberration, and CRT-like glow variations to enhance the 
+            alien vegetation aesthetic.
+        -->
+        <div id="scanline-overlay"></div>
+
+        <!-- 
+            Top-level UI layer holding all the floating panels.
+        -->
+        <div id="ui-layer">
+            
+            <!--
+                FPS Counter and performance metrics.
+                Displays frame rate and generation times for complex models.
+            -->
+            <div id="perf-monitor" class="floating-panel mini-panel">
+                <div class="perf-row">
+                    <span class="perf-label">FPS</span>
+                    <span id="fps-value" class="perf-value">60</span>
+                </div>
+                <div class="perf-row">
+                    <span class="perf-label">Gen Time</span>
+                    <span id="gen-time-value" class="perf-value">0ms</span>
+                </div>
+                <div class="perf-row">
+                    <span class="perf-label">Commands</span>
+                    <span id="commands-value" class="perf-value">0</span>
+                </div>
+            </div>
+
+            <!--
+                Primary control panel for the L-System parameters.
+            -->
+            <aside id="controls-panel" class="floating-panel main-panel">
+                
+                <header class="panel-header">
+                    <h1 class="glow-text">LindenArboretum</h1>
+                    <p class="subtitle">Procedural Alien Flora</p>
+                </header>
+
+                <div class="control-group">
+                    <label for="preset-selector">Flora Preset</label>
+                    <div class="select-wrapper">
+                        <select id="preset-selector">
+                            <option value="alienWeed">Alien Weed</option>
+                            <option value="crystalTree">Crystal Tree</option>
+                            <option value="neonFern">Neon Fern</option>
+                            <option value="fractalCanopy">Fractal Canopy</option>
+                            <option value="terrestrial">Terrestrial Oak</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="axiom-input">Axiom (Start State)</label>
+                    <input type="text" id="axiom-input" class="glow-input" value="X">
+                </div>
+
+                <div class="control-group">
+                    <label for="rules-input">Production Rules</label>
+                    <textarea id="rules-input" class="glow-textarea" rows="4">X -> F+[[X]-X]-F[-FX]+X
+F -> FF</textarea>
+                    <p class="help-text">Format: A -> B. One rule per line.</p>
+                </div>
+
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label for="depth-slider">Iteration Depth</label>
+                        <span id="depth-value" class="range-display">5</span>
+                    </div>
+                    <input type="range" id="depth-slider" class="glow-slider" min="1" max="9" value="5" step="1">
+                    <p class="warning-text" id="depth-warning">High depths may cause performance drops.</p>
+                </div>
+
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label for="angle-slider">Branch Angle</label>
+                        <span id="angle-value" class="range-display">25°</span>
+                    </div>
+                    <input type="range" id="angle-slider" class="glow-slider" min="1" max="180" value="25" step="1">
+                </div>
+
+                <div class="control-group">
+                    <div class="slider-header">
+                        <label for="wind-slider">Wind Strength</label>
+                        <span id="wind-value" class="range-display">0.5</span>
+                    </div>
+                    <input type="range" id="wind-slider" class="glow-slider" min="0" max="2" value="0.5" step="0.01">
+                </div>
+
+                <div class="control-group action-group">
+                    <button id="btn-generate" class="glow-button action-btn">Generate Plant</button>
+                    <button id="btn-randomize" class="glow-button secondary-btn">Mutate</button>
+                </div>
+
+                <!-- Notification area for errors or generation info -->
+                <div id="notification-area" class="notice-hidden">
+                    <span id="notice-icon">!</span>
+                    <span id="notice-text">Invalid Rule Format</span>
+                </div>
+
+            </aside>
+            
+            <!-- Modal for Help / About info -->
+            <div id="help-modal" class="modal-overlay hidden">
+                <div class="modal-content floating-panel">
+                    <h2>L-System Instructions</h2>
+                    <ul>
+                        <li><span class="key">F</span> : Draw forward</li>
+                        <li><span class="key">f</span> : Move forward without drawing</li>
+                        <li><span class="key">+</span> : Turn right by Angle</li>
+                        <li><span class="key">-</span> : Turn left by Angle</li>
+                        <li><span class="key">[</span> : Push current state (Save)</li>
+                        <li><span class="key">]</span> : Pop current state (Restore)</li>
+                        <li><span class="key">X</span> : Variable placeholder</li>
+                    </ul>
+                    <button id="btn-close-modal" class="glow-button">Close</button>
+                </div>
+            </div>
+            
+            <!-- Bottom fixed bar for global toggles -->
+            <div id="bottom-bar" class="floating-panel mini-panel horizontal-bar">
+                <button id="btn-show-help" class="icon-button">?</button>
+                <button id="btn-toggle-animation" class="icon-button active-toggle">Anim</button>
+                <div class="color-picker-group">
+                    <label for="base-hue-slider">Hue</label>
+                    <input type="range" id="base-hue-slider" class="glow-slider mini-slider" min="0" max="360" value="160">
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Core Math Modules -->
+    <script src="js/math/vector2.js" type="module"></script>
+    <script src="js/math/matrix3.js" type="module"></script>
+    <script src="js/math/utils.js" type="module"></script>
+    <script src="js/math/noise.js" type="module"></script>
+    <script src="js/math/random.js" type="module"></script>
+
+    <!-- L-System Engine Modules -->
+    <script src="js/lsystem/engine.js" type="module"></script>
+    <script src="js/lsystem/parser.js" type="module"></script>
+    <script src="js/lsystem/rule.js" type="module"></script>
+    <script src="js/lsystem/stringBuilder.js" type="module"></script>
+    <script src="js/lsystem/standardRules.js" type="module"></script>
+    <script src="js/lsystem/alienRules.js" type="module"></script>
+    <script src="js/lsystem/generator.js" type="module"></script>
+    <script src="js/lsystem/validator.js" type="module"></script>
+    <script src="js/lsystem/cache.js" type="module"></script>
+
+    <!-- Renderer Modules -->
+    <script src="js/renderer/turtle.js" type="module"></script>
+    <script src="js/renderer/canvas.js" type="module"></script>
+    <script src="js/renderer/context.js" type="module"></script>
+    <script src="js/renderer/stack.js" type="module"></script>
+    <script src="js/renderer/camera.js" type="module"></script>
+    <script src="js/renderer/postProcessing.js" type="module"></script>
+    <script src="js/renderer/glow.js" type="module"></script>
+    <script src="js/renderer/colorProfile.js" type="module"></script>
+    <script src="js/renderer/renderer.js" type="module"></script>
+
+    <!-- Physics Modules -->
+    <script src="js/physics/wind.js" type="module"></script>
+    <script src="js/physics/oscillator.js" type="module"></script>
+    <script src="js/physics/damping.js" type="module"></script>
+    <script src="js/physics/physicsEngine.js" type="module"></script>
+
+    <!-- UI Modules -->
+    <script src="js/ui/editor.js" type="module"></script>
+    <script src="js/ui/slider.js" type="module"></script>
+    <script src="js/ui/panel.js" type="module"></script>
+    <script src="js/ui/domUtils.js" type="module"></script>
+    <script src="js/ui/modal.js" type="module"></script>
+    <script src="js/ui/notifications.js" type="module"></script>
+    <script src="js/ui/fpsCounter.js" type="module"></script>
+
+    <!-- Core Application -->
+    <script src="js/core/config.js" type="module"></script>
+    <script src="js/core/events.js" type="module"></script>
+    <script src="js/core/state.js" type="module"></script>
+    <script src="js/core/loop.js" type="module"></script>
+    <script src="js/core/app.js" type="module"></script>
+
+</body>
+</html>

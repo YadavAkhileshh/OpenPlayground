@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Ultimate Cake Designer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Quicksand:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: #fff5f7;
+            overflow-x: hidden;
+        }
+
+        .cursive {
+            font-family: 'Dancing Script', cursive;
+        }
+
+        /* Fixed container to stack tiers from bottom to top */
+        .cake-container {
+            perspective: 1200px;
+            min-height: 450px;
+            display: flex;
+            flex-direction: column; /* Changed to column to stack naturally */
+            align-items: center;
+            justify-content: flex-end; /* Align to bottom of the area */
+            padding-bottom: 20px;
+            transition: transform 0.8s ease-in-out;
+            transform-style: preserve-3d;
+        }
+
+        .tier {
+            position: relative;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+            margin-top: -20px; /* Overlap for realism */
+            z-index: 10;
+        }
+
+        .tier-body {
+            width: var(--width);
+            height: var(--height);
+            background: var(--color);
+            border-radius: var(--radius);
+            box-shadow: 
+                inset 0 -15px 25px rgba(0,0,0,0.15), 
+                inset 0 10px 15px rgba(255,255,255,0.3),
+                0 8px 20px rgba(0,0,0,0.1);
+            position: relative;
+            border: 1px solid rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        /* Texture Overlays */
+        .tier-body::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.15;
+            background-image: url("https://www.transparenttextures.com/patterns/felt.png");
+            pointer-events: none;
+        }
+
+        /* Drip Effect */
+        .drip-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .drip {
+            width: 12px;
+            height: 25px;
+            background: var(--drip-color);
+            border-radius: 0 0 12px 12px;
+            margin-top: -2px;
+            filter: drop-shadow(0 3px 2px rgba(0,0,0,0.2));
+            transition: height 0.5s ease;
+        }
+
+        /* Sprinkles */
+        .sprinkle {
+            position: absolute;
+            width: 4px;
+            height: 10px;
+            border-radius: 5px;
+            pointer-events: none;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+        }
+
+        .stand-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 5;
+            margin-top: -10px;
+        }
+
+        .stand {
+            width: 320px;
+            height: 25px;
+            background: linear-gradient(to bottom, #f8fafc, #e2e8f0);
+            border-radius: 50% / 100%;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+            position: relative;
+            border: 1px solid #cbd5e1;
+        }
+
+        .stand-base {
+            width: 120px;
+            height: 40px;
+            background: #cbd5e1;
+            margin-top: -8px;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            box-shadow: inset 0 5px 10px rgba(0,0,0,0.05);
+        }
+
+        .step-btn.active {
+            background-color: #f472b6;
+            color: white;
+            box-shadow: 0 4px 12px rgba(244, 114, 182, 0.4);
+        }
+
+        .swatch {
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .swatch:hover {
+            transform: scale(1.1) translateY(-2px);
+        }
+        .swatch.active::after {
+            content: '✓';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            font-weight: bold;
+        }
+
+        @keyframes drop-in {
+            0% { transform: translateY(-400px); opacity: 0; }
+            60% { transform: translateY(10px); opacity: 1; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        .new-tier {
+            animation: drop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .rotating {
+            animation: slow-rotate 10s linear infinite;
+        }
+
+        @keyframes slow-rotate {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(360deg); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[85vh]">
+        
+        <!-- Sidebar Controls -->
+        <div class="w-full md:w-80 p-6 border-b md:border-b-0 md:border-r border-pink-100 flex flex-col gap-6 bg-pink-50/20">
+            <div>
+                <h1 class="text-4xl cursive text-pink-500">Cake Studio</h1>
+                <p class="text-xs text-pink-300 font-semibold tracking-widest mt-1 uppercase">Bespoke Confectionery</p>
+            </div>
+            
+            <div class="space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                <!-- Tabs -->
+                <div class="flex gap-2 bg-pink-100/50 p-1.5 rounded-2xl">
+                    <button onclick="setTab('base')" id="tab-base" class="step-btn active flex-1 py-2 text-xs font-bold rounded-xl transition-all">BASE</button>
+                    <button onclick="setTab('frosting')" id="tab-frosting" class="step-btn flex-1 py-2 text-xs font-bold rounded-xl transition-all">STYLE</button>
+                    <button onclick="setTab('decor')" id="tab-decor" class="step-btn flex-1 py-2 text-xs font-bold rounded-xl transition-all">FINISH</button>
+                </div>
+
+                <!-- Section: Base -->
+                <div id="section-base" class="tab-content space-y-6">
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Architecture</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="addTier()" class="bg-pink-500 hover:bg-pink-600 text-white py-3 px-4 rounded-2xl transition-all shadow-lg active:scale-95 text-xs font-bold">+ TIER</button>
+                            <button onclick="removeTier()" class="bg-white border-2 border-pink-100 hover:bg-pink-50 text-pink-400 py-3 px-4 rounded-2xl transition-all text-xs font-bold">REMOVE</button>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Batter Flavor</label>
+                        <div class="grid grid-cols-5 gap-3">
+                            <div onclick="setFlavor('#fef3c7', 'Vanilla', this)" class="swatch active w-10 h-10 rounded-full bg-[#fef3c7] border-2 border-white shadow-md" title="Vanilla"></div>
+                            <div onclick="setFlavor('#451a03', 'Chocolate', this)" class="swatch w-10 h-10 rounded-full bg-[#451a03] border-2 border-white shadow-md" title="Chocolate"></div>
+                            <div onclick="setFlavor('#991b1b', 'Red Velvet', this)" class="swatch w-10 h-10 rounded-full bg-[#991b1b] border-2 border-white shadow-md" title="Red Velvet"></div>
+                            <div onclick="setFlavor('#d97706', 'Caramel', this)" class="swatch w-10 h-10 rounded-full bg-[#d97706] border-2 border-white shadow-md" title="Caramel"></div>
+                            <div onclick="setFlavor('#84cc16', 'Pistachio', this)" class="swatch w-10 h-10 rounded-full bg-[#84cc16] border-2 border-white shadow-md" title="Pistachio"></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Geometric Profile</label>
+                        <div class="flex gap-2">
+                            <button onclick="setShape('round')" class="flex-1 py-2 bg-white border border-pink-100 rounded-xl text-xs font-bold hover:bg-pink-50">ROUND</button>
+                            <button onclick="setShape('square')" class="flex-1 py-2 bg-white border border-pink-100 rounded-xl text-xs font-bold hover:bg-pink-50">SQUARE</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Frosting -->
+                <div id="section-frosting" class="tab-content hidden space-y-6">
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Icing Palette</label>
+                        <div class="grid grid-cols-4 gap-4">
+                            <div onclick="setFrosting('#ffffff')" class="swatch w-full aspect-square rounded-2xl bg-white border border-gray-200 shadow-sm"></div>
+                            <div onclick="setFrosting('#fbcfe8')" class="swatch w-full aspect-square rounded-2xl bg-[#fbcfe8] shadow-sm"></div>
+                            <div onclick="setFrosting('#ec4899')" class="swatch w-full aspect-square rounded-2xl bg-[#ec4899] shadow-sm"></div>
+                            <div onclick="setFrosting('#7dd3fc')" class="swatch w-full aspect-square rounded-2xl bg-[#7dd3fc] shadow-sm"></div>
+                            <div onclick="setFrosting('#c084fc')" class="swatch w-full aspect-square rounded-2xl bg-[#c084fc] shadow-sm"></div>
+                            <div onclick="setFrosting('#4ade80')" class="swatch w-full aspect-square rounded-2xl bg-[#4ade80] shadow-sm"></div>
+                            <div onclick="setFrosting('#fb923c')" class="swatch w-full aspect-square rounded-2xl bg-[#fb923c] shadow-sm"></div>
+                            <div onclick="setFrosting('#1e293b')" class="swatch w-full aspect-square rounded-2xl bg-[#1e293b] shadow-sm"></div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-white rounded-2xl border border-pink-50 space-y-3 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <label for="drip-toggle" class="text-sm font-bold text-gray-700">Artisan Drip</label>
+                            <input type="checkbox" id="drip-toggle" onchange="toggleDrip()" class="w-10 h-5 appearance-none bg-gray-200 checked:bg-pink-500 rounded-full relative transition-all cursor-pointer before:content-[''] before:absolute before:w-4 before:h-4 before:bg-white before:rounded-full before:top-0.5 before:left-0.5 checked:before:left-5 before:transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Decorations -->
+                <div id="section-decor" class="tab-content hidden space-y-6">
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Garnish</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="addSprinkles()" class="bg-white border-2 border-pink-100 hover:border-pink-300 py-3 rounded-2xl text-[10px] font-black tracking-widest uppercase">✨ Sprinkles</button>
+                            <button onclick="clearDecor()" class="bg-gray-50 py-3 rounded-2xl text-[10px] font-black tracking-widest uppercase text-gray-400">Clear</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <label class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Statement Topper</label>
+                        <div class="grid grid-cols-4 gap-3">
+                            <button onclick="setTopper('🕯️')" class="text-2xl p-3 bg-white border border-pink-50 rounded-2xl hover:scale-110 transition shadow-sm">🕯️</button>
+                            <button onclick="setTopper('🍓')" class="text-2xl p-3 bg-white border border-pink-50 rounded-2xl hover:scale-110 transition shadow-sm">🍓</button>
+                            <button onclick="setTopper('🌸')" class="text-2xl p-3 bg-white border border-pink-50 rounded-2xl hover:scale-110 transition shadow-sm">🌸</button>
+                            <button onclick="setTopper('💎')" class="text-2xl p-3 bg-white border border-pink-50 rounded-2xl hover:scale-110 transition shadow-sm">💎</button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-white rounded-2xl border border-pink-50 shadow-sm">
+                        <label class="text-sm font-bold text-gray-700">Display Rotation</label>
+                        <button onclick="toggleRotate()" id="rotate-btn" class="px-4 py-1.5 bg-gray-100 rounded-full text-[10px] font-bold">OFF</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-6 border-t border-pink-100">
+                <button onclick="takeSnapshot()" class="w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-black py-4 rounded-[1.5rem] shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all text-sm tracking-widest uppercase">Place Order</button>
+            </div>
+        </div>
+
+        <!-- Main Preview Area -->
+        <div class="flex-1 relative bg-gradient-to-b from-white to-pink-50/30 flex flex-col items-center justify-center p-8 overflow-hidden">
+            
+            <div id="status-msg" class="absolute top-12 bg-white/90 backdrop-blur-md px-8 py-3 rounded-full shadow-xl text-pink-600 font-bold text-sm opacity-0 transition-all transform -translate-y-4 border border-pink-50 z-50">
+                Ready to bake...
+            </div>
+
+            <div class="relative flex flex-col items-center mt-20">
+                <div id="cake-canvas" class="cake-container">
+                    <!-- Tiers injected here -->
+                </div>
+
+                <div class="stand-container">
+                    <div class="stand"></div>
+                    <div class="stand-base"></div>
+                </div>
+            </div>
+
+            <canvas id="confetti" class="absolute inset-0 pointer-events-none"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let tiers = []; // Index 0 is bottom
+        let cakeShape = 'round';
+        let currentFlavor = '#fef3c7';
+        let currentFrosting = '#ffffff';
+        let hasDrip = false;
+        let activeTopper = '';
+        let isRotating = false;
+
+        const cakeCanvas = document.getElementById('cake-canvas');
+        const statusMsg = document.getElementById('status-msg');
+
+        function init() {
+            addTier(); 
+        }
+
+        function showStatus(text) {
+            statusMsg.innerText = text;
+            statusMsg.style.opacity = '1';
+            statusMsg.style.transform = 'translateY(0)';
+            setTimeout(() => {
+                statusMsg.style.opacity = '0';
+                statusMsg.style.transform = 'translateY(-10px)';
+            }, 2500);
+        }
+
+        function setTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.step-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('section-' + tab).classList.remove('hidden');
+            document.getElementById('tab-' + tab).classList.add('active');
+        }
+
+        function addTier() {
+            if (tiers.length >= 6) {
+                showStatus("Grand designs have limits (6 tiers max)!");
+                return;
+            }
+
+            const tierIndex = tiers.length;
+            // Width decreases as we go up
+            const width = 280 - (tierIndex * 40);
+            const height = 70;
+            
+            const tierData = {
+                id: Date.now(),
+                width: width,
+                height: height,
+                flavor: currentFlavor,
+                frosting: currentFrosting,
+                sprinkles: [],
+                isNew: true
+            };
+
+            // Tiers array: [bottom, middle, top]
+            tiers.push(tierData);
+            renderCake();
+            showStatus(tiers.length === 1 ? "Foundation set!" : "New tier on top! 🍰");
+            
+            // Mark as not new after animation
+            setTimeout(() => {
+                tierData.isNew = false;
+            }, 600);
+        }
+
+        function removeTier() {
+            if (tiers.length > 1) {
+                tiers.pop();
+                renderCake();
+                showStatus("Removed top tier.");
+            }
+        }
+
+        function setFlavor(color, name, el) {
+            currentFlavor = color;
+            document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+            if(el) el.classList.add('active');
+            
+            if (tiers.length > 0) {
+                // Update flavor of the current TOP tier
+                tiers[tiers.length - 1].flavor = color;
+                renderCake();
+                showStatus(`Top tier flavor: ${name}`);
+            }
+        }
+
+        function setFrosting(color) {
+            currentFrosting = color;
+            tiers.forEach(t => t.frosting = color);
+            renderCake();
+            showStatus("Icing smoothed.");
+        }
+
+        function setShape(shape) {
+            cakeShape = shape;
+            renderCake();
+            showStatus(`Shape: ${shape}`);
+        }
+
+        function toggleDrip() {
+            hasDrip = document.getElementById('drip-toggle').checked;
+            renderCake();
+        }
+
+        function toggleRotate() {
+            isRotating = !isRotating;
+            const btn = document.getElementById('rotate-btn');
+            btn.innerText = isRotating ? 'ON' : 'OFF';
+            btn.classList.toggle('bg-pink-500', isRotating);
+            btn.classList.toggle('text-white', isRotating);
+            cakeCanvas.classList.toggle('rotating', isRotating);
+        }
+
+        function addSprinkles() {
+            const topTier = tiers[tiers.length - 1];
+            const colors = ['#FFD700', '#FF69B4', '#00BFFF', '#ADFF2F', '#FF4500', '#FFFFFF'];
+            for(let i=0; i<30; i++) {
+                topTier.sprinkles.push({
+                    x: Math.random() * 92 + 4,
+                    y: Math.random() * 80 + 10,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rot: Math.random() * 360
+                });
+            }
+            renderCake();
+            showStatus("Sprinkles added! ✨");
+        }
+
+        function clearDecor() {
+            tiers.forEach(t => t.sprinkles = []);
+            activeTopper = '';
+            renderCake();
+            showStatus("Decorations cleared.");
+        }
+
+        function setTopper(emoji) {
+            activeTopper = emoji;
+            renderCake();
+            showStatus("Top garnish added!");
+        }
+
+        function renderCake() {
+            cakeCanvas.innerHTML = '';
+
+            // 1. Topper (highest Z-index, absolute top)
+            if (activeTopper) {
+                const topperEl = document.createElement('div');
+                topperEl.className = 'text-6xl mb-[-30px] z-[100] animate-bounce relative';
+                topperEl.innerText = activeTopper;
+                topperEl.style.textShadow = "0 8px 12px rgba(0,0,0,0.15)";
+                cakeCanvas.appendChild(topperEl);
+            }
+
+            // 2. Tiers (Render from top-to-bottom for correct visual stacking/perspective)
+            // But the container is flex-column, so we append the TOP tier first? 
+            // Actually, with flex-column, the FIRST child is at the TOP.
+            // So we loop the array in REVERSE [top, middle, bottom]
+            [...tiers].reverse().forEach((tier) => {
+                const tierEl = document.createElement('div');
+                tierEl.className = `tier ${tier.isNew ? 'new-tier' : ''}`;
+                // Top tiers should have higher z-index than bottom tiers
+                tierEl.style.zIndex = tiers.indexOf(tier) + 10;
+                
+                const radius = cakeShape === 'round' ? '50% / 25%' : '12px';
+
+                const body = document.createElement('div');
+                body.className = 'tier-body';
+                body.style.setProperty('--width', `${tier.width}px`);
+                body.style.setProperty('--height', `${tier.height}px`);
+                body.style.setProperty('--color', tier.flavor);
+                body.style.setProperty('--radius', radius);
+                
+                body.style.borderTop = `15px solid ${tier.frosting}`;
+                body.style.background = `linear-gradient(to bottom, ${tier.frosting} 0%, ${tier.flavor} 20%)`;
+                
+                if (hasDrip) {
+                    const dripCont = document.createElement('div');
+                    dripCont.className = 'drip-container';
+                    dripCont.style.setProperty('--drip-color', '#371a0d'); 
+                    for(let i=0; i < tier.width/18; i++) {
+                        const d = document.createElement('div');
+                        d.className = 'drip';
+                        d.style.height = (Math.random() * 25 + 10) + 'px';
+                        dripCont.appendChild(d);
+                    }
+                    body.appendChild(dripCont);
+                }
+
+                tier.sprinkles.forEach(s => {
+                    const sp = document.createElement('div');
+                    sp.className = 'sprinkle';
+                    sp.style.left = s.x + '%';
+                    sp.style.top = s.y + '%';
+                    sp.style.background = s.color;
+                    sp.style.transform = `rotate(${s.rot}deg)`;
+                    body.appendChild(sp);
+                });
+
+                tierEl.appendChild(body);
+                cakeCanvas.appendChild(tierEl);
+            });
+        }
+
+        function takeSnapshot() {
+            const canvas = document.getElementById('confetti');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            const particles = [];
+            for(let i=0; i<150; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 6 + 2,
+                    color: `hsl(${Math.random() * 360}, 80%, 60%)`,
+                    vel: Math.random() * 4 + 3,
+                    angle: Math.random() * 2 - 1
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0,0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.y += p.vel;
+                    p.x += p.angle;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                if(particles.some(p => p.y < canvas.height)) requestAnimationFrame(animate);
+            }
+            animate();
+            
+            const finalMsg = document.createElement('div');
+            finalMsg.className = "fixed inset-0 bg-pink-900/40 backdrop-blur-md flex items-center justify-center z-[100] p-6";
+            finalMsg.innerHTML = `
+                <div class="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl transform transition-all animate-in zoom-in duration-300">
+                    <div class="text-7xl mb-6">🎂</div>
+                    <h2 class="text-4xl font-bold cursive text-pink-500 mb-3">Delicious!</h2>
+                    <p class="text-gray-500 text-sm leading-relaxed mb-8">Your bespoke cake has been designed. Our master bakers are on the job!</p>
+                    <button onclick="this.parentElement.parentElement.remove()" class="w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-black py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all uppercase tracking-widest text-xs">New Design</button>
+                </div>
+            `;
+            document.body.appendChild(finalMsg);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

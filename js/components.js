@@ -320,7 +320,7 @@ class ComponentLoader {
 
     initializeSmoothScrolling() {
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
+            anchor.addEventListener('click', (e) => {
                 const targetId = this.getAttribute('href');
                 if (targetId === '#') return;
 
