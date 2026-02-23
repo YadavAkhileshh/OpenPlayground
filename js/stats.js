@@ -87,7 +87,7 @@
   });
 
 
-function renderStats(categoryCount, totalUnique) {
+const renderStats = (categoryCount, totalUnique) => {
   // Update main stats
   document.getElementById('totalProjects').textContent = totalUnique;
   document.getElementById('totalCategories').textContent = Object.keys(categoryCount).length;
@@ -133,7 +133,7 @@ function renderStats(categoryCount, totalUnique) {
   });
 }
 
-function renderChart(categoryCount) {
+const renderChart = (categoryCount) => {
   const ctx = document.getElementById("categoryChart");
 
   // Orange gradient colors
@@ -175,7 +175,7 @@ function renderChart(categoryCount) {
           cornerRadius: 8,
           padding: 12,
           callbacks: {
-            label: function (context) {
+            label: (context) => {
               const value = context.raw;
               const total = context.dataset.data.reduce((a, b) => a + b, 0);
               const percentage = ((value / total) * 100).toFixed(1);
@@ -224,7 +224,7 @@ function renderChart(categoryCount) {
      * Render user activity section using analytics engine
      * Feature #1291: Shows personalized stats based on local telemetry
      */
-    function renderUserActivity(projects) {
+    const renderUserActivity = (projects) => {
       // Check if analytics engine is available
       if (!window.analyticsEngine) {
         console.log('📊 Analytics engine not loaded, skipping user activity section');
@@ -241,7 +241,7 @@ function renderChart(categoryCount) {
       populateUserActivity(activityContainer, projects);
     }
 
-    function createUserActivitySection(projects) {
+    const createUserActivitySection = (projects) => {
       const statsSection = document.querySelector('.stats-container') || document.body;
       
       // Create user activity section HTML
@@ -289,7 +289,7 @@ function renderChart(categoryCount) {
       populateUserActivity(section, projects);
     }
 
-    function populateUserActivity(container, projects) {
+    const populateUserActivity = (container, projects) => {
       const analytics = window.analyticsEngine;
       if (!analytics) return;
 
@@ -378,7 +378,7 @@ function renderChart(categoryCount) {
       }
     }
 
-    function formatTime(seconds) {
+    const formatTime = (seconds) => {
       if (seconds < 60) return `${seconds}s`;
       if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
       const hours = Math.floor(seconds / 3600);
@@ -386,7 +386,7 @@ function renderChart(categoryCount) {
       return `${hours}h ${mins}m`;
     }
 
-    function escapeHtml(str) {
+    const escapeHtml = (str) => {
       if (!str) return '';
       return String(str)
         .replace(/&/g, '&amp;')
@@ -395,7 +395,7 @@ function renderChart(categoryCount) {
         .replace(/"/g, '&quot;');
     }
 
-    function addActivityStyles() {
+    const addActivityStyles = () => {
       if (document.getElementById('activity-styles')) return;
       
       const styles = document.createElement('style');
@@ -568,6 +568,6 @@ function renderChart(categoryCount) {
       document.head.appendChild(styles);
     }
 
-    function capitalize(str) {
+    const capitalize = (str) => {
       return str.charAt(0).toUpperCase() + str.slice(1);
     }

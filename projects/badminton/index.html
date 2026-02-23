@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Badminton Bot Challenge</title>
+    <style>
+        :root {
+            --court-blue: #2c3e50;
+            --court-line: #ffffff;
+            --net-color: #ecf0f1;
+            --player-color: #e74c3c;
+            --bot-color: #3498db;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #1a1a1a;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--court-blue);
+        }
+
+        canvas {
+            display: block;
+            background: linear-gradient(to bottom, #34495e 0%, #2c3e50 100%);
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        .message-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            border: 2px solid #fff;
+            z-index: 10;
+        }
+
+        button {
+            background: #27ae60;
+            border: none;
+            color: white;
+            padding: 10px 25px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #2ecc71;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div class="ui-overlay">
+            <div id="player-score">YOU: 0</div>
+            <div id="bot-score">BOT: 0</div>
+        </div>
+        
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="message-box" class="message-box">
+            <h1 id="message-text">Game Over</h1>
+            <p id="sub-text">Click to Play Again</p>
+            <button onclick="resetGame()">Continue</button>
+        </div>
+
+        <div class="controls-hint">
+            <b>Arrows</b>: Move & Jump &nbsp;|&nbsp; <b>Space</b>: Swing
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const msgBox = document.getElementById('message-box');
+    const msgText = document.getElementById('message-text');
+    const playerUI = document.getElementById('player-score');
+    const botUI = document.getElementById('bot-score');
+
+    // Constants
+    const GRAVITY = 0.25;
+    const FRICTION = 0.99;
+    const COURT_HEIGHT = 80;
+    const NET_HEIGHT = 120;
+    const NET_WIDTH = 10;
+
+    let gameActive = true;
+    let score = { player: 0, bot: 0 };
+    
+    // Resize logic
+    function resize() {
+        canvas.width = Math.min(window.innerWidth * 0.9, 1000);
+        canvas.height = canvas.width * 0.5;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Entities
+    const player = {
+        x: 150,
+        y: 0,
+        width: 40,
+        height: 80,
+        color: '#e74c3c',
+        vx: 0,
+        vy: 0,
+        speed: 6,
+        jumpPower: -10,
+        isGrounded: false,
+        isSwinging: 0 // cooldown/animation state
+    };
+
+    const bot = {
+        x: 0,
+        y: 0,
+        width: 40,
+        height: 80,
+        color: '#3498db',
+        vx: 0,
+        vy: 0,
+        speed: 5.5,
+        jumpPower: -10,
+        isGrounded: false,
+        isSwinging: 0,
+        reactionDelay: 10 // Frames before bot tracks
+    };
+
+    const shuttle = {
+        x: 0,
+        y: 0,
+        radius: 8,
+        vx: 0,
+        vy: 0,
+        lastHitter: null,
+        active: true
+    };
+
+    const keys = {};
+
+    // Initialization
+    function init() {
+        player.x = canvas.width * 0.2;
+        player.y = canvas.height - COURT_HEIGHT - player.height;
+        
+        bot.x = canvas.width * 0.8 - bot.width;
+        bot.y = canvas.height - COURT_HEIGHT - bot.height;
+
+        resetShuttle('player');
+    }
+
+    function resetShuttle(server) {
+        shuttle.active = true;
+        shuttle.vy = -5;
+        if (server === 'player') {
+            shuttle.x = player.x + 20;
+            shuttle.y = player.y - 50;
+            shuttle.vx = 2;
+        } else {
+            shuttle.x = bot.x + 20;
+            shuttle.y = bot.y - 50;
+            shuttle.vx = -2;
+        }
+    }
+
+    // Input Handling
+    window.addEventListener('keydown', (e) => keys[e.code] = true);
+    window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+    function handleInput() {
+        if (!gameActive) return;
+
+        // Player movement using Arrow keys
+        if (keys['ArrowLeft'] && player.x > 20) player.vx = -player.speed;
+        else if (keys['ArrowRight'] && player.x < canvas.width/2 - player.width - 10) player.vx = player.speed;
+        else player.vx = 0;
+
+        if (keys['ArrowUp'] && player.isGrounded) {
+            player.vy = player.jumpPower;
+            player.isGrounded = false;
+        }
+
+        if (keys['Space'] && player.isSwinging <= 0) {
+            player.isSwinging = 15; // Swing animation duration
+            checkHit(player);
+        }
+    }
+
+    function updateBot() {
+        if (!gameActive) return;
+
+        const targetX = shuttle.x > canvas.width / 2 ? shuttle.x - 20 : canvas.width * 0.8;
+        
+        // Horizontal movement
+        if (bot.x < targetX - 10) bot.vx = bot.speed;
+        else if (bot.x > targetX + 10) bot.vx = -bot.speed;
+        else bot.vx = 0;
+
+        // Boundary for bot
+        if (bot.x < canvas.width/2 + 10) bot.x = canvas.width/2 + 10;
+        if (bot.x > canvas.width - bot.width - 20) bot.x = canvas.width - bot.width - 20;
+
+        // Automatic swing logic
+        const dist = Math.hypot(shuttle.x - (bot.x + bot.width/2), shuttle.y - (bot.y + bot.height/2));
+        if (dist < 100 && shuttle.vx > -2) {
+            if (bot.isSwinging <= 0) {
+                bot.isSwinging = 15;
+                checkHit(bot);
+            }
+        }
+        
+        // Jump if shuttle is high
+        if (shuttle.y < bot.y && shuttle.x > canvas.width * 0.6 && bot.isGrounded && Math.random() > 0.98) {
+            bot.vy = bot.jumpPower;
+            bot.isGrounded = false;
+        }
+    }
+
+    function checkHit(char) {
+        const charMidX = char.x + char.width / 2;
+        const charMidY = char.y + char.height / 2;
+        
+        const dist = Math.hypot(shuttle.x - charMidX, shuttle.y - charMidY);
+        
+        if (dist < 80) {
+            // Hit logic
+            const isPlayer = char === player;
+            shuttle.vx = isPlayer ? 8 + Math.random() * 4 : -8 - Math.random() * 4;
+            shuttle.vy = -6 - Math.random() * 6;
+            shuttle.lastHitter = isPlayer ? 'player' : 'bot';
+            
+            // Visual feedback - simple shake or something?
+        }
+    }
+
+    function update() {
+        if (!gameActive) return;
+
+        // Gravity and Physics
+        [player, bot].forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += GRAVITY;
+
+            if (p.y > canvas.height - COURT_HEIGHT - p.height) {
+                p.y = canvas.height - COURT_HEIGHT - p.height;
+                p.vy = 0;
+                p.isGrounded = true;
+            }
+            if (p.isSwinging > 0) p.isSwinging--;
+        });
+
+        // Shuttle Physics
+        shuttle.x += shuttle.vx;
+        shuttle.y += shuttle.vy;
+        shuttle.vy += GRAVITY * 0.6; // Lighter gravity for shuttle
+        shuttle.vx *= FRICTION;
+
+        // Net collision
+        const netX = canvas.width / 2;
+        const netTop = canvas.height - COURT_HEIGHT - NET_HEIGHT;
+        if (shuttle.x + shuttle.radius > netX - 5 && shuttle.x - shuttle.radius < netX + 5) {
+            if (shuttle.y > netTop) {
+                shuttle.vx *= -0.5; // Bounce off net
+                if (shuttle.x < netX) shuttle.x = netX - 6;
+                else shuttle.x = netX + 6;
+            }
+        }
+
+        // Walls
+        if (shuttle.x < 0 || shuttle.x > canvas.width) {
+            shuttle.vx *= -0.8;
+        }
+
+        // Floor (Scoring)
+        if (shuttle.y > canvas.height - COURT_HEIGHT) {
+            gameActive = false;
+            if (shuttle.x < canvas.width / 2) {
+                score.bot++;
+                showEndMessage("Point for Bot!", "bot");
+            } else {
+                score.player++;
+                showEndMessage("You Scored!", "player");
+            }
+            updateUI();
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw Court
+        ctx.fillStyle = '#27ae60';
+        ctx.fillRect(0, canvas.height - COURT_HEIGHT, canvas.width, COURT_HEIGHT);
+        
+        // Lines
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(20, canvas.height - COURT_HEIGHT, canvas.width - 40, COURT_HEIGHT - 10);
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, canvas.height - COURT_HEIGHT);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.stroke();
+
+        // Draw Net
+        ctx.fillStyle = '#ecf0f1';
+        ctx.fillRect(canvas.width / 2 - 2, canvas.height - COURT_HEIGHT - NET_HEIGHT, 4, NET_HEIGHT);
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(canvas.width / 2 - 5, canvas.height - COURT_HEIGHT - NET_HEIGHT, 10, NET_HEIGHT);
+
+        // Draw Player
+        ctx.fillStyle = player.color;
+        drawCharacter(ctx, player);
+
+        // Draw Bot
+        ctx.fillStyle = bot.color;
+        drawCharacter(ctx, bot);
+
+        // Draw Shuttle
+        if (shuttle.active) {
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(shuttle.x, shuttle.y, shuttle.radius, 0, Math.PI * 2);
+            ctx.fill();
+            // Shuttle "tail"
+            ctx.beginPath();
+            ctx.moveTo(shuttle.x, shuttle.y);
+            ctx.lineTo(shuttle.x - shuttle.vx * 2, shuttle.y - shuttle.vy * 2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.stroke();
+        }
+
+        requestAnimationFrame(() => {
+            handleInput();
+            updateBot();
+            update();
+            draw();
+        });
+    }
+
+    function drawCharacter(ctx, p) {
+        // Body
+        ctx.beginPath();
+        ctx.roundRect(p.x, p.y, p.width, p.height, 10);
+        ctx.fill();
+        
+        // Racket swing visual
+        if (p.isSwinging > 0) {
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            const angle = p === player ? -p.isSwinging * 0.2 : p.isSwinging * 0.2;
+            ctx.arc(p.x + p.width/2, p.y + p.height/2, 60, angle - 0.5, angle + 0.5);
+            ctx.stroke();
+        }
+
+        // Eyes
+        ctx.fillStyle = 'white';
+        const eyeX = p === player ? p.x + p.width - 12 : p.x + 4;
+        ctx.fillRect(eyeX, p.y + 15, 8, 8);
+    }
+
+    function updateUI() {
+        playerUI.innerText = `YOU: ${score.player}`;
+        botUI.innerText = `BOT: ${score.bot}`;
+    }
+
+    function showEndMessage(txt, winner) {
+        msgText.innerText = txt;
+        msgBox.style.display = 'block';
+    }
+
+    function resetGame() {
+        msgBox.style.display = 'none';
+        gameActive = true;
+        init();
+    }
+
+    // Polyfill for roundRect
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+        CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+            if (w < 2 * r) r = w / 2;
+            if (h < 2 * r) r = h / 2;
+            this.moveTo(x + r, y);
+            this.arcTo(x + w, y, x + w, y + h, r);
+            this.arcTo(x + w, y + h, x, y + h, r);
+            this.arcTo(x, y + h, x, y, r);
+            this.arcTo(x, y, x + w, y, r);
+            this.closePath();
+            return this;
+        }
+    }
+
+    init();
+    draw();
+
+</script>
+</body>
+</html>

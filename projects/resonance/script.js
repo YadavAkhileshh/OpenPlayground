@@ -1,0 +1,336 @@
+        // --- UNIQUE CONCEPT: 3D TUNNEL OF FREQUENCY SPHERES + AUDIO REACTIVE WAVES ---
+        // No basic bars – instead an organic, breathing tunnel formed by 64 floating spheres.
+        // Each sphere's size, glow, and position along Z is controlled by a specific frequency bin.
+        // Additionally, a central waveform ribbon undulates based on time-domain data.
+        // All runs in a single file, pure JS/Three, using microphone (or fallback oscillator).
+
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- setup scene ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050510);
+        scene.fog = new THREE.FogExp2(0x050510, 0.03);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 6, 24);
+        camera.lookAt(0, 0, 8);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = false; // keep lightweight
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        document.body.appendChild(renderer.domElement);
+
+        // subtle controls – allow user to orbit, but auto rotate adds life
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.8;
+        controls.enableZoom = true;
+        controls.enablePan = false;
+        controls.maxPolarAngle = Math.PI / 2.2; // keep above horizon
+        controls.target.set(0, 1, 8);
+
+        // --- lighting ---
+        const ambient = new THREE.AmbientLight(0x404060);
+        scene.add(ambient);
+
+        const pointLight1 = new THREE.PointLight(0x6a4fff, 1, 40);
+        pointLight1.position.set(4, 5, 10);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0xff4f8b, 0.8, 40);
+        pointLight2.position.set(-5, 3, 12);
+        scene.add(pointLight2);
+
+        const backLight = new THREE.PointLight(0x1e90ff, 0.5, 50);
+        backLight.position.set(0, 0, -5);
+        scene.add(backLight);
+
+        // --- starfield background effect (tiny dots) ---
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsCount = 2000;
+        const starPositions = new Float32Array(starsCount * 3);
+        for (let i = 0; i < starsCount; i++) {
+            const r = 60 + Math.random() * 40; // spherical shell
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            starPositions[i*3] = Math.sin(phi) * Math.cos(theta) * r;
+            starPositions[i*3+1] = Math.sin(phi) * Math.sin(theta) * r;
+            starPositions[i*3+2] = Math.cos(phi) * r;
+        }
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        const starsMaterial = new THREE.PointsMaterial({ color: 0xaaccff, size: 0.25, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
+        const stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+
+        // --- MAIN ELEMENT: 64 frequency spheres arranged in a helix-like tunnel ---
+        const sphereGroup = new THREE.Group();
+        const sphereCount = 64; // must match frequency bin count we take from analyser
+        const spheres = [];
+        const baseRadii = []; // store per sphere base radius for position variation
+
+        // colors: dynamic gradient from deep blue to hot pink
+        for (let i = 0; i < sphereCount; i++) {
+            const radiusBase = 0.8 + Math.sin(i * 0.7) * 0.2; // slight organic variation
+            const geometry = new THREE.SphereGeometry(radiusBase, 32, 16);
+            
+            // give each sphere a unique material for later color control
+            const material = new THREE.MeshStandardMaterial({
+                color: new THREE.Color().setHSL(i / sphereCount, 0.9, 0.5),
+                emissive: new THREE.Color(0x220033),
+                roughness: 0.25,
+                metalness: 0.1,
+                emissiveIntensity: 0.6
+            });
+            
+            const sphere = new THREE.Mesh(geometry, material);
+            
+            // position in a spiral tunnel: x & y based on circle, z based on index
+            const angle = i * 0.8; // rad per step
+            const radius = 5.5 + Math.sin(i * 0.4) * 1.2; // dynamic tunnel radius
+            baseRadii.push(radius);
+            
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius * 0.7; // flatten vertical a bit
+            const z = i * 0.9 + 2; // spread along tunnel
+            
+            sphere.position.set(x, y, z);
+            sphere.userData = {
+                basePos: new THREE.Vector3(x, y, z),
+                baseColor: new THREE.Color().setHSL(i / sphereCount, 1.0, 0.6),
+                angle: angle,
+                baseRadius: radius,
+                speedFactor: 0.5 + Math.random() * 0.5
+            };
+            
+            sphere.castShadow = false;
+            sphere.receiveShadow = false;
+            sphereGroup.add(sphere);
+            spheres.push(sphere);
+        }
+        scene.add(sphereGroup);
+
+        // --- CENTRAL WAVEFORM RIBBON (time-domain) ---
+        const ribbonPoints = 120;
+        const ribbonGeometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(ribbonPoints * 3);
+        for (let i = 0; i < ribbonPoints; i++) {
+            const t = i / (ribbonPoints - 1);
+            const x = (t - 0.5) * 20; // spread along X
+            positions[i*3] = x;
+            positions[i*3+1] = 0;
+            positions[i*3+2] = 5 + t * 10; // Z from 5 to 15 (inside tunnel)
+        }
+        ribbonGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        
+        const ribbonMaterial = new THREE.LineBasicMaterial({ color: 0x88ccff, opacity: 0.35, transparent: true, blending: THREE.AdditiveBlending });
+        const ribbonLine = new THREE.Line(ribbonGeometry, ribbonMaterial);
+        scene.add(ribbonLine);
+
+        // additional floating particles for "sparkles"
+        const particleGeo = new THREE.BufferGeometry();
+        const particleCount = 800;
+        const particlePos = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            particlePos[i*3] = (Math.random() - 0.5) * 40;
+            particlePos[i*3+1] = (Math.random() - 0.5) * 20;
+            particlePos[i*3+2] = (Math.random() * 25) + 2;
+        }
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePos, 3));
+        const particleMat = new THREE.PointsMaterial({ color: 0x99aaff, size: 0.12, transparent: true, blending: THREE.AdditiveBlending });
+        const particles = new THREE.Points(particleGeo, particleMat);
+        scene.add(particles);
+
+        // --- audio setup ---
+        let audioContext = null;
+        let analyser = null;
+        let source = null;
+        let stream = null;
+        let isAudioReady = false;
+        
+        // frequency data: we'll use 64 bins
+        const fftSize = 128; // gives 64 bins (fftSize/2)
+        const binCount = fftSize / 2;
+        const frequencyData = new Uint8Array(binCount);
+        const timeData = new Uint8Array(fftSize); // for waveform
+
+        // update status once we have mic
+        const statusEl = document.getElementById('status');
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'warning';
+        warningDiv.style.display = 'none';
+        warningDiv.innerText = '🎤 allow microphone access';
+        document.body.appendChild(warningDiv);
+
+        async function initAudio() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = fftSize;
+                analyser.smoothingTimeConstant = 0.7; // organic movement
+                
+                source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                
+                // start audio context if suspended
+                if (audioContext.state === 'suspended') await audioContext.resume();
+                
+                isAudioReady = true;
+                statusEl.innerHTML = '<span class="status-dot" style="background:#2ecc71;"></span> voice active';
+                warningDiv.style.display = 'none';
+                
+                // small kick to start
+                console.log('audio ready');
+            } catch (err) {
+                console.warn('mic access denied or not available — using synth oscillator');
+                // fallback: create a synthetic oscillator for demo (still cool)
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = fftSize;
+                
+                const oscillator = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.value = 120;
+                gain.gain.value = 0.4;
+                oscillator.connect(gain);
+                gain.connect(analyser);
+                oscillator.start();
+                
+                // also add a noise source? use LFO to modulate? let's keep simple.
+                // create a second oscillator for richness
+                const osc2 = audioContext.createOscillator();
+                osc2.frequency.value = 245;
+                osc2.type = 'triangle';
+                osc2.connect(gain);
+                osc2.start();
+                
+                isAudioReady = true;
+                statusEl.innerHTML = '<span class="status-dot" style="background:#f39c12;"></span> synth mode (no mic)';
+                warningDiv.style.display = 'none';
+                
+                if (audioContext.state === 'suspended') await audioContext.resume();
+            }
+        }
+
+        // tiny workaround: start audio on user interaction (to comply with autoplay policies)
+        const startAudioOnInteraction = () => {
+            if (!isAudioReady) {
+                initAudio();
+            }
+            window.removeEventListener('click', startAudioOnInteraction);
+            window.removeEventListener('touchstart', startAudioOnInteraction);
+        };
+        window.addEventListener('click', startAudioOnInteraction);
+        window.addEventListener('touchstart', startAudioOnInteraction);
+        
+        // show gentle reminder if not started after 2 sec
+        setTimeout(() => {
+            if (!isAudioReady) {
+                warningDiv.style.display = 'block';
+            }
+        }, 2000);
+
+        // --- animation & data mapping ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const delta = clock.getDelta();
+            const elapsedTime = performance.now() / 1000; // seconds
+
+            if (isAudioReady && analyser) {
+                // get fresh data
+                analyser.getByteFrequencyData(frequencyData);
+                analyser.getByteTimeDomainData(timeData); // for ribbon
+
+                // --- map frequency data to spheres: size, emissive intensity, slight position offset ---
+                spheres.forEach((sphere, index) => {
+                    // map index to bin (we have 64 spheres and 64 bins)
+                    const binValue = frequencyData[index] / 255; // 0..1
+                    
+                    // scale sphere size: base 0.8 + up to 1.6 extra
+                    const baseScale = 0.8 + Math.sin(index * 2.3 + elapsedTime * 3) * 0.1; // subtle idle motion
+                    const scaleFactor = 0.6 + binValue * 1.5;
+                    sphere.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                    
+                    // color shift based on frequency amplitude and position
+                    const hue = (index / sphereCount + elapsedTime * 0.02) % 1.0;
+                    const sat = 0.9;
+                    const light = 0.5 + binValue * 0.4;
+                    sphere.material.color.setHSL(hue, sat, light);
+                    
+                    // emissive intensity
+                    sphere.material.emissive.setHSL(hue, 1.0, 0.1 + binValue * 0.5);
+                    
+                    // extra radial offset based on loudness (makes tunnel "breathe")
+                    const offsetDir = sphere.userData.angle;
+                    const radOffset = binValue * 2.0;
+                    const baseR = sphere.userData.baseRadius;
+                    const newX = Math.cos(offsetDir) * (baseR + radOffset);
+                    const newY = Math.sin(offsetDir) * (baseR + radOffset) * 0.7;
+                    sphere.position.x = newX;
+                    sphere.position.y = newY;
+                    
+                    // small Z modulation
+                    sphere.position.z = sphere.userData.basePos.z + binValue * 0.8;
+                });
+
+                // --- update waveform ribbon (time domain) ---
+                const positions = ribbonLine.geometry.attributes.position.array;
+                for (let i = 0; i < ribbonPoints; i++) {
+                    // map index to timeData (~ 0-255)
+                    const dataIndex = Math.floor(i / ribbonPoints * fftSize);
+                    const val = timeData[dataIndex] / 128 - 1; // normalize -1..1
+                    
+                    // y offset based on waveform
+                    positions[i*3 + 1] = val * 3.5; 
+                }
+                ribbonLine.geometry.attributes.position.needsUpdate = true;
+
+                // particle movement subtle
+                particles.rotation.y += 0.0002;
+            } else {
+                // idle animation: gentle pulse and rotate spheres even without audio
+                spheres.forEach((sphere, index) => {
+                    const t = elapsedTime * 1.5;
+                    const idlePulse = 0.8 + Math.sin(index * 2 + t) * 0.15;
+                    sphere.scale.set(idlePulse, idlePulse, idlePulse);
+                    
+                    const hue = (index / sphereCount + t * 0.03) % 1.0;
+                    sphere.material.color.setHSL(hue, 0.8, 0.6);
+                });
+            }
+
+            // rotate stars slowly
+            stars.rotation.y += 0.0001;
+            stars.rotation.x += 0.00005;
+
+            // auto-rotate via controls
+            controls.update();
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // --- resize handler ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // extra polish: subtle color changes in lights
+        setInterval(() => {
+            if (!isAudioReady) return;
+            const t = performance.now() / 1000;
+            pointLight1.color.setHSL(0.65 + Math.sin(t*0.5)*0.1, 0.8, 0.6);
+            pointLight2.color.setHSL(0.9 + Math.cos(t*0.3)*0.1, 0.9, 0.7);
+        }, 100);
