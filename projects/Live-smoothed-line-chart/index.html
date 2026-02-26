@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+#chartdiv {
+  width: 100%;
+  height: 500px;
+}
+    </style>
+</head>
+<body>
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<div id="chartdiv"></div>
+<script>
+    
+// Create root element
+// https://www.amcharts.com/docs/v5/getting-started/#Root_element
+var root = am5.Root.new("chartdiv");
+var easing = am5.ease.linear;
+var msCount = 250;
+
+// Set themes
+// https://www.amcharts.com/docs/v5/concepts/themes/
+root.setThemes([
+  am5themes_Animated.new(root)
+]);
+
+
+// Generate random data
+var performance = 85;
+var cpu = 70;
+var requestedCpu = 50;
+
+
+var clusterAgendOn = false;
+var workloadOn = false;
+
+function generateChartData() {
+  var chartData = [];
+  var firstDate = new Date();
+  firstDate.setDate(firstDate.getDate() - msCount) * 1000;
+  firstDate.setHours(0, 0, 0, 0);
+
+  for (var i = 0; i < 30; i++) {
+    var newDate = new Date(firstDate);
+    newDate.setMilliseconds(newDate.getMilliseconds() + i * msCount);
+
+    var performanceValue = performance + Math.round(Math.random() * 5);
+    var cpuValue = cpu + Math.round(Math.random() * 5);
+    var requestedCpuValue = requestedCpu + Math.round(Math.random() * 5);
+
+
+    chartData.push({
+      date: newDate.getTime(),
+      performance: performanceValue,
+      cpu: cpuValue,
+      requestedCpu: requestedCpuValue
+    });
+  }
+  return chartData;
+}
+
+var data = generateChartData();
+
+
+// Create chart
+// https://www.amcharts.com/docs/v5/charts/xy-chart/
+var chart = root.container.children.push(am5xy.XYChart.new(root, {
+  focusable: true,
+  panX: true,
+  panY: true,
+  wheelX: "panX",
+  wheelY: "zoomX"
+}));
+
+
+
+
+// Create axes
+// https://www.amcharts.com/docs/v5/charts/xy-chart/axes/
+var xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
+  maxDeviation: 0.5,
+  extraMin: -0.1,
+  groupData: false,
+  baseInterval: {
+    timeUnit: "millisecond",
+    count: msCount
+  },
+  renderer: am5xy.AxisRendererX.new(root, {
+    minGridDistance: 60
+  }),
+
+  interpolationEasing: easing
+}));
+
+xAxis.get("renderer").labels.template.setAll({
+  forceHidden: true
+})
+
+var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+  renderer: am5xy.AxisRendererY.new(root, {}),
+  min: 0,
+  max: 100
+}));
+
+
+yAxis.get("renderer").labels.template.setAll({
+  forceHidden: true
+})
+
+
+// Add series
+// https://www.amcharts.com/docs/v5/charts/xy-chart/series/
+var performaceSeries = chart.series.push(am5xy.SmoothedXLineSeries.new(root, {
+  name: "Performance  ",
+  xAxis: xAxis,
+  yAxis: yAxis,
+  stroke: am5.color(0x29b7af),
+  fill: am5.color(0x29b7af),
+  valueYField: "performance",
+  valueXField: "date",
+  tooltip: am5.Tooltip.new(root, {
+    pointerOrientation: "horizontal",
+    labelText: "{valueY}"
+  })
+}));
+
+performaceSeries.data.setAll(data);
+
+var cpuSeries = chart.series.push(am5xy.SmoothedXLineSeries.new(root, {
+  name: "Provisioned CPU",
+  xAxis: xAxis,
+  yAxis: yAxis,
+  stroke: am5.color(0x0c4ba7),
+  fill: am5.color(0x0c4ba7),
+  valueYField: "cpu",
+  valueXField: "date",
+  tooltip: am5.Tooltip.new(root, {
+    pointerOrientation: "horizontal",
+    labelText: "{valueY}"
+  })
+}));
+
+cpuSeries.data.setAll(data);
+
+var requestedCpuSeries = chart.series.push(am5xy.SmoothedXLineSeries.new(root, {
+  name: "Requested CPU",
+  xAxis: xAxis,
+  yAxis: yAxis,
+  stroke: am5.color(0x97c0fc),
+  fill: am5.color(0x97c0fc),
+  valueYField: "requestedCpu",
+  valueXField: "date",
+  tooltip: am5.Tooltip.new(root, {
+    pointerOrientation: "horizontal",
+    labelText: "{valueY}"
+  })
+}));
+
+requestedCpuSeries.fills.template.setAll({
+  fillOpacity: 0.5,
+  visible: true
+});
+
+requestedCpuSeries.data.setAll(data);
+
+
+
+
+
+// Add cursor
+// https://www.amcharts.com/docs/v5/charts/xy-chart/cursor/
+var cursor = chart.set("cursor", am5xy.XYCursor.new(root, {
+  xAxis: xAxis
+}));
+cursor.lineY.set("visible", false);
+
+
+// Update data every second
+setInterval(function () {
+  addData();
+}, msCount)
+
+
+function addData() {
+
+  var performanceValue = performance + Math.round((Math.random() < 0.5 ? 1 : -1) * Math.random() * 5);
+  var cpuValue = cpu + Math.round((Math.random() < 0.5 ? 1 : -1) * Math.random() * 5);
+  var requestedCpuValue = requestedCpu + Math.round((Math.random() < 0.5 ? 1 : -1) * Math.random() * 5);
+
+  if (workloadOn) {
+    requestedCpuValue *= 0.25;
+  }
+
+  if (clusterAgendOn) {
+    cpuValue = requestedCpuValue + 3;
+  }
+
+  var lastPerformanceDataItem = performaceSeries.dataItems[performaceSeries.dataItems.length - 1];
+  var lastDate = new Date(lastPerformanceDataItem.get("valueX"));
+  var time = am5.time.add(new Date(lastDate), "millisecond", msCount).getTime();
+
+  performaceSeries.data.removeIndex(0);
+  performaceSeries.data.push({
+    date: time,
+    performance: performanceValue
+  })
+
+  var lastPerformanceValue = lastPerformanceDataItem.get("valueY");
+  var performanceDataItem = performaceSeries.dataItems[performaceSeries.dataItems.length - 1];
+  performanceDataItem.animate({
+    key: "valueYWorking",
+    to: performanceValue,
+    from: lastPerformanceValue,
+    duration: 250,
+    easing: easing
+  });
+
+  var animation = performanceDataItem.animate({
+    key: "locationX",
+    to: 0.5,
+    from: -0.5,
+    duration: msCount,
+    easing: easing
+  });
+
+
+  var lastCpuDataItem = cpuSeries.dataItems[cpuSeries.dataItems.length - 1];
+  var lastCpuValue = lastCpuDataItem.get("valueY");
+
+  cpuSeries.data.removeIndex(0);
+  cpuSeries.data.push({
+    date: time,
+    cpu: cpuValue
+  })
+
+  var cpuDataItem = cpuSeries.dataItems[cpuSeries.dataItems.length - 1];
+  cpuDataItem.animate({
+    key: "valueYWorking",
+    to: cpuValue,
+    from: lastCpuValue,
+    duration: msCount,
+    easing: easing
+  });
+
+  cpuDataItem.animate({
+    key: "locationX",
+    to: 0.5,
+    from: -0.5,
+    duration: msCount,
+    easing: easing
+  });
+
+
+  var lastRequestedCpuDataItem = requestedCpuSeries.dataItems[requestedCpuSeries.dataItems.length - 1];
+  var lastRequestedCpuValue = lastRequestedCpuDataItem.get("valueY");
+
+  requestedCpuSeries.data.removeIndex(0);
+  requestedCpuSeries.data.push({
+    date: time,
+    requestedCpu: requestedCpuValue
+  })
+
+  var requestedCpuDataItem = requestedCpuSeries.dataItems[requestedCpuSeries.dataItems.length - 1];
+  requestedCpuDataItem.animate({
+    key: "valueYWorking",
+    to: requestedCpuValue,
+    from: lastRequestedCpuValue,
+    duration: msCount,
+    easing: easing
+  });
+
+  requestedCpuDataItem.animate({
+    key: "locationX",
+    to: 0.5,
+    from: -0.5,
+    duration: msCount,
+    easing: easing
+  });
+
+}
+var legend = chart.plotContainer.children.push(am5.Legend.new(root, {
+  y: 20,
+  x: 20,
+  paddingBottom: 15,
+  paddingTop: 15,
+  paddingLeft: 15,
+  paddingRight: 15,
+  width: 200,
+  background: am5.RoundedRectangle.new(root, {
+    fill: am5.color(0xffffff),
+    fillOpacity: 0.9,
+    stroke: am5.color(0x000000),
+    strokeOpacity: 0.2,
+    cornerRadius: 10
+  })
+
+}));
+
+
+legend.data.setAll(chart.series.values);
+
+var toggleContainer = chart.plotContainer.children.push(am5.Container.new(root, {
+  y: am5.p100,
+  x: am5.p50,
+  centerX: am5.p50,
+  centerY: am5.p100,
+  dy: -20,
+  paddingBottom: 10,
+  paddingTop: 10,
+  paddingLeft: 15,
+  paddingRight: 15,
+  layout: root.horizontalLayout,
+  background: am5.RoundedRectangle.new(root, {
+    fill: am5.color(0xffffff),
+    fillOpacity: 0.9,
+    stroke: am5.color(0x000000),
+    strokeOpacity: 0.2
+  })
+}));
+
+
+var clusterToggleButton = toggleContainer.children.push(am5.Button.new(root, {
+  themeTags: ["switch"],
+  centerY: am5.p50,
+  icon: am5.Circle.new(root, {
+    themeTags: ["icon"]
+  }),
+  centerY: am5.p50,
+}));
+
+clusterToggleButton.on("active", function (toggled) {
+  clusterAgendOn = clusterToggleButton.get("active");
+});
+
+toggleContainer.children.push(am5.Label.new(root, {
+  text: "Cluster Agent",
+  centerY: am5.p50
+}));
+
+var workloadToggleButton = toggleContainer.children.push(am5.Button.new(root, {
+  themeTags: ["switch"],
+  centerY: am5.p50,
+  icon: am5.Circle.new(root, {
+    themeTags: ["icon"]
+  }),
+  centerY: am5.p50,
+
+}));
+
+workloadToggleButton.on("active", function (toggled) {
+  workloadOn = workloadToggleButton.get("active");
+});
+
+toggleContainer.children.push(am5.Label.new(root, {
+  text: "Workload",
+  centerY: am5.p50
+}));
+
+</script>
+</body>
+</html>

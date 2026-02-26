@@ -1136,11 +1136,10 @@ const updateActiveNavLink = () => {
     let activeLink;
     if (currentPage === 'feedback.html') {
         activeLink = document.querySelector('a[href="feedback.html"]');
-    } else if (currentPage === 'about.html') {
-        activeLink = document.querySelector('a[href="about.html"]');
-    } else if (currentPage === 'bookmarks.html') {
-        activeLink = document.querySelector('a[href="bookmarks.html"]');
-    } else if (window.location.hash === '#projects') {
+   } else if (currentPage === 'about.html') {
+    activeLink = document.querySelector('a[href="pages/about.html"]');
+} else if (currentPage === 'bookmarks.html') {
+    activeLink = document.querySelector('a[href="pages/bookmarks.html"]');} else if (window.location.hash === '#projects') {
         activeLink = document.querySelector('a[href="#projects"]');
     } else if (window.location.hash === '#contribute') {
         activeLink = document.querySelector('a[href="#contribute"]');
