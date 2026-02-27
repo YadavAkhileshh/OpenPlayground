@@ -14,7 +14,8 @@ class ProjectManager {
 
         this.config = {
             ITEMS_PER_PAGE: 12,
-            ANIMATION_DELAY: 50
+            ANIMATION_DELAY: 50,
+            TRENDING_COUNT: 5
         };
 
         this.state = {
@@ -22,6 +23,8 @@ class ProjectManager {
             visibilityEngine: null,
             viewMode: 'card', // 'card' or 'list'
             currentPage: 1,
+            selectedTechTags: [],
+            trendingExpanded: false,
             initialized: false
         };
 
@@ -62,7 +65,7 @@ class ProjectManager {
     /* -----------------------------------------------------------
      * Data Management
      * ----------------------------------------------------------- */
-    async fetchProjects() {
+    async     fetchProjects() {
         try {
             const response = await fetch('./projects.json');
             if (!response.ok) throw new Error('Failed to fetch projects');
@@ -90,6 +93,10 @@ class ProjectManager {
             this.state.visibilityEngine.state.itemsPerPage = this.config.ITEMS_PER_PAGE;
 
             console.log(`📦 Loaded ${this.state.allProjects.length} projects.`);
+
+            // Render trending projects and tech filters
+            this.renderTrendingProjects();
+            this.renderTechFilters();
             this.render();
 
         } catch (error) {
@@ -145,6 +152,27 @@ class ProjectManager {
             elements.cardViewBtn.addEventListener('click', () => this.setViewMode('card'));
             elements.listViewBtn.addEventListener('click', () => this.setViewMode('list'));
         }
+
+        // Trending toggle
+        const trendingToggle = document.getElementById('trending-toggle');
+        if (trendingToggle) {
+            trendingToggle.addEventListener('click', () => {
+                this.state.trendingExpanded = !this.state.trendingExpanded;
+                trendingToggle.textContent = this.state.trendingExpanded ? 'Show Less' : 'Show All';
+                this.renderTrendingProjects();
+            });
+        }
+
+        // Clear tech filters
+        const clearTechBtn = document.getElementById('clear-tech-filters');
+        if (clearTechBtn) {
+            clearTechBtn.addEventListener('click', () => {
+                this.state.selectedTechTags = [];
+                this.updateTechFilters();
+                this.state.currentPage = 1;
+                this.render();
+            });
+        }
     }
 
     setViewMode(mode) {
@@ -169,11 +197,24 @@ class ProjectManager {
 
         let filtered = this.state.visibilityEngine.getVisibleProjects();
 
+        // Apply tech tag filters
+        if (this.state.selectedTechTags.length > 0) {
+            filtered = filtered.filter(p => {
+                const tech = (p.tech || []).map(t => t.toLowerCase());
+                return this.state.selectedTechTags.every(tag => tech.includes(tag.toLowerCase()));
+            });
+        }
+
         // Sorting
         const sortMode = elements.sortSelect?.value || 'default';
         if (sortMode === 'az') filtered.sort((a, b) => a.title.localeCompare(b.title));
         else if (sortMode === 'za') filtered.sort((a, b) => b.title.localeCompare(a.title));
         else if (sortMode === 'newest') filtered.reverse();
+        else if (sortMode === 'rating-high') {
+            filtered.sort((a, b) => this.getProjectRating(b) - this.getProjectRating(a));
+        } else if (sortMode === 'rating-low') {
+            filtered.sort((a, b) => this.getProjectRating(a) - this.getProjectRating(b));
+        }
 
         // Pagination Calculations
         const totalPages = Math.ceil(filtered.length / this.config.ITEMS_PER_PAGE);
@@ -219,6 +260,8 @@ class ProjectManager {
             const coverClass = project.coverClass || '';
 
             const sourceUrl = this.getSourceCodeUrl(project.link);
+            const rating = this.getProjectRating(project);
+            const stars = this.generateStars(rating);
 
             return `
                 <div class="card" data-category="${this.escapeHtml(project.category)}" onclick="window.location.href='${this.escapeHtml(project.link)}'; event.stopPropagation();">
@@ -246,6 +289,9 @@ class ProjectManager {
                             </div>
                             <p class="card-description">${this.escapeHtml(project.description || '')}</p>
                             <div class="card-tech">${techHtml}</div>
+                            <div class="card-rating">
+                                <div class="stars">${stars}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -384,6 +430,119 @@ class ProjectManager {
         path = path.replace(/\/index\.html$/, '').replace(/^index\.html$/, '');
 
         return `https://github.com/YadavAkhileshh/OpenPlayground/tree/main/${path}`;
+    }
+
+    /* -----------------------------------------------------------
+     * Trending Projects
+     * ----------------------------------------------------------- */
+    renderTrendingProjects() {
+        const container = document.getElementById('trending-container');
+        if (!container) return;
+
+        // Get trending projects (sorted by rating in a real app, here just random for demo)
+        const trending = [...this.state.allProjects]
+            .sort(() => Math.random() - 0.5)
+            .slice(0, this.state.trendingExpanded ? this.config.TRENDING_COUNT * 2 : this.config.TRENDING_COUNT);
+
+        container.innerHTML = trending.map(project => {
+            const coverStyle = project.coverStyle || '';
+            const coverClass = project.coverClass || '';
+            const techHtml = project.tech?.slice(0, 3).map(t => `<span>${this.escapeHtml(t)}</span>`).join('') || '';
+
+            return `
+                <div class="trending-card" onclick="window.location.href='${this.escapeHtml(project.link)}'">
+                    <div class="card-cover ${coverClass}" style="${coverStyle}">
+                        <i class="${this.escapeHtml(project.icon || 'ri-code-s-slash-line')}"></i>
+                    </div>
+                    <div class="card-content">
+                        <h4 class="card-heading">${this.escapeHtml(project.title)}</h4>
+                        <p class="card-description">${this.escapeHtml(project.description || '')}</p>
+                        <div class="card-tech">${techHtml}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /* -----------------------------------------------------------
+     * Technology Filters
+     * ----------------------------------------------------------- */
+    renderTechFilters() {
+        const container = document.getElementById('tech-filters');
+        if (!container) return;
+
+        // Extract all unique tech tags
+        const allTech = new Set();
+        this.state.allProjects.forEach(project => {
+            (project.tech || []).forEach(tech => allTech.add(tech.trim()));
+        });
+
+        const techArray = Array.from(allTech).sort();
+
+        container.innerHTML = techArray.map(tech => `
+            <span class="tech-filter-tag ${this.state.selectedTechTags.includes(tech.toLowerCase()) ? 'active' : ''}"
+                  data-tech="${this.escapeHtml(tech.toLowerCase())}">
+                ${this.escapeHtml(tech)}
+            </span>
+        `).join('');
+
+        // Add click handlers
+        container.querySelectorAll('.tech-filter-tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                const tech = tag.dataset.tech;
+                const index = this.state.selectedTechTags.indexOf(tech);
+                
+                if (index === -1) {
+                    this.state.selectedTechTags.push(tech);
+                } else {
+                    this.state.selectedTechTags.splice(index, 1);
+                }
+
+                this.updateTechFilters();
+                this.state.currentPage = 1;
+                this.render();
+            });
+        });
+    }
+
+    updateTechFilters() {
+        const tags = document.querySelectorAll('.tech-filter-tag');
+        tags.forEach(tag => {
+            tag.classList.toggle('active', this.state.selectedTechTags.includes(tag.dataset.tech));
+        });
+
+        const clearBtn = document.getElementById('clear-tech-filters');
+        if (clearBtn) {
+            clearBtn.style.display = this.state.selectedTechTags.length > 0 ? 'block' : 'none';
+        }
+    }
+
+    /* -----------------------------------------------------------
+     * Project Ratings
+     * ----------------------------------------------------------- */
+    getProjectRating(project) {
+        const ratings = JSON.parse(localStorage.getItem('projectRatings') || '{}');
+        const key = project.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+        const projectRatings = ratings[key] || [];
+        
+        if (projectRatings.length === 0) return 0;
+        
+        const sum = projectRatings.reduce((acc, r) => acc + r.rating, 0);
+        return sum / projectRatings.length;
+    }
+
+    generateStars(rating) {
+        let stars = '';
+        for (let i = 1; i <= 5; i++) {
+            if (i <= rating) {
+                stars += '<i class="ri-star-fill"></i>';
+            } else if (i - 0.5 <= rating) {
+                stars += '<i class="ri-star-half-fill"></i>';
+            } else {
+                stars += '<i class="ri-star-line"></i>';
+            }
+        }
+        return stars;
     }
 }
 
