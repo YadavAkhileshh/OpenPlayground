@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuadCompress | Recursive Image Analysis</title>
+    <link rel="stylesheet" href="src/css/main.css">
+    <link rel="stylesheet" href="src/css/layout.css">
+    <link rel="stylesheet" href="src/css/controls.css">
+    <link rel="stylesheet" href="src/css/canvas.css">
+    <link rel="stylesheet" href="src/css/typography.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header / Nav -->
+        <header class="app-header">
+            <div class="logo-section">
+                <h1>QUAD<span class="highlight">COMPRESS</span></h1>
+                <div class="subtitle">Recursive Spatial Partitioning Engine</div>
+            </div>
+            <div class="system-status">
+                <span class="status-indicator active"></span>
+                <span id="status-text">SYSTEM READY</span>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="workspace">
+            <!-- Canvas Stage -->
+            <div class="viewport" id="viewport">
+                <div class="canvas-wrapper">
+                    <!-- Hidden source canvas for pixel data -->
+                    <canvas id="source-canvas" hidden></canvas>
+                    <!-- Visible display canvas -->
+                    <canvas id="display-canvas"></canvas>
+                    
+                    <div class="overlay-info" id="overlay-info">
+                        <!-- Dynamic float info -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Controls -->
+            <aside class="sidebar">
+                <!-- Input Section -->
+                <section class="control-group">
+                    <div class="group-header">
+                        <h2>INPUT_SOURCE</h2>
+                        <div class="decoration-line"></div>
+                    </div>
+                    <div class="file-drop-area" id="drop-zone">
+                        <input type="file" id="file-input" accept="image/*">
+                        <div class="drop-label">
+                            <span class="icon">⭳</span>
+                            <span>INIT_DATA_STREAM</span>
+                            <small class="subtext">Drop Image or Click</small>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Parameters Section -->
+                <section class="control-group">
+                    <div class="group-header">
+                        <h2>PARAMETERS</h2>
+                        <div class="decoration-line"></div>
+                    </div>
+                    
+                    <div class="control-item">
+                        <label for="threshold-slider">
+                            <span>VARIANCE_THRESHOLD</span>
+                            <span class="value-display" id="threshold-value">20</span>
+                        </label>
+                        <div class="slider-wrapper">
+                            <input type="range" id="threshold-slider" min="0" max="100" value="20" step="1">
+                            <div class="slider-track-decoration"></div>
+                        </div>
+                    </div>
+
+                    <div class="control-item">
+                        <label for="depth-limit">
+                            <span>MAX_DEPTH_LIMIT</span>
+                            <span class="value-display" id="depth-value">8</span>
+                        </label>
+                        <div class="slider-wrapper">
+                            <input type="range" id="depth-limit" min="1" max="12" value="8" step="1">
+                        </div>
+                    </div>
+
+                    <div class="control-item checkbox-group">
+                        <label class="custom-checkbox">
+                            <input type="checkbox" id="show-boundaries" checked>
+                            <span class="checkmark"></span>
+                            <span class="label-text">UI_SHOW_BOUNDARIES</span>
+                        </label>
+                    </div>
+                    
+                    <div class="control-item checkbox-group">
+                        <label class="custom-checkbox">
+                            <input type="checkbox" id="animate-process" checked>
+                            <span class="checkmark"></span>
+                            <span class="label-text">ANIMATE_SUBDIVISION</span>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Actions -->
+                <section class="control-group actions">
+                    <button id="btn-process" class="btn primary">
+                        <span class="btn-text">EXECUTE_COMPRESS</span>
+                        <div class="btn-glitch"></div>
+                    </button>
+                    <button id="btn-reset" class="btn warning">
+                        <span class="btn-text">RESET_BUFFER</span>
+                    </button>
+                    <button id="btn-export" class="btn secondary">
+                        <span class="btn-text">EXPORT_PNG</span>
+                    </button>
+                </section>
+
+                <!-- Statistics -->
+                <section class="control-group stats">
+                    <div class="group-header">
+                        <h2>TELEMETRY</h2>
+                        <div class="decoration-line"></div>
+                    </div>
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">QUAD_COUNT</span>
+                            <span class="stat-value" id="stat-count">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">PROCESS_TIME</span>
+                            <span class="stat-value" id="stat-time">0ms</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">DEPTH_MAX</span>
+                            <span class="stat-value" id="stat-depth">0</span>
+                        </div>
+                        <div class="stat-item full-width">
+                            <span class="stat-label">COMPRESSION_RATIO</span>
+                            <span class="stat-value highlight" id="stat-ratio">0%</span>
+                        </div>
+                    </div>
+                    <!-- Mini visualization graph could go here -->
+                    <canvas id="stat-graph-canvas" height="60"></canvas>
+                </section>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Utils -->
+    <script type="module" src="src/js/utils/logger.js"></script>
+    <script type="module" src="src/js/utils/mathUtils.js"></script>
+    <script type="module" src="src/js/utils/colorUtils.js"></script>
+    
+    <!-- Core -->
+    <script type="module" src="src/js/core/variance.js"></script>
+    <script type="module" src="src/js/core/node.js"></script>
+    <script type="module" src="src/js/core/quadtree.js"></script>
+    <script type="module" src="src/js/core/imageLoader.js"></script>
+
+    <!-- UI/View -->
+    <script type="module" src="src/js/view/renderer.js"></script>
+    <script type="module" src="src/js/view/animator.js"></script>
+    <script type="module" src="src/js/ui/stats.js"></script>
+    <script type="module" src="src/js/ui/controls.js"></script>
+    <script type="module" src="src/js/ui/mouse.js"></script>
+
+    <!-- Main -->
+    <script type="module" src="src/js/config.js"></script>
+    <script type="module" src="src/js/main.js"></script>
+</body>
+</html>

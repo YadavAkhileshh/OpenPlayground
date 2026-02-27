@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Paper Territory | Zen Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #e2e8f0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            touch-action: none;
+            color: #1e293b;
+        }
+        canvas {
+            display: block;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.05));
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        #ui-overlay {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        #minimap-container {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            width: 150px;
+            height: 150px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 4px solid rgba(255,255,255,0.5);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.05) 100%);
+            pointer-events: none;
+            z-index: 5;
+        }
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .animate-win {
+            animation: pulse-soft 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-bg"></div>
+    <div class="vignette"></div>
+
+    <!-- UI Elements -->
+    <div id="ui-overlay">
+        <div class="glass p-5 rounded-2xl shadow-2xl min-w-[200px]">
+            <div class="flex items-center gap-2 mb-3">
+                <div class="w-2 h-6 bg-indigo-500 rounded-full"></div>
+                <h1 class="text-lg font-extrabold tracking-tight text-slate-800 uppercase">Leaderboard</h1>
+            </div>
+            <div id="score-list" class="space-y-2">
+                <!-- Scores injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Minimap -->
+    <div id="minimap-container" class="glass">
+        <canvas id="minimapCanvas"></canvas>
+    </div>
+
+    <!-- Start/Death Screen -->
+    <div id="menu" class="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-50 transition-opacity duration-500">
+        <div class="glass p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] text-center max-w-sm w-full mx-4 border-t border-white/50">
+            <div class="w-20 h-20 bg-indigo-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-indigo-200 shadow-2xl rotate-12">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+            </div>
+            <h2 id="menu-title" class="text-4xl font-black text-slate-800 mb-2 tracking-tighter">PAPER.IO</h2>
+            <p id="menu-stats" class="text-slate-500 mb-8 font-medium">Claim your domain. Slice the competition.</p>
+            
+            <button id="start-btn" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all transform hover:-translate-y-1 active:translate-y-0 shadow-[0_10px_20px_rgba(79,70,229,0.3)] hover:shadow-[0_15px_30px_rgba(79,70,229,0.4)]">
+                ENTER ARENA
+            </button>
+            
+            <div class="mt-8 flex justify-center gap-4">
+                <div class="flex flex-col items-center">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Move</span>
+                    <span class="px-2 py-1 bg-slate-100 rounded text-xs font-bold text-slate-600">WASD / ARROWS</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Win Screen -->
+    <div id="win-screen" class="fixed inset-0 bg-indigo-900/90 backdrop-blur-xl hidden items-center justify-center z-[60]">
+        <div class="text-center animate-win">
+            <div class="text-8xl mb-4">👑</div>
+            <h1 class="text-7xl font-black text-white drop-shadow-2xl tracking-tighter">DOMINATION</h1>
+            <p class="text-xl text-indigo-200 mt-4 font-medium uppercase tracking-[0.2em]">The World is Yours</p>
+            <button onclick="location.reload()" class="mt-12 px-10 py-4 bg-white text-indigo-600 font-extrabold rounded-2xl shadow-2xl hover:scale-105 transition-transform">GLORY AGAIN</button>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const minimapCanvas = document.getElementById('minimapCanvas');
+        const mCtx = minimapCanvas.getContext('2d');
+        const menu = document.getElementById('menu');
+        const startBtn = document.getElementById('start-btn');
+        const scoreList = document.getElementById('score-list');
+        const winScreen = document.getElementById('win-screen');
+
+        // Configuration
+        const GRID_SIZE = 40;
+        const WORLD_WIDTH = 60; 
+        const WORLD_HEIGHT = 60; 
+        const TICK_RATE = 90; // Slightly faster for smoother feel
+        
+        let gameRunning = false;
+        let lastTick = 0;
+        let players = [];
+        let myPlayerId = null;
+
+        const COLORS = [
+            { main: '#6366f1', light: '#a5b4fc', dark: '#4338ca' }, // Indigo
+            { main: '#f43f5e', light: '#fda4af', dark: '#be123c' }, // Rose
+            { main: '#10b981', light: '#6ee7b7', dark: '#047857' }, // Emerald
+            { main: '#f59e0b', light: '#fcd34d', dark: '#b45309' }, // Amber
+            { main: '#8b5cf6', light: '#c4b5fd', dark: '#6d28d9' }, // Violet
+            { main: '#06b6d4', light: '#67e8f9', dark: '#0e7490' }, // Cyan
+            { main: '#ec4899', light: '#f9a8d4', dark: '#be185d' }  // Pink
+        ];
+
+        let grid = [];
+
+        function initGrid() {
+            grid = [];
+            for (let y = 0; y < WORLD_HEIGHT; y++) {
+                grid[y] = [];
+                for (let x = 0; x < WORLD_WIDTH; x++) {
+                    grid[y][x] = -1;
+                }
+            }
+        }
+
+        class Player {
+            constructor(id, x, y, colorIdx, isBot = false) {
+                this.id = id;
+                this.x = x;
+                this.y = y;
+                this.dir = { x: 1, y: 0 };
+                this.nextDir = { x: 1, y: 0 };
+                this.color = COLORS[colorIdx % COLORS.length];
+                this.isBot = isBot;
+                this.trail = [];
+                this.isDead = false;
+                this.score = 0;
+                this.name = isBot ? `Player ${id + 100}` : "YOU";
+
+                this.captureArea(x - 1, y - 1, x + 1, y + 1);
+            }
+
+            captureArea(x1, y1, x2, y2) {
+                for (let iy = Math.max(0, y1); iy <= Math.min(WORLD_HEIGHT - 1, y2); iy++) {
+                    for (let ix = Math.max(0, x1); ix <= Math.min(WORLD_WIDTH - 1, x2); ix++) {
+                        grid[iy][ix] = this.id;
+                    }
+                }
+            }
+
+            update() {
+                if (this.isDead) return;
+
+                if (this.isBot) this.handleAI();
+
+                this.dir = { ...this.nextDir };
+                this.x += this.dir.x;
+                this.y += this.dir.y;
+
+                if (this.x < 0 || this.x >= WORLD_WIDTH || this.y < 0 || this.y >= WORLD_HEIGHT) {
+                    this.die();
+                    return;
+                }
+
+                const currentOwner = grid[this.y][this.x];
+
+                if (currentOwner !== this.id) {
+                    if (this.trail.some(t => t.x === this.x && t.y === this.y)) {
+                        this.die();
+                        return;
+                    }
+                    this.trail.push({ x: this.x, y: this.y });
+                } else {
+                    if (this.trail.length > 0) {
+                        this.fillTerritory();
+                        this.trail = [];
+                    }
+                }
+
+                players.forEach(p => {
+                    if (p.id !== this.id && !p.isDead) {
+                        if (p.trail.some(t => t.x === this.x && t.y === this.y)) {
+                            p.die();
+                        }
+                        if (p.x === this.x && p.y === this.y) {
+                            if (grid[this.y][this.x] === this.id) p.die();
+                            else if (grid[p.y][p.x] === p.id) this.die();
+                            else { this.die(); p.die(); }
+                        }
+                    }
+                });
+            }
+
+            handleAI() {
+                const inHome = grid[this.y][this.x] === this.id;
+                const nextX = this.x + this.nextDir.x;
+                const nextY = this.y + this.nextDir.y;
+                
+                // Panic wall avoidance
+                if (nextX <= 0 || nextX >= WORLD_WIDTH - 1 || nextY <= 0 || nextY >= WORLD_HEIGHT - 1) {
+                    this.randomTurn();
+                    return;
+                }
+
+                // Don't commit suicide on own trail
+                const lookAheadX = this.x + this.nextDir.x;
+                const lookAheadY = this.y + this.nextDir.y;
+                if (this.trail.some(t => t.x === lookAheadX && t.y === lookAheadY)) {
+                    this.randomTurn();
+                }
+
+                if (!inHome && this.trail.length > 8) {
+                    // Primitive pathfinding: find closest home tile
+                    // Simple heuristic: just move toward spawn roughly
+                    if(Math.random() > 0.7) this.randomTurn();
+                } else if (Math.random() > 0.94) {
+                    this.randomTurn();
+                }
+            }
+
+            randomTurn() {
+                const choices = [
+                    { x: 1, y: 0 }, { x: -1, y: 0 },
+                    { x: 0, y: 1 }, { x: 0, y: -1 }
+                ].filter(c => c.x !== -this.dir.x || c.y !== -this.dir.y);
+                this.nextDir = choices[Math.floor(Math.random() * choices.length)];
+            }
+
+            fillTerritory() {
+                if (this.trail.length === 0) return;
+                const xs = [...this.trail.map(t => t.x), this.x];
+                const ys = [...this.trail.map(t => t.y), this.y];
+                const minX = Math.min(...xs);
+                const maxX = Math.max(...xs);
+                const minY = Math.min(...ys);
+                const maxY = Math.max(...ys);
+
+                this.trail.forEach(t => grid[t.y][t.x] = this.id);
+
+                // Quick Rectangle Fill for "Paper-style" feel
+                for (let iy = minY; iy <= maxY; iy++) {
+                    for (let ix = minX; ix <= maxX; ix++) {
+                        grid[iy][ix] = this.id;
+                    }
+                }
+            }
+
+            die() {
+                this.isDead = true;
+                for (let y = 0; y < WORLD_HEIGHT; y++) {
+                    for (let x = 0; x < WORLD_WIDTH; x++) {
+                        if (grid[y][x] === this.id) grid[y][x] = -1;
+                    }
+                }
+                if (this.id === myPlayerId) gameOver();
+            }
+
+            draw(ctx, size) {
+                if (this.isDead) return;
+
+                // Head
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                const radius = size * 0.2;
+                ctx.roundRect(this.x * size + 2, this.y * size + 2, size - 4, size - 4, radius);
+                ctx.fill();
+                
+                // Player Identity Square (inside head)
+                ctx.fillStyle = this.color.main;
+                ctx.roundRect(this.x * size + size*0.25, this.y * size + size*0.25, size*0.5, size*0.5, radius);
+                ctx.fill();
+
+                // Trail with glow
+                ctx.fillStyle = this.color.light;
+                ctx.globalAlpha = 0.5;
+                this.trail.forEach(t => {
+                    ctx.fillRect(t.x * size, t.y * size, size, size);
+                });
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function startGame() {
+            initGrid();
+            players = [];
+            myPlayerId = 0;
+            
+            // Player
+            players.push(new Player(0, 5, 5, 0));
+
+            // Bots
+            for (let i = 1; i < 8; i++) {
+                const rx = Math.floor(Math.random() * (WORLD_WIDTH - 20)) + 10;
+                const ry = Math.floor(Math.random() * (WORLD_HEIGHT - 20)) + 10;
+                players.push(new Player(i, rx, ry, i, true));
+            }
+
+            gameRunning = true;
+            menu.style.opacity = '0';
+            setTimeout(() => menu.style.display = 'none', 500);
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('menu-title').innerText = "ELIMINATED";
+            document.getElementById('menu-title').className = "text-4xl font-black text-rose-500 mb-2 tracking-tighter";
+            menu.style.display = 'flex';
+            setTimeout(() => menu.style.opacity = '1', 50);
+        }
+
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
+
+            if (timestamp - lastTick > TICK_RATE) {
+                players.forEach(p => p.update());
+                calculateScores();
+                lastTick = timestamp;
+            }
+
+            draw();
+            drawMinimap();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function calculateScores() {
+            const total = WORLD_WIDTH * WORLD_HEIGHT;
+            const counts = {};
+            for (let y = 0; y < WORLD_HEIGHT; y++) {
+                for (let x = 0; x < WORLD_WIDTH; x++) {
+                    const owner = grid[y][x];
+                    if (owner !== -1) counts[owner] = (counts[owner] || 0) + 1;
+                }
+            }
+
+            players.forEach(p => {
+                p.score = (((counts[p.id] || 0) / total) * 100).toFixed(1);
+            });
+
+            if (players.find(p => p.id === myPlayerId)?.score > 75) {
+                gameRunning = false;
+                winScreen.style.display = 'flex';
+            }
+
+            const sorted = [...players].filter(p => !p.isDead).sort((a, b) => b.score - a.score);
+            scoreList.innerHTML = sorted.slice(0, 5).map((p, idx) => `
+                <div class="flex items-center justify-between gap-3 p-2 rounded-lg ${p.id === myPlayerId ? 'bg-indigo-50/80 ring-1 ring-indigo-200' : ''}">
+                    <div class="flex items-center gap-3">
+                        <span class="text-[10px] font-bold text-slate-400 w-4">#${idx+1}</span>
+                        <div class="w-3 h-3 rounded-full shadow-sm" style="background:${p.color.main}"></div>
+                        <span class="text-xs font-bold text-slate-700 uppercase tracking-tight">${p.name}</span>
+                    </div>
+                    <span class="text-xs font-black text-slate-900">${p.score}%</span>
+                </div>
+            `).join('');
+        }
+
+        function draw() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const me = players.find(p => p.id === myPlayerId) || { x: WORLD_WIDTH/2, y: WORLD_HEIGHT/2 };
+            const camX = (canvas.width / 2) - (me.x * GRID_SIZE);
+            const camY = (canvas.height / 2) - (me.y * GRID_SIZE);
+
+            ctx.save();
+            ctx.translate(camX, camY);
+
+            // Draw World Surface
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(0, 0, WORLD_WIDTH * GRID_SIZE, WORLD_HEIGHT * GRID_SIZE);
+
+            // Draw Territory
+            for (let y = 0; y < WORLD_HEIGHT; y++) {
+                for (let x = 0; x < WORLD_WIDTH; x++) {
+                    const ownerId = grid[y][x];
+                    if (ownerId !== -1) {
+                        const p = players.find(pl => pl.id === ownerId);
+                        if (p) {
+                            ctx.fillStyle = p.color.main;
+                            ctx.globalAlpha = 0.35;
+                            ctx.fillRect(x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+                            ctx.globalAlpha = 1.0;
+                            
+                            // Subtle border inside cells for pattern
+                            ctx.strokeStyle = p.color.dark;
+                            ctx.globalAlpha = 0.05;
+                            ctx.strokeRect(x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+                            ctx.globalAlpha = 1.0;
+                        }
+                    }
+                }
+            }
+
+            players.forEach(p => p.draw(ctx, GRID_SIZE));
+            ctx.restore();
+        }
+
+        function drawMinimap() {
+            minimapCanvas.width = 150;
+            minimapCanvas.height = 150;
+            const mSize = 150 / WORLD_WIDTH;
+            mCtx.clearRect(0, 0, 150, 150);
+
+            for (let y = 0; y < WORLD_HEIGHT; y++) {
+                for (let x = 0; x < WORLD_WIDTH; x++) {
+                    const ownerId = grid[y][x];
+                    if (ownerId !== -1) {
+                        const p = players.find(pl => pl.id === ownerId);
+                        if (p) {
+                            mCtx.fillStyle = p.color.main;
+                            mCtx.fillRect(x * mSize, y * mSize, mSize, mSize);
+                        }
+                    }
+                }
+            }
+            
+            // Draw player dot on minimap
+            const me = players.find(p => p.id === myPlayerId);
+            if (me && !me.isDead) {
+                mCtx.fillStyle = 'white';
+                mCtx.strokeStyle = 'black';
+                mCtx.lineWidth = 1;
+                mCtx.beginPath();
+                mCtx.arc(me.x * mSize, me.y * mSize, 3, 0, Math.PI * 2);
+                mCtx.fill();
+                mCtx.stroke();
+            }
+        }
+
+        // Controls
+        window.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+            const me = players.find(p => p.id === myPlayerId);
+            if (!me) return;
+
+            switch(e.key) {
+                case 'ArrowUp': case 'w': if (me.dir.y === 0) me.nextDir = { x: 0, y: -1 }; break;
+                case 'ArrowDown': case 's': if (me.dir.y === 0) me.nextDir = { x: 0, y: 1 }; break;
+                case 'ArrowLeft': case 'a': if (me.dir.x === 0) me.nextDir = { x: -1, y: 0 }; break;
+                case 'ArrowRight': case 'd': if (me.dir.x === 0) me.nextDir = { x: 1, y: 0 }; break;
+            }
+        });
+
+        // Touch Control
+        window.addEventListener('touchstart', (e) => {
+            if (!gameRunning) return;
+            const touchX = e.touches[0].clientX;
+            const touchY = e.touches[0].clientY;
+            const me = players.find(p => p.id === myPlayerId);
+            if (!me) return;
+
+            const dx = touchX - window.innerWidth / 2;
+            const dy = touchY - window.innerHeight / 2;
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (dx > 0) { if(me.dir.x === 0) me.nextDir = { x: 1, y: 0 }; }
+                else { if(me.dir.x === 0) me.nextDir = { x: -1, y: 0 }; }
+            } else {
+                if (dy > 0) { if(me.dir.y === 0) me.nextDir = { x: 0, y: 1 }; }
+                else { if(me.dir.y === 0) me.nextDir = { x: 0, y: -1 }; }
+            }
+        });
+
+        startBtn.onclick = startGame;
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kite Flyer Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #0f172a;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        .glass {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+        }
+        #ui-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+        }
+        .health-bar-container {
+            width: 150px;
+            height: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        #health-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #34d399, #10b981);
+            transition: width 0.2s ease-out;
+        }
+        .pointer-events-auto { pointer-events: auto !important; }
+        button { cursor: pointer !important; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="flex justify-between items-start">
+            <div class="glass p-4 text-white">
+                <div class="text-xs uppercase tracking-widest opacity-70">Altitude</div>
+                <div class="text-3xl font-bold font-mono" id="score">0000</div>
+                <div class="text-xs mt-1 text-yellow-400 font-bold" id="combo-text">COMBO x1</div>
+            </div>
+            <div class="glass p-4 text-white min-w-[180px]">
+                <div class="text-xs uppercase tracking-widest opacity-70">Line Tension</div>
+                <div class="health-bar-container">
+                    <div id="health-fill"></div>
+                </div>
+                <div class="text-right text-xs mt-1 opacity-50" id="health-label">100%</div>
+            </div>
+        </div>
+
+        <div id="start-screen" class="absolute inset-0 flex items-center justify-center pointer-events-auto">
+            <div class="glass p-10 max-w-lg text-center text-white">
+                <h1 class="text-6xl font-black mb-2 tracking-tighter italic">KITE<span class="text-yellow-400">FLYER</span></h1>
+                <p class="text-slate-300 mb-8 leading-relaxed">Use Arrows or WASD to steer. Keep the kite high to score. Avoid storm clouds.</p>
+                <button id="start-btn" class="w-full bg-yellow-400 text-black font-black py-4 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-2xl">
+                    LAUNCH KITE
+                </button>
+            </div>
+        </div>
+
+        <div id="game-over" class="hidden absolute inset-0 flex items-center justify-center pointer-events-auto bg-black/80 backdrop-blur-md">
+            <div class="glass p-10 text-center text-white border-red-500/30">
+                <h2 class="text-4xl font-bold text-red-400 mb-2">LINE SNAPPED</h2>
+                <div class="text-6xl font-black mb-8 font-mono text-yellow-400" id="final-score">0</div>
+                <button id="restart-btn" class="px-12 bg-white text-black font-bold py-4 rounded-xl transition-all">
+                    TRY AGAIN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const comboEl = document.getElementById('combo-text');
+        const healthFill = document.getElementById('health-fill');
+        const healthLabel = document.getElementById('health-label');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScoreEl = document.getElementById('final-score');
+
+        let gameState = 'START';
+        let score = 0;
+        let combo = 1;
+        let comboTimer = 0;
+        let health = 100;
+        let time = 0;
+        let touchX = null;
+
+        const config = {
+            gravity: 0.15,
+            lift: 0.25, // Upward force from wind
+            kiteSize: 40,
+            minLine: 100,
+            maxLine: 600,
+            initialLine: 300
+        };
+
+        // Input state tracking
+        const keys = {};
+        window.addEventListener('keydown', e => { keys[e.code] = true; });
+        window.addEventListener('keyup', e => { keys[e.code] = false; });
+        
+        window.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; });
+        window.addEventListener('touchmove', e => { touchX = e.touches[0].clientX; });
+        window.addEventListener('touchend', () => { touchX = null; });
+
+        class Kite {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.anchorX = window.innerWidth / 2;
+                this.anchorY = window.innerHeight - 50;
+                this.x = this.anchorX;
+                this.y = this.anchorY - 100; // Start slightly above anchor
+                this.vx = 0;
+                this.vy = 0;
+                this.angle = 0;
+                this.lineLen = config.initialLine;
+            }
+            update() {
+                // Natural Wind & Gravity
+                const windOscillation = Math.sin(time * 0.03) * 0.2;
+                this.vx += windOscillation;
+                this.vy += config.gravity; // Gravity pulls down
+                this.vy -= config.lift;    // Constant wind lift pulls up
+
+                // Keyboard Controls
+                if (keys['ArrowLeft'] || keys['KeyA'] || (touchX !== null && touchX < window.innerWidth / 2)) {
+                    this.vx -= 0.6;
+                }
+                if (keys['ArrowRight'] || keys['KeyD'] || (touchX !== null && touchX >= window.innerWidth / 2)) {
+                    this.vx += 0.6;
+                }
+                if (keys['ArrowUp'] || keys['KeyW']) {
+                    this.vy -= 0.8; // Active climbing
+                    this.lineLen = Math.max(config.minLine, this.lineLen - 4);
+                }
+                if (keys['ArrowDown'] || keys['KeyS']) {
+                    this.vy += 0.4; // Controlled descent
+                    this.lineLen = Math.min(config.maxLine, this.lineLen + 4);
+                }
+
+                // Friction
+                this.vx *= 0.95;
+                this.vy *= 0.95;
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Line Constraint Logic
+                const dx = this.x - this.anchorX;
+                const dy = this.y - this.anchorY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist > this.lineLen) {
+                    const ratio = this.lineLen / dist;
+                    this.x = this.anchorX + dx * ratio;
+                    this.y = this.anchorY + dy * ratio;
+                    
+                    // Bounce/Tension effect
+                    this.vx *= 0.8;
+                    this.vy *= 0.8;
+                }
+
+                // Tilt based on horizontal velocity
+                this.angle = this.vx * 0.1;
+
+                // Boundary box
+                this.x = Math.max(30, Math.min(window.innerWidth - 30, this.x));
+                this.y = Math.max(30, Math.min(window.innerHeight - 100, this.y));
+            }
+            draw() {
+                // Draw the line (string)
+                ctx.beginPath();
+                ctx.moveTo(this.anchorX, this.anchorY);
+                // Slight curve to the string
+                const midX = (this.anchorX + this.x) / 2 + Math.sin(time * 0.05) * 10;
+                const midY = (this.anchorY + this.y) / 2;
+                ctx.quadraticCurveTo(midX, midY, this.x, this.y);
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Draw the kite body
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                // Diamond shape
+                ctx.fillStyle = '#ef4444';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'red';
+                ctx.beginPath();
+                ctx.moveTo(0, -config.kiteSize);
+                ctx.lineTo(config.kiteSize * 0.8, 0);
+                ctx.lineTo(0, config.kiteSize * 1.2);
+                ctx.lineTo(-config.kiteSize * 0.8, 0);
+                ctx.closePath();
+                ctx.fill();
+
+                // Cross-bars
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.moveTo(0, -config.kiteSize); ctx.lineTo(0, config.kiteSize * 1.2);
+                ctx.moveTo(-config.kiteSize * 0.8, 0); ctx.lineTo(config.kiteSize * 0.8, 0);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        class Obstacle {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * window.innerWidth;
+                this.y = -100;
+                this.size = 40 + Math.random() * 60;
+                this.speed = 2 + Math.random() * 3;
+            }
+            update() {
+                this.y += this.speed;
+                if (this.y > window.innerHeight + 100) this.reset();
+            }
+            draw() {
+                ctx.fillStyle = 'rgba(100, 116, 139, 0.8)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        let kite = new Kite();
+        let clouds = Array.from({length: 5}, () => new Obstacle());
+
+        function initScene() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            kite.reset();
+        }
+
+        function loop() {
+            time++;
+            
+            // Background Sky
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            grad.addColorStop(0, '#1e293b');
+            grad.addColorStop(1, '#334155');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (gameState === 'PLAYING') {
+                kite.update();
+                
+                clouds.forEach(c => {
+                    c.update();
+                    c.draw();
+                    // Simple collision
+                    const d = Math.hypot(kite.x - c.x, kite.y - c.y);
+                    if (d < c.size + 20) {
+                        health -= 1;
+                    }
+                });
+
+                if (health <= 0) {
+                    gameState = 'GAMEOVER';
+                    gameOverScreen.classList.remove('hidden');
+                    finalScoreEl.innerText = Math.floor(score);
+                }
+
+                score += 0.1;
+                updateHUD();
+            }
+
+            kite.draw();
+
+            // Ground
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+
+            requestAnimationFrame(loop);
+        }
+
+        function updateHUD() {
+            scoreEl.innerText = Math.floor(score).toString().padStart(4, '0');
+            healthFill.style.width = health + '%';
+            healthLabel.innerText = Math.floor(health) + '%';
+        }
+
+        window.addEventListener('resize', initScene);
+        
+        document.getElementById('start-btn').onclick = () => {
+            startScreen.classList.add('hidden');
+            gameState = 'PLAYING';
+            health = 100;
+            score = 0;
+            kite.reset();
+        };
+
+        document.getElementById('restart-btn').onclick = () => {
+            gameOverScreen.classList.add('hidden');
+            gameState = 'PLAYING';
+            health = 100;
+            score = 0;
+            kite.reset();
+        };
+
+        initScene();
+        loop();
+    </script>
+</body>
+</html>

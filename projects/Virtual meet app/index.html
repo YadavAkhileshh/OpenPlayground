@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Meet - Professional Video Conferencing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        .video-container {
+            position: relative;
+            background: #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .user-label {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            backdrop-filter: blur(4px);
+        }
+        #grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            padding: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        @media (max-width: 640px) {
+            #grid-container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body class="bg-zinc-900 text-white min-h-screen flex flex-col font-sans">
+
+    <!-- Header / Branding -->
+    <header class="p-6 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight">Nexus Meet</h1>
+        </div>
+        <div id="connection-status" class="flex items-center space-x-2 text-sm text-zinc-400">
+            <span class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+            <span>Initializing...</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-grow flex flex-col">
+        <!-- Setup Section -->
+        <div id="setup-panel" class="max-w-md mx-auto mt-20 p-8 bg-zinc-800 border border-zinc-700 rounded-2xl shadow-2xl">
+            <h2 class="text-2xl font-semibold mb-6">Start a Meeting</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-zinc-400 mb-1">Your ID</label>
+                    <div class="flex">
+                        <input id="my-id-display" readonly type="text" class="bg-zinc-900 border border-zinc-700 rounded-l-lg p-3 w-full text-zinc-300 outline-none" placeholder="Generating ID...">
+                        <button onclick="copyMyId()" class="bg-zinc-700 hover:bg-zinc-600 px-4 rounded-r-lg transition-colors">
+                            Copy
+                        </button>
+                    </div>
+                </div>
+                <div class="relative py-4">
+                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-zinc-700"></div></div>
+                    <div class="relative flex justify-center text-xs uppercase"><span class="bg-zinc-800 px-2 text-zinc-500">OR JOIN ONE</span></div>
+                </div>
+                <div>
+                    <input id="remote-id-input" type="text" class="bg-zinc-900 border border-zinc-700 rounded-lg p-3 w-full outline-none focus:border-indigo-500 transition-colors" placeholder="Enter Friend's ID">
+                </div>
+                <button id="join-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-lg font-semibold transition-all transform active:scale-95">
+                    Connect Now
+                </button>
+            </div>
+            <p class="text-xs text-zinc-500 mt-6 text-center italic">Requires camera and microphone permissions.</p>
+        </div>
+
+        <!-- Meeting View (Hidden initially) -->
+        <div id="meeting-panel" class="hidden flex-grow flex flex-col">
+            <div id="grid-container">
+                <!-- User's local video -->
+                <div class="video-container" id="local-video-box">
+                    <video id="local-video" autoplay muted playsinline></video>
+                    <div class="user-label">You</div>
+                </div>
+                <!-- Remote video will append here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Controls Footer (Hidden initially) -->
+    <footer id="controls" class="hidden p-6 bg-zinc-950 border-t border-zinc-800 flex justify-center items-center space-x-6">
+        <button id="toggle-mic" class="p-4 bg-zinc-800 hover:bg-zinc-700 rounded-full transition-all group">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path id="mic-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-20a3 3 0 00-3 3v8a3 3 0 006 0V5a3 3 0 00-3-3z"></path></svg>
+        </button>
+        <button id="toggle-video" class="p-4 bg-zinc-800 hover:bg-zinc-700 rounded-full transition-all">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path id="video-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+        </button>
+        <button id="share-screen" class="p-4 bg-zinc-800 hover:bg-zinc-700 rounded-full transition-all" title="Share Screen">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+        </button>
+        <button onclick="window.location.reload()" class="p-4 bg-red-600 hover:bg-red-700 rounded-full transition-all">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </footer>
+
+    <!-- Notification system -->
+    <div id="toast" class="fixed bottom-24 right-6 bg-zinc-800 border border-zinc-700 p-4 rounded-xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300">
+        <p id="toast-msg" class="text-sm"></p>
+    </div>
+
+    <script>
+        // --- Initialization ---
+        const peer = new Peer(); // PeerJS connects to its cloud server automatically
+        let localStream;
+        let myId = "";
+        
+        const myIdDisplay = document.getElementById('my-id-display');
+        const remoteIdInput = document.getElementById('remote-id-input');
+        const joinBtn = document.getElementById('join-btn');
+        const setupPanel = document.getElementById('setup-panel');
+        const meetingPanel = document.getElementById('meeting-panel');
+        const controls = document.getElementById('controls');
+        const statusEl = document.getElementById('connection-status');
+
+        // --- PeerJS Events ---
+        peer.on('open', (id) => {
+            myId = id;
+            myIdDisplay.value = id;
+            statusEl.innerHTML = `<span class="w-2 h-2 bg-green-500 rounded-full"></span><span>ID: ${id}</span>`;
+            showToast("Meeting ID Generated Successfully");
+        });
+
+        // Receiving a call
+        peer.on('call', (call) => {
+            startMeetingUI();
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then((stream) => {
+                    localStream = stream;
+                    document.getElementById('local-video').srcObject = stream;
+                    call.answer(stream); // Send back local stream
+                    handleCall(call);
+                });
+        });
+
+        // --- Actions ---
+        joinBtn.addEventListener('click', () => {
+            const remoteId = remoteIdInput.value.trim();
+            if (!remoteId) return showToast("Please enter a valid ID");
+
+            startMeetingUI();
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then((stream) => {
+                    localStream = stream;
+                    document.getElementById('local-video').srcObject = stream;
+                    const call = peer.call(remoteId, stream);
+                    handleCall(call);
+                })
+                .catch(err => {
+                    showToast("Failed to access camera: " + err.message);
+                    resetUI();
+                });
+        });
+
+        function handleCall(call) {
+            call.on('stream', (remoteStream) => {
+                // Check if video element already exists for this stream to avoid duplication
+                if (!document.getElementById('remote-video-' + call.peer)) {
+                    addRemoteVideo(remoteStream, call.peer);
+                }
+            });
+            
+            call.on('close', () => {
+                const el = document.getElementById('box-' + call.peer);
+                if (el) el.remove();
+                showToast("User left the meeting");
+            });
+
+            call.on('error', (err) => {
+                showToast("Connection Error: " + err.type);
+            });
+        }
+
+        function addRemoteVideo(stream, peerId) {
+            const container = document.getElementById('grid-container');
+            const box = document.createElement('div');
+            box.id = 'box-' + peerId;
+            box.className = 'video-container';
+            
+            const video = document.createElement('video');
+            video.id = 'remote-video-' + peerId;
+            video.srcObject = stream;
+            video.autoplay = true;
+            video.playsinline = true;
+            
+            const label = document.createElement('div');
+            label.className = 'user-label';
+            label.innerText = 'Guest (' + peerId.substring(0, 4) + ')';
+            
+            box.appendChild(video);
+            box.appendChild(label);
+            container.appendChild(box);
+        }
+
+        // --- UI Logic ---
+        function startMeetingUI() {
+            setupPanel.classList.add('hidden');
+            meetingPanel.classList.remove('hidden');
+            controls.classList.remove('hidden');
+        }
+
+        function resetUI() {
+            setupPanel.classList.remove('hidden');
+            meetingPanel.classList.add('hidden');
+            controls.classList.add('hidden');
+        }
+
+        function copyMyId() {
+            if (!myId) return;
+            const input = document.createElement('input');
+            input.value = myId;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+            showToast("ID Copied to Clipboard!");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(20px)';
+            }, 3000);
+        }
+
+        // --- Media Controls ---
+        document.getElementById('toggle-mic').addEventListener('click', function() {
+            const enabled = localStream.getAudioTracks()[0].enabled;
+            localStream.getAudioTracks()[0].enabled = !enabled;
+            this.classList.toggle('bg-red-500');
+            this.classList.toggle('bg-zinc-800');
+            document.getElementById('mic-icon').setAttribute('d', !enabled ? 
+                "M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-20a3 3 0 00-3 3v8a3 3 0 006 0V5a3 3 0 00-3-3z" : 
+                "M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636"); // Simplified "mute" visual toggle
+        });
+
+        document.getElementById('toggle-video').addEventListener('click', function() {
+            const enabled = localStream.getVideoTracks()[0].enabled;
+            localStream.getVideoTracks()[0].enabled = !enabled;
+            this.classList.toggle('bg-red-500');
+            this.classList.toggle('bg-zinc-800');
+        });
+
+        document.getElementById('share-screen').addEventListener('click', async () => {
+            try {
+                const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                document.getElementById('local-video').srcObject = screenStream;
+                showToast("Screen sharing active");
+                
+                // Switch video track in current calls (simplified for 1:1)
+                // In a production app, you would iterate all active connections and replace track
+                screenStream.getVideoTracks()[0].onended = () => {
+                    document.getElementById('local-video').srcObject = localStream;
+                };
+            } catch (err) {
+                console.error("Error sharing screen:", err);
+            }
+        });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Cycle Racer - Elite Edition</title>
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-pink: #ff00ea;
+            --stamina-color: #44ff44;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #050505;
+            color: white;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            aspect-ratio: 16/9;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            background: #000;
+            border: 4px solid #222;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .stat-group {
+            display: flex;
+            gap: 15px;
+        }
+        .stat-box {
+            background: rgba(0,0,0,0.7);
+            padding: 8px 15px;
+            border-top: 3px solid var(--neon-blue);
+            border-radius: 0 0 4px 4px;
+            backdrop-filter: blur(5px);
+        }
+        .label { font-size: 10px; text-transform: uppercase; color: #888; letter-spacing: 1px; }
+        .value { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+        
+        /* Stamina Bar */
+        .stamina-container {
+            width: 200px;
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        #stamina-bar {
+            height: 100%;
+            width: 100%;
+            background: var(--stamina-color);
+            transition: width 0.1s linear, background 0.3s;
+        }
+
+        #start-screen, #game-over {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+        }
+        #game-over { display: none; }
+
+        .btn-primary {
+            background: var(--neon-blue);
+            border: none;
+            padding: 18px 45px;
+            font-size: 22px;
+            font-weight: bold;
+            color: black;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            margin-top: 20px;
+            pointer-events: auto;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(0, 242, 255, 0.6);
+            background: #fff;
+        }
+
+        #mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            padding: 0 40px;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+        .touch-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            user-select: none;
+            backdrop-filter: blur(2px);
+            font-weight: bold;
+        }
+        .touch-btn:active { background: rgba(255,255,255,0.3); }
+
+        @media (max-pointer: coarse) {
+            #mobile-controls { display: flex; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui-overlay">
+        <div class="hud-top">
+            <div class="stat-group">
+                <div class="stat-box">
+                    <div class="label">Time</div>
+                    <div id="timer-val" class="value">00:00.0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Lap</div>
+                    <div class="value"><span id="lap-val">1</span>/3</div>
+                </div>
+            </div>
+
+            <div class="stat-group">
+                <div class="stat-box" style="border-top-color: var(--neon-pink)">
+                    <div class="label">Rank</div>
+                    <div class="value"><span id="rank-val">10</span><sup>th</sup></div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Speed</div>
+                    <div class="value"><span id="speed-val">0</span> <small style="font-size: 10px">km/h</small></div>
+                </div>
+            </div>
+        </div>
+
+        <div style="align-self: center; margin-bottom: 20px;">
+             <div class="label" style="text-align: center; margin-bottom: 4px;">Stamina</div>
+             <div class="stamina-container">
+                 <div id="stamina-bar"></div>
+             </div>
+        </div>
+
+        <div id="mobile-controls">
+            <div style="display: flex; gap: 10px;">
+                <div class="touch-btn" id="btn-left">L</div>
+                <div class="touch-btn" id="btn-right">R</div>
+            </div>
+            <div class="touch-btn" id="btn-pedal" style="width: 100px; border-radius: 15px;">PEDAL</div>
+        </div>
+    </div>
+
+    <div id="start-screen">
+        <h1 style="font-size: 60px; margin: 0; letter-spacing: 4px; color: var(--neon-blue); text-shadow: 0 0 20px rgba(0,242,255,0.5)">ELITE VELO</h1>
+        <p style="color: #666; font-size: 18px; margin-bottom: 30px;">Pro Cycling Championship</p>
+        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; margin-bottom: 20px; max-width: 400px;">
+            <p style="margin: 5px 0;"><strong style="color: var(--stamina-color)">STAMINA:</strong> Hard pedaling consumes energy. Coast to recover.</p>
+            <p style="margin: 5px 0;"><strong style="color: var(--neon-pink)">DRAFTING:</strong> Ride behind others to save energy and gain speed.</p>
+        </div>
+        <button id="start-btn" class="btn-primary">START QUALIFIER</button>
+    </div>
+
+    <div id="game-over">
+        <h1 id="result-title" style="font-size: 48px; color: var(--neon-blue);">RACE FINISHED</h1>
+        <div class="stat-box" style="display: inline-block; border: none; background: none;">
+            <div class="label">Final Time</div>
+            <div id="final-time" class="value">--:--.-</div>
+        </div>
+        <button onclick="location.reload()" class="btn-primary">RETRY</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const speedVal = document.getElementById('speed-val');
+    const timerVal = document.getElementById('timer-val');
+    const rankVal = document.getElementById('rank-val');
+    const lapVal = document.getElementById('lap-val');
+    const staminaBar = document.getElementById('stamina-bar');
+    const startScreen = document.getElementById('start-screen');
+    const startBtn = document.getElementById('start-btn'); // Fixed: Added missing declaration
+    const gameOverScreen = document.getElementById('game-over');
+
+    // Configuration
+    const width = 1000;
+    const height = 562;
+    canvas.width = width;
+    canvas.height = height;
+
+    const roadWidth = 2000;
+    const segmentLength = 200;
+    const rumbleLength = 3;
+    const lanes = 3;
+    const fieldOfView = 100;
+    const cameraHeight = 1000;
+    const cameraDepth = 1 / Math.tan((fieldOfView / 2) * Math.PI / 180);
+    const drawDistance = 200;
+    const centrifugal = 0.3;
+    
+    // Physics Config
+    const maxBaseSpeed = segmentLength * 70;
+    const accel = maxBaseSpeed / 4;
+    const breaking = -maxBaseSpeed;
+    const decel = -maxBaseSpeed / 15;
+    const staminaDepletion = 15; // per second
+    const staminaRecovery = 10; // per second
+    const totalLaps = 3;
+
+    // State Variables
+    let segments = [];
+    let cars = [];
+    let player = {
+        x: 0, z: 0, speed: 0, stamina: 100, lap: 1, 
+        finished: false, totalTime: 0,
+        shake: 0
+    };
+    let trackLength = 0;
+    let keys = {};
+    let isRunning = false;
+    let startTime = 0;
+
+    // Utils
+    const project = (p, cameraX, cameraY, cameraZ) => {
+        p.camera.x = (p.world.x || 0) - cameraX;
+        p.camera.y = (p.world.y || 0) - cameraY;
+        p.camera.z = (p.world.z || 0) - cameraZ;
+        p.screen.scale = cameraDepth / p.camera.z;
+        p.screen.x = Math.round((width / 2) + (p.screen.scale * p.camera.x * width / 2));
+        p.screen.y = Math.round((height / 2) - (p.screen.scale * p.camera.y * height / 2));
+        p.screen.w = Math.round((p.screen.scale * roadWidth * width / 2));
+    };
+
+    const addSegment = (curve, y) => {
+        let n = segments.length;
+        let lastY = (n > 0) ? segments[n - 1].p2.world.y : 0;
+        segments.push({
+            index: n,
+            p1: { world: { y: lastY, z: n * segmentLength }, camera: {}, screen: {} },
+            p2: { world: { y: y, z: (n + 1) * segmentLength }, camera: {}, screen: {} },
+            curve: curve,
+            color: Math.floor(n / rumbleLength) % 2 ? 
+                { road: '#222', grass: '#0a1f0a', rumble: '#444', lane: '#444' } : 
+                { road: '#282828', grass: '#0c260c', rumble: '#888', lane: '#888' }
+        });
+    };
+
+    const addRoad = (enter, hold, leave, curve, y) => {
+        let n = segments.length;
+        let startY = (n > 0) ? segments[n - 1].p2.world.y : 0;
+        let endY = startY + (Math.floor(y) * segmentLength);
+        let total = enter + hold + leave;
+        for (let i = 0; i < enter; i++) addSegment(easeIn(0, curve, i / enter), easeIn(startY, endY, i / total));
+        for (let i = 0; i < hold; i++) addSegment(curve, easeIn(startY, endY, (enter + i) / total));
+        for (let i = 0; i < leave; i++) addSegment(easeInOut(curve, 0, i / leave), easeIn(startY, endY, (enter + hold + i) / total));
+    };
+
+    const easeIn = (a, b, percent) => a + (b - a) * Math.pow(percent, 2);
+    const easeInOut = (a, b, percent) => a + (b - a) * ((-Math.cos(percent * Math.PI) / 2) + 0.5);
+
+    const buildTrack = () => {
+        segments = [];
+        addRoad(50, 50, 50, 0, 0); // Start
+        addRoad(100, 200, 100, 2, 10);
+        addRoad(100, 100, 100, -3, -15);
+        addRoad(50, 100, 50, 4, 0);
+        addRoad(100, 100, 100, 0, 40); // Big hill
+        addRoad(200, 100, 200, -1, -40);
+        addRoad(100, 100, 100, -5, 0); // Sharp turn
+        addRoad(50, 150, 50, 0, 0); // Homestretch
+        trackLength = segments.length * segmentLength;
+        
+        cars = [];
+        for(let n = 0 ; n < 15 ; n++) {
+            cars.push({
+                offset: Math.random() * 1.6 - 0.8,
+                z: Math.random() * trackLength,
+                speed: maxBaseSpeed * 0.6 + Math.random() * (maxBaseSpeed * 0.3),
+                color: `hsl(${Math.random()*360}, 60%, 50%)`,
+                targetOffset: 0
+            });
+        }
+    };
+
+    const findSegment = (z) => segments[Math.floor(z / segmentLength) % segments.length];
+
+    // Graphics
+    const drawPolygon = (x1, y1, x2, y2, x3, y3, x4, y4, color) => {
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+        ctx.lineTo(x3, y3); ctx.lineTo(x4, y4); ctx.closePath(); ctx.fill();
+    };
+
+    const drawSegment = (segment) => {
+        let p1 = segment.p1, p2 = segment.p2;
+        ctx.fillStyle = segment.color.grass;
+        ctx.fillRect(0, p2.screen.y, width, p1.screen.y - p2.screen.y);
+        let r1 = p1.screen.w / 12, r2 = p2.screen.w / 12;
+        drawPolygon(p1.screen.x - p1.screen.w - r1, p1.screen.y, p1.screen.x - p1.screen.w, p1.screen.y, p2.screen.x - p2.screen.w, p2.screen.y, p2.screen.x - p2.screen.w - r2, p2.screen.y, segment.color.rumble);
+        drawPolygon(p1.screen.x + p1.screen.w + r1, p1.screen.y, p1.screen.x + p1.screen.w, p1.screen.y, p2.screen.x + p2.screen.w, p2.screen.y, p2.screen.x + p2.screen.w + r2, p2.screen.y, segment.color.rumble);
+        drawPolygon(p1.screen.x - p1.screen.w, p1.screen.y, p1.screen.x + p1.screen.w, p1.screen.y, p2.screen.x + p2.screen.w, p2.screen.y, p2.screen.x - p2.screen.w, p2.screen.y, segment.color.road);
+        
+        if (segment.color.lane) {
+            let l1 = p1.screen.w/40, l2 = p2.screen.w/40;
+            let lanew1 = p1.screen.w*2/lanes, lanew2 = p2.screen.w*2/lanes;
+            let lx1 = p1.screen.x - p1.screen.w + lanew1, lx2 = p2.screen.x - p2.screen.w + lanew2;
+            for (let i = 1; i < lanes; i++) {
+                drawPolygon(lx1-l1, p1.screen.y, lx1+l1, p1.screen.y, lx2+l2, p2.screen.y, lx2-l2, p2.screen.y, segment.color.lane);
+                lx1 += lanew1; lx2 += lanew2;
+            }
+        }
+    };
+
+    const drawBiker = (x, y, scale, color, isPlayer = false, lean = 0) => {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale * 35, scale * 35);
+        ctx.rotate(lean * 0.2);
+
+        // Bike Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath(); ctx.ellipse(0, 0, 0.8, 0.2, 0, 0, Math.PI*2); ctx.fill();
+
+        // Wheels
+        ctx.strokeStyle = '#222'; ctx.lineWidth = 0.1;
+        ctx.beginPath(); ctx.arc(-0.4, -0.3, 0.3, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0.4, -0.3, 0.3, 0, Math.PI*2); ctx.stroke();
+        
+        // Frame
+        ctx.strokeStyle = '#444'; ctx.lineWidth = 0.08;
+        ctx.beginPath(); ctx.moveTo(-0.4, -0.3); ctx.lineTo(0, -0.8); ctx.lineTo(0.4, -0.3); ctx.stroke();
+
+        // Biker Body (Jersey)
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.ellipse(0, -1.2, 0.35, 0.5, 0, 0, Math.PI*2); ctx.fill();
+        
+        // Helmet
+        ctx.fillStyle = '#eee';
+        ctx.beginPath(); ctx.arc(0, -1.8, 0.22, 0, Math.PI*2); ctx.fill();
+
+        ctx.restore();
+    };
+
+    // Game Logic Update
+    const update = (dt) => {
+        if (player.finished) return;
+
+        let playerSegment = findSegment(player.z + cameraHeight);
+        let speedPercent = player.speed / maxBaseSpeed;
+        
+        // Input & Physics
+        let pedaling = keys['KeyW'] || keys['ArrowUp'] || keys['Pedal'];
+        if (pedaling && player.stamina > 0) {
+            player.speed += accel * dt;
+            player.stamina = Math.max(0, player.stamina - staminaDepletion * dt);
+        } else if (keys['KeyS'] || keys['ArrowDown']) {
+            player.speed += breaking * dt;
+        } else {
+            player.speed += decel * dt;
+            player.stamina = Math.min(100, player.stamina + staminaRecovery * dt);
+        }
+
+        // Steering
+        let dx = dt * 2.5 * speedPercent;
+        let steerLean = 0;
+        if (keys['KeyA'] || keys['ArrowLeft'] || keys['Left']) { player.x -= dx; steerLean = -1; }
+        else if (keys['KeyD'] || keys['ArrowRight'] || keys['Right']) { player.x += dx; steerLean = 1; }
+        
+        // Drafting Mechanic
+        let drafted = false;
+        cars.forEach(car => {
+            let zDiff = car.z - player.z;
+            if (zDiff > 0 && zDiff < 800 && Math.abs(car.offset - player.x) < 0.3) {
+                drafted = true;
+                player.speed += 200 * dt; // Drafting boost
+            }
+        });
+
+        // Environment forces
+        player.x -= dx * speedPercent * playerSegment.curve * centrifugal;
+        if ((player.x < -1) || (player.x > 1)) {
+            if (player.speed > maxBaseSpeed/4) player.speed += (breaking/2) * dt;
+        }
+
+        player.x = Math.max(-2, Math.min(2, player.x));
+        player.speed = Math.max(0, Math.min(player.speed, maxBaseSpeed * (drafted ? 1.2 : 1.0)));
+        
+        player.z += dt * player.speed;
+        
+        // Lap Logic
+        if (player.z >= trackLength) {
+            player.z -= trackLength;
+            player.lap++;
+            if (player.lap > totalLaps) {
+                player.finished = true;
+                finishRace();
+            }
+        }
+
+        // Update UI
+        let elapsed = (Date.now() - startTime) / 1000;
+        let mins = Math.floor(elapsed / 60);
+        let secs = (elapsed % 60).toFixed(1);
+        timerVal.innerText = `${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
+        speedVal.innerText = Math.round(player.speed / 100);
+        lapVal.innerText = Math.min(player.lap, totalLaps);
+        staminaBar.style.width = player.stamina + '%';
+        staminaBar.style.background = player.stamina < 25 ? '#ff4444' : 'var(--stamina-color)';
+
+        // AI Logic
+        cars.forEach(car => {
+            car.z = (car.z + dt * car.speed) % trackLength;
+            if (Math.random() < 0.01) car.targetOffset = Math.random() * 1.6 - 0.8;
+            car.offset += (car.targetOffset - car.offset) * dt;
+        });
+
+        // Rank Calculation
+        let rank = 1;
+        cars.forEach(c => {
+            if(c.z > player.z) rank++; 
+        });
+        rankVal.innerHTML = rank + (rank === 1 ? '<sup>st</sup>' : rank === 2 ? '<sup>nd</sup>' : rank === 3 ? '<sup>rd</sup>' : '<sup>th</sup>');
+
+        // Shake effect
+        player.shake = (player.speed / maxBaseSpeed) * (Math.abs(player.x) > 1 ? 5 : 1);
+    };
+
+    const render = () => {
+        let baseSegment = findSegment(player.z);
+        let basePercent = (player.z % segmentLength) / segmentLength;
+        let playerY = easeInOut(baseSegment.p1.world.y, baseSegment.p2.world.y, basePercent);
+        
+        ctx.clearRect(0, 0, width, height);
+        ctx.save();
+        if (player.shake > 0) ctx.translate(Math.random() * player.shake, Math.random() * player.shake);
+
+        // Sky
+        let grad = ctx.createLinearGradient(0, 0, 0, height/2);
+        grad.addColorStop(0, '#000810'); grad.addColorStop(1, '#002244');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, width, height);
+
+        // Road rendering
+        let maxy = height;
+        let x = 0, dx = -(baseSegment.curve * basePercent);
+        for (let n = 0; n < drawDistance; n++) {
+            let segment = segments[(baseSegment.index + n) % segments.length];
+            let looped = segment.index < baseSegment.index;
+            project(segment.p1, player.x * roadWidth - x, playerY + cameraHeight, player.z - (looped ? trackLength : 0));
+            project(segment.p2, player.x * roadWidth - x - dx, playerY + cameraHeight, player.z - (looped ? trackLength : 0));
+            x += dx; dx += segment.curve;
+            if ((segment.p1.camera.z <= cameraDepth) || (segment.p2.screen.y >= maxy)) continue;
+            drawSegment(segment);
+            maxy = segment.p2.screen.y;
+        }
+
+        // Opponents
+        cars.sort((a,b) => b.z - a.z).forEach(car => {
+            let carSeg = findSegment(car.z);
+            let looped = carSeg.index < baseSegment.index;
+            let zDist = car.z - player.z + (looped ? trackLength : 0);
+            if (zDist > 0 && zDist < drawDistance * segmentLength) {
+                let scale = cameraDepth / zDist;
+                let destX = (width/2) + (scale * (car.offset * roadWidth - player.x * roadWidth) * width / 2);
+                let destY = (height/2) - (scale * (easeInOut(carSeg.p1.world.y, carSeg.p2.world.y, (car.z%segmentLength)/segmentLength) - playerY - cameraHeight) * height / 2);
+                drawBiker(destX, destY, scale, car.color);
+            }
+        });
+
+        // Player
+        let playerLean = keys['KeyA'] || keys['ArrowLeft'] || keys['Left'] ? -1 : (keys['KeyD'] || keys['ArrowRight'] || keys['Right'] ? 1 : 0);
+        drawBiker(width/2, height - 30, 0.5, 'var(--neon-pink)', true, playerLean);
+        ctx.restore();
+    };
+
+    const finishRace = () => {
+        isRunning = false;
+        gameOverScreen.style.display = 'flex';
+        document.getElementById('final-time').innerText = timerVal.innerText;
+        let rank = parseInt(rankVal.innerText);
+        document.getElementById('result-title').innerText = rank <= 3 ? "PODIUM FINISH!" : "RACE FINISHED";
+    };
+
+    // Main Loop
+    let lastTime = 0;
+    const frame = (time) => {
+        if (!isRunning) return;
+        let dt = Math.min(0.1, (time - lastTime) / 1000);
+        update(dt);
+        render();
+        lastTime = time;
+        requestAnimationFrame(frame);
+    };
+
+    // Input Listeners
+    window.onkeydown = e => keys[e.code] = true;
+    window.onkeyup = e => keys[e.code] = false;
+
+    const setupTouch = (id, key) => {
+        const el = document.getElementById(id);
+        const start = (e) => { e.preventDefault(); keys[key] = true; };
+        const end = (e) => { e.preventDefault(); keys[key] = false; };
+        el.addEventListener('touchstart', start); el.addEventListener('touchend', end);
+        el.addEventListener('mousedown', start); el.addEventListener('mouseup', end);
+    };
+    setupTouch('btn-left', 'Left'); setupTouch('btn-right', 'Right'); setupTouch('btn-pedal', 'Pedal');
+
+    startBtn.onclick = () => {
+        startScreen.style.display = 'none';
+        isRunning = true;
+        startTime = Date.now();
+        buildTrack();
+        requestAnimationFrame(frame);
+    };
+
+</script>
+</body>
+</html>

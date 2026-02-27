@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarchingMesher | Metaball Surface Visualizer</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div id="app">
+        <canvas id="canvas"></canvas>
+
+        <!-- Intro overlay -->
+        <div id="intro-overlay">
+            <div class="loader-ring"></div>
+            <p class="loader-label">INITIALIZING SCALAR FIELD</p>
+        </div>
+
+        <!-- Left Panel -->
+        <aside id="left-panel">
+            <div class="panel-header">
+                <span class="panel-title">MARCHING MESHER</span>
+                <div class="live-badge"><span class="blink-dot"></span>LIVE</div>
+            </div>
+
+            <section class="control-section">
+                <div class="section-heading">SIMULATION</div>
+
+                <div class="ctrl-row">
+                    <label>ISO LEVEL</label>
+                    <div class="ctrl-right">
+                        <input type="range" id="iso-slider" min="0.2" max="3.0" step="0.05" value="1.0">
+                        <span class="val-display" id="iso-value">1.00</span>
+                    </div>
+                </div>
+
+                <div class="ctrl-row">
+                    <label>ANIM SPEED</label>
+                    <div class="ctrl-right">
+                        <input type="range" id="speed-slider" min="0" max="3.0" step="0.1" value="1.0">
+                        <span class="val-display" id="speed-value">1.0</span>
+                    </div>
+                </div>
+
+                <div class="ctrl-row">
+                    <label>METABALLS</label>
+                    <div class="ctrl-right">
+                        <input type="range" id="ball-count-slider" min="2" max="8" step="1" value="4">
+                        <span class="val-display" id="ball-count-value">4</span>
+                    </div>
+                </div>
+
+                <div class="ctrl-row">
+                    <label>RESOLUTION</label>
+                    <div class="ctrl-right">
+                        <select id="resolution-select">
+                            <option value="14">Low (14)</option>
+                            <option value="20" selected>Med (20)</option>
+                            <option value="28">High (28)</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="control-section">
+                <div class="section-heading">DISPLAY</div>
+
+                <div class="ctrl-row">
+                    <label>RENDER MODE</label>
+                    <div class="ctrl-right">
+                        <select id="render-mode-select">
+                            <option value="shaded">Shaded</option>
+                            <option value="wireframe">Wireframe</option>
+                            <option value="xray">X-Ray</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="ctrl-row">
+                    <label>COLOR THEME</label>
+                    <div class="ctrl-right">
+                        <select id="color-theme-select">
+                            <option value="liquid-metal">Liquid Metal</option>
+                            <option value="lava">Lava</option>
+                            <option value="plasma">Plasma</option>
+                            <option value="ghost">Ghost</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="ctrl-row">
+                    <label>SHOW FLOOR</label>
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="floor-toggle" checked>
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                </div>
+
+                <div class="ctrl-row">
+                    <label>SHOW BALLS</label>
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="balls-toggle">
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                </div>
+
+                <div class="ctrl-row">
+                    <label>AUTO ROTATE</label>
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="autorotate-toggle" checked>
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </label>
+                </div>
+            </section>
+
+            <section class="control-section">
+                <div class="section-heading">LIGHTING</div>
+                <div class="ctrl-row">
+                    <label>AMBIENT</label>
+                    <div class="ctrl-right">
+                        <input type="range" id="ambient-slider" min="0" max="1" step="0.05" value="0.15">
+                        <span class="val-display" id="ambient-value">0.15</span>
+                    </div>
+                </div>
+                <div class="ctrl-row">
+                    <label>SPECULAR</label>
+                    <div class="ctrl-right">
+                        <input type="range" id="specular-slider" min="0" max="2" step="0.1" value="1.0">
+                        <span class="val-display" id="specular-value">1.0</span>
+                    </div>
+                </div>
+                <div class="ctrl-row">
+                    <label>RIM POWER</label>
+                    <div class="ctrl-right">
+                        <input type="range" id="rim-slider" min="0" max="5" step="0.1" value="3.0">
+                        <span class="val-display" id="rim-value">3.0</span>
+                    </div>
+                </div>
+            </section>
+
+            <div id="action-buttons">
+                <button id="btn-screenshot" class="action-btn">SCREENSHOT</button>
+                <button id="btn-reset" class="action-btn accent">RESET</button>
+            </div>
+        </aside>
+
+        <!-- Right Stats Panel -->
+        <div id="stats-panel">
+            <div class="stat-item">
+                <span class="stat-label">FPS</span>
+                <span class="stat-val" id="fps-display">--</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">TRIS</span>
+                <span class="stat-val" id="tri-display">--</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">VERTS</span>
+                <span class="stat-val" id="vert-display">--</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">MS</span>
+                <span class="stat-val" id="frame-ms-display">--</span>
+            </div>
+        </div>
+
+        <!-- Bottom hint -->
+        <div id="hint-bar">
+            <span>🖱 Drag to orbit</span>
+            <span>⚙ Scroll to zoom</span>
+            <span>⌨ Space to pause</span>
+        </div>
+    </div>
+
+    <!-- Scripts: order matters -->
+    <script src="js/math/vector3.js"></script>
+    <script src="js/math/tables.js"></script>
+    <script src="js/math/scalarField.js"></script>
+    <script src="js/render/camera.js"></script>
+    <script src="js/render/renderer.js"></script>
+    <script src="js/engine/marchingCubes.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>

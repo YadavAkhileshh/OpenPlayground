@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Coloring Adventure</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Comic Neue', cursive;
+            touch-action: none;
+            background-color: #f0f9ff;
+            overflow: hidden;
+        }
+
+        .canvas-container {
+            position: relative;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            background: white;
+            border-radius: 20px;
+            cursor: crosshair;
+        }
+
+        .color-swatch {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: transform 0.2s;
+            cursor: pointer;
+            border: 3px solid transparent;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .color-swatch.active {
+            border-color: #3b82f6;
+            transform: scale(1.2);
+        }
+
+        .tool-btn {
+            transition: all 0.2s;
+        }
+
+        .tool-btn.active {
+            background-color: #3b82f6 !important;
+            color: white !important;
+            transform: translateY(-2px);
+        }
+
+        #main-canvas {
+            touch-action: none;
+            border-radius: 20px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b p-4 flex justify-between items-center shadow-sm z-10">
+        <h1 class="text-2xl font-bold text-blue-600 flex items-center gap-2">
+            🎨 <span class="hidden sm:inline">Coloring Adventure</span>
+        </h1>
+        
+        <div class="flex gap-2">
+            <button onclick="clearCanvas()" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 tool-btn" title="Clear All">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            </button>
+            <div class="w-px h-8 bg-gray-200 mx-1"></div>
+            <button onclick="undo()" class="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 tool-btn" title="Undo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 6.7 6.7 0 0 0-5 2.2L3 13"/></svg>
+            </button>
+            <button onclick="redo()" class="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 tool-btn" title="Redo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 6.7 6.7 0 0 1 5 2.2L21 13"/></svg>
+            </button>
+            <button onclick="downloadImage()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2 font-bold shadow-md ml-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                Save
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden p-4 gap-4">
+        
+        <!-- Sidebar: Templates -->
+        <aside class="w-full md:w-64 bg-white rounded-2xl p-4 shadow-sm overflow-y-auto flex md:flex-col gap-3">
+            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wider hidden md:block mb-2">Pick a Page</h2>
+            <div id="template-list" class="flex md:flex-col gap-3 min-w-max md:min-w-0">
+                <!-- Templates will be injected here -->
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <div class="flex-1 flex flex-col gap-4 relative">
+            
+            <!-- Tool Bar -->
+            <div class="bg-white p-3 rounded-2xl shadow-sm flex items-center justify-between gap-4 overflow-x-auto">
+                <div class="flex items-center gap-2">
+                    <button id="brush-tool" onclick="setTool('brush')" class="p-3 bg-blue-50 text-blue-600 rounded-xl tool-btn active" title="Brush">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 5 5"/><path d="m5 5 5 5"/></svg>
+                    </button>
+                    <button id="bucket-tool" onclick="setTool('bucket')" class="p-3 bg-blue-50 text-blue-600 rounded-xl tool-btn" title="Fill Bucket">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"/><path d="m5 2 5 5"/><path d="M2 13h15"/><path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z"/></svg>
+                    </button>
+                    <button id="eraser-tool" onclick="setTool('eraser')" class="p-3 bg-blue-50 text-blue-600 rounded-xl tool-btn" title="Eraser">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
+                    </button>
+                </div>
+
+                <div class="h-8 w-px bg-gray-200 mx-2"></div>
+
+                <div class="flex items-center gap-2 flex-1 min-w-[120px]">
+                    <span class="text-xs font-bold text-gray-400">SIZE</span>
+                    <input type="range" id="brush-size" min="1" max="60" value="12" class="w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <input type="color" id="custom-color" class="w-10 h-10 border-0 p-0 rounded-full cursor-pointer bg-transparent" onchange="selectColor(this.value)">
+                </div>
+            </div>
+
+            <!-- Canvas Area -->
+            <div class="flex-1 canvas-container flex items-center justify-center overflow-hidden">
+                <canvas id="main-canvas"></canvas>
+            </div>
+
+            <!-- Color Palette -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm flex flex-wrap justify-center gap-3">
+                <div class="color-swatch active" style="background-color: #ef4444;" onclick="selectColor('#ef4444')"></div>
+                <div class="color-swatch" style="background-color: #f97316;" onclick="selectColor('#f97316')"></div>
+                <div class="color-swatch" style="background-color: #facc15;" onclick="selectColor('#facc15')"></div>
+                <div class="color-swatch" style="background-color: #22c55e;" onclick="selectColor('#22c55e')"></div>
+                <div class="color-swatch" style="background-color: #06b6d4;" onclick="selectColor('#06b6d4')"></div>
+                <div class="color-swatch" style="background-color: #3b82f6;" onclick="selectColor('#3b82f6')"></div>
+                <div class="color-swatch" style="background-color: #6366f1;" onclick="selectColor('#6366f1')"></div>
+                <div class="color-swatch" style="background-color: #a855f7;" onclick="selectColor('#a855f7')"></div>
+                <div class="color-swatch" style="background-color: #ec4899;" onclick="selectColor('#ec4899')"></div>
+                <div class="color-swatch" style="background-color: #78350f;" onclick="selectColor('#78350f')"></div>
+                <div class="color-swatch" style="background-color: #71717a;" onclick="selectColor('#71717a')"></div>
+                <div class="color-swatch" style="background-color: #000000;" onclick="selectColor('#000000')"></div>
+                <div class="color-swatch" style="background-color: #ffffff; border: 1px solid #ddd" onclick="selectColor('#ffffff')"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * Enhanced SVG Templates
+         */
+        const templates = [
+            {
+                id: 'sketchbook',
+                name: 'Blank Sketchbook',
+                icon: '📓',
+                draw: (ctx, w, h) => {
+                    // Just a border or nothing
+                }
+            },
+            {
+                id: 'cat',
+                name: 'Friendly Cat',
+                icon: '🐱',
+                draw: (ctx, w, h) => {
+                    ctx.beginPath();
+                    ctx.moveTo(w*0.3, h*0.4); ctx.lineTo(w*0.2, h*0.2); ctx.lineTo(w*0.4, h*0.3);
+                    ctx.moveTo(w*0.7, h*0.4); ctx.lineTo(w*0.8, h*0.2); ctx.lineTo(w*0.6, h*0.3);
+                    ctx.arc(w*0.5, h*0.5, h*0.25, 0, Math.PI * 2);
+                    ctx.moveTo(w*0.5, h*0.75); ctx.arc(w*0.5, h*0.8, h*0.15, 0, Math.PI);
+                    ctx.stroke();
+                    ctx.beginPath(); ctx.arc(w*0.4, h*0.45, 5, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(w*0.6, h*0.45, 5, 0, Math.PI*2); ctx.fill();
+                }
+            },
+            {
+                id: 'sunny-day',
+                name: 'Sunny Nature',
+                icon: '☀️',
+                draw: (ctx, w, h) => {
+                    // Sun
+                    ctx.beginPath(); ctx.arc(w*0.8, h*0.2, w*0.08, 0, Math.PI*2); ctx.stroke();
+                    for(let i=0; i<8; i++) {
+                        ctx.save();
+                        ctx.translate(w*0.8, h*0.2);
+                        ctx.rotate(i * Math.PI/4);
+                        ctx.moveTo(w*0.1, 0); ctx.lineTo(w*0.14, 0); ctx.stroke();
+                        ctx.restore();
+                    }
+                    // Mountains
+                    ctx.beginPath();
+                    ctx.moveTo(0, h*0.8); ctx.lineTo(w*0.3, h*0.4); ctx.lineTo(w*0.6, h*0.8);
+                    ctx.moveTo(w*0.4, h*0.8); ctx.lineTo(w*0.75, h*0.5); ctx.lineTo(w, h*0.8);
+                    ctx.stroke();
+                    // Ground
+                    ctx.beginPath(); ctx.moveTo(0, h*0.8); ctx.lineTo(w, h*0.8); ctx.stroke();
+                }
+            },
+            {
+                id: 'flower',
+                name: 'Pretty Flower',
+                icon: '🌸',
+                draw: (ctx, w, h) => {
+                    ctx.beginPath();
+                    for(let i=0; i<8; i++) {
+                        ctx.save();
+                        ctx.translate(w*0.5, h*0.4);
+                        ctx.rotate(i * Math.PI/4);
+                        ctx.ellipse(w*0.15, 0, w*0.1, h*0.06, 0, 0, Math.PI*2);
+                        ctx.restore();
+                    }
+                    ctx.stroke();
+                    ctx.beginPath(); ctx.arc(w*0.5, h*0.4, w*0.05, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(w*0.5, h*0.55); ctx.lineTo(w*0.5, h*0.9); ctx.stroke();
+                    ctx.beginPath(); ctx.ellipse(w*0.55, h*0.75, w*0.08, h*0.03, Math.PI/4, 0, Math.PI*2); ctx.stroke();
+                }
+            },
+            {
+                id: 'rocket',
+                name: 'Space Rocket',
+                icon: '🚀',
+                draw: (ctx, w, h) => {
+                    ctx.beginPath();
+                    ctx.moveTo(w*0.5, h*0.15);
+                    ctx.bezierCurveTo(w*0.65, h*0.3, w*0.65, h*0.7, w*0.65, h*0.8);
+                    ctx.lineTo(w*0.35, h*0.8);
+                    ctx.bezierCurveTo(w*0.35, h*0.7, w*0.35, h*0.3, w*0.5, h*0.15);
+                    ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(w*0.35, h*0.6); ctx.lineTo(w*0.25, h*0.85); ctx.lineTo(w*0.35, h*0.8); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(w*0.65, h*0.6); ctx.lineTo(w*0.75, h*0.85); ctx.lineTo(w*0.65, h*0.8); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(w*0.5, h*0.45, w*0.05, 0, Math.PI*2); ctx.stroke();
+                    // Stars
+                    for(let i=0; i<5; i++) {
+                        let sx = Math.random() * w; let sy = Math.random() * h * 0.4;
+                        ctx.beginPath(); ctx.arc(sx, sy, 2, 0, Math.PI*2); ctx.stroke();
+                    }
+                }
+            },
+            {
+                id: 'fish',
+                name: 'Happy Fish',
+                icon: '🐠',
+                draw: (ctx, w, h) => {
+                    ctx.beginPath();
+                    ctx.ellipse(w*0.5, h*0.5, w*0.2, h*0.15, 0, 0, Math.PI*2);
+                    ctx.moveTo(w*0.32, h*0.5); ctx.lineTo(w*0.2, h*0.4); ctx.lineTo(w*0.2, h*0.6); ctx.closePath();
+                    ctx.stroke();
+                    ctx.beginPath(); ctx.arc(w*0.6, h*0.45, 5, 0, Math.PI*2); ctx.fill();
+                    // Bubbles
+                    ctx.beginPath(); ctx.arc(w*0.75, h*0.35, 10, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(w*0.82, h*0.25, 6, 0, Math.PI*2); ctx.stroke();
+                }
+            },
+            {
+                id: 'butterfly',
+                name: 'Butterfly',
+                icon: '🦋',
+                draw: (ctx, w, h) => {
+                    ctx.beginPath();
+                    ctx.ellipse(w*0.5, h*0.5, w*0.02, h*0.2, 0, 0, Math.PI*2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(w*0.5, h*0.4);
+                    ctx.bezierCurveTo(w*0.75, h*0.1, w*0.85, h*0.5, w*0.5, h*0.55);
+                    ctx.bezierCurveTo(w*0.75, h*0.9, w*0.65, h*0.8, w*0.5, h*0.6);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(w*0.5, h*0.4);
+                    ctx.bezierCurveTo(w*0.25, h*0.1, w*0.15, h*0.5, w*0.5, h*0.55);
+                    ctx.bezierCurveTo(w*0.25, h*0.9, w*0.35, h*0.8, w*0.5, h*0.6);
+                    ctx.stroke();
+                }
+            }
+        ];
+
+        // State
+        let currentTool = 'brush';
+        let currentColor = '#ef4444';
+        let currentTemplateId = 'cat';
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let history = [];
+        let historyStep = -1;
+
+        const canvas = document.getElementById('main-canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const brushSizeInput = document.getElementById('brush-size');
+        const templateContainer = document.getElementById('template-list');
+
+        // Initialization
+        window.onload = () => {
+            initTemplates();
+            resizeCanvas();
+            loadTemplate(templates.find(t => t.id === 'cat'));
+            
+            // Events
+            window.addEventListener('resize', () => {
+                const temp = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                resizeCanvas();
+                ctx.putImageData(temp, 0, 0);
+            });
+
+            // Drawing Events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            // Touch Support
+            canvas.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                startDrawing({
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                    preventDefault: () => e.preventDefault()
+                });
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                draw({
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                    preventDefault: () => e.preventDefault()
+                });
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', stopDrawing);
+        };
+
+        function initTemplates() {
+            templates.forEach(t => {
+                const btn = document.createElement('button');
+                btn.className = 'flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 text-left transition-colors border-2 border-transparent w-full';
+                btn.innerHTML = `
+                    <span class="text-2xl">${t.icon}</span>
+                    <span class="text-sm font-bold text-gray-700 hidden md:block">${t.name}</span>
+                `;
+                btn.onclick = () => {
+                    document.querySelectorAll('#template-list button').forEach(b => b.classList.remove('bg-blue-100', 'border-blue-300'));
+                    btn.classList.add('bg-blue-100', 'border-blue-300');
+                    loadTemplate(t);
+                };
+                templateContainer.appendChild(btn);
+            });
+            // Initial selection
+            const firstT = templateContainer.children[1]; // Index 1 is the Cat
+            firstT.classList.add('bg-blue-100', 'border-blue-300');
+        }
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+        }
+
+        function loadTemplate(template) {
+            currentTemplateId = template.id;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 4;
+            template.draw(ctx, canvas.width, canvas.height);
+            
+            saveState();
+        }
+
+        function clearCanvas() {
+            const activeTemplate = templates.find(t => t.id === currentTemplateId);
+            loadTemplate(activeTemplate);
+        }
+
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`${tool}-tool`).classList.add('active');
+        }
+
+        function selectColor(color) {
+            currentColor = color;
+            document.getElementById('custom-color').value = color;
+            document.querySelectorAll('.color-swatch').forEach(swatch => {
+                swatch.classList.toggle('active', rgbToHex(swatch.style.backgroundColor) === color.toLowerCase());
+            });
+        }
+
+        function rgbToHex(rgb) {
+            if (!rgb) return "";
+            const matches = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            if (!matches) return rgb;
+            const r = parseInt(matches[1]);
+            const g = parseInt(matches[2]);
+            const b = parseInt(matches[3]);
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+
+        function startDrawing(e) {
+            if (currentTool === 'bucket') {
+                const rect = canvas.getBoundingClientRect();
+                const x = Math.floor(e.clientX - rect.left);
+                const y = Math.floor(e.clientY - rect.top);
+                floodFill(x, y, hexToRgb(currentColor));
+                return;
+            }
+
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            [lastX, lastY] = [e.clientX - rect.left, e.clientY - rect.top];
+        }
+
+        function draw(e) {
+            if (!isDrawing || currentTool === 'bucket') return;
+            if (e.preventDefault) e.preventDefault();
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.strokeStyle = currentTool === 'eraser' ? 'white' : currentColor;
+            ctx.lineWidth = brushSizeInput.value;
+            ctx.stroke();
+
+            [lastX, lastY] = [x, y];
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                saveState();
+            }
+        }
+
+        function saveState() {
+            historyStep++;
+            if (historyStep < history.length) {
+                history.length = historyStep;
+            }
+            history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+            if (history.length > 30) {
+                history.shift();
+                historyStep--;
+            }
+        }
+
+        function undo() {
+            if (historyStep > 0) {
+                historyStep--;
+                ctx.putImageData(history[historyStep], 0, 0);
+            }
+        }
+
+        function redo() {
+            if (historyStep < history.length - 1) {
+                historyStep++;
+                ctx.putImageData(history[historyStep], 0, 0);
+            }
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = `my-coloring-${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function floodFill(startX, startY, fillColor) {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            const width = imageData.width;
+            const height = imageData.height;
+
+            const targetPos = (startY * width + startX) * 4;
+            const targetR = data[targetPos];
+            const targetG = data[targetPos + 1];
+            const targetB = data[targetPos + 2];
+            const targetA = data[targetPos + 3];
+
+            if (targetR === fillColor.r && targetG === fillColor.g && targetB === fillColor.b) return;
+            if (targetR < 40 && targetG < 40 && targetB < 40 && targetA > 200) return;
+
+            const stack = [[startX, startY]];
+            
+            while (stack.length) {
+                const [x, y] = stack.pop();
+                let currentY = y;
+
+                while (currentY >= 0 && matchColor(currentY, x)) currentY--;
+                currentY++;
+
+                let reachLeft = false;
+                let reachRight = false;
+
+                while (currentY < height && matchColor(currentY, x)) {
+                    colorPixel(currentY, x);
+
+                    if (x > 0) {
+                        if (matchColor(currentY, x - 1)) {
+                            if (!reachLeft) {
+                                stack.push([x - 1, currentY]);
+                                reachLeft = true;
+                            }
+                        } else if (reachLeft) {
+                            reachLeft = false;
+                        }
+                    }
+
+                    if (x < width - 1) {
+                        if (matchColor(currentY, x + 1)) {
+                            if (!reachRight) {
+                                stack.push([x + 1, currentY]);
+                                reachRight = true;
+                            }
+                        } else if (reachRight) {
+                            reachRight = false;
+                        }
+                    }
+                    currentY++;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+            saveState();
+
+            function matchColor(y, x) {
+                const pos = (y * width + x) * 4;
+                const r = data[pos];
+                const g = data[pos + 1];
+                const b = data[pos + 2];
+                const a = data[pos + 3];
+
+                return Math.abs(r - targetR) < 30 && 
+                       Math.abs(g - targetG) < 30 && 
+                       Math.abs(b - targetB) < 30;
+            }
+
+            function colorPixel(y, x) {
+                const pos = (y * width + x) * 4;
+                data[pos] = fillColor.r;
+                data[pos + 1] = fillColor.g;
+                data[pos + 2] = fillColor.b;
+                data[pos + 3] = 255;
+            }
+        }
+    </script>
+</body>
+</html>

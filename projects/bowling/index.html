@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Strike Bowling Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
+
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #020617; 
+            font-family: 'Rajdhani', sans-serif;
+            user-select: none;
+            touch-action: none;
+        }
+
+        #ui-layer { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+            z-index: 10; 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.5rem;
+        }
+
+        .interactive { pointer-events: auto; }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+            border-radius: 1.25rem;
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(79, 172, 254, 0.8), 0 0 20px rgba(79, 172, 254, 0.4);
+        }
+
+        #power-meter-container {
+            position: absolute;
+            right: 1.5rem;
+            bottom: 1.5rem;
+            height: 260px;
+            width: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px;
+        }
+
+        #power-meter { 
+            width: 16px; 
+            height: 100%; 
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        #power-fill { 
+            width: 100%; 
+            height: 0%; 
+            background: linear-gradient(to top, #00f2fe, #4facfe, #7c3aed); 
+            position: absolute; 
+            bottom: 0; 
+            transition: height 0.05s linear;
+        }
+
+        .hud-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 0.4rem;
+        }
+
+        .kpi-value {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 2.2rem;
+            line-height: 1;
+        }
+
+        #feedback {
+            pointer-events: none;
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+        }
+
+        @keyframes sweep {
+            0% { transform: translate(-50%, -100%); }
+            50% { transform: translate(-50%, 150%); }
+            100% { transform: translate(-50%, -100%); }
+        }
+
+        .sweeper-active {
+            animation: sweep 1.5s ease-in-out forwards;
+        }
+
+        #sweeper-visual {
+            position: absolute;
+            left: 50%;
+            width: 4rem;
+            height: 100vh;
+            background: linear-gradient(to bottom, transparent, rgba(79, 172, 254, 0.4), transparent);
+            border-left: 2px solid #4facfe;
+            border-right: 2px solid #4facfe;
+            transform: translate(-50%, -100%);
+            z-index: 5;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sweeper-visual"></div>
+
+    <div id="ui-layer">
+        <div class="flex justify-between items-start">
+            <div class="glass-panel p-5 flex gap-8">
+                <div class="flex flex-col">
+                    <span class="hud-label uppercase">Score</span>
+                    <span id="score-val" class="kpi-value text-white neon-text">0</span>
+                </div>
+                <div class="w-px bg-white/10"></div>
+                <div class="flex flex-col">
+                    <span class="hud-label uppercase" id="frame-label">Frame 1</span>
+                    <span id="ball-count" class="text-xl font-bold text-blue-400">Ball 1</span>
+                </div>
+            </div>
+
+            <div class="glass-panel p-4 flex items-center gap-3">
+                <div id="status-dot" class="h-2 w-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
+                <span id="status-text" class="hud-label !mb-0 text-white/80">READY</span>
+            </div>
+        </div>
+
+        <div id="feedback" class="opacity-0 transition-all duration-500 scale-50">
+            <h2 id="feedback-text" class="text-8xl font-black text-white italic tracking-tighter drop-shadow-2xl">STRIKE</h2>
+        </div>
+
+        <div class="flex flex-col items-center">
+            <div class="glass-panel px-6 py-3 mb-2">
+                <p class="hud-label !mb-0 !text-white opacity-80">
+                    MOVE MOUSE TO AIM &bull; HOLD SPACE FOR POWER
+                </p>
+            </div>
+        </div>
+
+        <div id="power-meter-container" class="glass-panel">
+            <span class="hud-label [writing-mode:vertical-lr] mb-2 rotate-180">THRUST</span>
+            <div id="power-meter">
+                <div id="power-fill"></div>
+            </div>
+        </div>
+
+        <div id="game-over" class="hidden fixed inset-0 flex items-center justify-center bg-black/95 interactive z-50">
+            <div class="text-center p-10 glass-panel border border-white/10 max-w-sm w-full">
+                <h1 class="text-4xl font-black text-white mb-6 tracking-widest font-['Orbitron']">FINAL SCORE</h1>
+                <p id="final-score" class="text-8xl font-black text-white mb-8 neon-text font-['Orbitron']">0</p>
+                <button onclick="location.reload()" class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all uppercase tracking-widest shadow-lg">
+                    RESTART
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let scene, camera, renderer, world;
+        let ballBody, ballMesh;
+        let pins = [], pinMeshes = [];
+        let isCharging = false, power = 0, score = 0, frame = 1, rollsInFrame = 0;
+        let gameState = 'ready', aimX = 0;
+        let pinsDownThisRoll = 0;
+
+        const PIN_COUNT = 10;
+        const BALL_RADIUS = 0.24;
+        const PIN_HEIGHT = 0.75;
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020617);
+            scene.fog = new THREE.Fog(0x020617, 10, 60);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.6, 7);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.body.appendChild(renderer.domElement);
+
+            world = new CANNON.World();
+            world.gravity.set(0, -9.82, 0);
+            world.solver.iterations = 20; // Increased precision
+
+            createEnvironment();
+            createBall();
+            createPins();
+            setupLights();
+            animate();
+        }
+
+        function createEnvironment() {
+            const laneMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.02, metalness: 0.8 });
+            const lane = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.2, 50), laneMat);
+            lane.position.set(0, -0.1, -15);
+            lane.receiveShadow = true;
+            scene.add(lane);
+
+            const groundBody = new CANNON.Body({ mass: 0 });
+            groundBody.addShape(new CANNON.Box(new CANNON.Vec3(5, 0.1, 30)));
+            groundBody.position.set(0, -0.1, -15);
+            world.addBody(groundBody);
+
+            // Gutters (Physics)
+            const leftGutter = new CANNON.Body({ mass: 0 });
+            leftGutter.addShape(new CANNON.Box(new CANNON.Vec3(1, 0.5, 30)));
+            leftGutter.position.set(-2.8, 0, -15);
+            world.addBody(leftGutter);
+
+            const rightGutter = new CANNON.Body({ mass: 0 });
+            rightGutter.addShape(new CANNON.Box(new CANNON.Vec3(1, 0.5, 30)));
+            rightGutter.position.set(2.8, 0, -15);
+            world.addBody(rightGutter);
+
+            // Rails
+            const railGeo = new THREE.BoxGeometry(0.08, 0.08, 50);
+            const railMat = new THREE.MeshStandardMaterial({ color: 0x00f2fe, emissive: 0x00f2fe, emissiveIntensity: 2 });
+            const lRail = new THREE.Mesh(railGeo, railMat);
+            lRail.position.set(-1.6, 0.05, -15);
+            scene.add(lRail);
+            const rRail = lRail.clone();
+            rRail.position.x = 1.6;
+            scene.add(rRail);
+        }
+
+        function createBall() {
+            const ballGeo = new THREE.SphereGeometry(BALL_RADIUS, 48, 48);
+            const ballMat = new THREE.MeshStandardMaterial({ color: 0xff0055, roughness: 0.1, metalness: 0.8, emissive: 0xff0055, emissiveIntensity: 0.3 });
+            ballMesh = new THREE.Mesh(ballGeo, ballMat);
+            ballMesh.castShadow = true;
+            scene.add(ballMesh);
+
+            ballBody = new CANNON.Body({ 
+                mass: 5, 
+                shape: new CANNON.Sphere(BALL_RADIUS),
+                material: new CANNON.Material({ friction: 0.05, restitution: 0.3 })
+            });
+            resetBall();
+            world.addBody(ballBody);
+        }
+
+        function createPins() {
+            const spacingX = 0.44;
+            const spacingZ = 0.55;
+            let index = 0;
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j <= i; j++) {
+                    spawnPin((j - i / 2) * spacingX, -24 - (i * spacingZ));
+                }
+            }
+        }
+
+        function spawnPin(x, z) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 });
+            const stripe = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+            
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.08, 0.6, 20), mat);
+            group.add(body);
+            const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.1, 20), stripe);
+            neck.position.y = 0.35;
+            group.add(neck);
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), mat);
+            head.position.y = 0.52;
+            group.add(head);
+
+            group.traverse(o => { if(o.isMesh) o.castShadow = true; });
+            scene.add(group);
+            pinMeshes.push(group);
+
+            const pBody = new CANNON.Body({ 
+                mass: 1.5, 
+                shape: new CANNON.Cylinder(0.12, 0.12, PIN_HEIGHT, 16),
+                material: new CANNON.Material({ friction: 0.3 })
+            });
+            pBody.position.set(x, PIN_HEIGHT/2, z);
+            const q = new CANNON.Quaternion();
+            q.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+            pBody.quaternion.copy(q);
+            world.addBody(pBody);
+            pins.push(pBody);
+        }
+
+        function setupLights() {
+            scene.add(new THREE.AmbientLight(0xffffff, 0.15));
+            const spot = new THREE.SpotLight(0x4facfe, 1.5, 60, Math.PI/6, 0.5);
+            spot.position.set(0, 12, 10);
+            spot.castShadow = true;
+            spot.shadow.mapSize.width = 1024;
+            scene.add(spot);
+            const pl = new THREE.PointLight(0xff0055, 2, 20);
+            pl.position.set(0, 4, -26);
+            scene.add(pl);
+        }
+
+        function shoot() {
+            if (gameState !== 'ready') return;
+            gameState = 'rolling';
+            updateStatus('TRACKING...', 'orange');
+            
+            const zForce = 45 + (power * 50);
+            const xForce = aimX * 4;
+            const hook = -aimX * 12; // Increased hook effect
+
+            ballBody.velocity.set(xForce, 0, -zForce);
+            ballBody.angularVelocity.set(0, 0, hook);
+            
+            power = 0;
+            document.getElementById('power-fill').style.height = '0%';
+            setTimeout(checkPins, 4000);
+        }
+
+        function checkPins() {
+            let fallen = 0;
+            pins.forEach((p, i) => {
+                if (!pinMeshes[i].visible) return;
+                const up = new CANNON.Vec3(0, 1, 0);
+                const pUp = p.quaternion.vmult(new CANNON.Vec3(0, 1, 0));
+                if (up.dot(pUp) < 0.85 || p.position.y < 0.1 || Math.abs(p.position.x) > 1.6) {
+                    fallen++;
+                    pinMeshes[i].visible = false;
+                    p.position.set(0, -10, 0);
+                    p.velocity.set(0,0,0);
+                }
+            });
+
+            pinsDownThisRoll = fallen;
+            score += fallen;
+            rollsInFrame++;
+            
+            updateUI();
+            
+            if (fallen === 10 && rollsInFrame === 1) handleFeedback("STRIKE!");
+            else if (pins.filter((_, i) => pinMeshes[i].visible).length === 0) handleFeedback("SPARE!");
+            else if (fallen > 0) handleFeedback(`+${fallen}`);
+
+            setTimeout(advanceGame, 1000);
+        }
+
+        function advanceGame() {
+            triggerSweeper();
+            
+            setTimeout(() => {
+                const remaining = pins.filter((_, i) => pinMeshes[i].visible).length;
+                
+                if (remaining === 0 || rollsInFrame >= 2) {
+                    frame++;
+                    rollsInFrame = 0;
+                    resetPins();
+                }
+
+                if (frame > 10) {
+                    document.getElementById('game-over').classList.remove('hidden');
+                    document.getElementById('final-score').innerText = score;
+                } else {
+                    resetBall();
+                    updateUI();
+                }
+            }, 800);
+        }
+
+        function triggerSweeper() {
+            const s = document.getElementById('sweeper-visual');
+            s.classList.remove('sweeper-active');
+            void s.offsetWidth; // Force reflow
+            s.classList.add('sweeper-active');
+        }
+
+        function resetBall() {
+            ballBody.position.set(aimX * 1.3, BALL_RADIUS, 4.5);
+            ballBody.velocity.set(0,0,0);
+            ballBody.angularVelocity.set(0,0,0);
+            ballBody.quaternion.set(0,0,1,0);
+            gameState = 'ready';
+            updateStatus('READY', 'green');
+        }
+
+        function resetPins() {
+            pins.forEach((p, i) => {
+                p.position.set(p.initPos.x, PIN_HEIGHT/2, p.initPos.z);
+                const q = new CANNON.Quaternion();
+                q.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+                p.quaternion.copy(q);
+                p.velocity.set(0,0,0);
+                p.angularVelocity.set(0,0,0);
+                pinMeshes[i].visible = true;
+            });
+        }
+
+        // Add initial positions for reset
+        setTimeout(() => {
+            pins.forEach(p => p.initPos = {x: p.position.x, z: p.position.z});
+        }, 100);
+
+        function updateUI() {
+            document.getElementById('score-val').innerText = score;
+            document.getElementById('frame-label').innerText = `Frame ${frame}`;
+            document.getElementById('ball-count').innerText = `Ball ${rollsInFrame + 1}`;
+        }
+
+        function updateStatus(text, color) {
+            const dot = document.getElementById('status-dot');
+            const txt = document.getElementById('status-text');
+            txt.innerText = text;
+            dot.className = `h-2 w-2 rounded-full animate-pulse shadow-lg ${color === 'green' ? 'bg-green-500' : 'bg-orange-500'}`;
+        }
+
+        function handleFeedback(text) {
+            const el = document.getElementById('feedback');
+            const txt = document.getElementById('feedback-text');
+            txt.innerText = text;
+            el.className = "opacity-100 scale-100 transition-all duration-300";
+            setTimeout(() => {
+                el.className = "opacity-0 scale-50 transition-all duration-500";
+            }, 1500);
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if (gameState === 'ready') {
+                aimX = (e.clientX / window.innerWidth - 0.5) * 2;
+                ballBody.position.x = aimX * 1.3;
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && gameState === 'ready') isCharging = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space' && isCharging) {
+                isCharging = false;
+                shoot();
+            }
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (isCharging) {
+                power = Math.min(power + 0.02, 1);
+                document.getElementById('power-fill').style.height = (power * 100) + '%';
+            }
+            world.step(1/60);
+            ballMesh.position.copy(ballBody.position);
+            ballMesh.quaternion.copy(ballBody.quaternion);
+            pins.forEach((p, i) => {
+                pinMeshes[i].position.copy(p.position);
+                pinMeshes[i].quaternion.copy(p.quaternion);
+            });
+
+            // Dynamic Camera
+            if (gameState === 'rolling' && ballBody.position.z < 3) {
+                camera.position.z = THREE.MathUtils.lerp(camera.position.z, ballBody.position.z + 4, 0.08);
+                camera.position.y = THREE.MathUtils.lerp(camera.position.y, 0.8, 0.08);
+                camera.lookAt(ballBody.position.x, 0.4, ballBody.position.z - 5);
+            } else {
+                camera.position.z = THREE.MathUtils.lerp(camera.position.z, 7, 0.05);
+                camera.position.y = THREE.MathUtils.lerp(camera.position.y, 1.6, 0.05);
+                camera.lookAt(0, 0.4, -15);
+            }
+            renderer.render(scene, camera);
+        }
+
+        init();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

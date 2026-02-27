@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrom Multiplayer Pro - Local</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .canvas-container { position: relative; width: 100%; max-width: 600px; aspect-ratio: 1/1; }
+        canvas { touch-action: none; width: 100%; height: 100%; cursor: crosshair; }
+        input[type="range"] { -webkit-appearance: none; appearance: none; background: #444; height: 8px; border-radius: 4px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background: #f59e0b; cursor: pointer; border-radius: 50%; }
+    </style>
+</head>
+<body class="bg-neutral-900 text-neutral-100 min-h-screen">
+
+    <div class="max-w-6xl mx-auto p-4 md:p-8">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-4xl font-black tracking-tighter text-amber-500 italic">CARROM LOCAL</h1>
+                <p class="text-xs text-neutral-500 font-mono mt-1 uppercase tracking-widest">Single Device Multiplayer</p>
+            </div>
+            
+            <div class="flex gap-4 items-center">
+                <div class="bg-neutral-800 border border-neutral-700 p-3 rounded-xl shadow-inner min-w-[120px]">
+                    <span class="text-[10px] uppercase font-bold text-neutral-500 block leading-none mb-1">Player 1</span>
+                    <span id="score-p1" class="text-2xl font-black font-mono leading-none">0</span>
+                </div>
+                <div class="bg-neutral-800 border border-neutral-700 p-3 rounded-xl shadow-inner min-w-[120px]">
+                    <span class="text-[10px] uppercase font-bold text-neutral-500 block leading-none mb-1">Player 2</span>
+                    <span id="score-p2" class="text-2xl font-black font-mono leading-none">0</span>
+                </div>
+                <button onclick="resetGame()" class="bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg active:scale-95">
+                    Reset
+                </button>
+            </div>
+        </header>
+
+        <main class="flex flex-col lg:flex-row gap-8 justify-center items-start">
+            <!-- Game Board Column -->
+            <div class="w-full max-w-[600px] mx-auto lg:mx-0">
+                <div class="p-3 md:p-5 bg-amber-950 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] border-[10px] border-amber-900 relative">
+                    <div class="canvas-container">
+                        <canvas id="gameCanvas" width="600" height="600" class="rounded-sm shadow-inner"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls Column -->
+            <div class="w-full lg:w-80 space-y-6">
+                <!-- Turn Indicator -->
+                <div id="turn-card" class="bg-neutral-800 p-6 rounded-2xl border border-neutral-700 shadow-xl transition-all">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div id="turn-dot" class="w-4 h-4 rounded-full bg-green-500"></div>
+                        <h2 id="turn-text" class="text-lg font-bold uppercase tracking-wider">Player 1 Turn</h2>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <label class="text-xs text-neutral-400 font-bold uppercase">Striker Position</label>
+                                <span id="pos-val" class="text-xs font-mono text-amber-500">300</span>
+                            </div>
+                            <input type="range" id="striker-range" min="120" max="480" value="300" class="w-full">
+                        </div>
+                        
+                        <div class="p-4 bg-neutral-900/50 rounded-xl border border-neutral-700/50">
+                            <p class="text-xs text-neutral-400 leading-relaxed italic">
+                                💡 <span class="text-neutral-300">Controls:</span> Use the slider to position the striker. Drag on the board to aim and release to shoot.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="bg-neutral-800 p-6 rounded-2xl border border-neutral-700 shadow-xl">
+                    <h3 class="text-xs font-black text-neutral-500 uppercase mb-4 tracking-widest">Coin Values</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="flex items-center gap-3 p-2 bg-neutral-900 rounded-lg">
+                            <div class="w-4 h-4 rounded-full bg-[#db2777]"></div>
+                            <span class="text-xs font-bold text-neutral-300">Queen (50)</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-2 bg-neutral-900 rounded-lg">
+                            <div class="w-4 h-4 rounded-full bg-[#fef3c7] border border-neutral-400"></div>
+                            <span class="text-xs font-bold text-neutral-300">White (20)</span>
+                        </div>
+                        <div class="flex items-center gap-3 p-2 bg-neutral-900 rounded-lg">
+                            <div class="w-4 h-4 rounded-full bg-[#1f2937] border border-neutral-600"></div>
+                            <span class="text-xs font-bold text-neutral-300">Black (10)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- Game Logic Constants ---
+        const BOARD_SIZE = 600;
+        const POCKET_RADIUS = 35;
+        const FRICTION = 0.985;
+        const STRIKER_RADIUS = 20;
+        const COIN_RADIUS = 15;
+        const MIN_SPEED = 0.1;
+
+        const COLORS = {
+            WHITE: '#fef3c7',
+            BLACK: '#1f2937',
+            QUEEN: '#db2777',
+            STRIKER: '#3b82f6',
+            BOARD: '#d97706',
+            FRAME: '#451a03'
+        };
+
+        // --- Game State ---
+        let gameState = {
+            coins: [],
+            striker: { x: 300, y: 480, vx: 0, vy: 0, active: true },
+            turn: 1, // 1 or 2
+            scores: { 1: 0, 2: 0 }
+        };
+
+        let isMoving = false;
+        let isAiming = false;
+        let aimAngle = 0;
+        let aimPower = 0;
+        let localStrikerX = 300;
+        let animationFrame;
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const strikerRange = document.getElementById('striker-range');
+
+        const initCoins = () => {
+            const coins = [
+                { id: 'queen', type: 'QUEEN', x: 300, y: 300, vx: 0, vy: 0, color: COLORS.QUEEN }
+            ];
+            
+            // Generate hexagonal pattern for white and black
+            for (let i = 0; i < 6; i++) {
+                coins.push({
+                    id: `w-${i}`, type: 'WHITE', vx: 0, vy: 0, color: COLORS.WHITE,
+                    x: 300 + 40 * Math.cos((i * 60 * Math.PI) / 180),
+                    y: 300 + 40 * Math.sin((i * 60 * Math.PI) / 180)
+                });
+                coins.push({
+                    id: `b-${i}`, type: 'BLACK', vx: 0, vy: 0, color: COLORS.BLACK,
+                    x: 300 + 40 * Math.cos(((i * 60 + 30) * Math.PI) / 180),
+                    y: 300 + 40 * Math.sin(((i * 60 + 30) * Math.PI) / 180)
+                });
+            }
+            return coins;
+        };
+
+        const resetGame = () => {
+            gameState = {
+                coins: initCoins(),
+                striker: { x: 300, y: 480, vx: 0, vy: 0, active: true },
+                turn: 1,
+                scores: { 1: 0, 2: 0 }
+            };
+            localStrikerX = 300;
+            strikerRange.value = 300;
+            document.getElementById('pos-val').innerText = 300;
+            isMoving = false;
+            updateUI();
+            render();
+        };
+
+        const updateUI = () => {
+            document.getElementById('score-p1').innerText = gameState.scores[1];
+            document.getElementById('score-p2').innerText = gameState.scores[2];
+            
+            const turnText = document.getElementById('turn-text');
+            const turnDot = document.getElementById('turn-dot');
+            
+            turnText.innerText = `Player ${gameState.turn} Turn`;
+            turnDot.className = gameState.turn === 1 ? "w-4 h-4 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]" : "w-4 h-4 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]";
+            
+            strikerRange.disabled = isMoving;
+        };
+
+        // --- Physics ---
+        const updatePhysics = () => {
+            if (!isMoving) return;
+
+            let stillMoving = false;
+            const allObjects = [gameState.striker, ...gameState.coins];
+
+            allObjects.forEach(obj => {
+                if (obj.inPocket) return;
+                if (Math.abs(obj.vx) > 0.05 || Math.abs(obj.vy) > 0.05) {
+                    obj.x += obj.vx;
+                    obj.y += obj.vy;
+                    obj.vx *= FRICTION;
+                    obj.vy *= FRICTION;
+
+                    if (Math.abs(obj.vx) < MIN_SPEED) obj.vx = 0;
+                    if (Math.abs(obj.vy) < MIN_SPEED) obj.vy = 0;
+                    if (obj.vx !== 0 || obj.vy !== 0) stillMoving = true;
+
+                    const r = obj === gameState.striker ? STRIKER_RADIUS : COIN_RADIUS;
+                    
+                    // Wall Bounce
+                    if (obj.x - r < 0 || obj.x + r > BOARD_SIZE) {
+                        obj.vx *= -0.7;
+                        obj.x = obj.x - r < 0 ? r : BOARD_SIZE - r;
+                    }
+                    if (obj.y - r < 0 || obj.y + r > BOARD_SIZE) {
+                        obj.vy *= -0.7;
+                        obj.y = obj.y - r < 0 ? r : BOARD_SIZE - r;
+                    }
+
+                    // Pockets
+                    const pockets = [[0,0], [BOARD_SIZE,0], [0,BOARD_SIZE], [BOARD_SIZE,BOARD_SIZE]];
+                    pockets.forEach(([px, py]) => {
+                        const dist = Math.hypot(obj.x - px, obj.y - py);
+                        if (dist < POCKET_RADIUS) {
+                            obj.inPocket = true;
+                            obj.vx = 0;
+                            obj.vy = 0;
+                        }
+                    });
+                }
+            });
+
+            // Collisions
+            for (let i = 0; i < allObjects.length; i++) {
+                for (let j = i + 1; j < allObjects.length; j++) {
+                    const a = allObjects[i];
+                    const b = allObjects[j];
+                    if (a.inPocket || b.inPocket) continue;
+
+                    const ra = i === 0 ? STRIKER_RADIUS : COIN_RADIUS;
+                    const rb = j === 0 ? STRIKER_RADIUS : COIN_RADIUS;
+                    const dx = b.x - a.x;
+                    const dy = b.y - a.y;
+                    const dist = Math.hypot(dx, dy);
+
+                    if (dist < ra + rb) {
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        const rvx = b.vx - a.vx;
+                        const rvy = b.vy - a.vy;
+                        const velAlongNormal = rvx * nx + rvy * ny;
+
+                        if (velAlongNormal < 0) {
+                            const restitution = 0.8;
+                            const j_impulse = -(1 + restitution) * velAlongNormal / 2;
+                            const impulseX = j_impulse * nx;
+                            const impulseY = j_impulse * ny;
+                            a.vx -= impulseX;
+                            a.vy -= impulseY;
+                            b.vx += impulseX;
+                            b.vy += impulseY;
+                            
+                            // Prevent overlap
+                            const overlap = ra + rb - dist;
+                            a.x -= nx * overlap / 2;
+                            a.y -= ny * overlap / 2;
+                            b.x += nx * overlap / 2;
+                            b.y += ny * overlap / 2;
+                        }
+                    }
+                }
+            }
+
+            render();
+
+            if (!stillMoving) {
+                isMoving = false;
+                processTurnResult();
+            } else {
+                animationFrame = requestAnimationFrame(updatePhysics);
+            }
+        };
+
+        const processTurnResult = () => {
+            const pocketed = gameState.coins.filter(c => c.inPocket && !c.scored);
+            let gainedScore = 0;
+            
+            pocketed.forEach(c => {
+                c.scored = true;
+                if (c.type === 'WHITE') gainedScore += 20;
+                else if (c.type === 'BLACK') gainedScore += 10;
+                else if (c.type === 'QUEEN') gainedScore += 50;
+            });
+
+            gameState.scores[gameState.turn] += gainedScore;
+            
+            // Switch turns if no coin was pocketed
+            if (gainedScore === 0) {
+                gameState.turn = gameState.turn === 1 ? 2 : 1;
+            }
+
+            // Reset striker for next turn
+            gameState.striker = { x: localStrikerX, y: 480, vx: 0, vy: 0, active: true };
+            gameState.coins = gameState.coins.filter(c => !c.inPocket);
+            
+            updateUI();
+            render();
+        };
+
+        // --- Rendering ---
+        const render = () => {
+            ctx.clearRect(0, 0, BOARD_SIZE, BOARD_SIZE);
+
+            // Board
+            ctx.fillStyle = COLORS.BOARD;
+            ctx.fillRect(0, 0, BOARD_SIZE, BOARD_SIZE);
+
+            // Lines
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(15, 15, BOARD_SIZE-30, BOARD_SIZE-30);
+            
+            // Baselines
+            ctx.beginPath();
+            ctx.moveTo(120, 470); ctx.lineTo(480, 470);
+            ctx.moveTo(120, 490); ctx.lineTo(480, 490);
+            ctx.stroke();
+
+            // Pockets
+            ctx.fillStyle = '#0a0a0a';
+            [[0,0], [BOARD_SIZE,0], [0,BOARD_SIZE], [BOARD_SIZE,BOARD_SIZE]].forEach(([px, py]) => {
+                ctx.beginPath();
+                ctx.arc(px, py, POCKET_RADIUS, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Coins
+            gameState.coins.forEach(coin => {
+                if (coin.inPocket) return;
+                ctx.fillStyle = coin.color;
+                ctx.beginPath();
+                ctx.arc(coin.x, coin.y, COIN_RADIUS, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+                ctx.stroke();
+            });
+
+            // Striker
+            const s = gameState.striker;
+            const sx = isMoving ? s.x : localStrikerX;
+            const sy = s.y;
+            
+            ctx.fillStyle = COLORS.STRIKER;
+            ctx.beginPath();
+            ctx.arc(sx, sy, STRIKER_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Aiming
+            if (isAiming && !isMoving) {
+                ctx.beginPath();
+                ctx.setLineDash([5, 8]);
+                ctx.moveTo(sx, sy);
+                const dx = Math.cos(aimAngle) * aimPower * 2;
+                const dy = Math.sin(aimAngle) * aimPower * 2;
+                ctx.lineTo(sx + dx, sy + dy);
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        };
+
+        // --- Interaction ---
+        const handleInputStart = (clientX, clientY) => {
+            if (isMoving) return;
+            const rect = canvas.getBoundingClientRect();
+            const scale = BOARD_SIZE / rect.width;
+            const x = (clientX - rect.left) * scale;
+            const y = (clientY - rect.top) * scale;
+
+            isAiming = true;
+            updateAim(x, y);
+        };
+
+        const updateAim = (x, y) => {
+            const dx = x - localStrikerX;
+            const dy = y - 480;
+            aimAngle = Math.atan2(dy, dx);
+            aimPower = Math.min(Math.hypot(dx, dy), 150);
+            render();
+        };
+
+        const handleInputMove = (clientX, clientY) => {
+            if (!isAiming) return;
+            const rect = canvas.getBoundingClientRect();
+            const scale = BOARD_SIZE / rect.width;
+            updateAim((clientX - rect.left) * scale, (clientY - rect.top) * scale);
+        };
+
+        const handleInputEnd = () => {
+            if (!isAiming) return;
+            isAiming = false;
+            
+            const force = aimPower / 6;
+            gameState.striker.x = localStrikerX;
+            gameState.striker.vx = Math.cos(aimAngle) * force;
+            gameState.striker.vy = Math.sin(aimAngle) * force;
+            
+            isMoving = true;
+            updatePhysics();
+        };
+
+        canvas.addEventListener('mousedown', (e) => handleInputStart(e.clientX, e.clientY));
+        window.addEventListener('mousemove', (e) => handleInputMove(e.clientX, e.clientY));
+        window.addEventListener('mouseup', handleInputEnd);
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleInputStart(e.touches[0].clientX, e.touches[0].clientY);
+        }, {passive: false});
+        canvas.addEventListener('touchmove', (e) => {
+            handleInputMove(e.touches[0].clientX, e.touches[0].clientY);
+        }, {passive: false});
+        canvas.addEventListener('touchend', handleInputEnd);
+
+        strikerRange.addEventListener('input', (e) => {
+            localStrikerX = parseInt(e.target.value);
+            document.getElementById('pos-val').innerText = localStrikerX;
+            render();
+        });
+
+        // Start game
+        resetGame();
+    </script>
+</body>
+</html>
