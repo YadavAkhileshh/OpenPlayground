@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fishing Odyssey | Elite Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        
+        :root {
+            --glass: rgba(15, 23, 42, 0.75);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #020617;
+            user-select: none;
+            touch-action: none;
+            color: #f8fafc;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas { display: block; }
+
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            pointer-events: auto;
+        }
+
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 16px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            pointer-events: none;
+        }
+
+        .btn-action {
+            padding: 10px 20px;
+            border-radius: 14px;
+            font-weight: 700;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            background: rgba(255,255,255,0.1);
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        #modal-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(8px);
+        }
+
+        .tension-container {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 320px;
+            display: none;
+            text-align: center;
+        }
+
+        .bar-bg {
+            width: 100%;
+            height: 14px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2);
+            margin-top: 8px;
+        }
+
+        #tension-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+            transition: width 0.1s linear;
+        }
+
+        .weather-indicator {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.8;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .floating { animation: float 3s ease-in-out infinite; }
+
+        .trophy-item {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" class="glass-panel">
+        <div class="flex items-center gap-2">
+            <span class="text-3xl">💰</span>
+            <span id="money-display" class="text-2xl font-black text-white">0</span>
+        </div>
+        <div class="flex items-center gap-3 mt-1">
+            <div class="bg-blue-500/20 px-2 py-0.5 rounded text-blue-400 text-xs font-bold">LVL <span id="level-display">1</span></div>
+            <div id="multiplier-tag" class="bg-yellow-500/20 px-2 py-0.5 rounded text-yellow-400 text-xs font-bold hidden">STREAK x<span id="mult-val">1.0</span></div>
+        </div>
+    </div>
+
+    <!-- Top Right Controls -->
+    <div id="controls">
+        <button id="trophy-btn" class="glass-panel btn-action text-white">
+            🏆 <span>Trophies</span>
+        </button>
+        <button id="shop-btn" class="glass-panel btn-action text-white">
+            🛒 <span>Shop</span>
+        </button>
+    </div>
+
+    <!-- Tension & Catch UI -->
+    <div class="tension-container" id="tension-ui">
+        <div class="text-[10px] font-black uppercase tracking-widest text-white/70">Line Tension</div>
+        <div class="bar-bg">
+            <div id="tension-fill"></div>
+        </div>
+    </div>
+
+    <!-- Weather/Time Info -->
+    <div class="weather-indicator">
+        <span id="weather-icon">☀️</span>
+        <span id="weather-text">Clear Skies</span>
+        <span class="mx-2 opacity-30">|</span>
+        <span id="game-time">12:00</span>
+    </div>
+
+    <div id="notification" class="notification absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none text-4xl font-black text-white italic opacity-0 transition-all duration-500">HOOKED!</div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="clickable">
+        <!-- Shop Modal -->
+        <div id="shop-view" class="glass-panel p-8 w-full max-w-md hidden">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-extrabold italic">THE WHARF</h2>
+                <button class="close-modal text-white/40 hover:text-white text-2xl">✕</button>
+            </div>
+            <div class="space-y-3" id="shop-items">
+                <!-- Items populated by JS -->
+            </div>
+        </div>
+
+        <!-- Trophy Modal -->
+        <div id="trophy-view" class="glass-panel p-8 w-full max-w-md hidden">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-extrabold italic">COLLECTION</h2>
+                <button class="close-modal text-white/40 hover:text-white text-2xl">✕</button>
+            </div>
+            <div class="space-y-2 max-h-96 overflow-y-auto pr-2" id="trophy-list">
+                <p class="text-center text-white/40 italic py-10">No trophies yet. Get fishing!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    /** * FISHING ODYSSEY ELITE ENGINE 
+     */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Elements
+    const elements = {
+        money: document.getElementById('money-display'),
+        level: document.getElementById('level-display'),
+        mult: document.getElementById('mult-val'),
+        multTag: document.getElementById('multiplier-tag'),
+        shopBtn: document.getElementById('shop-btn'),
+        trophyBtn: document.getElementById('trophy-btn'),
+        modal: document.getElementById('modal-overlay'),
+        shopView: document.getElementById('shop-view'),
+        trophyView: document.getElementById('trophy-view'),
+        closeBtns: document.querySelectorAll('.close-modal'),
+        tensionUI: document.getElementById('tension-ui'),
+        tensionFill: document.getElementById('tension-fill'),
+        note: document.getElementById('notification'),
+        weatherTxt: document.getElementById('weather-text'),
+        weatherIcon: document.getElementById('weather-icon'),
+        gameTime: document.getElementById('game-time'),
+        trophyList: document.getElementById('trophy-list')
+    };
+
+    let width, height;
+    let gameState = {
+        money: 0,
+        totalCaught: 0,
+        level: 1,
+        multiplier: 1.0,
+        weather: 'clear', // clear, rain, storm
+        time: 1200,
+        upgrades: {
+            rod: { level: 1, baseCost: 150, label: 'Carbon Rod', desc: 'Pulling power' },
+            line: { level: 1, baseCost: 300, label: 'Braid Line', desc: 'Tension limit' },
+            bait: { level: 1, baseCost: 500, label: 'Live Bait', desc: 'Rare attraction' },
+            boat: { level: 1, baseCost: 2000, label: 'Yacht', desc: 'Deep sea access' }
+        },
+        trophies: {},
+        isReeling: false,
+        hookedFish: null,
+        tension: 0,
+        bobber: { x: 0, y: 0, targetX: 0, targetY: 0, active: false, velocityY: 0 }
+    };
+
+    const FISH_TYPES = [
+        { name: "Minnow", color: "#94a3b8", size: 8, value: 12, depth: 0.2, speed: 2.2, rarity: 1 },
+        { name: "Neon Tetra", color: "#38bdf8", size: 10, value: 25, depth: 0.3, speed: 3.0, rarity: 0.8 },
+        { name: "Goldfish", color: "#fbbf24", size: 12, value: 45, depth: 0.35, speed: 1.5, rarity: 0.7 },
+        { name: "Bass", color: "#4d7c0f", size: 22, value: 90, depth: 0.5, speed: 1.8, rarity: 0.6 },
+        { name: "Koi", color: "#ef4444", size: 25, value: 180, depth: 0.45, speed: 1.2, rarity: 0.4 },
+        { name: "Tuna", color: "#1e3a8a", size: 38, value: 450, depth: 0.7, speed: 3.8, rarity: 0.2 },
+        { name: "Swordfish", color: "#64748b", size: 55, value: 1200, depth: 0.85, speed: 4.5, rarity: 0.1 },
+        { name: "Deep Glow", color: "#a855f7", size: 40, value: 3500, depth: 0.95, speed: 2.5, rarity: 0.04 },
+        { name: "Megalodon", color: "#0f172a", size: 90, value: 15000, depth: 1.0, speed: 5.5, rarity: 0.01 }
+    ];
+
+    let fishes = [];
+    const FISH_COUNT = 24;
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    }
+
+    class Fish {
+        constructor() { this.reset(); }
+        reset() {
+            this.type = this.getRandomFish();
+            this.x = Math.random() * width;
+            const waterStart = height * 0.48;
+            this.y = waterStart + (Math.random() * (height - waterStart - 50) * this.type.depth);
+            this.vx = (Math.random() - 0.5) * this.type.speed;
+            this.vy = (Math.random() - 0.5) * 0.4;
+            this.angle = 0;
+            this.state = 'swim';
+        }
+        getRandomFish() {
+            const pool = [];
+            FISH_TYPES.forEach(f => {
+                let weight = f.rarity * 100;
+                if (f.rarity < 0.2) weight *= (gameState.upgrades.bait.level * 0.8);
+                if (gameState.weather === 'rain') weight *= 1.2;
+                for(let i=0; i < weight; i++) pool.push(f);
+            });
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+        update() {
+            if (this.state === 'hooked') {
+                this.x = gameState.bobber.x;
+                this.y = gameState.bobber.y;
+                return;
+            }
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x < -100) this.x = width + 100;
+            if (this.x > width + 100) this.x = -100;
+            const waterTop = height * 0.5;
+            if (this.y < waterTop) this.vy *= -1;
+            if (this.y > height - 40) this.vy *= -1;
+            this.vx += (Math.random() - 0.5) * 0.15;
+            this.vy += (Math.random() - 0.5) * 0.08;
+            this.angle = Math.atan2(this.vy, this.vx);
+
+            if (gameState.bobber.active && !gameState.hookedFish) {
+                const dist = Math.hypot(this.x - gameState.bobber.x, this.y - gameState.bobber.y);
+                const biteChance = (gameState.weather === 'rain' ? 0.02 : 0.01) * gameState.upgrades.bait.level;
+                if (dist < 45 && Math.random() < biteChance) hookFish(this);
+            }
+        }
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.angle);
+            ctx.fillStyle = this.type.color;
+            ctx.shadowBlur = (this.type.value > 1000) ? 15 : 0;
+            ctx.shadowColor = this.type.color;
+            // Body
+            ctx.beginPath();
+            ctx.ellipse(0, 0, this.type.size, this.type.size/2.2, 0, 0, Math.PI*2);
+            ctx.fill();
+            // Tail
+            ctx.beginPath();
+            ctx.moveTo(-this.type.size, 0);
+            ctx.lineTo(-this.type.size - (this.type.size/2), -this.type.size/2);
+            ctx.lineTo(-this.type.size - (this.type.size/2), this.type.size/2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    function hookFish(fish) {
+        gameState.hookedFish = fish;
+        fish.state = 'hooked';
+        gameState.tension = 15;
+        elements.tensionUI.style.display = 'block';
+        showNotification(`LOCKED ON: ${fish.type.name.toUpperCase()}`);
+    }
+
+    function showNotification(text) {
+        elements.note.innerText = text;
+        elements.note.style.opacity = '1';
+        elements.note.style.transform = 'translate(-50%, -100%) scale(1.1)';
+        setTimeout(() => {
+            elements.note.style.opacity = '0';
+            elements.note.style.transform = 'translate(-50%, -50%) scale(1)';
+        }, 1500);
+    }
+
+    function handleInput(e) {
+        if (gameState.modalVisible) return;
+        const rect = canvas.getBoundingClientRect();
+        const clientX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        const clientY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+
+        if (e.type === 'mousedown' || e.type === 'touchstart') {
+            if (!gameState.bobber.active) {
+                gameState.bobber.active = true;
+                gameState.bobber.x = width / 2;
+                gameState.bobber.y = height * 0.45;
+                gameState.bobber.targetX = clientX;
+                gameState.bobber.targetY = Math.max(height * 0.52, clientY);
+                gameState.bobber.velocityY = -12;
+            } else {
+                gameState.isReeling = true;
+            }
+        } else if (e.type === 'mouseup' || e.type === 'touchend') {
+            gameState.isReeling = false;
+        }
+    }
+
+    function updateWeather() {
+        if (Math.random() < 0.0005) {
+            const types = ['clear', 'rain', 'storm'];
+            gameState.weather = types[Math.floor(Math.random() * types.length)];
+            const weatherIcons = { clear: '☀️', rain: '🌧️', storm: '⛈️' };
+            const weatherLabels = { clear: 'Clear Skies', rain: 'Steady Rain', storm: 'Heavy Storm' };
+            elements.weatherIcon.innerText = weatherIcons[gameState.weather];
+            elements.weatherTxt.innerText = weatherLabels[gameState.weather];
+        }
+    }
+
+    function drawScene() {
+        // Sky
+        let skyColor = gameState.time > 600 && gameState.time < 1800 ? '#0f172a' : '#020617';
+        if (gameState.weather === 'rain') skyColor = '#1e293b';
+        if (gameState.weather === 'storm') skyColor = '#0f172a';
+        
+        ctx.fillStyle = skyColor;
+        ctx.fillRect(0, 0, width, height);
+
+        // Water
+        const waterGrd = ctx.createLinearGradient(0, height * 0.48, 0, height);
+        waterGrd.addColorStop(0, '#0ea5e9');
+        waterGrd.addColorStop(1, '#020617');
+        ctx.fillStyle = waterGrd;
+        ctx.fillRect(0, height * 0.48, width, height * 0.52);
+
+        // Boat
+        const boatX = width / 2;
+        const boatY = height * 0.46;
+        const bob = Math.sin(Date.now() * 0.0015) * 4;
+        
+        ctx.save();
+        ctx.translate(boatX, boatY + bob);
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.moveTo(-70, 0); ctx.lineTo(70, 0); ctx.lineTo(50, 35); ctx.lineTo(-50, 35); ctx.closePath();
+        ctx.fill();
+        // Rod
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(90, -70); ctx.stroke();
+        
+        if (gameState.bobber.active) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(90, -70); ctx.lineTo(gameState.bobber.x - boatX, gameState.bobber.y - (boatY + bob)); ctx.stroke();
+        }
+        ctx.restore();
+
+        // Bobber
+        if (gameState.bobber.active) {
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath(); ctx.arc(gameState.bobber.x, gameState.bobber.y, 7, 0, Math.PI*2); ctx.fill();
+        }
+
+        // Weather particles
+        if (gameState.weather !== 'clear') {
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<30; i++) {
+                const rx = (Date.now() * 0.5 + i * 100) % width;
+                const ry = (Date.now() * 0.8 + i * 200) % height;
+                ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 5, ry + 15); ctx.stroke();
+            }
+        }
+    }
+
+    function updateGame() {
+        gameState.time = (gameState.time + 0.1) % 2400;
+        const h = Math.floor(gameState.time/100);
+        const m = Math.floor((gameState.time%100)*0.6);
+        elements.gameTime.innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+        
+        updateWeather();
+
+        if (gameState.bobber.active) {
+            if (!gameState.hookedFish) {
+                gameState.bobber.x += (gameState.bobber.targetX - gameState.bobber.x) * 0.08;
+                gameState.bobber.y += (gameState.bobber.targetY - gameState.bobber.y) * 0.08 + gameState.bobber.velocityY;
+                if (gameState.bobber.y < gameState.bobber.targetY) gameState.bobber.velocityY += 0.5;
+                else gameState.bobber.velocityY = 0;
+            } else {
+                if (gameState.isReeling) {
+                    gameState.tension += (2.2 / gameState.upgrades.line.level);
+                    const dx = (width/2) - gameState.bobber.x;
+                    const dy = (height*0.46) - gameState.bobber.y;
+                    const dist = Math.hypot(dx, dy);
+                    gameState.bobber.x += (dx/dist) * (2.5 * gameState.upgrades.rod.level);
+                    gameState.bobber.y += (dy/dist) * (2.5 * gameState.upgrades.rod.level);
+                    if (dist < 60) finishCatch();
+                } else {
+                    gameState.tension -= 0.7;
+                    gameState.bobber.x += (Math.random() - 0.5) * 8;
+                    gameState.bobber.y += Math.random() * 3;
+                }
+                if (gameState.tension > 100) snapLine();
+                gameState.tension = Math.max(0, gameState.tension);
+                elements.tensionFill.style.width = gameState.tension + '%';
+            }
+        }
+        fishes.forEach(f => f.update());
+    }
+
+    function snapLine() {
+        showNotification("SNAP! IT GOT AWAY");
+        gameState.multiplier = 1.0;
+        updateUI();
+        resetFishing();
+    }
+
+    function resetFishing() {
+        gameState.bobber.active = false;
+        if (gameState.hookedFish) gameState.hookedFish.reset();
+        gameState.hookedFish = null;
+        gameState.tension = 0;
+        gameState.isReeling = false;
+        elements.tensionUI.style.display = 'none';
+    }
+
+    function finishCatch() {
+        const fish = gameState.hookedFish;
+        const reward = Math.floor(fish.type.value * gameState.multiplier);
+        gameState.money += reward;
+        gameState.totalCaught++;
+        
+        // Trophy logic
+        if (!gameState.trophies[fish.type.name]) gameState.trophies[fish.type.name] = 0;
+        gameState.trophies[fish.type.name]++;
+
+        gameState.multiplier += 0.15;
+        if (gameState.totalCaught % 5 === 0) gameState.level++;
+        
+        updateUI();
+        showNotification(`+$${reward} | ${fish.type.name.toUpperCase()}`);
+        resetFishing();
+    }
+
+    function updateUI() {
+        elements.money.innerText = Math.floor(gameState.money).toLocaleString();
+        elements.level.innerText = gameState.level;
+        elements.mult.innerText = gameState.multiplier.toFixed(1);
+        elements.multTag.classList.toggle('hidden', gameState.multiplier <= 1.0);
+        
+        // Update Shop items dynamically
+        let shopHtml = '';
+        for (const [key, upg] of Object.entries(gameState.upgrades)) {
+            const currentCost = Math.floor(upg.baseCost * Math.pow(2.2, upg.level - 1));
+            shopHtml += `
+                <div class="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">
+                    <div>
+                        <div class="font-bold text-white">${upg.label} <span class="text-blue-400 text-xs">v${upg.level}</span></div>
+                        <div class="text-[10px] text-white/40 uppercase tracking-tighter">${upg.desc}</div>
+                    </div>
+                    <button class="upgrade-btn bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl text-sm font-black transition-all" 
+                            data-item="${key}" data-cost="${currentCost}">
+                        ${currentCost.toLocaleString()}💰
+                    </button>
+                </div>`;
+        }
+        document.getElementById('shop-items').innerHTML = shopHtml;
+        
+        // Re-bind buttons
+        document.querySelectorAll('.upgrade-btn').forEach(btn => {
+            btn.onclick = () => {
+                const cost = parseInt(btn.dataset.cost);
+                const item = btn.dataset.item;
+                if (gameState.money >= cost) {
+                    gameState.money -= cost;
+                    gameState.upgrades[item].level++;
+                    updateUI();
+                    showNotification("UPGRADE SUCCESS!");
+                } else {
+                    showNotification("NEED MORE CASH!");
+                }
+            };
+        });
+
+        // Update Trophies
+        let trophyHtml = '';
+        const caughtTypes = Object.entries(gameState.trophies);
+        if (caughtTypes.length === 0) {
+            trophyHtml = '<p class="text-center text-white/40 italic py-10">No trophies yet.</p>';
+        } else {
+            caughtTypes.forEach(([name, count]) => {
+                const fishData = FISH_TYPES.find(f => f.name === name);
+                trophyHtml += `
+                    <div class="trophy-item">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full" style="background:${fishData.color}"></div>
+                            <span class="font-bold text-sm">${name}</span>
+                        </div>
+                        <span class="text-xs font-black text-blue-400">x${count}</span>
+                    </div>`;
+            });
+        }
+        elements.trophyList.innerHTML = trophyHtml;
+    }
+
+    function init() {
+        resize();
+        for (let i = 0; i < FISH_COUNT; i++) fishes.push(new Fish());
+        updateUI();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, width, height);
+        updateGame();
+        drawScene();
+        fishes.forEach(f => f.draw());
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Modal Control
+    elements.shopBtn.onclick = () => {
+        gameState.modalVisible = true;
+        elements.modal.style.display = 'flex';
+        elements.shopView.classList.remove('hidden');
+        elements.trophyView.classList.add('hidden');
+    };
+    elements.trophyBtn.onclick = () => {
+        gameState.modalVisible = true;
+        elements.modal.style.display = 'flex';
+        elements.trophyView.classList.remove('hidden');
+        elements.shopView.classList.add('hidden');
+    };
+    elements.closeBtns.forEach(b => b.onclick = () => {
+        gameState.modalVisible = false;
+        elements.modal.style.display = 'none';
+    });
+
+    window.addEventListener('resize', resize);
+    window.addEventListener('mousedown', handleInput);
+    window.addEventListener('mouseup', handleInput);
+    window.addEventListener('touchstart', handleInput);
+    window.addEventListener('touchend', handleInput);
+
+    init();
+</script>
+</body>
+</html>

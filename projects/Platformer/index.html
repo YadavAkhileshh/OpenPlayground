@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Platformer Game</title>
+<style>
+    body {
+        margin: 0;
+        background: linear-gradient(#87ceeb, #fff);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: Arial;
+    }
+    canvas {
+        background: #87ceeb;
+        border: 3px solid #222;
+    }
+</style>
+</head>
+<body>
+
+<canvas id="game" width="800" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const gravity = 0.5;
+let gameOver = false;
+let win = false;
+
+// Player
+const player = {
+    x: 50,
+    y: 300,
+    w: 30,
+    h: 40,
+    vx: 0,
+    vy: 0,
+    speed: 4,
+    jump: -10,
+    grounded: false
+};
+
+// Platforms
+const platforms = [
+    {x: 0, y: 360, w: 800, h: 40},
+    {x: 150, y: 280, w: 120, h: 20},
+    {x: 350, y: 220, w: 120, h: 20},
+    {x: 550, y: 160, w: 120, h: 20}
+];
+
+// Enemy
+const enemy = {
+    x: 300,
+    y: 330,
+    w: 30,
+    h: 30,
+    vx: 2,
+    alive: true
+};
+
+// Flag
+const flag = {x: 720, y: 120, w: 20, h: 240};
+
+// Input
+const keys = {};
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+// Collision
+function collide(a, b) {
+    return a.x < b.x + b.w &&
+           a.x + a.w > b.x &&
+           a.y < b.y + b.h &&
+           a.y + a.h > b.y;
+}
+
+// Update
+function update() {
+    if (gameOver || win) return;
+
+    // Move
+    if (keys["a"] || keys["ArrowLeft"]) player.vx = -player.speed;
+    else if (keys["d"] || keys["ArrowRight"]) player.vx = player.speed;
+    else player.vx = 0;
+
+    // Jump
+    if ((keys["w"] || keys[" "] || keys["ArrowUp"]) && player.grounded) {
+        player.vy = player.jump;
+        player.grounded = false;
+    }
+
+    player.vy += gravity;
+    player.x += player.vx;
+    player.y += player.vy;
+
+    player.grounded = false;
+
+    // Platform collision
+    platforms.forEach(p => {
+        if (collide(player, p) && player.vy > 0) {
+            player.y = p.y - player.h;
+            player.vy = 0;
+            player.grounded = true;
+        }
+    });
+
+    // Enemy movement
+    if (enemy.alive) {
+        enemy.x += enemy.vx;
+        if (enemy.x < 250 || enemy.x > 380) enemy.vx *= -1;
+
+        if (collide(player, enemy)) {
+            if (player.vy > 0) {
+                enemy.alive = false;
+                player.vy = -6;
+            } else {
+                gameOver = true;
+            }
+        }
+    }
+
+    // Win
+    if (collide(player, flag)) win = true;
+
+    // Fall off
+    if (player.y > canvas.height) gameOver = true;
+}
+
+// Draw
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Player
+    ctx.fillStyle = "red";
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+
+    // Platforms
+    ctx.fillStyle = "#654321";
+    platforms.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
+
+    // Enemy
+    if (enemy.alive) {
+        ctx.fillStyle = "purple";
+        ctx.fillRect(enemy.x, enemy.y, enemy.w, enemy.h);
+    }
+
+    // Flag
+    ctx.fillStyle = "green";
+    ctx.fillRect(flag.x, flag.y, flag.w, flag.h);
+
+    // Text
+    ctx.fillStyle = "#000";
+    ctx.font = "20px Arial";
+    if (gameOver) ctx.fillText("Game Over! Press R", 300, 200);
+    if (win) ctx.fillText("You Win! 🎉 Press R", 300, 200);
+}
+
+// Restart
+document.addEventListener("keydown", e => {
+    if (e.key === "r") location.reload();
+});
+
+// Loop
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+</body>
+</html>

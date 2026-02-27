@@ -320,7 +320,7 @@ class ComponentLoader {
 
     initializeSmoothScrolling() {
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
+            anchor.addEventListener('click', (e) => {
                 const targetId = this.getAttribute('href');
                 if (targetId === '#') return;
 
@@ -359,8 +359,8 @@ class ComponentLoader {
                 const linkHref = link.getAttribute('href');
                 const isCurrentPage = linkHref === currentPath ||
                     (currentPath.endsWith('/') && linkHref === 'index.html') ||
-                    (currentPath.includes('about') && linkHref === 'about.html') ||
-                    (currentPath.includes('bookmarks') && linkHref === 'bookmarks.html');
+                    (currentPath.includes('about') && linkHref === 'pages/about.html') ||
+                    (currentPath.includes('bookmarks') && linkHref === 'pages/bookmarks.html');
 
                 if (isCurrentPage) {
                     link.classList.add('active');

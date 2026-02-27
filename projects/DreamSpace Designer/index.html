@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamSpace Designer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --room-bg: #e5e7eb;
+            --wall-color: #f3f4f6;
+            --floor-color: #d1d5db;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .canvas-container {
+            perspective: 1000px;
+            width: 100%;
+            height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        }
+
+        .room {
+            position: relative;
+            width: 800px;
+            height: 450px;
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease;
+        }
+
+        .wall {
+            position: absolute;
+            background-color: var(--wall-color);
+            border: 2px solid rgba(0,0,0,0.1);
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.05);
+            transition: background-color 0.3s ease;
+        }
+
+        .wall-back {
+            width: 100%;
+            height: 70%;
+            transform: translateZ(-100px);
+        }
+
+        .wall-left {
+            width: 200px;
+            height: 70%;
+            transform: rotateY(90deg) translateZ(-100px);
+            left: -100px;
+        }
+
+        .wall-right {
+            width: 200px;
+            height: 70%;
+            transform: rotateY(-90deg) translateZ(-100px);
+            right: -100px;
+        }
+
+        .floor {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 30%;
+            background-color: var(--floor-color);
+            transform: rotateX(90deg) translateZ(115px);
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.2);
+            transition: background-color 0.3s ease;
+        }
+
+        .furniture-item {
+            position: absolute;
+            cursor: move;
+            user-select: none;
+            transition: transform 0.2s ease, filter 0.2s ease;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
+            z-index: 10;
+        }
+
+        .furniture-item:hover {
+            filter: drop-shadow(0 15px 20px rgba(0,0,0,0.5)) brightness(1.1);
+        }
+
+        .furniture-item.selected {
+            outline: 2px dashed #3b82f6;
+            outline-offset: 4px;
+        }
+
+        .ui-panel {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .asset-card {
+            flex: 0 0 auto;
+            width: 100px;
+            height: 100px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .asset-card:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-4px);
+        }
+
+        .color-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .color-dot:hover {
+            border-color: white;
+        }
+
+        #controls-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: none;
+            background: rgba(0,0,0,0.6);
+            padding: 10px;
+            border-radius: 8px;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="p-6 flex justify-between items-center shrink-0">
+        <div>
+            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">DreamSpace Designer</h1>
+            <p class="text-slate-400 text-sm">Drag furniture to create your perfect room</p>
+        </div>
+        <div class="flex gap-4">
+            <button onclick="clearRoom()" class="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg border border-red-500/30 hover:bg-red-500/30 transition">Clear Room</button>
+            <button onclick="toggleSnapshot()" id="snapshotBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-lg">Snapshot Mode</button>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="canvas-container flex-grow overflow-hidden" id="dropzone">
+        <div class="room" id="room">
+            <div class="wall wall-back"></div>
+            <div class="wall wall-left"></div>
+            <div class="wall wall-right"></div>
+            <div class="floor" id="floor"></div>
+        </div>
+
+        <div id="controls-overlay" class="flex">
+            <button onclick="rotateItem(-45)" class="p-2 bg-slate-700 rounded hover:bg-slate-600">Rotate ↺</button>
+            <button onclick="rotateItem(45)" class="p-2 bg-slate-700 rounded hover:bg-slate-600">Rotate ↻</button>
+            <button onclick="deleteItem()" class="p-2 bg-red-600 rounded hover:bg-red-500">Delete</button>
+        </div>
+    </main>
+
+    <!-- UI Panel -->
+    <section class="ui-panel p-6 h-64 shrink-0 flex gap-8">
+        
+        <!-- Customization -->
+        <div class="w-48 border-r border-white/10 pr-6">
+            <h3 class="text-xs uppercase tracking-widest text-slate-500 font-bold mb-4">Wall Color</h3>
+            <div class="flex flex-wrap gap-2 mb-6">
+                <div class="color-dot bg-white" onclick="changeColor('--wall-color', '#ffffff')"></div>
+                <div class="color-dot bg-slate-400" onclick="changeColor('--wall-color', '#94a3b8')"></div>
+                <div class="color-dot bg-emerald-200" onclick="changeColor('--wall-color', '#a7f3d0')"></div>
+                <div class="color-dot bg-rose-200" onclick="changeColor('--wall-color', '#fecdd3')"></div>
+                <div class="color-dot bg-amber-100" onclick="changeColor('--wall-color', '#fef3c7')"></div>
+            </div>
+            <h3 class="text-xs uppercase tracking-widest text-slate-500 font-bold mb-4">Floor</h3>
+            <div class="flex flex-wrap gap-2">
+                <div class="color-dot" style="background: #78350f" onclick="changeColor('--floor-color', '#78350f')"></div>
+                <div class="color-dot" style="background: #451a03" onclick="changeColor('--floor-color', '#451a03')"></div>
+                <div class="color-dot" style="background: #e2e8f0" onclick="changeColor('--floor-color', '#e2e8f0')"></div>
+            </div>
+        </div>
+
+        <!-- Furniture Catalog -->
+        <div class="flex-grow">
+            <h3 class="text-xs uppercase tracking-widest text-slate-500 font-bold mb-4">Furniture Catalog</h3>
+            <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                <div class="asset-card" onclick="addFurniture('sofa')">
+                    <span class="text-3xl">🛋️</span>
+                    <span class="text-[10px] mt-2 text-slate-300">Sofa</span>
+                </div>
+                <div class="asset-card" onclick="addFurniture('chair')">
+                    <span class="text-3xl">🪑</span>
+                    <span class="text-[10px] mt-2 text-slate-300">Chair</span>
+                </div>
+                <div class="asset-card" onclick="addFurniture('table')">
+                    <span class="text-3xl">🍱</span>
+                    <span class="text-[10px] mt-2 text-slate-300">Table</span>
+                </div>
+                <div class="asset-card" onclick="addFurniture('plant')">
+                    <span class="text-3xl">🪴</span>
+                    <span class="text-[10px] mt-2 text-slate-300">Plant</span>
+                </div>
+                <div class="asset-card" onclick="addFurniture('lamp')">
+                    <span class="text-3xl">💡</span>
+                    <span class="text-[10px] mt-2 text-slate-300">Lamp</span>
+                </div>
+                <div class="asset-card" onclick="addFurniture('tv')">
+                    <span class="text-3xl">📺</span>
+                    <span class="text-[10px] mt-2 text-slate-300">TV Unit</span>
+                </div>
+                <div class="asset-card" onclick="addFurniture('bed')">
+                    <span class="text-3xl">🛏️</span>
+                    <span class="text-[10px] mt-2 text-slate-300">Bed</span>
+                </div>
+                <div class="asset-card" onclick="addFurniture('rug')">
+                    <span class="text-3xl">🧵</span>
+                    <span class="text-[10px] mt-2 text-slate-300">Rug</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const room = document.getElementById('room');
+        const overlay = document.getElementById('controls-overlay');
+        let selectedItem = null;
+        let isDragging = false;
+        let offset = { x: 0, y: 0 };
+        let isSnapshot = false;
+
+        const furnitureData = {
+            sofa: { emoji: '🛋️', size: 'w-48 text-7xl' },
+            chair: { emoji: '🪑', size: 'w-20 text-5xl' },
+            table: { emoji: '🍱', size: 'w-32 text-6xl' },
+            plant: { emoji: '🪴', size: 'w-16 text-5xl' },
+            lamp: { emoji: '💡', size: 'w-12 text-4xl' },
+            tv: { emoji: '📺', size: 'w-40 text-6xl' },
+            bed: { emoji: '🛏️', size: 'w-56 text-8xl' },
+            rug: { emoji: '🧵', size: 'w-64 text-9xl opacity-80' }
+        };
+
+        function changeColor(prop, color) {
+            document.documentElement.style.setProperty(prop, color);
+        }
+
+        function addFurniture(type) {
+            const data = furnitureData[type];
+            const item = document.createElement('div');
+            item.className = `furniture-item ${data.size} flex items-center justify-center`;
+            item.innerHTML = `<span>${data.emoji}</span>`;
+            
+            // Random initial placement
+            const rect = room.getBoundingClientRect();
+            item.style.left = (Math.random() * (rect.width - 100)) + 'px';
+            item.style.top = (Math.random() * (rect.height - 100)) + 'px';
+            item.dataset.rotation = 0;
+
+            item.addEventListener('mousedown', startDragging);
+            item.addEventListener('touchstart', startDragging, { passive: false });
+            
+            room.appendChild(item);
+            selectItem(item);
+        }
+
+        function selectItem(item) {
+            if (selectedItem) selectedItem.classList.remove('selected');
+            selectedItem = item;
+            selectedItem.classList.add('selected');
+            overlay.style.display = 'flex';
+        }
+
+        function startDragging(e) {
+            e.preventDefault();
+            const target = e.currentTarget;
+            selectItem(target);
+            isDragging = true;
+            
+            const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+            
+            const rect = target.getBoundingClientRect();
+            offset.x = clientX - rect.left;
+            offset.y = clientY - rect.top;
+
+            window.addEventListener('mousemove', drag);
+            window.addEventListener('touchmove', drag, { passive: false });
+            window.addEventListener('mouseup', stopDragging);
+            window.addEventListener('touchend', stopDragging);
+        }
+
+        function drag(e) {
+            if (!isDragging || !selectedItem) return;
+            e.preventDefault();
+
+            const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+            const roomRect = room.getBoundingClientRect();
+            let x = clientX - roomRect.left - offset.x;
+            let y = clientY - roomRect.top - offset.y;
+
+            // Constrain within room
+            x = Math.max(0, Math.min(x, roomRect.width - selectedItem.offsetWidth));
+            y = Math.max(0, Math.min(y, roomRect.height - selectedItem.offsetHeight));
+
+            selectedItem.style.left = x + 'px';
+            selectedItem.style.top = y + 'px';
+        }
+
+        function stopDragging() {
+            isDragging = false;
+            window.removeEventListener('mousemove', drag);
+            window.removeEventListener('touchmove', drag);
+        }
+
+        function rotateItem(deg) {
+            if (!selectedItem) return;
+            let currentRotation = parseInt(selectedItem.dataset.rotation) || 0;
+            currentRotation += deg;
+            selectedItem.dataset.rotation = currentRotation;
+            selectedItem.style.transform = `rotate(${currentRotation}deg)`;
+        }
+
+        function deleteItem() {
+            if (selectedItem) {
+                selectedItem.remove();
+                selectedItem = null;
+                overlay.style.display = 'none';
+            }
+        }
+
+        function clearRoom() {
+            const items = document.querySelectorAll('.furniture-item');
+            items.forEach(item => item.remove());
+            selectedItem = null;
+            overlay.style.display = 'none';
+        }
+
+        function toggleSnapshot() {
+            isSnapshot = !isSnapshot;
+            const ui = document.querySelector('.ui-panel');
+            const header = document.querySelector('header');
+            const btn = document.getElementById('snapshotBtn');
+            
+            if (isSnapshot) {
+                ui.style.display = 'none';
+                header.style.opacity = '0.2';
+                overlay.style.display = 'none';
+                if (selectedItem) selectedItem.classList.remove('selected');
+                btn.innerText = "Back to Editor";
+            } else {
+                ui.style.display = 'flex';
+                header.style.opacity = '1';
+                btn.innerText = "Snapshot Mode";
+                if (selectedItem) {
+                    selectedItem.classList.add('selected');
+                    overlay.style.display = 'flex';
+                }
+            }
+        }
+
+        // Deselect if clicking room empty space
+        room.addEventListener('mousedown', (e) => {
+            if (e.target === room || e.target.classList.contains('wall') || e.target.classList.contains('floor')) {
+                if (selectedItem) selectedItem.classList.remove('selected');
+                selectedItem = null;
+                overlay.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
