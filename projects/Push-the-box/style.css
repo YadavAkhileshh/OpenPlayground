@@ -1,0 +1,464 @@
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+
+:root {
+	--bg-color: #000000;
+	--screen-bg: #000000;
+	--term-green: #eeee77;
+	--term-dim: #555555;
+	--player: #aaffee;
+	--wall: #0000aa;
+	--wall-face: #0088ff;
+	--box: #dd8855;
+	--box-done: #880000;
+	--target: #00cc55;
+	--ui-font: "Press Start 2P", cursive;
+}
+
+* {
+	box-sizing: border-box;
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	position: fixed;
+	touch-action: none;
+	overscroll-behavior: none;
+}
+
+body {
+	background-color: var(--bg-color);
+	color: var(--term-green);
+	font-family: var(--ui-font);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
+
+#game-boy {
+	position: relative;
+	width: 100%;
+	max-width: 750px;
+	height: 100%;
+	max-height: 100vh;
+	background: #555555;
+	border: 6px solid #777777;
+	border-radius: 20px;
+	display: flex;
+	flex-direction: column;
+	box-shadow: 0 30px 80px rgba(0, 0, 0, 1),
+		inset 0 0 5px rgba(255, 255, 255, 0.1);
+}
+
+@media (min-width: 750px) {
+	#game-boy {
+		height: 95vh;
+		border-width: 40px;
+		border-radius: 40px;
+	}
+}
+
+#screen-container {
+	flex: 1;
+	background-color: var(--screen-bg);
+	margin: 15px;
+	border: 6px solid #777777;
+	border-radius: 8px;
+	position: relative;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	box-shadow: inset 0 0 60px rgba(0, 0, 0, 1);
+}
+
+#screen-container::before {
+	content: " ";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%),
+		linear-gradient(
+			90deg,
+			rgba(136, 0, 0, 0.06),
+			rgba(0, 204, 85, 0.02),
+			rgba(0, 136, 255, 0.06)
+		);
+	z-index: 15;
+	background-size: 100% 4px, 8px 100%;
+	pointer-events: none;
+}
+
+#screen-container::after {
+	content: " ";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	background: rgba(255, 255, 255, 0.03);
+	opacity: 0;
+	z-index: 15;
+	pointer-events: none;
+	animation: flicker 0.3s infinite;
+}
+
+@keyframes flicker {
+	0% {
+		opacity: 0.01;
+	}
+	50% {
+		opacity: 0.04;
+	}
+	100% {
+		opacity: 0.01;
+	}
+}
+
+.shake {
+	animation: shake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+@keyframes shake {
+	10%,
+	90% {
+		transform: translate3d(-2px, 0, 0);
+	}
+	20%,
+	80% {
+		transform: translate3d(3px, 0, 0);
+	}
+	30%,
+	50%,
+	70% {
+		transform: translate3d(-5px, 0, 0);
+	}
+	40%,
+	60% {
+		transform: translate3d(5px, 0, 0);
+	}
+}
+
+header {
+	padding: 10px 15px;
+	display: flex;
+	justify-content: space-between;
+	border-bottom: 4px solid var(--term-dim);
+	font-size: 12px;
+	z-index: 5;
+	text-shadow: 0 0 8px var(--term-green);
+	background: rgba(0, 0, 0, 0.3);
+}
+.hud-item span {
+	color: #fff;
+	text-shadow: 0 0 10px var(--player);
+}
+
+#game-board {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+	padding: 5px;
+}
+#grid {
+	display: grid;
+	gap: 1px;
+	background-color: #000;
+	border: 4px solid var(--wall);
+	position: relative;
+	box-shadow: 0 0 20px var(--wall);
+}
+
+.tile {
+	width: 30px;
+	height: 30px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+}
+@media (max-width: 400px) {
+	.tile {
+		width: 24px;
+		height: 24px;
+	}
+}
+@media (min-width: 800px) {
+	.tile {
+		width: 40px;
+		height: 40px;
+	}
+}
+
+.wall {
+	background-color: var(--wall);
+	border: 2px solid #000;
+	box-shadow: inset 3px 3px 0 var(--wall-face), inset -3px -3px 0 #000044;
+}
+.floor {
+	background-color: #000000;
+	background-image: linear-gradient(#222222 1px, transparent 1px),
+		linear-gradient(90deg, #222222 1px, transparent 1px);
+	background-size: 10px 10px;
+}
+
+.target {
+	background-color: #000000;
+}
+.target::before {
+	content: "";
+	width: 30%;
+	height: 30%;
+	background-color: var(--target);
+	border-radius: 50%;
+	box-shadow: 0 0 12px var(--target);
+	animation: pulse 1.2s infinite;
+	position: absolute;
+	opacity: 0.6;
+}
+@keyframes pulse {
+	0% {
+		transform: scale(0.8);
+	}
+	50% {
+		transform: scale(1.2);
+		opacity: 1;
+	}
+	100% {
+		transform: scale(0.8);
+		opacity: 0.6;
+	}
+}
+
+.box {
+	background-color: var(--box);
+	border: 3px solid #000;
+	z-index: 2;
+	box-shadow: inset 4px 4px 0 #eeee77, inset -4px -4px 0 #880000;
+}
+.box::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 40%;
+	height: 40%;
+	border: 2px dashed rgba(0, 0, 0, 0.3);
+}
+
+.box.on-target {
+	background-color: var(--box-done);
+	box-shadow: 0 0 20px var(--box-done), inset 4px 4px 0 #ff7777,
+		inset -4px -4px 0 #550000;
+	animation: boxLock 0.2s ease-in-out infinite alternate;
+}
+@keyframes boxLock {
+	from {
+		transform: scale(1);
+	}
+	to {
+		transform: scale(1.03);
+	}
+}
+
+.player {
+	z-index: 3;
+	color: transparent;
+}
+
+.player::before {
+	content: "";
+	width: 80%;
+	height: 80%;
+	background: linear-gradient(135deg, #aaffee, #00cc55);
+	border: 2px solid #fff;
+	border-radius: 2px;
+	box-shadow: 0 0 10px var(--player);
+	position: absolute;
+	animation: hoverPlayer 1s infinite steps(2);
+}
+
+.player::after {
+	content: "";
+	position: absolute;
+	top: 25%;
+	left: 10%;
+	width: 80%;
+	height: 25%;
+	background: radial-gradient(circle, #000 50%, transparent 51%),
+		radial-gradient(circle, #000 50%, transparent 51%);
+	background-position: 20% center, 80% center;
+	background-size: 10px 10px, 10px 10px;
+	background-repeat: no-repeat;
+	animation: blinkEyes 3s infinite;
+}
+
+@keyframes hoverPlayer {
+	0% {
+		transform: translateY(0px);
+	}
+	50% {
+		transform: translateY(-3px);
+	}
+	100% {
+		transform: translateY(0px);
+	}
+}
+
+@keyframes blinkEyes {
+	0%,
+	96%,
+	100% {
+		transform: scaleY(1);
+	}
+	98% {
+		transform: scaleY(0.1);
+	}
+}
+
+.overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.95);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	z-index: 20;
+	text-align: center;
+	padding: 20px;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.3s;
+}
+.overlay.active {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+h1 {
+	font-size: 20px;
+	margin-bottom: 20px;
+	color: var(--player);
+	text-shadow: 4px 4px 0 var(--wall);
+	line-height: 1.4;
+}
+p {
+	font-size: 10px;
+	line-height: 1.6;
+	margin-bottom: 30px;
+	color: #eeee77;
+	max-width: 80%;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.btn-retro {
+	background: var(--term-dim);
+	border: 3px solid #fff;
+	color: #fff;
+	padding: 14px 24px;
+	font-family: var(--ui-font);
+	font-size: 11px;
+	cursor: pointer;
+	text-transform: uppercase;
+	box-shadow: 4px 4px 0 #000;
+	transition: transform 0.1s;
+	margin: 5px;
+}
+.btn-retro:active {
+	transform: translate(3px, 3px);
+	box-shadow: 1px 1px 0 #000;
+}
+.btn-retro:hover {
+	background: var(--term-green);
+	color: #000;
+}
+
+.small-btn {
+	padding: 10px 0px;
+	font-size: 9px;
+	border-width: 2px;
+	margin: 3px;
+	width: 100px;
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+}
+
+#controls-area {
+	padding: 10px;
+	background: #222222;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	border-top: 6px solid #555555;
+	padding-bottom: 20px;
+}
+#action-buttons {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 15px;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+#d-pad {
+	display: grid;
+	grid-template-columns: repeat(3, 55px);
+	grid-template-rows: repeat(2, 55px);
+	gap: 8px;
+	touch-action: manipulation;
+}
+.d-btn {
+	background: #555555;
+	border: 3px solid #888888;
+	border-radius: 8px;
+	color: var(--term-green);
+	font-size: 28px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	box-shadow: 0 5px 0 #000;
+	transition: transform 0.05s;
+}
+.d-btn:active {
+	transform: translateY(5px);
+	box-shadow: none;
+	background: #777777;
+}
+.d-up {
+	grid-column: 2;
+	grid-row: 1;
+}
+.d-left {
+	grid-column: 1;
+	grid-row: 2;
+}
+.d-down {
+	grid-column: 2;
+	grid-row: 2;
+}
+.d-right {
+	grid-column: 3;
+	grid-row: 2;
+}

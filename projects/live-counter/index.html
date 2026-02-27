@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Counter Universe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00dbde, #fc00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 219, 222, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            flex: 1;
+            min-width: 200px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: #00dbde;
+            text-shadow: 0 0 15px rgba(0, 219, 222, 0.5);
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .stat-change {
+            font-size: 0.9rem;
+            color: #4caf50;
+        }
+
+        .stat-change.negative {
+            color: #f44336;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+            color: #fc00ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            font-size: 1.8rem;
+        }
+
+        .counter-display {
+            text-align: center;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border: 2px solid rgba(0, 219, 222, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .counter-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00dbde, #fc00ff);
+        }
+
+        .counter-value {
+            font-size: 5rem;
+            font-weight: 900;
+            color: #00dbde;
+            text-shadow: 0 0 20px rgba(0, 219, 222, 0.7);
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+        }
+
+        .counter-label {
+            font-size: 1.3rem;
+            opacity: 0.9;
+        }
+
+        .counter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+            justify-content: center;
+        }
+
+        .counter-btn {
+            padding: 14px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-width: 120px;
+        }
+
+        .counter-btn-primary {
+            background: linear-gradient(90deg, #00dbde, #0099ff);
+            color: white;
+        }
+
+        .counter-btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(0, 219, 222, 0.4);
+        }
+
+        .counter-btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .counter-btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .counter-btn-danger {
+            background: linear-gradient(90deg, #ff416c, #ff4b2b);
+            color: white;
+        }
+
+        .counter-btn-danger:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(255, 65, 108, 0.4);
+        }
+
+        .counter-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .counter-input-label {
+            font-weight: 600;
+            color: #00dbde;
+        }
+
+        .counter-input {
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-size: 1.1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .counter-input:focus {
+            border-color: #00dbde;
+        }
+
+        .counter-history {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-time {
+            color: #00dbde;
+            font-size: 0.9rem;
+        }
+
+        .history-value {
+            font-weight: 600;
+        }
+
+        .counter-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .counter-type-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .counter-type-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-3px);
+        }
+
+        .counter-type-btn.active {
+            background: rgba(0, 219, 222, 0.25);
+            border-color: #00dbde;
+            box-shadow: 0 0 15px rgba(0, 219, 222, 0.3);
+            color: #00dbde;
+        }
+
+        .counter-type-btn i {
+            font-size: 1.5rem;
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .live-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .live-stat {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .live-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fc00ff;
+            margin-bottom: 10px;
+        }
+
+        .live-stat-label {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        .world-counters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .world-counter {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .world-counter-title {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #00dbde;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .world-counter-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #fc00ff;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(252, 0, 255, 0.5);
+        }
+
+        .world-counter-description {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-align: center;
+        }
+
+        .pulse-animation {
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .counter-badge {
+            display: inline-block;
+            background: rgba(252, 0, 255, 0.2);
+            color: #fc00ff;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #00dbde, #fc00ff);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-infinity"></i> Live Counter Universe</h1>
+            <p class="subtitle">Track, visualize, and interact with real-time counters. Monitor global statistics and create your own custom counters.</p>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-value" id="globalCount">8,123,456,789</div>
+                <div class="stat-label">Global Population</div>
+                <div class="stat-change positive"><i class="fas fa-arrow-up"></i> +2.5/sec</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="timeElapsed">00:00:00</div>
+                <div class="stat-label">Time Since Page Load</div>
+                <div class="stat-change">Real-time</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="userCounter">0</div>
+                <div class="stat-label">Your Counter Value</div>
+                <div class="stat-change" id="counterChange">+0/sec</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalClicks">0</div>
+                <div class="stat-label">Total Interactions</div>
+                <div class="stat-change positive"><i class="fas fa-mouse-pointer"></i> +0</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-tachometer-alt"></i> Interactive Counter</h2>
+                
+                <div class="counter-display">
+                    <div class="counter-value" id="mainCounter">0</div>
+                    <div class="counter-label">Main Counter <span class="counter-badge" id="counterTypeBadge">Manual</span></div>
+                </div>
+                
+                <div class="counter-controls">
+                    <button class="counter-btn counter-btn-primary" id="incrementBtn">
+                        <i class="fas fa-plus"></i> Increment
+                    </button>
+                    <button class="counter-btn counter-btn-secondary" id="decrementBtn">
+                        <i class="fas fa-minus"></i> Decrement
+                    </button>
+                    <button class="counter-btn counter-btn-danger" id="resetBtn">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                    <button class="counter-btn counter-btn-secondary" id="autoToggleBtn">
+                        <i class="fas fa-play"></i> Auto-Increment
+                    </button>
+                </div>
+                
+                <div class="counter-input-group">
+                    <div class="counter-input-label">Set Custom Value</div>
+                    <input type="number" class="counter-input" id="customValueInput" placeholder="Enter a number" min="0">
+                    <button class="counter-btn counter-btn-secondary" id="setValueBtn">
+                        <i class="fas fa-check"></i> Set Value
+                    </button>
+                </div>
+                
+                <div class="counter-types">
+                    <button class="counter-type-btn active" data-type="manual">
+                        <i class="fas fa-hand-pointer"></i>
+                        <span>Manual</span>
+                    </button>
+                    <button class="counter-type-btn" data-type="timer">
+                        <i class="fas fa-clock"></i>
+                        <span>Timer</span>
+                    </button>
+                    <button class="counter-type-btn" data-type="random">
+                        <i class="fas fa-dice"></i>
+                        <span>Random</span>
+                    </button>
+                    <button class="counter-type-btn" data-type="speed">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Speed Test</span>
+                    </button>
+                </div>
+                
+                <div class="counter-history">
+                    <div class="history-item">
+                        <span class="history-time">Counter History</span>
+                        <span class="history-value">Value</span>
+                    </div>
+                    <div id="counterHistory"></div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-chart-line"></i> Counter Analytics</h2>
+                
+                <div class="chart-container">
+                    <canvas id="counterChart"></canvas>
+                </div>
+                
+                <div class="live-stats">
+                    <div class="live-stat">
+                        <div class="live-stat-value" id="avgIncrement">0</div>
+                        <div class="live-stat-label">Average Increment</div>
+                    </div>
+                    <div class="live-stat">
+                        <div class="live-stat-value" id="maxValue">0</div>
+                        <div class="live-stat-label">Maximum Value</div>
+                    </div>
+                    <div class="live-stat">
+                        <div class="live-stat-value" id="operationsCount">0</div>
+                        <div class="live-stat-label">Total Operations</div>
+                    </div>
+                    <div class="live-stat">
+                        <div class="live-stat-value" id="counterSpeed">0/sec</div>
+                        <div class="live-stat-label">Current Speed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="world-counters">
+            <div class="world-counter">
+                <h3 class="world-counter-title"><i class="fas fa-globe-americas"></i> World Population</h3>
+                <div class="world-counter-value" id="worldPopulation">8,123,456,789</div>
+                <p class="world-counter-description">Estimated number of people alive right now. Increases by approximately 2.5 people per second.</p>
+            </div>
+            
+            <div class="world-counter">
+                <h3 class="world-counter-title"><i class="fas fa-birthday-cake"></i> Births Today</h3>
+                <div class="world-counter-value" id="birthsToday">215,342</div>
+                <p class="world-counter-description">Approximate number of births worldwide since midnight UTC.</p>
+            </div>
+            
+            <div class="world-counter">
+                <h3 class="world-counter-title"><i class="fas fa-heartbeat"></i> Heartbeats</h3>
+                <div class="world-counter-value" id="heartbeats">42,876,543,210</div>
+                <p class="world-counter-description">Estimated total heartbeats happening worldwide this minute.</p>
+            </div>
+            
+            <div class="world-counter">
+                <h3 class="world-counter-title"><i class="fas fa-search"></i> Google Searches</h3>
+                <div class="world-counter-value" id="googleSearches">3,456,789</div>
+                <p class="world-counter-description">Approximate number of Google searches performed in the last minute.</p>
+            </div>
+            
+            <div class="world-counter">
+                <h3 class="world-counter-title"><i class="fas fa-video"></i> YouTube Views</h3>
+                <div class="world-counter-value" id="youtubeViews">87,654,321</div>
+                <p class="world-counter-description">Estimated number of YouTube videos viewed in the last hour.</p>
+            </div>
+            
+            <div class="world-counter">
+                <h3 class="world-counter-title"><i class="fas fa-co2"></i> CO2 Emissions (tons)</h3>
+                <div class="world-counter-value" id="co2Emissions">3,456,789</div>
+                <p class="world-counter-description">Estimated tons of CO2 emitted worldwide in the last hour.</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Live Counter Universe • All counters update in real-time • Data is simulated for demonstration purposes</p>
+            <p>Made with <i class="fas fa-heart" style="color:#ff416c"></i> • Press Space to quickly increment your counter</p>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        const state = {
+            mainCounter: 0,
+            counterType: 'manual',
+            autoIncrement: false,
+            autoInterval: null,
+            startTime: Date.now(),
+            history: [],
+            operations: 0,
+            maxValue: 0,
+            totalIncrements: 0,
+            incrementSum: 0,
+            speedTestStart: null,
+            speedTestCount: 0,
+            totalClicks: 0,
+            globalStats: {
+                population: 8123456789,
+                birthsToday: 215342,
+                heartbeats: 42876543210,
+                googleSearches: 3456789,
+                youtubeViews: 87654321,
+                co2Emissions: 3456789
+            },
+            globalIntervals: {}
+        };
+
+        // DOM Elements
+        const mainCounterEl = document.getElementById('mainCounter');
+        const counterTypeBadge = document.getElementById('counterTypeBadge');
+        const globalCountEl = document.getElementById('globalCount');
+        const timeElapsedEl = document.getElementById('timeElapsed');
+        const userCounterEl = document.getElementById('userCounter');
+        const counterChangeEl = document.getElementById('counterChange');
+        const totalClicksEl = document.getElementById('totalClicks');
+        
+        // World counter elements
+        const worldPopulationEl = document.getElementById('worldPopulation');
+        const birthsTodayEl = document.getElementById('birthsToday');
+        const heartbeatsEl = document.getElementById('heartbeats');
+        const googleSearchesEl = document.getElementById('googleSearches');
+        const youtubeViewsEl = document.getElementById('youtubeViews');
+        const co2EmissionsEl = document.getElementById('co2Emissions');
+        
+        // Analytics elements
+        const avgIncrementEl = document.getElementById('avgIncrement');
+        const maxValueEl = document.getElementById('maxValue');
+        const operationsCountEl = document.getElementById('operationsCount');
+        const counterSpeedEl = document.getElementById('counterSpeed');
+        
+        // Buttons
+        const incrementBtn = document.getElementById('incrementBtn');
+        const decrementBtn = document.getElementById('decrementBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const autoToggleBtn = document.getElementById('autoToggleBtn');
+        const setValueBtn = document.getElementById('setValueBtn');
+        const counterTypeBtns = document.querySelectorAll('.counter-type-btn');
+        
+        // Input
+        const customValueInput = document.getElementById('customValueInput');
+        
+        // Chart
+        let counterChart;
+
+        // Initialize the application
+        function initApp() {
+            setupEventListeners();
+            initChart();
+            startGlobalCounters();
+            updateTimeElapsed();
+            setInterval(updateTimeElapsed, 1000);
+            updateAnalytics();
+            
+            // Add initial history entry
+            addToHistory('Initialized', 0);
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Counter buttons
+            incrementBtn.addEventListener('click', () => {
+                incrementCounter(1);
+                state.totalClicks++;
+                updateTotalClicks();
+            });
+            
+            decrementBtn.addEventListener('click', () => {
+                incrementCounter(-1);
+                state.totalClicks++;
+                updateTotalClicks();
+            });
+            
+            resetBtn.addEventListener('click', () => {
+                resetCounter();
+                state.totalClicks++;
+                updateTotalClicks();
+            });
+            
+            autoToggleBtn.addEventListener('click', toggleAutoIncrement);
+            
+            setValueBtn.addEventListener('click', () => {
+                const value = parseInt(customValueInput.value);
+                if (!isNaN(value) && value >= 0) {
+                    setCounterValue(value);
+                    state.totalClicks++;
+                    updateTotalClicks();
+                    customValueInput.value = '';
+                }
+            });
+            
+            // Counter type buttons
+            counterTypeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const type = btn.dataset.type;
+                    setCounterType(type);
+                    
+                    counterTypeBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Space to increment
+                if (e.code === 'Space' && state.counterType === 'manual') {
+                    e.preventDefault();
+                    incrementCounter(1);
+                    state.totalClicks++;
+                    updateTotalClicks();
+                }
+                
+                // Arrow up to increment, arrow down to decrement
+                if (e.code === 'ArrowUp') {
+                    e.preventDefault();
+                    incrementCounter(1);
+                    state.totalClicks++;
+                    updateTotalClicks();
+                }
+                
+                if (e.code === 'ArrowDown') {
+                    e.preventDefault();
+                    incrementCounter(-1);
+                    state.totalClicks++;
+                    updateTotalClicks();
+                }
+                
+                // R to reset
+                if (e.code === 'KeyR' && e.ctrlKey) {
+                    e.preventDefault();
+                    resetCounter();
+                    state.totalClicks++;
+                    updateTotalClicks();
+                }
+                
+                // A to toggle auto-increment
+                if (e.code === 'KeyA' && e.ctrlKey) {
+                    e.preventDefault();
+                    toggleAutoIncrement();
+                    state.totalClicks++;
+                    updateTotalClicks();
+                }
+            });
+            
+            // Input enter key
+            customValueInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const value = parseInt(customValueInput.value);
+                    if (!isNaN(value) && value >= 0) {
+                        setCounterValue(value);
+                        state.totalClicks++;
+                        updateTotalClicks();
+                        customValueInput.value = '';
+                    }
+                }
+            });
+        }
+
+        // Initialize the chart
+        function initChart() {
+            const ctx = document.getElementById('counterChart').getContext('2d');
+            counterChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 20}, (_, i) => i + 1),
+                    datasets: [{
+                        label: 'Counter Value History',
+                        data: Array(20).fill(0),
+                        borderColor: '#00dbde',
+                        backgroundColor: 'rgba(0, 219, 222, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#fff',
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#fff'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#fff'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update the chart with new data
+        function updateChart() {
+            if (!counterChart) return;
+            
+            // Add new data point
+            counterChart.data.datasets[0].data.push(state.mainCounter);
+            
+            // Keep only last 20 points
+            if (counterChart.data.datasets[0].data.length > 20) {
+                counterChart.data.datasets[0].data.shift();
+            }
+            
+            // Update labels
+            const startIndex = Math.max(0, state.history.length - 20);
+            counterChart.data.labels = Array.from(
+                {length: counterChart.data.datasets[0].data.length}, 
+                (_, i) => startIndex + i + 1
+            );
+            
+            counterChart.update();
+        }
+
+        // Increment the counter
+        function incrementCounter(amount = 1) {
+            const oldValue = state.mainCounter;
+            state.mainCounter += amount;
+            
+            // Ensure counter doesn't go negative
+            if (state.mainCounter < 0) state.mainCounter = 0;
+            
+            updateCounterDisplay();
+            
+            // Record stats
+            state.operations++;
+            state.totalIncrements++;
+            state.incrementSum += amount;
+            
+            if (state.mainCounter > state.maxValue) {
+                state.maxValue = state.mainCounter;
+            }
+            
+            // Add to history
+            const action = amount > 0 ? 'Increment' : 'Decrement';
+            addToHistory(action, state.mainCounter);
+            
+            // Update analytics
+            updateAnalytics();
+            
+            // If in speed test mode, track counts
+            if (state.counterType === 'speed') {
+                state.speedTestCount++;
+                updateSpeedTest();
+            }
+            
+            // Update chart
+            updateChart();
+        }
+
+        // Reset the counter
+        function resetCounter() {
+            const oldValue = state.mainCounter;
+            state.mainCounter = 0;
+            updateCounterDisplay();
+            
+            // Add to history
+            addToHistory('Reset', 0);
+            
+            // Update analytics
+            updateAnalytics();
+            
+            // Update chart
+            updateChart();
+        }
+
+        // Set counter to a specific value
+        function setCounterValue(value) {
+            const oldValue = state.mainCounter;
+            state.mainCounter = value;
+            updateCounterDisplay();
+            
+            // Add to history
+            addToHistory('Set Value', value);
+            
+            // Update analytics
+            updateAnalytics();
+            
+            // Update chart
+            updateChart();
+        }
+
+        // Toggle auto-increment
+        function toggleAutoIncrement() {
+            state.autoIncrement = !state.autoIncrement;
+            
+            if (state.autoIncrement) {
+                autoToggleBtn.innerHTML = '<i class="fas fa-pause"></i> Stop Auto-Increment';
+                autoToggleBtn.classList.remove('counter-btn-secondary');
+                autoToggleBtn.classList.add('counter-btn-danger');
+                
+                // Start auto-increment interval
+                state.autoInterval = setInterval(() => {
+                    incrementCounter(1);
+                }, 500);
+            } else {
+                autoToggleBtn.innerHTML = '<i class="fas fa-play"></i> Auto-Increment';
+                autoToggleBtn.classList.remove('counter-btn-danger');
+                autoToggleBtn.classList.add('counter-btn-secondary');
+                
+                // Stop auto-increment interval
+                if (state.autoInterval) {
+                    clearInterval(state.autoInterval);
+                    state.autoInterval = null;
+                }
+            }
+        }
+
+        // Set counter type
+        function setCounterType(type) {
+            state.counterType = type;
+            counterTypeBadge.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+            
+            // Stop auto-increment if it's running
+            if (state.autoIncrement) {
+                toggleAutoIncrement();
+            }
+            
+            // Handle special counter types
+            switch (type) {
+                case 'timer':
+                    startTimerCounter();
+                    break;
+                case 'random':
+                    startRandomCounter();
+                    break;
+                case 'speed':
+                    startSpeedTest();
+                    break;
+                case 'manual':
+                default:
+                    // Nothing special for manual mode
+                    break;
+            }
+        }
+
+        // Start timer counter mode
+        function startTimerCounter() {
+            // Clear any existing interval
+            if (state.autoInterval) clearInterval(state.autoInterval);
+            
+            // Start counting every second
+            state.autoInterval = setInterval(() => {
+                incrementCounter(1);
+            }, 1000);
+        }
+
+        // Start random counter mode
+        function startRandomCounter() {
+            // Clear any existing interval
+            if (state.autoInterval) clearInterval(state.autoInterval);
+            
+            // Start random increments
+            state.autoInterval = setInterval(() => {
+                const amount = Math.floor(Math.random() * 10) + 1; // 1-10
+                incrementCounter(amount);
+            }, 1500);
+        }
+
+        // Start speed test mode
+        function startSpeedTest() {
+            // Reset speed test stats
+            state.speedTestStart = Date.now();
+            state.speedTestCount = 0;
+            
+            // Update button text
+            incrementBtn.innerHTML = '<i class="fas fa-bolt"></i> CLICK FAST!';
+            incrementBtn.style.background = 'linear-gradient(90deg, #ff9a00, #ff0000)';
+            
+            // Change counter label
+            document.querySelector('.counter-label').innerHTML = 'Speed Test <span class="counter-badge">Click as fast as you can!</span>';
+            
+            // Start 10-second timer
+            setTimeout(() => {
+                // Stop speed test
+                if (state.autoInterval) clearInterval(state.autoInterval);
+                
+                // Calculate clicks per second
+                const elapsedSeconds = (Date.now() - state.speedTestStart) / 1000;
+                const cps = (state.speedTestCount / elapsedSeconds).toFixed(1);
+                
+                // Show result
+                alert(`Speed Test Complete!\n\nClicks: ${state.speedTestCount}\nTime: ${elapsedSeconds.toFixed(1)}s\nSpeed: ${cps} clicks/second`);
+                
+                // Reset button
+                incrementBtn.innerHTML = '<i class="fas fa-plus"></i> Increment';
+                incrementBtn.style.background = '';
+                
+                // Reset counter label
+                document.querySelector('.counter-label').innerHTML = 'Main Counter <span class="counter-badge">Speed Test</span>';
+            }, 10000);
+        }
+
+        // Update speed test display
+        function updateSpeedTest() {
+            if (state.counterType !== 'speed' || !state.speedTestStart) return;
+            
+            const elapsedSeconds = (Date.now() - state.speedTestStart) / 1000;
+            const cps = (state.speedTestCount / elapsedSeconds).toFixed(1);
+            
+            counterSpeedEl.textContent = `${cps}/sec`;
+        }
+
+        // Update counter display with animation
+        function updateCounterDisplay() {
+            // Update main counter
+            mainCounterEl.textContent = formatNumber(state.mainCounter);
+            mainCounterEl.classList.add('pulse-animation');
+            
+            // Update user counter in stats bar
+            userCounterEl.textContent = formatNumber(state.mainCounter);
+            
+            // Remove animation class after animation completes
+            setTimeout(() => {
+                mainCounterEl.classList.remove('pulse-animation');
+            }, 500);
+            
+            // Update counter change indicator
+            updateCounterChange();
+        }
+
+        // Update counter change indicator
+        function updateCounterChange() {
+            // For now, we'll show a simulated change rate
+            // In a real app, you'd calculate actual change over time
+            const changeRate = state.counterType === 'timer' ? '+1/sec' : 
+                              state.counterType === 'random' ? '~+5/sec' : 
+                              state.counterType === 'speed' ? 'Varies' : '+0/sec';
+            
+            counterChangeEl.textContent = changeRate;
+        }
+
+        // Add entry to counter history
+        function addToHistory(action, value) {
+            const now = new Date();
+            const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            
+            const historyItem = {
+                time: timeString,
+                action: action,
+                value: value
+            };
+            
+            state.history.unshift(historyItem);
+            
+            // Keep only last 10 items
+            if (state.history.length > 10) {
+                state.history.pop();
+            }
+            
+            updateHistoryDisplay();
+        }
+
+        // Update history display
+        function updateHistoryDisplay() {
+            const historyContainer = document.getElementById('counterHistory');
+            let historyHTML = '';
+            
+            state.history.forEach(item => {
+                historyHTML += `
+                    <div class="history-item">
+                        <span class="history-time">${item.time} (${item.action})</span>
+                        <span class="history-value">${formatNumber(item.value)}</span>
+                    </div>
+                `;
+            });
+            
+            historyContainer.innerHTML = historyHTML;
+        }
+
+        // Update analytics display
+        function updateAnalytics() {
+            // Calculate average increment
+            const avgIncrement = state.totalIncrements > 0 ? 
+                (state.incrementSum / state.totalIncrements).toFixed(2) : 0;
+            
+            avgIncrementEl.textContent = avgIncrement;
+            maxValueEl.textContent = formatNumber(state.maxValue);
+            operationsCountEl.textContent = state.operations;
+            
+            // Update speed display
+            if (state.counterType !== 'speed') {
+                const speed = state.autoIncrement ? '2/sec' : 'Manual';
+                counterSpeedEl.textContent = speed;
+            }
+        }
+
+        // Update time elapsed display
+        function updateTimeElapsed() {
+            const elapsedMs = Date.now() - state.startTime;
+            const seconds = Math.floor((elapsedMs / 1000) % 60);
+            const minutes = Math.floor((elapsedMs / (1000 * 60)) % 60);
+            const hours = Math.floor((elapsedMs / (1000 * 60 * 60)) % 24);
+            
+            const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timeElapsedEl.textContent = timeString;
+        }
+
+        // Update total clicks display
+        function updateTotalClicks() {
+            totalClicksEl.textContent = state.totalClicks;
+        }
+
+        // Start global counters simulation
+        function startGlobalCounters() {
+            // Update global population (simulated)
+            state.globalIntervals.population = setInterval(() => {
+                state.globalStats.population += 2; // ~2.5 people per second
+                worldPopulationEl.textContent = formatNumber(state.globalStats.population);
+                globalCountEl.textContent = formatNumber(state.globalStats.population);
+            }, 400);
+            
+            // Update births today
+            state.globalIntervals.births = setInterval(() => {
+                state.globalStats.birthsToday += 1; // ~1 birth every 4 seconds
+                birthsTodayEl.textContent = formatNumber(state.globalStats.birthsToday);
+            }, 4000);
+            
+            // Update heartbeats (simulated)
+            state.globalIntervals.heartbeats = setInterval(() => {
+                state.globalStats.heartbeats += 1000000; // ~1 million heartbeats per second
+                heartbeatsEl.textContent = formatNumber(state.globalStats.heartbeats);
+            }, 1);
+            
+            // Update Google searches
+            state.globalIntervals.google = setInterval(() => {
+                state.globalStats.googleSearches += 100; // ~100 searches per second
+                googleSearchesEl.textContent = formatNumber(state.globalStats.googleSearches);
+            }, 10);
+            
+            // Update YouTube views
+            state.globalIntervals.youtube = setInterval(() => {
+                state.globalStats.youtubeViews += 1000; // ~1000 views per second
+                youtubeViewsEl.textContent = formatNumber(state.globalStats.youtubeViews);
+            }, 1);
+            
+            // Update CO2 emissions
+            state.globalIntervals.co2 = setInterval(() => {
+                state.globalStats.co2Emissions += 10; // ~10 tons per second
+                co2EmissionsEl.textContent = formatNumber(state.globalStats.co2Emissions);
+            }, 100);
+        }
+
+        // Format number with commas
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        // Initialize the app when page loads
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

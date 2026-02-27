@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrafficGod - IDM Simulation</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/controls.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+
+<body>
+
+    <div id="canvas-container">
+        <canvas id="traffic-canvas"></canvas>
+    </div>
+
+    <div id="ui-overlay">
+        <!-- Main Controls -->
+        <div class="panel">
+            <h1>TRAFFICGOD</h1>
+            <h2>Simulation Parameters</h2>
+
+            <!-- Density -->
+            <div class="control-group">
+                <label>
+                    <span>Traffic Density</span>
+                    <span id="density-val">100</span>
+                </label>
+                <input type="range" id="density-slider" min="10" max="200" value="100">
+            </div>
+
+            <!-- IDM Aggressiveness (Acceleration) -->
+            <div class="control-group">
+                <label>
+                    <span>Acceleration (a)</span>
+                    <span id="accel-val">1.0</span>
+                </label>
+                <input type="range" id="accel-slider" min="0.1" max="5.0" step="0.1" value="1.0">
+            </div>
+
+            <!-- IDM Politeness (Braking) -->
+            <div class="control-group">
+                <label>
+                    <span>Politeness (T)</span>
+                    <span id="headway-val">1.5s</span>
+                </label>
+                <input type="range" id="headway-slider" min="0.5" max="3.0" step="0.1" value="1.5">
+            </div>
+
+            <!-- Speed Limit -->
+            <div class="control-group">
+                <label>
+                    <span>Speed Limit (v0)</span>
+                    <span id="speed-val">30</span>
+                </label>
+                <input type="range" id="speed-slider" min="10" max="60" value="30">
+            </div>
+
+            <!-- Perturbation -->
+            <!-- Chaos -->
+            <div class="control-group">
+                <label>
+                    <span>Chaos Factor</span>
+                    <span id="chaos-val">1%</span>
+                </label>
+                <input type="range" id="chaos-slider" min="0" max="100" value="1">
+            </div>
+
+            <!-- Time Scale -->
+            <div class="control-group">
+                <label>
+                    <span>Time Scale</span>
+                    <span id="time-val">1.0x</span>
+                </label>
+                <input type="range" id="time-slider" min="0.1" max="5.0" step="0.1" value="1.0">
+            </div>
+
+            <!-- Camera Info -->
+            <div class="control-group">
+                <label>
+                    <span>Camera Mode</span>
+                </label>
+                <div class="btn-group">
+                    <button id="cam-global" class="primary">Global</button>
+                    <button id="cam-follow">Follow Random</button>
+                </div>
+                <p style="font-size: 0.7rem; color: #666; margin-top: 5px;">Click on a car to follow it.</p>
+            </div>
+
+            <!-- Presets -->
+            <div id="presets-container" class="control-group">
+                <h2>Scenarios</h2>
+                <div class="btn-group" id="preset-buttons">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <span>Weather</span>
+                </label>
+                <div class="btn-group">
+                    <button id="weather-sun" class="primary">Sunny</button>
+                    <button id="weather-rain">Rain</button>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="btn-group">
+                <button id="reset-btn" class="primary">Reset Simulation</button>
+                <button id="pause-btn">Pause</button>
+            </div>
+
+            <button id="help-btn"
+                style="margin-top: 15px; width: 100%; border-color: rgba(255,255,255,0.05); color: #888;">? Help &
+                About</button>
+        </div>
+
+        <!-- Real-time Stats -->
+        <div class="panel">
+            <h2>Live Telemetry</h2>
+            <div class="stat-row">
+                <span>Avg Speed</span>
+                <span id="stat-avg-speed" class="stat-value">0 km/h</span>
+            </div>
+            <div class="stat-row">
+                <span>Flow Rate</span>
+                <span id="stat-flow" class="stat-value">0 veh/min</span>
+            </div>
+            <div class="stat-row">
+                <span>Jam Factor</span>
+                <span id="stat-jam" class="stat-value">0%</span>
+            </div>
+
+            <div id="graph-container">
+                <canvas id="graph-canvas" class="graph"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vehicle Details Panel -->
+    <div id="details-panel" class="panel"
+        style="display: none; position: absolute; top: 20px; right: 20px; width: 250px;">
+        <h2>Vehicle Info</h2>
+        <div class="stat-row">
+            <span>ID</span>
+            <span id="detail-id" class="stat-value">--</span>
+        </div>
+        <div class="stat-row">
+            <span>Type</span>
+            <span id="detail-type" class="stat-value">--</span>
+        </div>
+        <div class="stat-row">
+            <span>Speed</span>
+            <span id="detail-speed" class="stat-value">0 km/h</span>
+        </div>
+        <div class="stat-row">
+            <span>Accel</span>
+            <span id="detail-accel" class="stat-value">0 m/s²</span>
+        </div>
+        <div class="stat-row">
+            <span>Headway</span>
+            <span id="detail-headway" class="stat-value">-- m</span>
+        </div>
+        <button id="detail-close" style="margin-top: 10px;">Close</button>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-overlay">
+        <div class="modal">
+            <button id="help-close" class="close-btn">&times;</button>
+            <h2>TrafficGod Simulation</h2>
+            <p>Welcome to <strong>TrafficGod</strong>, a microscopic traffic simulation powered by the Intelligent
+                Driver Model (IDM).</p>
+
+            <h3>How it Works</h3>
+            <ul>
+                <li><strong>Road</strong>: A circular track is used to simulate infinite traffic flow.</li>
+                <li><strong>Physics</strong>: Each vehicle calculates its acceleration based on the gap to the leader
+                    and current speed (IDM).</li>
+                <li><strong>Emergence</strong>: Phantom traffic jams appear spontaneously when density is high or
+                    drivers are aggressive.</li>
+            </ul>
+
+            <h3>Controls</h3>
+            <ul>
+                <li><strong>Density</strong>: Number of vehicles on the road.</li>
+                <li><strong>Acceleration (a)</strong>: How quickly cars speed up.</li>
+                <li><strong>Politeness (T)</strong>: Safe following time distance. Lower is more aggressive.</li>
+                <li><strong>Chaos</strong>: Random braking probability.</li>
+            </ul>
+
+            <p style="font-size: 0.8rem; color: #666; margin-top: 20px;">Built with Vanilla JS, HTML5 Canvas, and Math.
+            </p>
+        </div>
+    </div>
+
+    <!-- Modules -->
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

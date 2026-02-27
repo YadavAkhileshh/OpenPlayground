@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jumping Monkeys Catapult</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #a3e635; /* Jungle Green */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            background: linear-gradient(to bottom, #7dd3fc, #bae6fd, #a3e635);
+        }
+        #ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            pointer-events: none;
+            display: flex;
+            justify-content: space-between;
+            color: #164e63;
+            font-weight: bold;
+            text-shadow: 1px 1px 0px white;
+        }
+        .score-card {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 2px solid #164e63;
+            pointer-events: auto;
+        }
+        #turn-indicator {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+        .player-turn { background: #3b82f6; color: white; }
+        .bot-turn { background: #ef4444; color: white; }
+    </style>
+</head>
+<body>
+
+<div id="ui-overlay">
+    <div class="score-card">
+        <div>YOU: <span id="player-score">0</span></div>
+    </div>
+    <div id="turn-indicator" class="player-turn">YOUR TURN</div>
+    <div class="score-card text-right">
+        <div>BOT: <span id="bot-score">0</span></div>
+    </div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const playerScoreshow = document.getElementById('player-score');
+    const botScoreshow = document.getElementById('bot-score');
+    const turnIndicator = document.getElementById('turn-indicator');
+
+    // Game Constants
+    const GRAVITY = 0.25;
+    const GROUND_Y_OFFSET = 100;
+    
+    // Game State
+    let width, height;
+    let monkeys = [];
+    let baskets = [];
+    let currentPlayer = 'player'; 
+    let scores = { player: 0, bot: 0 };
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
+    let dragCurrent = { x: 0, y: 0 };
+    let isLaunching = false;
+
+    class Basket {
+        constructor(x, y, speed, range) {
+            this.baseX = x;
+            this.x = x;
+            this.y = y;
+            this.width = 70;
+            this.height = 40;
+            this.speed = speed;
+            this.range = range;
+            this.offset = Math.random() * Math.PI * 2;
+            this.landedMonkeys = []; // Monkeys currently in this basket
+        }
+
+        update() {
+            const oldX = this.x;
+            this.x = this.baseX + Math.sin(Date.now() / 1000 * this.speed + this.offset) * this.range;
+            const dx = this.x - oldX;
+
+            // Move monkeys that have landed in this basket
+            this.landedMonkeys.forEach(m => {
+                m.x += dx;
+            });
+        }
+
+        draw() {
+            ctx.fillStyle = '#78350f'; 
+            ctx.beginPath();
+            ctx.roundRect(this.x - this.width/2, this.y, this.width, this.height, [0, 0, 15, 15]);
+            ctx.fill();
+            ctx.strokeStyle = '#451a03';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            for(let i = -2; i <= 2; i++) {
+                ctx.moveTo(this.x + i * 10, this.y);
+                ctx.lineTo(this.x + i * 10, this.y + this.height);
+            }
+            ctx.stroke();
+        }
+    }
+
+    class Monkey {
+        constructor(x, y, vx, vy, owner) {
+            this.x = x;
+            this.y = y;
+            this.vx = vx;
+            this.vy = vy;
+            this.radius = 15;
+            this.owner = owner;
+            this.active = true;
+            this.landed = false;
+        }
+
+        update() {
+            if (!this.active) return;
+
+            this.vy += GRAVITY;
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Check collision with baskets
+            baskets.forEach(b => {
+                if (this.vy > 0 && 
+                    this.x > b.x - b.width/2 && this.x < b.x + b.width/2 &&
+                    this.y > b.y && this.y < b.y + 20) {
+                    
+                    this.active = false;
+                    this.landed = true;
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.y = b.y + 5; // Sit inside the basket
+                    b.landedMonkeys.push(this);
+                    
+                    scores[this.owner]++;
+                    updateScores();
+                    setTimeout(nextTurn, 500);
+                }
+            });
+
+            // Check floor/bounds
+            if (this.y > height - GROUND_Y_OFFSET) {
+                this.active = false;
+                setTimeout(nextTurn, 500);
+            }
+            if (this.x > width || this.x < 0) {
+                this.active = false;
+                setTimeout(nextTurn, 500);
+            }
+        }
+
+        draw() {
+            ctx.font = '30px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🐒', this.x, this.y);
+        }
+    }
+
+    function init() {
+        resize();
+        baskets = [
+            new Basket(width * 0.5, height * 0.3, 1.2, 100),
+            new Basket(width * 0.7, height * 0.5, 0.8, 150),
+            new Basket(width * 0.85, height * 0.2, 1.5, 80)
+        ];
+        requestAnimationFrame(gameLoop);
+    }
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    }
+
+    function updateScores() {
+        playerScoreshow.innerText = scores.player;
+        botScoreshow.innerText = scores.bot;
+    }
+
+    function nextTurn() {
+        isLaunching = false;
+        if (currentPlayer === 'player') {
+            currentPlayer = 'bot';
+            turnIndicator.innerText = "BOT'S TURN";
+            turnIndicator.className = "bot-turn";
+            setTimeout(botShoot, 1500);
+        } else {
+            currentPlayer = 'player';
+            turnIndicator.innerText = "YOUR TURN";
+            turnIndicator.className = "player-turn";
+        }
+    }
+
+    function botShoot() {
+        if (currentPlayer !== 'bot') return;
+        isLaunching = true;
+
+        const targetBasket = baskets[Math.floor(Math.random() * baskets.length)];
+        let angle = -Math.PI / 4 + (Math.random() * 0.2 - 0.1);
+        let power = 13 + (Math.random() * 5 - 2);
+
+        const vx = Math.cos(angle) * power;
+        const vy = Math.sin(angle) * power;
+
+        monkeys.push(new Monkey(50, height - GROUND_Y_OFFSET - 20, vx, vy, 'bot'));
+    }
+
+    function handleStart(e) {
+        if (currentPlayer !== 'player' || isLaunching) return;
+        const t = e.touches ? e.touches[0] : e;
+        isDragging = true;
+        dragStart.x = t.clientX;
+        dragStart.y = t.clientY;
+        dragCurrent.x = t.clientX;
+        dragCurrent.y = t.clientY;
+    }
+
+    function handleMove(e) {
+        if (!isDragging) return;
+        const t = e.touches ? e.touches[0] : e;
+        dragCurrent.x = t.clientX;
+        dragCurrent.y = t.clientY;
+    }
+
+    function handleEnd() {
+        if (!isDragging) return;
+        isDragging = false;
+
+        const dx = dragStart.x - dragCurrent.x;
+        const dy = dragStart.y - dragCurrent.y;
+        
+        if (Math.sqrt(dx*dx + dy*dy) > 15) {
+            isLaunching = true;
+            const powerScale = 0.1;
+            const vx = dx * powerScale;
+            const vy = dy * powerScale;
+            
+            monkeys.push(new Monkey(50, height - GROUND_Y_OFFSET - 20, vx, vy, 'player'));
+        }
+    }
+
+    function drawCatapult() {
+        const startX = 50;
+        const startY = height - GROUND_Y_OFFSET - 10;
+
+        // Base
+        ctx.fillStyle = '#451a03';
+        ctx.fillRect(startX - 20, startY, 40, 20);
+        
+        // Monkey at the starting position (only if not currently launching)
+        if (!isLaunching) {
+            ctx.font = '30px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            let displayX = startX;
+            let displayY = startY - 10;
+
+            if (isDragging && currentPlayer === 'player') {
+                const dx = dragStart.x - dragCurrent.x;
+                const dy = dragStart.y - dragCurrent.y;
+                displayX += dx;
+                displayY += dy;
+
+                // Elastic line
+                ctx.beginPath();
+                ctx.strokeStyle = '#ef4444';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 2;
+                ctx.moveTo(startX, startY - 10);
+                ctx.lineTo(displayX, displayY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Trajectory dots
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                let tx = startX, ty = startY - 10, tvx = dx * 0.1, tvy = dy * 0.1;
+                for(let i=0; i<15; i++) {
+                    tx += tvx;
+                    ty += tvy;
+                    tvy += GRAVITY;
+                    ctx.beginPath();
+                    ctx.arc(tx, ty, 3, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+            ctx.fillText('🐒', displayX, displayY);
+        }
+    }
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, width, height);
+
+        // Draw Ground
+        ctx.fillStyle = '#3f6212';
+        ctx.fillRect(0, height - GROUND_Y_OFFSET, width, GROUND_Y_OFFSET);
+
+        // Update and draw baskets
+        baskets.forEach(b => {
+            b.update();
+            b.draw();
+        });
+
+        // Update and draw monkeys
+        monkeys = monkeys.filter(m => {
+            m.update();
+            m.draw();
+            // Keep landed monkeys as long as they are attached to a basket
+            return m.active || m.landed;
+        });
+
+        drawCatapult();
+        requestAnimationFrame(gameLoop);
+    }
+
+    window.addEventListener('mousedown', handleStart);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchstart', handleStart);
+    window.addEventListener('touchmove', handleMove);
+    window.addEventListener('touchend', handleEnd);
+    window.addEventListener('resize', resize);
+
+    init();
+</script>
+</body>
+</html>

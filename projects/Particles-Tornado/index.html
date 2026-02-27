@@ -1,0 +1,400 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js ASCII Tornado</title>
+    <!-- Import Kode Mono Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kode+Mono:wght@700&display=swap" rel="stylesheet">
+    
+   <style>
+            body {
+            margin: 0;
+            overflow: hidden;
+            font-family: sans-serif;
+            background-color: #ffffff;
+        }
+        canvas {
+            display: block;
+        }
+        .lil-gui.root {
+            position: absolute;
+            top: auto;
+            bottom: 10px;
+            right: 10px;
+        }
+   </style>
+    <!-- Import Three.js, Lil-GUI and Post-Processing modules -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "lil-gui": "https://unpkg.com/lil-gui@0.19.1/dist/lil-gui.esm.min.js"
+            }
+        }
+    </script>
+</head>
+
+
+
+
+<body>
+    <script type="module">
+                import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import GUI from 'lil-gui';
+
+        // --- Configuration ---
+        const params = {
+            // Movement
+            verticalSpeed: 1.4,
+            rotationSpeed: -0.53,
+            twist: -2.6,
+            
+            // Vortex Streams
+            streamCount: 3,
+            streamWidth: 0.762,
+            randomness: 3.73,
+
+            // Colors & Gradient
+            colorTop: '#121afd',
+            colorBottom: '#121afd',
+            backgroundColor: '#ffffff',
+            
+            // Glow (Bloom)
+            enableBloom: false,
+            bloomStrength: 1.5,
+            bloomRadius: 0.5,
+            bloomThreshold: 0,
+
+            // Shape
+            count: 15000,
+            baseSize: 7.7,
+            radiusTop: 9.0,
+            radiusBottom: 3.0,
+            height: 45,
+
+            // ASCII Mode
+            useAscii: true
+        };
+
+        // --- Setup Scene ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(params.backgroundColor);
+        scene.fog = new THREE.FogExp2(params.backgroundColor, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.01, 200);
+        camera.position.set(0, 0, 35);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true }); 
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // --- ASCII Texture Generation ---
+        // Generates a sprite sheet with 0-9 and A-Z
+        const createFontTexture = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const size = 512; // Texture size
+            canvas.width = size;
+            canvas.height = size;
+            
+            // Grid settings: 6x6 = 36 cells.
+            // We have 10 digits + 26 letters = 36 characters exactly.
+            const cols = 6;
+            const rows = 6;
+            const charSize = size / cols;
+
+            const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+            ctx.fillStyle = 'rgba(0,0,0,0)'; // Transparent background
+            ctx.fillRect(0, 0, size, size);
+
+            ctx.font = `bold ${charSize * 0.8}px "Kode Mono", monospace`;
+            ctx.fillStyle = 'white'; // Draw white text, we color it in shader
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let i = 0; i < chars.length; i++) {
+                const char = chars[i];
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                
+                const x = col * charSize + charSize / 2;
+                const y = row * charSize + charSize / 2; // + offset for baseline
+
+                ctx.fillText(char, x, y + (charSize * 0.05));
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            // Needed to ensure sprite mapping works intuitively
+            texture.flipY = false; 
+            return texture;
+        };
+
+        // Wait for font to load before creating texture (optional but recommended)
+        // If font isn't ready, it might draw fallback font first.
+        let fontTexture = createFontTexture();
+        document.fonts.ready.then(() => {
+            fontTexture = createFontTexture(); // Re-generate once font is loaded
+            if(material) material.uniforms.uFontTexture.value = fontTexture;
+        });
+
+        // --- Post Processing Setup ---
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            params.bloomStrength,
+            params.bloomRadius,
+            params.bloomThreshold
+        );
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // --- Particle System ---
+        let points = null;
+        let geometry = null;
+        let material = null;
+
+        const generateParticles = () => {
+            if (points) {
+                geometry.dispose();
+                material.dispose();
+                scene.remove(points);
+            }
+
+            geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(params.count * 3);
+            const offsets = new Float32Array(params.count * 3);
+            const scales = new Float32Array(params.count);
+            const phases = new Float32Array(params.count);
+            const charIndices = new Float32Array(params.count); // For ASCII
+
+            for (let i = 0; i < params.count; i++) {
+                const armIndex = i % params.streamCount; 
+                const armAngle = (armIndex / params.streamCount) * Math.PI * 2;
+                const randomSpread = (Math.random() - 0.5) * params.streamWidth;
+                const finalAngle = armAngle + randomSpread;
+
+                positions[i * 3] = finalAngle;
+                positions[i * 3 + 1] = 0; 
+                positions[i * 3 + 2] = 0;
+
+                phases[i] = Math.random();
+
+                offsets[i * 3] = (Math.random() - 0.5) * params.randomness;
+                offsets[i * 3 + 1] = (Math.random() - 0.5) * params.randomness;
+                offsets[i * 3 + 2] = (Math.random() - 0.5) * params.randomness;
+
+                scales[i] = Math.random();
+                
+                // Random char index from 0 to 35
+                charIndices[i] = Math.floor(Math.random() * 36);
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('aOffset', new THREE.BufferAttribute(offsets, 3));
+            geometry.setAttribute('aScale', new THREE.BufferAttribute(scales, 1));
+            geometry.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
+            geometry.setAttribute('aCharIndex', new THREE.BufferAttribute(charIndices, 1));
+
+            material = new THREE.ShaderMaterial({
+                transparent: true,
+                depthWrite: false,
+                blending: THREE.NormalBlending,
+                vertexColors: false,
+                uniforms: {
+                    uTime: { value: 0 },
+                    uColorBottom: { value: new THREE.Color(params.colorBottom) },
+                    uColorTop: { value: new THREE.Color(params.colorTop) },
+                    uSize: { value: params.baseSize * renderer.getPixelRatio() },
+                    uHeight: { value: params.height },
+                    uRadiusTop: { value: params.radiusTop },
+                    uRadiusBottom: { value: params.radiusBottom },
+                    uTwist: { value: params.twist },
+                    uRotationSpeed: { value: params.rotationSpeed },
+                    uVerticalSpeed: { value: params.verticalSpeed },
+                    // ASCII Uniforms
+                    uFontTexture: { value: fontTexture },
+                    uUseAscii: { value: params.useAscii ? 1.0 : 0.0 }
+                },
+                vertexShader: `
+                    uniform float uTime;
+                    uniform float uSize;
+                    uniform float uHeight;
+                    uniform float uRadiusTop;
+                    uniform float uRadiusBottom;
+                    uniform float uTwist;
+                    uniform float uRotationSpeed;
+                    uniform float uVerticalSpeed;
+
+                    attribute vec3 aOffset;
+                    attribute float aScale;
+                    attribute float aPhase;
+                    attribute float aCharIndex;
+
+                    varying float vHeightRatio;
+                    varying float vCharIndex;
+
+                    void main() {
+                        // Pass char index to frag
+                        vCharIndex = aCharIndex;
+
+                        float y = mod((aPhase * uHeight) + (uTime * uVerticalSpeed), uHeight);
+                        vHeightRatio = y / uHeight; 
+
+                        float currentRadius = mix(uRadiusBottom, uRadiusTop, vHeightRatio);
+
+                        float baseAngle = position.x;
+                        float angle = baseAngle + (uTime * uRotationSpeed) + (y * 0.1 * uTwist);
+
+                        vec3 newPos = vec3(0.0);
+                        newPos.x = cos(angle) * currentRadius;
+                        newPos.z = sin(angle) * currentRadius;
+                        newPos.y = y - (uHeight / 2.0);
+
+                        newPos += aOffset;
+
+                        vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
+                        gl_Position = projectionMatrix * mvPosition;
+
+                        gl_PointSize = uSize * aScale * (50.0 / -mvPosition.z);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 uColorBottom;
+                    uniform vec3 uColorTop;
+                    uniform sampler2D uFontTexture;
+                    uniform float uUseAscii;
+
+                    varying float vHeightRatio;
+                    varying float vCharIndex;
+
+                    void main() {
+                        float alpha = 0.0;
+                        
+                        if (uUseAscii > 0.5) {
+                            // --- ASCII Logic ---
+                            // Grid is 6x6
+                            float cols = 6.0;
+                            float rows = 6.0;
+                            
+                            // Calculate column and row for this character
+                            float colIndex = mod(vCharIndex, cols);
+                            float rowIndex = floor(vCharIndex / cols);
+                            
+                            // Map gl_PointCoord (0..1) to sub-grid UV
+                            vec2 uv = gl_PointCoord / cols;
+                            uv.x += colIndex / cols;
+                            uv.y += rowIndex / rows;
+                            
+                            vec4 texColor = texture2D(uFontTexture, uv);
+                            alpha = texColor.a; // Use texture alpha (text shape)
+                        } else {
+                            // --- Circle Logic ---
+                            float dist = distance(gl_PointCoord, vec2(0.5));
+                            if(dist > 0.5) discard;
+                            alpha = 1.0 - smoothstep(0.4, 0.5, dist);
+                        }
+
+                        // --- Vertical Fade Logic ---
+                        float fadeIn = smoothstep(0.0, 0.1, vHeightRatio);
+                        float fadeOut = 1.0 - smoothstep(0.9, 1.0, vHeightRatio);
+                        float finalAlpha = alpha * fadeIn * fadeOut;
+
+                        if (finalAlpha < 0.01) discard;
+
+                        vec3 finalColor = mix(uColorBottom, uColorTop, vHeightRatio);
+                        gl_FragColor = vec4(finalColor, finalAlpha);
+                    }
+                `
+            });
+
+            points = new THREE.Points(geometry, material);
+            points.frustumCulled = false;
+            scene.add(points);
+        };
+
+        generateParticles();
+
+        // --- GUI Panel ---
+        const gui = new GUI({ title: 'Tornado Settings' });
+
+        const fAnim = gui.addFolder('Movement');
+        fAnim.add(params, 'verticalSpeed', 0.0, 10.0).name('Up Speed').onChange(v => material.uniforms.uVerticalSpeed.value = v);
+        fAnim.add(params, 'rotationSpeed', -5.0, 5.0).name('Spin Speed').onChange(v => material.uniforms.uRotationSpeed.value = v);
+        fAnim.add(params, 'twist', -10.0, 10.0).name('Twist Factor').onChange(v => material.uniforms.uTwist.value = v);
+
+        const fStreams = gui.addFolder('Vortex Streams');
+        fStreams.add(params, 'streamCount', 1, 10, 1).name('Num Streams').onFinishChange(generateParticles);
+        fStreams.add(params, 'streamWidth', 0.0, 6.0).name('Stream Spread').onFinishChange(generateParticles);
+        fStreams.add(params, 'randomness', 0.0, 10.0).name('Chaos').onFinishChange(generateParticles);
+
+        const fColors = gui.addFolder('Colors & Gradient');
+        fColors.addColor(params, 'colorTop').name('Top Color').onChange(v => material.uniforms.uColorTop.value.set(v));
+        fColors.addColor(params, 'colorBottom').name('Bottom Color').onChange(v => material.uniforms.uColorBottom.value.set(v));
+        fColors.addColor(params, 'backgroundColor').name('Background').onChange(v => {
+            scene.background.set(v);
+            scene.fog.color.set(v);
+        });
+
+        const fBloom = gui.addFolder('Glow (Bloom)');
+        fBloom.add(params, 'enableBloom').name('Enable Bloom'); 
+        fBloom.add(params, 'bloomStrength', 0.0, 3.0).name('Strength').onChange(v => bloomPass.strength = v);
+        fBloom.add(params, 'bloomRadius', 0.0, 1.0).name('Radius').onChange(v => bloomPass.radius = v);
+
+        const fShape = gui.addFolder('Shape');
+        fShape.add(params, 'count', 1000, 50000, 1000).name('Particle Count').onFinishChange(generateParticles);
+        fShape.add(params, 'baseSize', 0.1, 10).name('Size').onChange(v => material.uniforms.uSize.value = v * renderer.getPixelRatio());
+        fShape.add(params, 'radiusTop', 1, 30).name('Top Width').onChange(v => material.uniforms.uRadiusTop.value = v);
+        fShape.add(params, 'radiusBottom', 0.1, 10).name('Bottom Width').onChange(v => material.uniforms.uRadiusBottom.value = v);
+
+        // --- NEW: ASCII Toggle ---
+        // We add this to Shape or create a new folder
+        gui.add(params, 'useAscii').name('Enable ASCII Mode').onChange(v => {
+            material.uniforms.uUseAscii.value = v ? 1.0 : 0.0;
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+            if(material) material.uniforms.uSize.value = params.baseSize * renderer.getPixelRatio();
+        });
+
+        const clock = new THREE.Clock();
+        const animate = () => {
+            const time = clock.getElapsedTime();
+            if (material) material.uniforms.uTime.value = time;
+
+            controls.update();
+
+            if (params.enableBloom) {
+                composer.render();
+            } else {
+                renderer.render(scene, camera);
+            }
+            
+            requestAnimationFrame(animate);
+        };
+
+        animate();
+    </script>
+</body>
+</html>

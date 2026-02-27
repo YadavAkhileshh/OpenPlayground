@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProSlide Studio | Advanced Presentation Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --canvas-bg: #f8fafc;
+            --slide-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f1f5f9; }
+        
+        /* Grid System */
+        .canvas-grid {
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .slide-aspect {
+            aspect-ratio: 16 / 9;
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            position: relative;
+            box-shadow: var(--slide-shadow);
+            overflow: hidden;
+            transform-origin: center;
+        }
+
+        .element {
+            position: absolute;
+            cursor: move;
+            border: 2px solid transparent;
+            transition: border-color 0.1s;
+        }
+
+        .element:hover { border-color: #94a3b8; }
+        .element.selected { border-color: #3b82f6; }
+
+        /* Custom Resizer */
+        .resizer {
+            width: 8px;
+            height: 8px;
+            background: #3b82f6;
+            position: absolute;
+            border-radius: 50%;
+        }
+        .resizer.nw { top: -4px; left: -4px; cursor: nw-resize; }
+        .resizer.ne { top: -4px; right: -4px; cursor: ne-resize; }
+        .resizer.sw { bottom: -4px; left: -4px; cursor: sw-resize; }
+        .resizer.se { bottom: -4px; right: -4px; cursor: se-resize; }
+
+        /* Animations */
+        .slide-fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Hidden Scrollbars */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Glassmorphism UI */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Top Navigation Bar -->
+    <nav class="h-14 bg-slate-900 text-white flex items-center justify-between px-6 z-50">
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center font-bold">P</div>
+                <span class="font-bold tracking-tight">ProSlide <span class="text-blue-400">Studio</span></span>
+            </div>
+            <div class="h-6 w-px bg-slate-700"></div>
+            <input id="pres-title" type="text" value="Market Analysis 2024" class="bg-transparent border-none focus:ring-0 text-sm font-medium w-48 text-slate-300 hover:text-white transition">
+        </div>
+        
+        <div class="flex items-center gap-2">
+            <button onclick="undo()" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400" title="Undo (Ctrl+Z)"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
+            <button onclick="redo()" class="p-2 hover:bg-slate-800 rounded-lg text-slate-400" title="Redo (Ctrl+Y)"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
+            <div class="h-6 w-px bg-slate-700 mx-2"></div>
+            <button onclick="togglePresent(true)" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded-full text-sm font-semibold transition shadow-lg shadow-blue-900/20">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Present
+            </button>
+            <button onclick="exportJSON()" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 ml-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Contextual Toolbar -->
+    <div class="h-12 bg-white border-b border-slate-200 flex items-center px-6 gap-4 shadow-sm z-40">
+        <button onclick="addSlide()" class="flex items-center gap-2 text-xs font-bold text-slate-600 hover:bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            NEW SLIDE
+        </button>
+        <div class="h-6 w-px bg-slate-200"></div>
+        
+        <!-- Insert Tools -->
+        <div class="flex items-center gap-1">
+            <button onclick="addEl('text')" class="p-2 hover:bg-blue-50 text-slate-600 rounded-md" title="Add Text"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg></button>
+            <button onclick="addEl('rect')" class="p-2 hover:bg-blue-50 text-slate-600 rounded-md" title="Add Shape"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/></svg></button>
+            <button onclick="triggerImageUpload()" class="p-2 hover:bg-blue-50 text-slate-600 rounded-md" title="Upload Image"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></button>
+        </div>
+
+        <div class="h-6 w-px bg-slate-200"></div>
+
+        <!-- Text Styling (Hidden until text selected) -->
+        <div id="text-tools" class="flex items-center gap-1 opacity-50 pointer-events-none transition-opacity">
+            <select onchange="updateStyle('fontFamily', this.value)" class="text-xs border-slate-200 rounded px-2 py-1 outline-none">
+                <option value="'Plus Jakarta Sans'">Jakarta Sans</option>
+                <option value="serif">Serif</option>
+                <option value="monospace">Monospace</option>
+                <option value="'Playfair Display'">Classic</option>
+            </select>
+            <input type="number" value="24" onchange="updateStyle('fontSize', this.value + 'px')" class="w-12 text-xs border-slate-200 rounded px-1 py-1">
+            <button onclick="toggleStyle('fontWeight', 'bold', 'normal')" class="p-2 hover:bg-slate-100 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg></button>
+            <input type="color" oninput="updateStyle('color', this.value)" class="w-6 h-6 p-0 border-none bg-transparent cursor-pointer">
+        </div>
+
+        <div class="ml-auto flex items-center gap-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Snap to Grid</span>
+            <input type="checkbox" id="grid-snap" checked class="w-4 h-4 rounded text-blue-600">
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Sidebar: Slides -->
+        <aside class="w-56 bg-white border-r border-slate-200 flex flex-col shrink-0">
+            <div id="slide-previews" class="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+                <!-- Thumbnails -->
+            </div>
+            <div class="p-4 border-t border-slate-100 text-[10px] text-slate-400 font-medium uppercase text-center">
+                Built with ProSlide Core 2.0
+            </div>
+        </aside>
+
+        <!-- Main Canvas Area -->
+        <main class="flex-1 bg-slate-100 relative overflow-auto flex items-center justify-center p-12 canvas-grid" id="workspace">
+            <div id="active-slide" class="slide-aspect slide-fade-in" onmousedown="deselect(event)">
+                <!-- Elements will be injected here -->
+            </div>
+        </main>
+
+        <!-- Right Pane: Inspector -->
+        <aside class="w-72 bg-white border-l border-slate-200 shrink-0 flex flex-col">
+            <div class="p-4 border-b border-slate-100">
+                <h3 class="font-bold text-slate-800 text-sm">Design Inspector</h3>
+            </div>
+            
+            <div id="inspector-content" class="p-6 space-y-6 flex-1 overflow-y-auto">
+                <!-- Property controls -->
+                <div class="space-y-4">
+                    <label class="block">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Slide Background</span>
+                        <div class="mt-2 flex items-center gap-3">
+                            <input type="color" id="bg-color-picker" oninput="updateSlideBg(this.value)" class="w-full h-10 rounded-lg cursor-pointer border-2 border-slate-100">
+                        </div>
+                    </label>
+
+                    <div id="el-specific-controls" class="hidden animate-in fade-in slide-in-from-right-4">
+                        <div class="h-px bg-slate-100 my-4"></div>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Element Transform</span>
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            <div class="bg-slate-50 p-2 rounded">
+                                <span class="text-[10px] text-slate-400 block">Opacity</span>
+                                <input type="range" min="0" max="1" step="0.1" oninput="updateStyle('opacity', this.value)" class="w-full">
+                            </div>
+                            <div class="bg-slate-50 p-2 rounded">
+                                <span class="text-[10px] text-slate-400 block">Rotate</span>
+                                <input type="range" min="0" max="360" oninput="updateStyle('transform', `rotate(${this.value}deg)`)" class="w-full">
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-2 mt-4">
+                            <button onclick="arrange('forward')" class="flex-1 text-[10px] font-bold border border-slate-200 py-2 rounded hover:bg-slate-50">BRING FORWARD</button>
+                            <button onclick="arrange('backward')" class="flex-1 text-[10px] font-bold border border-slate-200 py-2 rounded hover:bg-slate-50">SEND BACK</button>
+                        </div>
+
+                        <button onclick="deleteSelected()" class="w-full mt-6 bg-red-50 text-red-600 text-xs font-bold py-3 rounded-lg hover:bg-red-100 transition flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            REMOVE ELEMENT
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Hidden Inputs -->
+    <input type="file" id="img-upload" class="hidden" accept="image/*" onchange="handleImage(event)">
+
+    <!-- Presentation Overlay -->
+    <div id="presenter" class="fixed inset-0 bg-black z-[100] hidden flex-col items-center justify-center">
+        <div id="present-slide" class="slide-aspect scale-125"></div>
+        <div class="absolute bottom-10 flex items-center gap-10 text-white/40 hover:text-white transition group">
+            <button onclick="changeSlide(-1)" class="p-4 rounded-full hover:bg-white/10"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg></button>
+            <span id="present-count" class="font-bold text-xl tabular-nums">1 / 1</span>
+            <button onclick="changeSlide(1)" class="p-4 rounded-full hover:bg-white/10"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6 6-6"/></svg></button>
+        </div>
+        <button onclick="togglePresent(false)" class="absolute top-10 right-10 text-white/50 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+
+    <script>
+        // --- Core Engine ---
+        let state = {
+            slides: [{ id: 's1', bg: '#ffffff', elements: [{ id: 'e1', type: 'text', content: 'Double click to edit', x: 100, y: 100, styles: { fontSize: '40px', fontWeight: 'bold', color: '#1e293b' } }] }],
+            currentSlide: 0,
+            selectedEl: null,
+            history: [],
+            historyIdx: -1
+        };
+
+        const workspace = document.getElementById('active-slide');
+
+        function init() {
+            saveHistory();
+            render();
+            setupDragListeners();
+        }
+
+        // --- Rendering ---
+        function render() {
+            // Render Slide List
+            const list = document.getElementById('slide-previews');
+            list.innerHTML = '';
+            state.slides.forEach((s, i) => {
+                const active = i === state.currentSlide;
+                list.innerHTML += `
+                    <div onclick="selectSlide(${i})" class="group relative cursor-pointer">
+                        <div class="slide-aspect scale-[0.2] origin-top-left absolute z-0 border ${active ? 'border-blue-500 ring-4 ring-blue-500/20' : 'border-slate-200'}" style="background:${s.bg}"></div>
+                        <div class="h-24 w-full rounded-lg bg-transparent border-2 ${active ? 'border-blue-500' : 'border-transparent'} z-10 relative"></div>
+                        <span class="text-[10px] font-bold text-slate-400 mt-1 block">SLIDE ${i+1}</span>
+                        <button onclick="event.stopPropagation(); deleteSlide(${i})" class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 bg-red-500 text-white rounded shadow-lg transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                `;
+            });
+
+            // Render Workspace
+            const s = state.slides[state.currentSlide];
+            workspace.style.background = s.bg;
+            document.getElementById('bg-color-picker').value = s.bg;
+            workspace.innerHTML = '';
+
+            s.elements.forEach(el => {
+                const dom = document.createElement('div');
+                dom.id = el.id;
+                dom.className = `element ${state.selectedEl === el.id ? 'selected' : ''}`;
+                dom.style.left = el.x + 'px';
+                dom.style.top = el.y + 'px';
+                Object.assign(dom.style, el.styles);
+
+                if (el.type === 'text') {
+                    dom.contentEditable = true;
+                    dom.innerText = el.content;
+                    dom.oninput = (e) => { el.content = e.target.innerText; };
+                } else if (el.type === 'rect') {
+                    dom.style.width = el.width || '150px';
+                    dom.style.height = el.height || '100px';
+                    dom.style.background = el.styles.background || '#3b82f6';
+                } else if (el.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = el.content;
+                    img.style.width = el.width || '200px';
+                    img.draggable = false;
+                    dom.appendChild(img);
+                }
+
+                // Interaction
+                dom.onmousedown = (e) => { e.stopPropagation(); selectEl(el.id); };
+                
+                // Resizers
+                if(state.selectedEl === el.id) {
+                    ['nw', 'ne', 'sw', 'se'].forEach(pos => {
+                        const r = document.createElement('div');
+                        r.className = `resizer ${pos}`;
+                        r.onmousedown = (e) => startResize(e, el, pos);
+                        dom.appendChild(r);
+                    });
+                }
+
+                workspace.appendChild(dom);
+            });
+
+            // Inspector Logic
+            const hasSel = !!state.selectedEl;
+            document.getElementById('text-tools').style.opacity = hasSel ? '1' : '0.5';
+            document.getElementById('text-tools').style.pointerEvents = hasSel ? 'auto' : 'none';
+            document.getElementById('el-specific-controls').classList.toggle('hidden', !hasSel);
+        }
+
+        // --- Interaction Logic ---
+        function selectEl(id) {
+            state.selectedEl = id;
+            render();
+        }
+
+        function deselect(e) {
+            if (e.target === workspace) {
+                state.selectedEl = null;
+                render();
+            }
+        }
+
+        function addEl(type) {
+            const id = 'e' + Date.now();
+            const newEl = {
+                id, type, x: 50, y: 50, styles: { zIndex: 10 }
+            };
+            if(type === 'text') {
+                newEl.content = 'New Text Layer';
+                newEl.styles.fontSize = '24px';
+                newEl.styles.color = '#1e293b';
+            } else if(type === 'rect') {
+                newEl.width = '200px';
+                newEl.height = '120px';
+                newEl.styles.background = '#3b82f6';
+                newEl.styles.borderRadius = '8px';
+            }
+            state.slides[state.currentSlide].elements.push(newEl);
+            state.selectedEl = id;
+            saveHistory();
+            render();
+        }
+
+        function updateStyle(prop, val) {
+            if(!state.selectedEl) return;
+            const el = state.slides[state.currentSlide].elements.find(e => e.id === state.selectedEl);
+            el.styles[prop] = val;
+            render();
+        }
+
+        function toggleStyle(prop, val1, val2) {
+            if(!state.selectedEl) return;
+            const el = state.slides[state.currentSlide].elements.find(e => e.id === state.selectedEl);
+            el.styles[prop] = el.styles[prop] === val1 ? val2 : val1;
+            render();
+        }
+
+        function arrange(dir) {
+            const el = state.slides[state.currentSlide].elements.find(e => e.id === state.selectedEl);
+            let z = parseInt(el.styles.zIndex || 1);
+            el.styles.zIndex = dir === 'forward' ? z + 1 : Math.max(0, z - 1);
+            render();
+        }
+
+        function deleteSelected() {
+            state.slides[state.currentSlide].elements = state.slides[state.currentSlide].elements.filter(e => e.id !== state.selectedEl);
+            state.selectedEl = null;
+            saveHistory();
+            render();
+        }
+
+        // --- Drag & Drop ---
+        let dragTarget = null;
+        function setupDragListeners() {
+            window.onmousemove = (e) => {
+                if (!dragTarget) return;
+                const rect = workspace.getBoundingClientRect();
+                const snap = document.getElementById('grid-snap').checked ? 10 : 1;
+                
+                let nx = (e.clientX - rect.left - dragTarget.ox);
+                let ny = (e.clientY - rect.top - dragTarget.oy);
+                
+                dragTarget.el.x = Math.round(nx / snap) * snap;
+                dragTarget.el.y = Math.round(ny / snap) * snap;
+                
+                const dom = document.getElementById(dragTarget.el.id);
+                dom.style.left = dragTarget.el.x + 'px';
+                dom.style.top = dragTarget.el.y + 'px';
+            };
+            window.onmouseup = () => { if(dragTarget) saveHistory(); dragTarget = null; };
+        }
+
+        workspace.addEventListener('mousedown', (e) => {
+            const elDom = e.target.closest('.element');
+            if (elDom) {
+                const el = state.slides[state.currentSlide].elements.find(ex => ex.id === elDom.id);
+                const rect = elDom.getBoundingClientRect();
+                dragTarget = { el, ox: e.clientX - rect.left, oy: e.clientY - rect.top };
+            }
+        });
+
+        // --- Resize ---
+        function startResize(e, el, pos) {
+            e.stopPropagation();
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startW = parseInt(el.width || 100);
+            const startH = parseInt(el.height || 100);
+
+            window.onmousemove = (me) => {
+                const dx = me.clientX - startX;
+                const dy = me.clientY - startY;
+                if(pos.includes('e')) el.width = (startW + dx) + 'px';
+                if(pos.includes('s')) el.height = (startH + dy) + 'px';
+                render();
+            };
+            window.onmouseup = () => { window.onmousemove = null; setupDragListeners(); saveHistory(); };
+        }
+
+        // --- Slide Management ---
+        function addSlide() {
+            const id = 's' + Date.now();
+            state.slides.push({ id, bg: '#ffffff', elements: [] });
+            state.currentSlide = state.slides.length - 1;
+            saveHistory();
+            render();
+        }
+
+        function selectSlide(i) {
+            state.currentSlide = i;
+            state.selectedEl = null;
+            render();
+        }
+
+        function deleteSlide(i) {
+            if(state.slides.length === 1) return;
+            state.slides.splice(i, 1);
+            state.currentSlide = Math.max(0, i - 1);
+            saveHistory();
+            render();
+        }
+
+        function updateSlideBg(color) {
+            state.slides[state.currentSlide].bg = color;
+            workspace.style.background = color;
+            render();
+        }
+
+        // --- Images ---
+        function triggerImageUpload() { document.getElementById('img-upload').click(); }
+        function handleImage(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (re) => {
+                const id = 'e' + Date.now();
+                state.slides[state.currentSlide].elements.push({
+                    id, type: 'image', content: re.target.result, x: 100, y: 100, width: '300px', styles: { zIndex: 5 }
+                });
+                state.selectedEl = id;
+                saveHistory();
+                render();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- Undo / Redo ---
+        function saveHistory() {
+            const snap = JSON.stringify(state);
+            if (state.history[state.historyIdx] === snap) return;
+            state.history = state.history.slice(0, state.historyIdx + 1);
+            state.history.push(snap);
+            if (state.history.length > 50) state.history.shift();
+            state.historyIdx = state.history.length - 1;
+        }
+
+        function undo() {
+            if (state.historyIdx > 0) {
+                state.historyIdx--;
+                state = JSON.parse(state.history[state.historyIdx]);
+                render();
+            }
+        }
+
+        function redo() {
+            if (state.historyIdx < state.history.length - 1) {
+                state.historyIdx++;
+                state = JSON.parse(state.history[state.historyIdx]);
+                render();
+            }
+        }
+
+        // --- Presentation ---
+        function togglePresent(show) {
+            const p = document.getElementById('presenter');
+            p.classList.toggle('hidden', !show);
+            if(show) {
+                state.currentSlide = 0;
+                renderPresent();
+            }
+        }
+
+        function renderPresent() {
+            const s = state.slides[state.currentSlide];
+            const target = document.getElementById('present-slide');
+            target.style.background = s.bg;
+            target.innerHTML = '';
+            
+            s.elements.forEach(el => {
+                const d = document.createElement('div');
+                d.style.position = 'absolute';
+                d.style.left = el.x + 'px';
+                d.style.top = el.y + 'px';
+                Object.assign(d.style, el.styles);
+                
+                if(el.type === 'text') d.innerText = el.content;
+                if(el.type === 'rect') { d.style.width = el.width; d.style.height = el.height; }
+                if(el.type === 'image') {
+                    const i = document.createElement('img');
+                    i.src = el.content; i.style.width = el.width;
+                    d.appendChild(i);
+                }
+                target.appendChild(d);
+            });
+            document.getElementById('present-count').innerText = `${state.currentSlide + 1} / ${state.slides.length}`;
+        }
+
+        function changeSlide(dir) {
+            state.currentSlide = Math.min(Math.max(0, state.currentSlide + dir), state.slides.length - 1);
+            renderPresent();
+        }
+
+        // --- Serialization ---
+        function exportJSON() {
+            const blob = new Blob([JSON.stringify(state)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = (document.getElementById('pres-title').value || 'presentation') + '.proslide';
+            a.click();
+        }
+
+        // Hotkeys
+        window.addEventListener('keydown', (e) => {
+            if(e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+            if(e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
+            if(e.key === 'Delete' && state.selectedEl && document.activeElement.tagName !== 'DIV') deleteSelected();
+        });
+
+        init();
+    </script>
+</body>
+</html>

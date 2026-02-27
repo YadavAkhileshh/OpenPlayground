@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CellularCompress | Biological Image Evolution</title>
+    <meta name="description" content="An experimental image compressor based on Conway’s Game of Life.">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/ui.css">
+    <link rel="stylesheet" href="styles/canvas.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Outfit:wght@300;400;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="scientific-theme">
+    <div id="noise-overlay"></div>
+    <div id="app-container">
+        <header id="main-header">
+            <div class="logo">
+                <span class="glyph">⬡</span>
+                <h1>CELLULAR<span>COMPRESS</span></h1>
+            </div>
+            <div class="telemetry-compact">
+                <span class="label">STATUS:</span> <span id="status-indicator" class="status-idle">IDLE</span>
+                <span class="divider">|</span>
+                <span class="label">FPS:</span> <span id="fps-counter">0.0</span>
+            </div>
+        </header>
+
+        <main id="workspace">
+            <section id="canvas-area">
+                <div class="canvas-wrapper">
+                    <div class="canvas-overlay">
+                        <div class="corner tl"></div>
+                        <div class="corner tr"></div>
+                        <div class="corner bl"></div>
+                        <div class="corner br"></div>
+                        <div class="scanline"></div>
+                    </div>
+                    <canvas id="main-canvas"></canvas>
+                </div>
+                <div class="canvas-controls">
+                    <div class="control-group">
+                        <button id="btn-play" class="btn-icon" title="Start Evolution">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                        </button>
+                        <button id="btn-pause" class="btn-icon hidden" title="Pause Evolution">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                            </svg>
+                        </button>
+                        <button id="btn-reset" class="btn-icon" title="Reset Grid">
+                            <svg viewBox="0 0 24 24">
+                                <path
+                                    d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="timeline-container">
+                        <input type="range" id="generation-slider" min="0" max="1000" value="0" step="1">
+                        <div class="timeline-labels">
+                            <span>GEN 0</span>
+                            <span id="current-gen-label">GEN 0</span>
+                            <span>MAX 1000</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <aside id="side-panel">
+                <div class="panel-section" id="upload-section">
+                    <h2 class="section-title">INPUT_SOURCE</h2>
+                    <div class="upload-dropzone" id="dropzone">
+                        <input type="file" id="image-input" accept="image/*" hidden>
+                        <div class="dropzone-content">
+                            <svg class="icon-upload" viewBox="0 0 24 24">
+                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                            </svg>
+                            <p>DROP_IMAGE_HERE</p>
+                            <span>OR CLICK_TO_BROWSE</span>
+                        </div>
+                    </div>
+                    <div id="preview-container" class="preview-box hidden">
+                        <img id="source-preview" src="" alt="Source Preview">
+                        <button id="btn-remove-source" class="btn-sm">CLEAR_SOURCE</button>
+                    </div>
+                </div>
+
+                <div class="panel-section" id="parameters-section">
+                    <h2 class="section-title">SIMULATION_LOGIC</h2>
+                    <div class="param-row">
+                        <label>RULESET</label>
+                        <select id="param-ruleset" class="input-select">
+                            <option value="CONWAY" selected>CONWAY'S LIFE</option>
+                            <option value="HIGHLIFE">HIGHLIFE</option>
+                            <option value="SEEDS">SEEDS</option>
+                            <option value="DAY_NIGHT">DAY & NIGHT</option>
+                            <option value="WALLED_CITIES">WALLED CITIES</option>
+                            <option value="AMOEBA">AMOEBA</option>
+                            <option value="CORAL">CORAL</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="panel-section" id="brush-section">
+                    <h2 class="section-title">MANUAL_INTERVENTION</h2>
+                    <div class="param-row">
+                        <label>BRUSH_SIZE</label>
+                        <input type="range" id="param-brush-size" min="1" max="20" value="5">
+                        <span class="param-value" id="val-brush-size">5px</span>
+                    </div>
+                    <div class="btn-group-row">
+                        <button id="btn-draw-alive" class="btn-toggle active">BIRTH</button>
+                        <button id="btn-draw-dead" class="btn-toggle">DEATH</button>
+                    </div>
+                </div>
+
+                <div class="panel-section" id="post-processing-section">
+                    <h2 class="section-title">OPTICAL_ARTIFACTS</h2>
+                    <div class="param-row">
+                        <label>CHROMATIC_ABERRATION</label>
+                        <input type="range" id="param-aberration" min="0" max="10" value="2">
+                    </div>
+                    <div class="param-row">
+                        <label>DIGITAL_GRAIN</label>
+                        <input type="range" id="param-grain" min="0" max="50" value="15">
+                    </div>
+                    <div class="param-row">
+                        <label>SCANLINES</label>
+                        <input type="range" id="param-scanlines" min="0" max="1" step="0.1" value="0.2">
+                    </div>
+                    <div class="param-row">
+                        <label>VIGNETTE</label>
+                        <input type="range" id="param-vignette" min="0" max="1" step="0.1" value="0.4">
+                    </div>
+                </div>
+
+                <div class="panel-section" id="advanced-params-section">
+                    <h2 class="section-title">CORE_CONFIG</h2>
+                    <div class="param-row">
+                        <label>THRESHOLD</label>
+                        <input type="range" id="param-threshold" min="0" max="255" value="128">
+                        <span class="param-value" id="val-threshold">128</span>
+                    </div>
+                    <div class="param-row">
+                        <label>GRID_DENSITY</label>
+                        <input type="range" id="param-grid-size" min="50" max="400" value="200" step="10">
+                        <span class="param-value" id="val-grid-size">200x200</span>
+                    </div>
+                    <div class="param-row">
+                        <label>SIM_SPEED</label>
+                        <input type="range" id="param-speed" min="1" max="60" value="30">
+                        <span class="param-value" id="val-speed">30 TPS</span>
+                    </div>
+                    <div class="param-row">
+                        <label>CELL_COLOR</label>
+                        <input type="color" id="param-color-cell" value="#00ff9f">
+                    </div>
+                </div>
+
+                <div class="panel-section" id="export-section">
+                    <h2 class="section-title">DATA_EXPORT</h2>
+                    <div class="btn-stack">
+                        <button id="btn-export-img" class="btn-primary">EXPORT_AS_BITMAP</button>
+                        <button id="btn-export-log" class="btn-secondary">DOWNLOAD_BIOMETRIC_DATA</button>
+                    </div>
+                </div>
+
+                <div class="panel-section" id="telemetry-section">
+                    <h2 class="section-title">TELEMETRY</h2>
+                    <div class="telemetry-grid">
+                        <div class="tele-item">
+                            <span class="t-label">ALIVE_CELLS</span>
+                            <span class="t-value" id="tele-alive">0</span>
+                        </div>
+                        <div class="tele-item">
+                            <span class="t-label">DORMANCY</span>
+                            <span class="t-value" id="tele-dead">0</span>
+                        </div>
+                        <div class="tele-item">
+                            <span class="t-label">ENTROPY</span>
+                            <span class="t-value" id="tele-entropy">0.00%</span>
+                        </div>
+                        <div class="tele-item">
+                            <span class="t-label">LATENCY</span>
+                            <span class="t-value" id="tele-latency">0ms</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <footer id="main-footer">
+            <div class="footer-segment">
+                SYSTEM_v1.0.4 // CORE_PROTOCOL: CGOL-ALPHA
+            </div>
+            <div class="footer-segment align-right">
+                © 2026 BIOLAB_GEOMETRICS
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- 
+      SingularityRay 
+      Real-time black hole renderer simulating gravitational lensing via curved raymarching
+      in a CPU-based Canvas engine.
+      This HTML file serves as the main entry point and UI container.
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingularityRay | Black Hole Engine</title>
+
+    <!-- CSS Inclusions -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/typography.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/hud.css">
+    <link rel="stylesheet" href="css/controls.css">
+    <link rel="stylesheet" href="css/sliders.css">
+    <link rel="stylesheet" href="css/buttons.css">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+
+    <!-- Main Rendering Area -->
+    <div id="canvas-container">
+        <!-- 
+            The canvas where the pixel manipulation occurs.
+            No WebGL, just raw CPU ImageData array processing. 
+        -->
+        <canvas id="singularity-canvas"></canvas>
+    </div>
+
+    <!-- UI Overlay container to hold cinematic elements -->
+    <div id="ui-overlay" class="cinematic-overlay">
+
+        <!-- Top Header for branding and minimal stats -->
+        <header id="main-header" class="hud-panel hud-top">
+            <div class="brand">
+                <h1 class="title">SingularityRay</h1>
+                <span class="subtitle">Curved Raymarching CPU Engine v1.0.0</span>
+            </div>
+            <div class="telemetry">
+                <!-- FPS Monitor will be injected here via fps_monitor.js -->
+                <div id="fps-display" class="metric">
+                    <span class="label">FPS</span>
+                    <span class="value" id="fps-value">00</span>
+                </div>
+                <!-- Resolution display -->
+                <div id="res-display" class="metric">
+                    <span class="label">RES</span>
+                    <span class="value" id="res-value">---x---</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Right Side Panel for Controls -->
+        <aside id="control-panel" class="hud-panel hud-right animate-slide-in">
+            <div class="panel-header">
+                <h2>Simulation Parameters</h2>
+                <button id="btn-toggle-panel" class="icon-button" aria-label="Toggle Panel">
+                    <!-- Hamburger icon SVG -->
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="panel-content" id="panel-content">
+                <!-- Black Hole Mass Slider -->
+                <div class="control-group parameter-slider">
+                    <div class="control-header">
+                        <label for="slider-mass">Schwarzschild Mass (M)</label>
+                        <span class="value-display" id="val-mass">1.0</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="slider-mass" class="custom-slider" min="0.1" max="5.0" step="0.1"
+                            value="1.0">
+                        <div class="slider-track-fill" id="fill-mass"></div>
+                    </div>
+                    <p class="control-hint">Determines gravitational pull and event horizon radius.</p>
+                </div>
+
+                <!-- Accretion Disk Intensity Slider -->
+                <div class="control-group parameter-slider">
+                    <div class="control-header">
+                        <label for="slider-disk-intensity">Disk Intensity</label>
+                        <span class="value-display" id="val-disk-intensity">1.0</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="slider-disk-intensity" class="custom-slider" min="0.0" max="3.0"
+                            step="0.05" value="1.0">
+                        <div class="slider-track-fill" id="fill-disk-intensity"></div>
+                    </div>
+                    <p class="control-hint">Controls the luminosity and volumetric density of the ring.</p>
+                </div>
+
+                <!-- Step Size / Precision -->
+                <div class="control-group parameter-slider">
+                    <div class="control-header">
+                        <label for="slider-ray-steps">Max Ray Steps</label>
+                        <span class="value-display" id="val-ray-steps">150</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="slider-ray-steps" class="custom-slider" min="50" max="300" step="1"
+                            value="150">
+                        <div class="slider-track-fill" id="fill-ray-steps"></div>
+                    </div>
+                    <p class="control-hint">Higher values improve rendering fidelity at the cost of CPU cycles.</p>
+                </div>
+
+                <!-- Debug Toggles -->
+                <div class="control-group debug-toggles">
+                    <h3>Diagnostics</h3>
+                    <div class="toggle-container">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle-debug-rays">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="toggle-label">Visualize Debug Rays</span>
+                    </div>
+                    <div class="toggle-container">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle-sdf-bounds">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="toggle-label">Show SDF Bounds</span>
+                    </div>
+                    <div class="toggle-container">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle-pixel-sort" checked>
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="toggle-label">Progressive Rendering</span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="control-group action-buttons">
+                    <button id="btn-reset-cam" class="action-btn secondary">Reset Camera</button>
+                    <button id="btn-pause-sim" class="action-btn primary">Pause Render</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Bottom Notification Area -->
+        <footer id="main-footer" class="hud-panel hud-bottom">
+            <div id="status-message" class="status-msg">
+                Initializing engine... awaiting user interaction.
+            </div>
+        </footer>
+
+        <!-- Crosshair for center reference -->
+        <div id="crosshair"></div>
+    </div>
+
+    <!-- JS Core Configuration -->
+    <script type="module" src="js/core/engine_config.js"></script>
+    <script type="module" src="js/core/event_bus.js"></script>
+    <script type="module" src="js/core/timer.js"></script>
+    <script type="module" src="js/core/state_manager.js"></script>
+
+    <!-- JS Math Modules -->
+    <script type="module" src="js/math/constants.js"></script>
+    <script type="module" src="js/math/utils.js"></script>
+    <script type="module" src="js/math/vec2.js"></script>
+    <script type="module" src="js/math/vec3.js"></script>
+    <script type="module" src="js/math/vec4.js"></script>
+    <script type="module" src="js/math/mat3.js"></script>
+    <script type="module" src="js/math/mat4.js"></script>
+    <script type="module" src="js/math/quat.js"></script>
+
+    <!-- JS Physics & SDF Modules -->
+    <script type="module" src="js/physics/ray.js"></script>
+    <script type="module" src="js/physics/gravity.js"></script>
+    <script type="module" src="js/physics/sdf_primitives.js"></script>
+    <script type="module" src="js/physics/sdf_operations.js"></script>
+    <script type="module" src="js/physics/blackhole.js"></script>
+    <script type="module" src="js/physics/accretion_disk.js"></script>
+    <script type="module" src="js/physics/space_distortion.js"></script>
+
+    <!-- JS Render Modules -->
+    <script type="module" src="js/render/color_utils.js"></script>
+    <script type="module" src="js/render/texture_gen.js"></script>
+    <script type="module" src="js/render/materials.js"></script>
+    <script type="module" src="js/render/lighting.js"></script>
+    <script type="module" src="js/render/camera.js"></script>
+    <script type="module" src="js/render/frame_buffer.js"></script>
+    <script type="module" src="js/render/raymarcher.js"></script>
+    <script type="module" src="js/render/post_processing.js"></script>
+    <script type="module" src="js/render/renderer.js"></script>
+
+    <!-- JS UI Modules -->
+    <script type="module" src="js/ui/input_handler.js"></script>
+    <script type="module" src="js/ui/fps_monitor.js"></script>
+    <script type="module" src="js/ui/sliders_controller.js"></script>
+    <script type="module" src="js/ui/debug_overlay.js"></script>
+    <script type="module" src="js/ui/ui_manager.js"></script>
+
+    <!-- Core Entry Point -->
+    <script type="module" src="js/core/scene_setup.js"></script>
+    <script type="module" src="js/main.js"></script>
+
+</body>
+
+</html>

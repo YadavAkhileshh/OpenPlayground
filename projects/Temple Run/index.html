@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Temple Escape</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            display: block;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            background: linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%);
+        }
+        .ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        #overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 10;
+        }
+        .btn {
+            background: #f39c12;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            border: none;
+            margin-top: 20px;
+            pointer-events: auto;
+        }
+        .btn:hover {
+            background: #e67e22;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="ui-layer">
+        <div class="text-3xl font-bold">Score: <span id="score">0</span></div>
+        <div class="text-xl">Distance: <span id="distance">0</span>m</div>
+    </div>
+
+    <div id="overlay">
+        <h1 id="title" class="text-6xl font-black mb-4 text-yellow-500 text-center">TEMPLE ESCAPE</h1>
+        <p id="message" class="text-xl mb-8 text-center max-w-md px-4">Avoid obstacles by jumping, sliding, or moving side-to-side!</p>
+        <button id="startBtn" class="btn">START RUN</button>
+        <div class="mt-8 grid grid-cols-2 gap-4 text-sm opacity-70">
+            <div>WASD / Arrows to Move</div>
+            <div>Space / Up to Jump</div>
+            <div>Shift / Down to Slide</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const distanceEl = document.getElementById('distance');
+    const overlay = document.getElementById('overlay');
+    const startBtn = document.getElementById('startBtn');
+    const message = document.getElementById('message');
+    const title = document.getElementById('title');
+
+    // Game Constants
+    const LANES = [-1, 0, 1]; // Left, Center, Right
+    const LANE_WIDTH = 120;
+    const HORIZON_Y = 0.4; // 40% from top
+    
+    // Game State
+    let gameState = 'START';
+    let score = 0;
+    let distance = 0;
+    let speed = 8;
+    let player = {
+        lane: 0, // Current lane index
+        targetLane: 0,
+        x: 0,
+        y: 0,
+        z: 0,
+        width: 40,
+        height: 80,
+        isJumping: false,
+        jumpVelocity: 0,
+        isSliding: false,
+        slideTimer: 0
+    };
+
+    let obstacles = [];
+    let environmentItems = [];
+    let frameCount = 0;
+
+    // Responsive Canvas
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Controls
+    const keys = {};
+    window.addEventListener('keydown', e => {
+        if (gameState !== 'PLAYING') return;
+        
+        if ((e.key === 'ArrowLeft' || e.key === 'a') && player.targetLane > -1) {
+            player.targetLane--;
+        }
+        if ((e.key === 'ArrowRight' || e.key === 'd') && player.targetLane < 1) {
+            player.targetLane++;
+        }
+        if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') && !player.isJumping && !player.isSliding) {
+            player.isJumping = true;
+            player.jumpVelocity = 15;
+        }
+        if ((e.key === 'ArrowDown' || e.key === 's' || e.key === 'Shift') && !player.isJumping && !player.isSliding) {
+            player.isSliding = true;
+            player.slideTimer = 40;
+        }
+    });
+
+    // Mobile Swipe Controls
+    let touchStartX = 0;
+    let touchStartY = 0;
+    window.addEventListener('touchstart', e => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    });
+
+    window.addEventListener('touchend', e => {
+        if (gameState !== 'PLAYING') return;
+        const diffX = e.changedTouches[0].clientX - touchStartX;
+        const diffY = e.changedTouches[0].clientY - touchStartY;
+        
+        if (Math.abs(diffX) > Math.abs(diffY)) {
+            if (diffX > 50 && player.targetLane < 1) player.targetLane++;
+            else if (diffX < -50 && player.targetLane > -1) player.targetLane--;
+        } else {
+            if (diffY < -50 && !player.isJumping && !player.isSliding) {
+                player.isJumping = true;
+                player.jumpVelocity = 15;
+            } else if (diffY > 50 && !player.isJumping && !player.isSliding) {
+                player.isSliding = true;
+                player.slideTimer = 40;
+            }
+        }
+    });
+
+    function spawnObstacle() {
+        const lane = LANES[Math.floor(Math.random() * 3)];
+        const types = ['WALL', 'HURDLE', 'OVERHEAD'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        
+        obstacles.push({
+            lane: lane,
+            z: 2000, // Spawn far away
+            type: type,
+            passed: false
+        });
+    }
+
+    function spawnEnvironment() {
+        // Spawn trees or pillars on sides
+        environmentItems.push({
+            side: Math.random() > 0.5 ? 1 : -1,
+            z: 2000,
+            type: 'PILLAR'
+        });
+    }
+
+    function resetGame() {
+        score = 0;
+        distance = 0;
+        speed = 8;
+        obstacles = [];
+        environmentItems = [];
+        player.lane = 0;
+        player.targetLane = 0;
+        player.x = 0;
+        player.y = 0;
+        player.z = 0;
+        player.isJumping = false;
+        player.isSliding = false;
+        gameState = 'PLAYING';
+        overlay.style.display = 'none';
+    }
+
+    function gameOver() {
+        gameState = 'GAMEOVER';
+        title.innerText = "CRASHED!";
+        title.classList.add('text-red-500');
+        message.innerHTML = `You ran <b>${Math.floor(distance)}</b> meters.<br>Final Score: <b>${Math.floor(score)}</b>`;
+        startBtn.innerText = "TRY AGAIN";
+        overlay.style.display = 'flex';
+    }
+
+    function project(x, y, z) {
+        // Simple 3D to 2D perspective projection
+        const scale = 400 / z;
+        return {
+            x: canvas.width / 2 + x * scale,
+            y: canvas.height * HORIZON_Y + (y + 200) * scale,
+            scale: scale
+        };
+    }
+
+    function update() {
+        if (gameState !== 'PLAYING') return;
+
+        distance += speed / 10;
+        score += speed / 20;
+        speed += 0.002; // Accelerate over time
+
+        // Smooth lane movement
+        const targetX = player.targetLane * LANE_WIDTH;
+        player.x += (targetX - player.x) * 0.15;
+
+        // Jump Physics
+        if (player.isJumping) {
+            player.y -= player.jumpVelocity;
+            player.jumpVelocity -= 0.8;
+            if (player.y >= 0) {
+                player.y = 0;
+                player.isJumping = false;
+            }
+        }
+
+        // Slide Physics
+        if (player.isSliding) {
+            player.slideTimer--;
+            if (player.slideTimer <= 0) player.isSliding = false;
+        }
+
+        // Spawn logic
+        frameCount++;
+        if (frameCount % Math.max(20, Math.floor(60 - speed)) === 0) {
+            spawnObstacle();
+        }
+        if (frameCount % 10 === 0) {
+            spawnEnvironment();
+        }
+
+        // Update obstacles
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            const obs = obstacles[i];
+            obs.z -= speed;
+
+            // Collision Detection
+            // We check collision when object is close to player (z between 0 and 50)
+            if (obs.z < 50 && obs.z > -50 && !obs.passed) {
+                const sameLane = Math.abs(player.x - (obs.lane * LANE_WIDTH)) < 60;
+                
+                if (sameLane) {
+                    let hit = false;
+                    if (obs.type === 'WALL') hit = true;
+                    if (obs.type === 'HURDLE' && !player.isJumping) hit = true;
+                    if (obs.type === 'OVERHEAD' && !player.isSliding) hit = true;
+                    
+                    if (hit) {
+                        gameOver();
+                        return;
+                    }
+                }
+            }
+
+            if (obs.z < -200) obstacles.splice(i, 1);
+        }
+
+        // Update environment
+        for (let i = environmentItems.length - 1; i >= 0; i--) {
+            environmentItems[i].z -= speed;
+            if (environmentItems[i].z < -200) environmentItems.splice(i, 1);
+        }
+
+        scoreEl.innerText = Math.floor(score);
+        distanceEl.innerText = Math.floor(distance);
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw Sky
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height * HORIZON_Y);
+        skyGrad.addColorStop(0, '#1a2a6c');
+        skyGrad.addColorStop(1, '#f27121');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height * HORIZON_Y);
+
+        // Draw Ground (Perspective)
+        ctx.fillStyle = '#3d2b1f';
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height);
+        ctx.lineTo(canvas.width, canvas.height);
+        ctx.lineTo(canvas.width / 2 + 50, canvas.height * HORIZON_Y);
+        ctx.lineTo(canvas.width / 2 - 50, canvas.height * HORIZON_Y);
+        ctx.fill();
+
+        // Draw Road/Path
+        ctx.fillStyle = '#5d4037';
+        ctx.beginPath();
+        const p1 = project(-LANE_WIDTH * 1.5, 0, 2000);
+        const p2 = project(LANE_WIDTH * 1.5, 0, 2000);
+        const p3 = project(LANE_WIDTH * 1.5, 0, 50);
+        const p4 = project(-LANE_WIDTH * 1.5, 0, 50);
+        ctx.moveTo(p4.x, p4.y);
+        ctx.lineTo(p3.x, p3.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.fill();
+
+        // Lane Lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.lineWidth = 2;
+        [-0.5, 0.5].forEach(l => {
+            const start = project(l * LANE_WIDTH, 0, 2000);
+            const end = project(l * LANE_WIDTH, 0, 50);
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            ctx.lineTo(end.x, end.y);
+            ctx.stroke();
+        });
+
+        // Draw Environment
+        environmentItems.sort((a,b) => b.z - a.z).forEach(item => {
+            const pos = project(item.side * 400, -150, item.z);
+            if (pos.scale <= 0) return;
+            
+            ctx.fillStyle = '#2d1b0f';
+            ctx.fillRect(pos.x - 20 * pos.scale, pos.y, 40 * pos.scale, 300 * pos.scale);
+            ctx.fillStyle = '#1b4d3e';
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 60 * pos.scale, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Draw Obstacles
+        obstacles.sort((a,b) => b.z - a.z).forEach(obs => {
+            const pos = project(obs.lane * LANE_WIDTH, 0, obs.z);
+            if (pos.scale <= 0) return;
+
+            ctx.shadowBlur = 10 * pos.scale;
+            ctx.shadowColor = 'black';
+
+            if (obs.type === 'WALL') {
+                ctx.fillStyle = '#7f8c8d';
+                ctx.fillRect(pos.x - 50 * pos.scale, pos.y - 120 * pos.scale, 100 * pos.scale, 120 * pos.scale);
+                // Cracks/Details
+                ctx.strokeStyle = '#2c3e50';
+                ctx.strokeRect(pos.x - 50 * pos.scale, pos.y - 120 * pos.scale, 100 * pos.scale, 120 * pos.scale);
+            } else if (obs.type === 'HURDLE') {
+                ctx.fillStyle = '#c0392b';
+                ctx.fillRect(pos.x - 60 * pos.scale, pos.y - 40 * pos.scale, 120 * pos.scale, 40 * pos.scale);
+            } else if (obs.type === 'OVERHEAD') {
+                ctx.fillStyle = '#f1c40f';
+                ctx.fillRect(pos.x - 60 * pos.scale, pos.y - 180 * pos.scale, 120 * pos.scale, 60 * pos.scale);
+                // Support beams
+                ctx.fillStyle = '#7f8c8d';
+                ctx.fillRect(pos.x - 60 * pos.scale, pos.y - 120 * pos.scale, 10 * pos.scale, 120 * pos.scale);
+                ctx.fillRect(pos.x + 50 * pos.scale, pos.y - 120 * pos.scale, 10 * pos.scale, 120 * pos.scale);
+            }
+            
+            ctx.shadowBlur = 0;
+        });
+
+        // Draw Player
+        const pPos = project(player.x, player.y, 150);
+        ctx.fillStyle = '#e74c3c';
+        
+        const pWidth = player.width * pPos.scale;
+        let pHeight = player.height * pPos.scale;
+        let pY = pPos.y - pHeight;
+
+        if (player.isSliding) {
+            pHeight /= 2;
+            pY = pPos.y - pHeight;
+        }
+
+        // Body
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(pPos.x - pWidth/2, pY, pWidth, pHeight);
+        
+        // Head
+        ctx.fillStyle = '#ffccaa';
+        ctx.fillRect(pPos.x - (pWidth*0.4), pY - (pWidth*0.8), pWidth*0.8, pWidth*0.8);
+
+        ctx.shadowBlur = 0;
+
+        requestAnimationFrame(() => {
+            update();
+            draw();
+        });
+    }
+
+    startBtn.addEventListener('click', () => {
+        resetGame();
+    });
+
+    // Start loop
+    draw();
+</script>
+</body>
+</html>

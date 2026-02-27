@@ -9,7 +9,7 @@ let bookmarksPageInitialized = false;
 let currentCollection = 'all';
 let draggedCard = null;
 
-function initBookmarksPage() {
+const initBookmarksPage = () => {
     if (bookmarksPageInitialized) return;
     
     const container = document.getElementById('bookmarks-container');
@@ -88,7 +88,7 @@ function initBookmarksPage() {
 // Collections Sidebar
 // ==========================================
 
-function renderCollectionsSidebar() {
+const renderCollectionsSidebar = () => {
     const sidebar = document.getElementById('collections-sidebar');
     if (!sidebar) return;
     
@@ -212,7 +212,7 @@ function renderCollectionsSidebar() {
 // Edit Collection Modal
 // ==========================================
 
-function showEditCollectionModal(collectionId) {
+const showEditCollectionModal = (collectionId) => {
     const collection = window.bookmarksManager.getCollection(collectionId);
     if (!collection) return;
     
@@ -342,7 +342,7 @@ function showEditCollectionModal(collectionId) {
 // Render Bookmarks
 // ==========================================
 
-function renderBookmarks() {
+const renderBookmarks = () => {
     const container = document.getElementById('bookmarks-container');
     const emptyState = document.getElementById('bookmarks-empty-state');
     const clearBtn = document.getElementById('clear-all-bookmarks');
@@ -427,7 +427,7 @@ function renderBookmarks() {
     });
 }
 
-function createBookmarkCard(project) {
+const createBookmarkCard = (project) => {
     const card = document.createElement('div');
     card.className = 'bookmark-card';
     card.draggable = true;
@@ -539,7 +539,7 @@ function createBookmarkCard(project) {
 // Add to Collection Dropdown (Bookmarks Page)
 // ==========================================
 
-function showAddToCollectionDropdown(projectTitle, buttonElement) {
+const showAddToCollectionDropdown = (projectTitle, buttonElement) => {
     const existingDropdown = document.querySelector('.collection-dropdown');
     if (existingDropdown) {
         existingDropdown.remove();
@@ -644,19 +644,19 @@ function showAddToCollectionDropdown(projectTitle, buttonElement) {
 // Helper Functions
 // ==========================================
 
-function capitalize(str) {
+const capitalize = (str) => {
     if (!str) return '';
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-function escapeHtml(str) {
+const escapeHtml = (str) => {
     if (!str) return '';
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
 }
 
-function escapeHtmlAttr(str) {
+const escapeHtmlAttr = (str) => {
     if (!str) return '';
     return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
