@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CPU Scheduling Visualizer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">CPU</div>
+      <div class="brandText">
+        <h1>CPU Scheduling Visualizer</h1>
+        <p>Learn classic OS scheduling with a clear Gantt animation + metrics</p>
+      </div>
+    </div>
+
+    <div class="topActions">
+      <button id="btnDemo" class="btn btnGhost" type="button" title="Load sample processes">Load Demo</button>
+      <button id="btnClear" class="btn btnDanger" type="button" title="Remove all processes">Clear All</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- LEFT: Input + Controls -->
+    <section class="card" aria-labelledby="input-heading">
+      <div class="cardHeader">
+        <h2 id="input-heading">Process Input</h2>
+        <p>Add processes (Arrival, Burst). Priority is used only for Priority Scheduling.</p>
+      </div>
+
+      <form id="processForm" class="formGrid" autocomplete="off">
+        <div class="field">
+          <label for="pid">Process ID (optional)</label>
+          <input id="pid" name="pid" type="text" placeholder="e.g., P1" />
+          <small>Leave empty to auto-generate (P1, P2...)</small>
+        </div>
+
+        <div class="field">
+          <label for="arrival">Arrival Time</label>
+          <input id="arrival" name="arrival" type="number" min="0" step="1" placeholder="0" required />
+          <small>Must be ≥ 0</small>
+        </div>
+
+        <div class="field">
+          <label for="burst">Burst Time</label>
+          <input id="burst" name="burst" type="number" min="1" step="1" placeholder="5" required />
+          <small>Must be ≥ 1</small>
+        </div>
+
+        <div class="field">
+          <label for="priority">Priority</label>
+          <input id="priority" name="priority" type="number" min="0" step="1" placeholder="0" />
+          <small>Lower number = higher priority</small>
+        </div>
+
+        <div class="formRow">
+          <button class="btn btnPrimary" type="submit">Add Process</button>
+          <button id="btnReset" class="btn btnGhost" type="button">Reset Simulation</button>
+        </div>
+
+        <div id="inputError" class="error" role="alert" aria-live="polite"></div>
+      </form>
+
+      <div class="divider"></div>
+
+      <div class="processTableWrap" aria-label="Process List">
+        <table class="table" id="processTable">
+          <thead>
+            <tr>
+              <th>PID</th>
+              <th class="num">Arrival</th>
+              <th class="num">Burst</th>
+              <th class="num">Priority</th>
+              <th class="actionsCol">Remove</th>
+            </tr>
+          </thead>
+          <tbody id="processTbody"></tbody>
+        </table>
+        <div id="emptyHint" class="emptyHint">
+          No processes yet. Add a few (or hit <span class="kbd">Load Demo</span>).
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="controls">
+        <div class="field">
+          <label for="algorithm">Scheduling Algorithm</label>
+          <select id="algorithm" name="algorithm">
+            <option value="FCFS" data-desc="Executes processes in order of arrival. Simple but can cause long wait times.">FCFS (First Come First Serve)</option>
+            <option value="SJF" data-desc="Picks the shortest job first. Minimizes average wait time but may starve long jobs.">SJF (Shortest Job First)</option>
+            <option value="PRIORITY" data-desc="Executes higher priority processes first. Can cause starvation without aging.">Priority Scheduling</option>
+            <option value="RR" data-desc="Time-sliced scheduling. Fair but may have higher turnaround time.">Round Robin</option>
+          </select>
+          <small id="algoDesc">Pick an algorithm, then Start to visualize its behavior.</small>
+        </div>
+
+        <div id="quantumWrap" class="field hidden">
+          <label for="quantum">Time Quantum (RR)</label>
+          <input id="quantum" name="quantum" type="number" min="1" step="1" value="2" />
+          <small>Shown only for Round Robin</small>
+        </div>
+
+        <div class="controlRow">
+          <button id="btnStart" class="btn btnPrimary" type="button">Start</button>
+          <button id="btnStop" class="btn btnGhost" type="button" disabled>Stop</button>
+        </div>
+
+        <div class="note">
+          <strong>Tip:</strong> Idle time is shown if the CPU has nothing to run while waiting for arrivals.<br>
+          <strong>Shortcuts:</strong> <span class="kbd">Ctrl+Enter</span> to start, <span class="kbd">Esc</span> to stop
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Visualization + Metrics -->
+    <section class="stack">
+      <section class="card" aria-labelledby="viz-heading">
+        <div class="cardHeader">
+          <h2 id="viz-heading">Gantt Chart Visualization</h2>
+          <p>Watch how the CPU scheduler executes processes over time. Each block represents CPU allocation to a process.</p>
+        </div>
+
+        <div class="viz">
+          <div class="ganttHeader">
+            <div class="legend">
+              <span class="dot dotIdle" aria-hidden="true"></span>
+              <span>Idle</span>
+            </div>
+            <div class="status" id="statusText" aria-live="polite">Ready.</div>
+          </div>
+
+          <div class="ganttOuter" role="region" aria-label="Gantt Chart">
+            <div id="ganttTrack" class="ganttTrack"></div>
+          </div>
+
+          <div class="timelineOuter" aria-label="Timeline">
+            <div id="timeline" class="timeline"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="metrics-heading">
+        <div class="cardHeader">
+          <h2 id="metrics-heading">Performance Metrics</h2>
+          <p>Compare algorithms by analyzing waiting time (time spent in ready queue) and turnaround time (completion - arrival).</p>
+        </div>
+
+        <div class="metricsGrid">
+          <div class="pill">
+            <span class="pillLabel">Avg Waiting Time</span>
+            <span id="avgWaiting" class="pillValue">—</span>
+          </div>
+          <div class="pill">
+            <span class="pillLabel">Avg Turnaround Time</span>
+            <span id="avgTurnaround" class="pillValue">—</span>
+          </div>
+          <div class="pill">
+            <span class="pillLabel">Total Execution Time</span>
+            <span id="totalTime" class="pillValue">—</span>
+          </div>
+        </div>
+
+        <div class="metricsTableWrap" aria-label="Metrics Table">
+          <table class="table" id="metricsTable">
+            <thead>
+              <tr>
+                <th>PID</th>
+                <th class="num">Arrival</th>
+                <th class="num">Burst</th>
+                <th class="num">Completion</th>
+                <th class="num">Waiting</th>
+                <th class="num">Turnaround</th>
+              </tr>
+            </thead>
+            <tbody id="metricsTbody"></tbody>
+          </table>
+
+          <div id="metricsHint" class="emptyHint">
+            Metrics appear after the simulation finishes.
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>Built for OpenPlayground · ECWoC 2026</span>
+    <span class="sep">•</span>
+    <span>Vanilla HTML/CSS/JS · No canvas · No SVG · No libraries</span>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

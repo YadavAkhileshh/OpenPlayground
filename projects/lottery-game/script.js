@@ -15,7 +15,17 @@ const getSum = (num) => {
     return sum
 }
 
-button.addEventListener('click', () => {
+button.addEventListener('click', generateTicket)
+
+// Space key press
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        e.preventDefault();
+        generateTicket();
+    }
+});
+
+function generateTicket() {
     ruleElm.style.display = 'none'
 
     const ticket = Math.floor(Math.random() * 900) + 100
@@ -31,4 +41,4 @@ button.addEventListener('click', () => {
         winElm.style.display = 'none'
         loseElm.style.display = 'block'
     }
-})
+}

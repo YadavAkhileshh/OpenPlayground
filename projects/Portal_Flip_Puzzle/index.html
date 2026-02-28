@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Flip Puzzle</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a0a0ff;
+            margin-bottom: 15px;
+        }
+        
+        .game-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+        }
+        
+        .game-board {
+            flex: 1;
+            min-width: 300px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 5px;
+            aspect-ratio: 1/1;
+            background-color: rgba(30, 30, 60, 0.8);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .cell {
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: transform 0.2s, background-color 0.3s;
+        }
+        
+        .cell.wall {
+            background-color: #3a3a6a;
+            border: 1px solid #4a4a8a;
+        }
+        
+        .cell.path {
+            background-color: rgba(60, 60, 100, 0.6);
+        }
+        
+        .cell.player {
+            background-color: #00a8ff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00a8ff;
+            z-index: 10;
+        }
+        
+        .cell.player.up { transform: rotate(0deg); }
+        .cell.player.right { transform: rotate(90deg); }
+        .cell.player.down { transform: rotate(180deg); }
+        .cell.player.left { transform: rotate(270deg); }
+        
+        .cell.exit {
+            background-color: #00d8a0;
+            border-radius: 10%;
+            box-shadow: 0 0 10px #00d8a0;
+        }
+        
+        .cell.gravity-portal {
+            background: radial-gradient(circle, #ff9a00, #ff6b00);
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ff9a00;
+        }
+        
+        .cell.orientation-portal {
+            background: radial-gradient(circle, #9d4edd, #560bad);
+            border-radius: 50%;
+            box-shadow: 0 0 10px #9d4edd;
+        }
+        
+        .game-info {
+            flex: 1;
+            min-width: 250px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            background-color: rgba(30, 30, 60, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #6a11cb;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #a0a0ff;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .control-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(106, 17, 203, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #555;
+            color: #aaa;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .instructions {
+            background-color: rgba(30, 30, 60, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        
+        .instructions h3 {
+            color: #a0a0ff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+            color: #ccc;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .keyboard-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            place-items: center;
+        }
+        
+        .key {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s;
+        }
+        
+        .key.active {
+            background-color: rgba(106, 17, 203, 0.8);
+            transform: scale(0.95);
+        }
+        
+        .key.up {
+            grid-column: 2;
+            grid-row: 1;
+        }
+        
+        .key.left {
+            grid-column: 1;
+            grid-row: 2;
+        }
+        
+        .key.down {
+            grid-column: 2;
+            grid-row: 3;
+        }
+        
+        .key.right {
+            grid-column: 3;
+            grid-row: 2;
+        }
+        
+        .level-selector {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .level-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .level-btn {
+            width: 40px;
+            height: 40px;
+            min-width: unset;
+            border-radius: 50%;
+        }
+        
+        .level-btn.active {
+            background: linear-gradient(90deg, #ff9a00 0%, #ff6b00 100%);
+            box-shadow: 0 0 10px #ff9a00;
+        }
+        
+        .gravity-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: rgba(30, 30, 60, 0.6);
+            border-radius: 10px;
+        }
+        
+        .gravity-direction {
+            font-size: 1.8rem;
+            transition: transform 0.5s;
+        }
+        
+        .game-status {
+            text-align: center;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        .success {
+            background-color: rgba(0, 216, 160, 0.2);
+            color: #00d8a0;
+            opacity: 1;
+        }
+        
+        .portal-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 5px;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0;
+        }
+        
+        .gravity-effect {
+            background: radial-gradient(circle, rgba(255, 154, 0, 0.7) 0%, transparent 70%);
+        }
+        
+        .orientation-effect {
+            background: radial-gradient(circle, rgba(157, 78, 221, 0.7) 0%, transparent 70%);
+        }
+        
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #a0a0ff;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .game-area {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .key {
+                width: 50px;
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-dungeon"></i> Portal Flip Puzzle</h1>
+            <p class="subtitle">Navigate through portals that flip gravity and orientation. Reach the exit with the fewest moves!</p>
+        </header>
+        
+        <div class="game-area">
+            <div class="game-board">
+                <div class="grid-container" id="gameGrid">
+                    <!-- Game grid will be generated by JavaScript -->
+                </div>
+                
+                <div class="level-selector">
+                    <h3>Level <span id="currentLevel">1</span> of 5</h3>
+                    <div class="level-buttons">
+                        <button class="level-btn" data-level="1">1</button>
+                        <button class="level-btn" data-level="2">2</button>
+                        <button class="level-btn" data-level="3">3</button>
+                        <button class="level-btn" data-level="4">4</button>
+                        <button class="level-btn" data-level="5">5</button>
+                    </div>
+                </div>
+                
+                <div class="gravity-indicator">
+                    <span>Gravity:</span>
+                    <div class="gravity-direction" id="gravityIndicator">↓</div>
+                    <span>Orientation: <span id="orientationIndicator">Normal</span></span>
+                </div>
+            </div>
+            
+            <div class="game-info">
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value" id="moveCount">0</div>
+                        <div class="stat-label">Moves</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="minMoves">0</div>
+                        <div class="stat-label">Minimum</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="portalCount">0</div>
+                        <div class="stat-label">Portals Used</div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <div class="control-buttons">
+                        <button id="resetBtn"><i class="fas fa-redo"></i> Reset Level</button>
+                        <button id="prevBtn"><i class="fas fa-arrow-left"></i> Previous</button>
+                        <button id="nextBtn" disabled>Next <i class="fas fa-arrow-right"></i></button>
+                    </div>
+                    
+                    <div class="keyboard-controls">
+                        <div class="key up" data-direction="up">↑</div>
+                        <div class="key left" data-direction="left">←</div>
+                        <div class="key down" data-direction="down">↓</div>
+                        <div class="key right" data-direction="right">→</div>
+                    </div>
+                </div>
+                
+                <div class="instructions">
+                    <h3><i class="fas fa-info-circle"></i> How to Play</h3>
+                    <ul>
+                        <li>Use arrow keys or on-screen buttons to move the player</li>
+                        <li>Orange portals <span style="color:#ff9a00">●</span> flip gravity direction</li>
+                        <li>Purple portals <span style="color:#9d4edd">●</span> flip player orientation (reverse controls)</li>
+                        <li>Reach the green exit <span style="color:#00d8a0">■</span> with the fewest moves</li>
+                        <li>Gray cells are walls that block movement</li>
+                    </ul>
+                </div>
+                
+                <div class="game-status" id="gameStatus"></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Portal Flip Puzzle - A logic-based game with gravity and orientation mechanics</p>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const gameState = {
+            currentLevel: 1,
+            playerPosition: {x: 1, y: 1},
+            exitPosition: {x: 6, y: 6},
+            gravity: 'down', // down, up, left, right
+            orientation: 'normal', // normal, reversed
+            moves: 0,
+            portalsUsed: 0,
+            gameCompleted: false,
+            minMoves: [0, 8, 12, 16, 20, 25], // Minimum moves for each level
+            gridSize: 8
+        };
+
+        // Level configurations
+        const levels = [
+            // Level 1 - Simple introduction
+            {
+                walls: [
+                    [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
+                    [7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],
+                    [1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+                    [1,7],[2,7],[3,7],[4,7],[5,7],[6,7],
+                    [3,2],[3,3],[3,4],[4,4],[5,4]
+                ],
+                gravityPortals: [[2, 3]],
+                orientationPortals: [[5, 5]],
+                start: [1, 1],
+                exit: [6, 6]
+            },
+            // Level 2 - More complex
+            {
+                walls: [
+                    [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
+                    [7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],
+                    [1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+                    [1,7],[2,7],[3,7],[4,7],[5,7],[6,7],
+                    [2,2],[2,3],[2,4],[3,4],[4,4],[4,3],[4,2],[5,2]
+                ],
+                gravityPortals: [[1, 4], [5, 5]],
+                orientationPortals: [[3, 1], [5, 3]],
+                start: [1, 1],
+                exit: [6, 6]
+            },
+            // Level 3 - Even more challenging
+            {
+                walls: [
+                    [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
+                    [7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],
+                    [1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+                    [1,7],[2,7],[3,7],[4,7],[5,7],[6,7],
+                    [2,1],[2,2],[2,3],[3,3],[4,3],[5,3],[5,2],[5,1],
+                    [1,5],[2,5],[3,5],[4,5],[5,5],[6,5]
+                ],
+                gravityPortals: [[1, 4], [6, 2]],
+                orientationPortals: [[3, 1], [4, 6]],
+                start: [1, 1],
+                exit: [6, 6]
+            },
+            // Level 4 - Complex maze
+            {
+                walls: [
+                    [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
+                    [7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],
+                    [1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+                    [1,7],[2,7],[3,7],[4,7],[5,7],[6,7],
+                    [2,1],[2,2],[2,3],[2,4],[2,5],
+                    [3,5],[4,5],[5,5],[6,5],
+                    [4,1],[4,2],[4,3],
+                    [6,1],[6,2],[6,3]
+                ],
+                gravityPortals: [[1, 3], [5, 1], [3, 6]],
+                orientationPortals: [[5, 4], [2, 6]],
+                start: [1, 1],
+                exit: [6, 6]
+            },
+            // Level 5 - Final challenge
+            {
+                walls: [
+                    [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
+                    [7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],
+                    [1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+                    [1,7],[2,7],[3,7],[4,7],[5,7],[6,7],
+                    [1,2],[2,2],[3,2],
+                    [5,2],[6,2],
+                    [2,4],[3,4],[4,4],[5,4],
+                    [1,5],[2,5],[6,5],
+                    [4,1],[4,6]
+                ],
+                gravityPortals: [[1, 4], [3, 1], [5, 5]],
+                orientationPortals: [[2, 3], [4, 3], [6, 4]],
+                start: [1, 1],
+                exit: [6, 6]
+            }
+        ];
+
+        // DOM elements
+        const gameGrid = document.getElementById('gameGrid');
+        const moveCountEl = document.getElementById('moveCount');
+        const portalCountEl = document.getElementById('portalCount');
+        const minMovesEl = document.getElementById('minMoves');
+        const currentLevelEl = document.getElementById('currentLevel');
+        const gravityIndicator = document.getElementById('gravityIndicator');
+        const orientationIndicator = document.getElementById('orientationIndicator');
+        const resetBtn = document.getElementById('resetBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const gameStatus = document.getElementById('gameStatus');
+        const levelButtons = document.querySelectorAll('.level-btn');
+        const keyboardControls = document.querySelectorAll('.key');
+
+        // Initialize the game
+        function init() {
+            loadLevel(gameState.currentLevel);
+            updateUI();
+            setupEventListeners();
+        }
+
+        // Load a specific level
+        function loadLevel(level) {
+            gameState.currentLevel = level;
+            gameState.moves = 0;
+            gameState.portalsUsed = 0;
+            gameState.gameCompleted = false;
+            gameState.gravity = 'down';
+            gameState.orientation = 'normal';
+            
+            const levelConfig = levels[level - 1];
+            gameState.playerPosition = {x: levelConfig.start[0], y: levelConfig.start[1]};
+            gameState.exitPosition = {x: levelConfig.exit[0], y: levelConfig.exit[1]};
+            
+            // Update UI elements
+            currentLevelEl.textContent = level;
+            minMovesEl.textContent = gameState.minMoves[level];
+            
+            // Clear and rebuild the grid
+            gameGrid.innerHTML = '';
+            
+            // Create grid cells
+            for (let y = 0; y < gameState.gridSize; y++) {
+                for (let x = 0; x < gameState.gridSize; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell path';
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    
+                    // Add walls
+                    if (levelConfig.walls.some(wall => wall[0] === x && wall[1] === y)) {
+                        cell.classList.add('wall');
+                    }
+                    
+                    // Add gravity portals
+                    if (levelConfig.gravityPortals.some(portal => portal[0] === x && portal[1] === y)) {
+                        cell.classList.add('gravity-portal');
+                    }
+                    
+                    // Add orientation portals
+                    if (levelConfig.orientationPortals.some(portal => portal[0] === x && portal[1] === y)) {
+                        cell.classList.add('orientation-portal');
+                    }
+                    
+                    // Add exit
+                    if (x === gameState.exitPosition.x && y === gameState.exitPosition.y) {
+                        cell.classList.add('exit');
+                    }
+                    
+                    gameGrid.appendChild(cell);
+                }
+            }
+            
+            updatePlayerPosition();
+            updateGravityIndicator();
+            updateOrientationIndicator();
+            updateLevelButtons();
+            gameStatus.className = 'game-status';
+            gameStatus.textContent = '';
+        }
+
+        // Update player position on the grid
+        function updatePlayerPosition() {
+            // Remove player from all cells
+            document.querySelectorAll('.cell.player').forEach(cell => {
+                cell.classList.remove('player', 'up', 'down', 'left', 'right');
+            });
+            
+            // Add player to current position
+            const playerCell = document.querySelector(`.cell[data-x="${gameState.playerPosition.x}"][data-y="${gameState.playerPosition.y}"]`);
+            if (playerCell) {
+                playerCell.classList.add('player');
+                
+                // Add direction class based on gravity when orientation is normal
+                // When orientation is reversed, the visual direction is opposite of movement
+                let directionClass = gameState.gravity;
+                if (gameState.orientation === 'reversed') {
+                    if (gameState.gravity === 'up') directionClass = 'down';
+                    else if (gameState.gravity === 'down') directionClass = 'up';
+                    else if (gameState.gravity === 'left') directionClass = 'right';
+                    else if (gameState.gravity === 'right') directionClass = 'left';
+                }
+                
+                playerCell.classList.add(directionClass);
+            }
+        }
+
+        // Update gravity indicator
+        function updateGravityIndicator() {
+            let indicator = '↓';
+            switch(gameState.gravity) {
+                case 'up': indicator = '↑'; break;
+                case 'left': indicator = '←'; break;
+                case 'right': indicator = '→'; break;
+            }
+            gravityIndicator.textContent = indicator;
+        }
+
+        // Update orientation indicator
+        function updateOrientationIndicator() {
+            orientationIndicator.textContent = gameState.orientation === 'normal' ? 'Normal' : 'Reversed';
+            orientationIndicator.style.color = gameState.orientation === 'normal' ? '#00a8ff' : '#9d4edd';
+        }
+
+        // Update level buttons
+        function updateLevelButtons() {
+            levelButtons.forEach(btn => {
+                if (parseInt(btn.dataset.level) === gameState.currentLevel) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+                
+                // Enable/disable next button
+                if (gameState.currentLevel < levels.length) {
+                    nextBtn.disabled = false;
+                } else {
+                    nextBtn.disabled = true;
+                }
+                
+                // Enable/disable previous button
+                if (gameState.currentLevel > 1) {
+                    prevBtn.disabled = false;
+                } else {
+                    prevBtn.disabled = true;
+                }
+            });
+        }
+
+        // Update UI
+        function updateUI() {
+            moveCountEl.textContent = gameState.moves;
+            portalCountEl.textContent = gameState.portalsUsed;
+            updatePlayerPosition();
+        }
+
+        // Move player
+        function movePlayer(direction) {
+            if (gameState.gameCompleted) return;
+            
+            // Adjust direction based on orientation
+            let actualDirection = direction;
+            if (gameState.orientation === 'reversed') {
+                switch(direction) {
+                    case 'up': actualDirection = 'down'; break;
+                    case 'down': actualDirection = 'up'; break;
+                    case 'left': actualDirection = 'right'; break;
+                    case 'right': actualDirection = 'left'; break;
+                }
+            }
+            
+            // Calculate new position
+            let newX = gameState.playerPosition.x;
+            let newY = gameState.playerPosition.y;
+            
+            switch(actualDirection) {
+                case 'up': newY--; break;
+                case 'down': newY++; break;
+                case 'left': newX--; break;
+                case 'right': newX++; break;
+            }
+            
+            // Check if move is valid (not a wall and within bounds)
+            const levelConfig = levels[gameState.currentLevel - 1];
+            const isWall = levelConfig.walls.some(wall => wall[0] === newX && wall[1] === newY);
+            
+            if (newX >= 0 && newX < gameState.gridSize && 
+                newY >= 0 && newY < gameState.gridSize && !isWall) {
+                
+                // Update player position
+                gameState.playerPosition.x = newX;
+                gameState.playerPosition.y = newY;
+                gameState.moves++;
+                
+                // Apply gravity after move
+                applyGravity();
+                
+                // Check for portals
+                checkPortals();
+                
+                // Check for exit
+                checkExit();
+                
+                updateUI();
+            }
+        }
+
+        // Apply gravity to player
+        function applyGravity() {
+            // Gravity only applies if there's no wall in the gravity direction
+            let gravityX = gameState.playerPosition.x;
+            let gravityY = gameState.playerPosition.y;
+            
+            switch(gameState.gravity) {
+                case 'up': gravityY--; break;
+                case 'down': gravityY++; break;
+                case 'left': gravityX--; break;
+                case 'right': gravityX++; break;
+            }
+            
+            const levelConfig = levels[gameState.currentLevel - 1];
+            const isWall = levelConfig.walls.some(wall => wall[0] === gravityX && wall[1] === gravityY);
+            
+            // If no wall and within bounds, move player in gravity direction
+            if (gravityX >= 0 && gravityX < gameState.gridSize && 
+                gravityY >= 0 && gravityY < gameState.gridSize && !isWall) {
+                
+                gameState.playerPosition.x = gravityX;
+                gameState.playerPosition.y = gravityY;
+                
+                // Check for portals after gravity move
+                checkPortals();
+                
+                // Check for exit
+                checkExit();
+            }
+        }
+
+        // Check if player is on a portal
+        function checkPortals() {
+            const levelConfig = levels[gameState.currentLevel - 1];
+            const currentX = gameState.playerPosition.x;
+            const currentY = gameState.playerPosition.y;
+            
+            // Check gravity portals
+            levelConfig.gravityPortals.forEach(portal => {
+                if (portal[0] === currentX && portal[1] === currentY) {
+                    activateGravityPortal();
+                    return;
+                }
+            });
+            
+            // Check orientation portals
+            levelConfig.orientationPortals.forEach(portal => {
+                if (portal[0] === currentX && portal[1] === currentY) {
+                    activateOrientationPortal();
+                    return;
+                }
+            });
+        }
+
+        // Activate gravity portal
+        function activateGravityPortal() {
+            // Flip gravity
+            switch(gameState.gravity) {
+                case 'up': gameState.gravity = 'down'; break;
+                case 'down': gameState.gravity = 'up'; break;
+                case 'left': gameState.gravity = 'right'; break;
+                case 'right': gameState.gravity = 'left'; break;
+            }
+            
+            gameState.portalsUsed++;
+            
+            // Visual effect
+            const portalCell = document.querySelector(`.cell[data-x="${gameState.playerPosition.x}"][data-y="${gameState.playerPosition.y}"]`);
+            const effect = document.createElement('div');
+            effect.className = 'portal-effect gravity-effect';
+            portalCell.appendChild(effect);
+            
+            setTimeout(() => {
+                effect.style.opacity = '1';
+                setTimeout(() => {
+                    effect.style.opacity = '0';
+                    setTimeout(() => {
+                        portalCell.removeChild(effect);
+                    }, 500);
+                }, 300);
+            }, 10);
+            
+            updateGravityIndicator();
+        }
+
+        // Activate orientation portal
+        function activateOrientationPortal() {
+            // Flip orientation
+            gameState.orientation = gameState.orientation === 'normal' ? 'reversed' : 'normal';
+            gameState.portalsUsed++;
+            
+            // Visual effect
+            const portalCell = document.querySelector(`.cell[data-x="${gameState.playerPosition.x}"][data-y="${gameState.playerPosition.y}"]`);
+            const effect = document.createElement('div');
+            effect.className = 'portal-effect orientation-effect';
+            portalCell.appendChild(effect);
+            
+            setTimeout(() => {
+                effect.style.opacity = '1';
+                setTimeout(() => {
+                    effect.style.opacity = '0';
+                    setTimeout(() => {
+                        portalCell.removeChild(effect);
+                    }, 500);
+                }, 300);
+            }, 10);
+            
+            updateOrientationIndicator();
+        }
+
+        // Check if player reached exit
+        function checkExit() {
+            if (gameState.playerPosition.x === gameState.exitPosition.x && 
+                gameState.playerPosition.y === gameState.exitPosition.y) {
+                
+                gameState.gameCompleted = true;
+                
+                // Calculate score
+                const minMoves = gameState.minMoves[gameState.currentLevel];
+                let message = `Level Complete! Moves: ${gameState.moves}`;
+                
+                if (gameState.moves <= minMoves) {
+                    message += ` (Perfect! Minimum is ${minMoves})`;
+                    gameStatus.className = 'game-status success';
+                } else {
+                    message += ` (Minimum possible is ${minMoves})`;
+                    gameStatus.className = 'game-status success';
+                }
+                
+                gameStatus.textContent = message;
+                
+                // Enable next level button if not on last level
+                if (gameState.currentLevel < levels.length) {
+                    nextBtn.disabled = false;
+                }
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                // Visual feedback for keyboard keys
+                keyboardControls.forEach(key => {
+                    if (key.dataset.direction === getDirectionFromKey(e.key)) {
+                        key.classList.add('active');
+                    }
+                });
+                
+                // Move player based on key press
+                switch(e.key) {
+                    case 'ArrowUp': movePlayer('up'); break;
+                    case 'ArrowDown': movePlayer('down'); break;
+                    case 'ArrowLeft': movePlayer('left'); break;
+                    case 'ArrowRight': movePlayer('right'); break;
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                keyboardControls.forEach(key => {
+                    if (key.dataset.direction === getDirectionFromKey(e.key)) {
+                        key.classList.remove('active');
+                    }
+                });
+            });
+            
+            // On-screen keyboard controls
+            keyboardControls.forEach(key => {
+                key.addEventListener('mousedown', () => {
+                    key.classList.add('active');
+                    movePlayer(key.dataset.direction);
+                });
+                
+                key.addEventListener('mouseup', () => {
+                    key.classList.remove('active');
+                });
+                
+                key.addEventListener('mouseleave', () => {
+                    key.classList.remove('active');
+                });
+                
+                key.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    key.classList.add('active');
+                    movePlayer(key.dataset.direction);
+                });
+                
+                key.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    key.classList.remove('active');
+                });
+            });
+            
+            // Control buttons
+            resetBtn.addEventListener('click', () => {
+                loadLevel(gameState.currentLevel);
+            });
+            
+            prevBtn.addEventListener('click', () => {
+                if (gameState.currentLevel > 1) {
+                    loadLevel(gameState.currentLevel - 1);
+                }
+            });
+            
+            nextBtn.addEventListener('click', () => {
+                if (gameState.currentLevel < levels.length) {
+                    loadLevel(gameState.currentLevel + 1);
+                }
+            });
+            
+            // Level selection buttons
+            levelButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const level = parseInt(btn.dataset.level);
+                    loadLevel(level);
+                });
+            });
+        }
+
+        // Helper function to get direction from keyboard key
+        function getDirectionFromKey(key) {
+            switch(key) {
+                case 'ArrowUp': return 'up';
+                case 'ArrowDown': return 'down';
+                case 'ArrowLeft': return 'left';
+                case 'ArrowRight': return 'right';
+                default: return null;
+            }
+        }
+
+        // Initialize the game when page loads
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

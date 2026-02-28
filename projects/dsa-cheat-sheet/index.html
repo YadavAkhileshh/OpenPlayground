@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro DSA Cheat Sheet</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'VT323', monospace;
+            background-color: #0a0a0a;
+            color: #33ff33;
+            line-height: 1.4;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* CRT monitor effect */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15) 0px,
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        /* Scanline effect */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                rgba(0, 255, 0, 0.03) 50%,
+                rgba(0, 0, 0, 0.1) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 1001;
+            animation: scanline 10s linear infinite;
+        }
+        
+        @keyframes scanline {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 0 100%;
+            }
+        }
+        
+        /* Header styles */
+        .header {
+            text-align: center;
+            padding: 15px;
+            border: 2px solid #33ff33;
+            margin-bottom: 25px;
+            position: relative;
+            background-color: #001100;
+            box-shadow: 0 0 15px rgba(51, 255, 51, 0.3);
+        }
+        
+        .title {
+            font-size: 2.8rem;
+            letter-spacing: 3px;
+            color: #33ff33;
+            text-shadow: 0 0 10px #33ff33;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 1.5rem;
+            color: #88ff88;
+            margin-bottom: 10px;
+        }
+        
+        /* Intro text */
+        .intro {
+            padding: 15px;
+            border: 1px dashed #33ff33;
+            margin-bottom: 25px;
+            background-color: rgba(0, 34, 0, 0.5);
+            font-size: 1.2rem;
+        }
+        
+        /* Main content container */
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        /* Section styles */
+        .section {
+            border: 1px solid #33ff33;
+            background-color: rgba(0, 17, 0, 0.7);
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background-color: #003300;
+            padding: 12px 15px;
+            font-size: 1.4rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #33ff33;
+            transition: all 0.3s ease;
+        }
+        
+        .section-header:hover {
+            background-color: #005500;
+            color: #ccffcc;
+        }
+        
+        .toggle-btn {
+            font-size: 1.8rem;
+            color: #33ff33;
+            transition: transform 0.3s;
+        }
+        
+        .section-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease, padding 0.5s ease;
+        }
+        
+        .section-content.active {
+            padding: 15px;
+            max-height: 2000px;
+        }
+        
+        /* Table styles */
+        .complexity-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .complexity-table th {
+            background-color: #002200;
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #33ff33;
+        }
+        
+        .complexity-table td {
+            padding: 8px;
+            border: 1px solid #33ff33;
+        }
+        
+        .complexity-table tr:nth-child(even) {
+            background-color: rgba(0, 51, 0, 0.3);
+        }
+        
+        /* List styles */
+        .operation-list {
+            list-style-type: none;
+        }
+        
+        .operation-list li {
+            padding: 5px 0;
+            border-bottom: 1px dotted #33ff33;
+        }
+        
+        .operation-list li:last-child {
+            border-bottom: none;
+        }
+        
+        /* Badge for time complexity */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: #003300;
+            border: 1px solid #33ff33;
+            border-radius: 3px;
+            font-size: 0.9rem;
+            margin-left: 5px;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 15px;
+            border-top: 1px solid #33ff33;
+            margin-top: 20px;
+            font-size: 1.1rem;
+            color: #88ff88;
+        }
+        
+        /* Blinking cursor effect */
+        .blink {
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
+        /* Retro button */
+        .retro-btn {
+            display: inline-block;
+            padding: 8px 15px;
+            background-color: #003300;
+            border: 2px solid #33ff33;
+            color: #33ff33;
+            font-family: 'VT323', monospace;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+        
+        .retro-btn:hover {
+            background-color: #33ff33;
+            color: #001100;
+            box-shadow: 0 0 10px #33ff33;
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .title {
+                font-size: 2.2rem;
+            }
+            
+            .subtitle {
+                font-size: 1.3rem;
+            }
+        }
+        
+        /* Glitch effect for header */
+        .title::before, .title::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .title::before {
+            animation: glitch 3s infinite;
+            color: #ff33ff;
+            z-index: -1;
+        }
+        
+        .title::after {
+            animation: glitch 2s infinite;
+            color: #33ffff;
+            z-index: -2;
+        }
+        
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+        
+        /* Floppy disk icon */
+        .floppy {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background-color: #33ff33;
+            border: 2px solid #33ff33;
+            position: relative;
+            margin-right: 10px;
+        }
+        
+        .floppy::before {
+            content: "";
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 5px;
+            background-color: #33ff33;
+        }
+        
+        .floppy::after {
+            content: "";
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 10px;
+            height: 10px;
+            background-color: #001100;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title" data-text="DSA CHEAT SHEET">DSA CHEAT SHEET</h1>
+        <p class="subtitle">RETRO TERMINAL EDITION</p>
+        <p>Data Structures & Algorithms Reference v1.0</p>
+    </div>
+    
+    <div class="intro">
+        <p>> Welcome to the Retro DSA Cheat Sheet. A quick reference for time/space complexities and operations of common Data Structures and Algorithms.</p>
+        <p>> Use the buttons below to expand/collapse all sections at once. Click on individual section headers to toggle them.</p>
+    </div>
+    
+    <div class="controls">
+        <button class="retro-btn" id="expand-all"><span class="floppy"></span>EXPAND ALL</button>
+        <button class="retro-btn" id="collapse-all"><span class="floppy"></span>COLLAPSE ALL</button>
+        <button class="retro-btn" id="glitch-effect">TOGGLE GLITCH</button>
+    </div>
+    
+    <div class="container">
+        <!-- Array Section -->
+        <div class="section">
+            <div class="section-header">
+                <span>ARRAY</span>
+                <span class="toggle-btn">+</span>
+            </div>
+            <div class="section-content">
+                <p>A contiguous block of memory storing elements of the same type.</p>
+                
+                <h3>Common Operations:</h3>
+                <ul class="operation-list">
+                    <li>Access by index <span class="badge">O(1)</span></li>
+                    <li>Search (unsorted) <span class="badge">O(n)</span></li>
+                    <li>Insert at end <span class="badge">O(1)</span></li>
+                    <li>Insert at position <span class="badge">O(n)</span></li>
+                    <li>Delete at position <span class="badge">O(n)</span></li>
+                </ul>
+                
+                <h3>Time Complexity:</h3>
+                <table class="complexity-table">
+                    <tr>
+                        <th>Operation</th>
+                        <th>Average</th>
+                        <th>Worst</th>
+                    </tr>
+                    <tr>
+                        <td>Access</td>
+                        <td>O(1)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Search</td>
+                        <td>O(n)</td>
+                        <td>O(n)</td>
+                    </tr>
+                    <tr>
+                        <td>Insertion</td>
+                        <td>O(n)</td>
+                        <td>O(n)</td>
+                    </tr>
+                    <tr>
+                        <td>Deletion</td>
+                        <td>O(n)</td>
+                        <td>O(n)</td>
+                    </tr>
+                </table>
+                <p><strong>Space Complexity:</strong> O(n)</p>
+            </div>
+        </div>
+        
+        <!-- Linked List Section -->
+        <div class="section">
+            <div class="section-header">
+                <span>LINKED LIST</span>
+                <span class="toggle-btn">+</span>
+            </div>
+            <div class="section-content">
+                <p>A linear collection of nodes, each containing data and a pointer to the next node.</p>
+                
+                <h3>Common Operations:</h3>
+                <ul class="operation-list">
+                    <li>Access by index <span class="badge">O(n)</span></li>
+                    <li>Search <span class="badge">O(n)</span></li>
+                    <li>Insert at head <span class="badge">O(1)</span></li>
+                    <li>Delete at head <span class="badge">O(1)</span></li>
+                    <li>Insert/delete at position <span class="badge">O(n)</span></li>
+                </ul>
+                
+                <h3>Time Complexity:</h3>
+                <table class="complexity-table">
+                    <tr>
+                        <th>Operation</th>
+                        <th>Average</th>
+                        <th>Worst</th>
+                    </tr>
+                    <tr>
+                        <td>Access</td>
+                        <td>O(n)</td>
+                        <td>O(n)</td>
+                    </tr>
+                    <tr>
+                        <td>Search</td>
+                        <td>O(n)</td>
+                        <td>O(n)</td>
+                    </tr>
+                    <tr>
+                        <td>Insertion</td>
+                        <td>O(1)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Deletion</td>
+                        <td>O(1)</td>
+                        <td>O(1)</td>
+                    </tr>
+                </table>
+                <p><strong>Space Complexity:</strong> O(n)</p>
+            </div>
+        </div>
+        
+        <!-- Stack Section -->
+        <div class="section">
+            <div class="section-header">
+                <span>STACK</span>
+                <span class="toggle-btn">+</span>
+            </div>
+            <div class="section-content">
+                <p>LIFO (Last-In-First-Out) data structure.</p>
+                
+                <h3>Common Operations:</h3>
+                <ul class="operation-list">
+                    <li>Push (add to top) <span class="badge">O(1)</span></li>
+                    <li>Pop (remove from top) <span class="badge">O(1)</span></li>
+                    <li>Peek (view top) <span class="badge">O(1)</span></li>
+                    <li>Search <span class="badge">O(n)</span></li>
+                </ul>
+                
+                <h3>Time Complexity:</h3>
+                <table class="complexity-table">
+                    <tr>
+                        <th>Operation</th>
+                        <th>Average</th>
+                        <th>Worst</th>
+                    </tr>
+                    <tr>
+                        <td>Push</td>
+                        <td>O(1)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Pop</td>
+                        <td>O(1)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Peek</td>
+                        <td>O(1)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Search</td>
+                        <td>O(n)</td>
+                        <td>O(n)</td>
+                    </tr>
+                </table>
+                <p><strong>Space Complexity:</strong> O(n)</p>
+            </div>
+        </div>
+        
+        <!-- Queue Section -->
+        <div class="section">
+            <div class="section-header">
+                <span>QUEUE</span>
+                <span class="toggle-btn">+</span>
+            </div>
+            <div class="section-content">
+                <p>FIFO (First-In-First-Out) data structure.</p>
+                
+                <h3>Common Operations:</h3>
+                <ul class="operation-list">
+                    <li>Enqueue (add to back) <span class="badge">O(1)</span></li>
+                    <li>Dequeue (remove from front) <span class="badge">O(1)</span></li>
+                    <li>Peek (view front) <span class="badge">O(1)</span></li>
+                    <li>Search <span class="badge">O(n)</span></li>
+                </ul>
+                
+                <h3>Time Complexity:</h3>
+                <table class="complexity-table">
+                    <tr>
+                        <th>Operation</th>
+                        <th>Average</th>
+                        <th>Worst</th>
+                    </tr>
+                    <tr>
+                        <td>Enqueue</td>
+                        <td>O(1)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Dequeue</td>
+                        <td>O(1)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Peek</td>
+                        <td>O(1)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Search</td>
+                        <td>O(n)</td>
+                        <td>O(n)</td>
+                    </tr>
+                </table>
+                <p><strong>Space Complexity:</strong> O(n)</p>
+            </div>
+        </div>
+        
+        <!-- Tree Section -->
+        <div class="section">
+            <div class="section-header">
+                <span>TREE (Binary Search Tree)</span>
+                <span class="toggle-btn">+</span>
+            </div>
+            <div class="section-content">
+                <p>Hierarchical data structure with a root value and subtrees of children.</p>
+                
+                <h3>Common Operations:</h3>
+                <ul class="operation-list">
+                    <li>Search <span class="badge">O(log n)</span></li>
+                    <li>Insert <span class="badge">O(log n)</span></li>
+                    <li>Delete <span class="badge">O(log n)</span></li>
+                    <li>Traversal <span class="badge">O(n)</span></li>
+                </ul>
+                
+                <h3>Time Complexity:</h3>
+                <table class="complexity-table">
+                    <tr>
+                        <th>Operation</th>
+                        <th>Average</th>
+                        <th>Worst</th>
+                    </tr>
+                    <tr>
+                        <td>Access</td>
+                        <td>O(log n)</td>
+                        <td>O(n)</td>
+                    </tr>
+                    <tr>
+                        <td>Search</td>
+                        <td>O(log n)</td>
+                        <td>O(n)</td>
+                    </tr>
+                    <tr>
+                        <td>Insertion</td>
+                        <td>O(log n)</td>
+                        <td>O(n)</td>
+                    </tr>
+                    <tr>
+                        <td>Deletion</td>
+                        <td>O(log n)</td>
+                        <td>O(n)</td>
+                    </tr>
+                </table>
+                <p><strong>Space Complexity:</strong> O(n)</p>
+            </div>
+        </div>
+        
+        <!-- Graph Section -->
+        <div class="section">
+            <div class="section-header">
+                <span>GRAPH</span>
+                <span class="toggle-btn">+</span>
+            </div>
+            <div class="section-content">
+                <p>A non-linear data structure of nodes (vertices) and edges.</p>
+                
+                <h3>Common Operations:</h3>
+                <ul class="operation-list">
+                    <li>Add vertex <span class="badge">O(1)</span></li>
+                    <li>Add edge <span class="badge">O(1)</span></li>
+                    <li>Remove vertex <span class="badge">O(V+E)</span></li>
+                    <li>Remove edge <span class="badge">O(E)</span></li>
+                    <li>Query <span class="badge">O(V)</span></li>
+                </ul>
+                
+                <h3>Time Complexity (Adjacency List):</h3>
+                <table class="complexity-table">
+                    <tr>
+                        <th>Operation</th>
+                        <th>Average</th>
+                        <th>Worst</th>
+                    </tr>
+                    <tr>
+                        <td>Add vertex</td>
+                        <td>O(1)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Add edge</td>
+                        <td>O(1)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Remove vertex</td>
+                        <td>O(V+E)</td>
+                        <td>O(V+E)</td>
+                    </tr>
+                    <tr>
+                        <td>Remove edge</td>
+                        <td>O(E)</td>
+                        <td>O(E)</td>
+                    </tr>
+                </table>
+                <p><strong>Space Complexity:</strong> O(V+E)</p>
+            </div>
+        </div>
+        
+        <!-- Sorting Algorithms Section -->
+        <div class="section">
+            <div class="section-header">
+                <span>SORTING ALGORITHMS</span>
+                <span class="toggle-btn">+</span>
+            </div>
+            <div class="section-content">
+                <p>Algorithms to arrange elements in a specific order.</p>
+                
+                <h3>Common Algorithms:</h3>
+                <table class="complexity-table">
+                    <tr>
+                        <th>Algorithm</th>
+                        <th>Best</th>
+                        <th>Average</th>
+                        <th>Worst</th>
+                        <th>Space</th>
+                    </tr>
+                    <tr>
+                        <td>Bubble Sort</td>
+                        <td>O(n)</td>
+                        <td>O(n²)</td>
+                        <td>O(n²)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Selection Sort</td>
+                        <td>O(n²)</td>
+                        <td>O(n²)</td>
+                        <td>O(n²)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Insertion Sort</td>
+                        <td>O(n)</td>
+                        <td>O(n²)</td>
+                        <td>O(n²)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Merge Sort</td>
+                        <td>O(n log n)</td>
+                        <td>O(n log n)</td>
+                        <td>O(n log n)</td>
+                        <td>O(n)</td>
+                    </tr>
+                    <tr>
+                        <td>Quick Sort</td>
+                        <td>O(n log n)</td>
+                        <td>O(n log n)</td>
+                        <td>O(n²)</td>
+                        <td>O(log n)</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Searching Algorithms Section -->
+        <div class="section">
+            <div class="section-header">
+                <span>SEARCHING ALGORITHMS</span>
+                <span class="toggle-btn">+</span>
+            </div>
+            <div class="section-content">
+                <p>Algorithms to find an element within a data structure.</p>
+                
+                <h3>Common Algorithms:</h3>
+                <table class="complexity-table">
+                    <tr>
+                        <th>Algorithm</th>
+                        <th>Best</th>
+                        <th>Average</th>
+                        <th>Worst</th>
+                        <th>Space</th>
+                    </tr>
+                    <tr>
+                        <td>Linear Search</td>
+                        <td>O(1)</td>
+                        <td>O(n)</td>
+                        <td>O(n)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Binary Search</td>
+                        <td>O(1)</td>
+                        <td>O(log n)</td>
+                        <td>O(log n)</td>
+                        <td>O(1)</td>
+                    </tr>
+                    <tr>
+                        <td>Depth-First Search</td>
+                        <td>O(V+E)</td>
+                        <td>O(V+E)</td>
+                        <td>O(V+E)</td>
+                        <td>O(V)</td>
+                    </tr>
+                    <tr>
+                        <td>Breadth-First Search</td>
+                        <td>O(V+E)</td>
+                        <td>O(V+E)</td>
+                        <td>O(V+E)</td>
+                        <td>O(V)</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>> DSA Cheat Sheet - Retro Terminal Edition | Perfect for quick revision before exams or interviews</p>
+        <p>> Press any key to continue<span class="blink">_</span></p>
+    </div>
+    
+    <script>
+        // Toggle section visibility
+        document.querySelectorAll('.section-header').forEach(header => {
+            header.addEventListener('click', function() {
+                const content = this.nextElementSibling;
+                const toggleBtn = this.querySelector('.toggle-btn');
+                
+                content.classList.toggle('active');
+                toggleBtn.textContent = content.classList.contains('active') ? '−' : '+';
+            });
+        });
+        
+        // Expand all sections
+        document.getElementById('expand-all').addEventListener('click', function() {
+            document.querySelectorAll('.section-content').forEach(content => {
+                content.classList.add('active');
+                content.previousElementSibling.querySelector('.toggle-btn').textContent = '−';
+            });
+        });
+        
+        // Collapse all sections
+        document.getElementById('collapse-all').addEventListener('click', function() {
+            document.querySelectorAll('.section-content').forEach(content => {
+                content.classList.remove('active');
+                content.previousElementSibling.querySelector('.toggle-btn').textContent = '+';
+            });
+        });
+        
+        // Toggle glitch effect
+        const title = document.querySelector('.title');
+        let glitchEnabled = false;
+        
+        document.getElementById('glitch-effect').addEventListener('click', function() {
+            glitchEnabled = !glitchEnabled;
+            
+            if (glitchEnabled) {
+                title.style.animation = 'glitch 0.5s infinite';
+                this.textContent = 'DISABLE GLITCH';
+            } else {
+                title.style.animation = 'none';
+                this.textContent = 'ENABLE GLITCH';
+            }
+        });
+        
+        // Simulate terminal typing effect for intro
+        const introText = document.querySelector('.intro p');
+        const originalText = introText.textContent;
+        introText.textContent = '';
+        
+        let i = 0;
+        function typeWriter() {
+            if (i < originalText.length) {
+                introText.textContent += originalText.charAt(i);
+                i++;
+                setTimeout(typeWriter, 20);
+            }
+        }
+        
+        // Start typing effect after page load
+        window.addEventListener('load', function() {
+            setTimeout(typeWriter, 500);
+            
+            // Open first two sections by default
+            document.querySelectorAll('.section-header')[0].click();
+            document.querySelectorAll('.section-header')[6].click();
+        });
+        
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            // Spacebar toggles sections
+            if (e.code === 'Space') {
+                const activeElement = document.activeElement;
+                if (activeElement.classList.contains('section-header')) {
+                    activeElement.click();
+                }
+            }
+            
+            // E expands all
+            if (e.code === 'KeyE') {
+                document.getElementById('expand-all').click();
+            }
+            
+            // C collapses all
+            if (e.code === 'KeyC') {
+                document.getElementById('collapse-all').click();
+            }
+            
+            // G toggles glitch
+            if (e.code === 'KeyG') {
+                document.getElementById('glitch-effect').click();
+            }
+        });
+        
+        // Add retro terminal sound effect on button click
+        document.querySelectorAll('.retro-btn, .section-header').forEach(button => {
+            button.addEventListener('click', function() {
+                // Create a simple beep sound using Web Audio API
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = 800;
+                    oscillator.type = 'square';
+                    
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                } catch (e) {
+                    console.log("Audio not supported");
+                }
+            });
+        });
+    </script>
+</body>
+</html>

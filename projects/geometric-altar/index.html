@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>geometric altar · platonic resonance</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0718;
+            overflow: hidden;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        }
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #info {
+            position: absolute;
+            bottom: 32px;
+            left: 32px;
+            z-index: 20;
+            background: rgba(12, 8, 28, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(200, 170, 255, 0.4);
+            border-radius: 60px;
+            padding: 14px 32px;
+            color: #e0d0ff;
+            font-weight: 300;
+            font-size: 1rem;
+            letter-spacing: 0.4px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        #info .symbol {
+            color: #ccb5ff;
+            font-size: 1.8rem;
+            filter: drop-shadow(0 0 12px #9f7aff);
+        }
+        #altar-stats {
+            position: absolute;
+            bottom: 32px;
+            right: 32px;
+            z-index: 20;
+            background: rgba(14, 10, 30, 0.65);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(180, 150, 255, 0.5);
+            border-radius: 50px;
+            padding: 12px 28px;
+            color: #d4c0ff;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.7);
+            pointer-events: none;
+        }
+        .resonance-badge {
+            background: rgba(90, 50, 150, 0.5);
+            color: #d0b5ff;
+            padding: 4px 16px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid rgba(160, 120, 255, 0.8);
+        }
+        .controls {
+            position: absolute;
+            top: 32px;
+            right: 32px;
+            z-index: 30;
+            display: flex;
+            gap: 14px;
+        }
+        button {
+            background: rgba(20, 10, 40, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(170, 130, 255, 0.6);
+            color: #d4bcff;
+            padding: 12px 26px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.4px;
+        }
+        button:hover {
+            background: rgba(70, 30, 140, 0.6);
+            border-color: #b694ff;
+            color: #f0e0ff;
+            box-shadow: 0 0 28px #9a6aff66;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div id="info">
+        <span class="symbol">🜁</span> geometric altar · five solids · harmonic resonance
+    </div>
+    
+    <div id="altar-stats">
+        <span>◈ resonance</span>
+        <span class="resonance-badge" id="resonance-val">0.86</span>
+    </div>
+    
+    <div class="controls">
+        <button id="chant">༄ chant</button>
+        <button id="align">◉ align</button>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  GEOMETRIC ALTAR
+        //  concept: a sacred space where the five platonic solids float in
+        //  harmonic resonance. each solid is made of glowing edges and
+        //  translucent faces, connected by beams of light to a central point.
+        //  they rotate at different speeds, creating a meditative mandala.
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- setup scene ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0720);
+        scene.fog = new THREE.FogExp2(0x0a0720, 0.006);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(22, 12, 28);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.3;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.3;
+        controls.enableZoom = true;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.target.set(0, 0, 0);
+
+        // --- lighting ---
+        const ambient = new THREE.AmbientLight(0x40406b);
+        scene.add(ambient);
+
+        const light1 = new THREE.PointLight(0x9f7aff, 1.4, 60);
+        light1.position.set(10, 15, 12);
+        scene.add(light1);
+
+        const light2 = new THREE.PointLight(0xff9f7a, 1.0, 60);
+        light2.position.set(-10, 8, 18);
+        scene.add(light2);
+
+        // stars
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 2000;
+        const starPos = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount; i++) {
+            const r = 120 + Math.random() * 100;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            starPos[i*3] = Math.sin(phi) * Math.cos(theta) * r;
+            starPos[i*3+1] = Math.sin(phi) * Math.sin(theta) * r;
+            starPos[i*3+2] = Math.cos(phi) * r;
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0xaa99ee, size: 0.2, transparent: true, blending: THREE.AdditiveBlending });
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
+
+        // --- create platonic solids ---
+        const solids = [];
+        const solidGroup = new THREE.Group();
+        
+        // define the five solids with their properties
+        const solidTypes = [
+            { name: 'tetrahedron', color: 0xff6f9f, scale: 3.0, pos: [-6, 2, 4], speed: 0.5 },
+            { name: 'cube', color: 0x6fb0ff, scale: 2.8, pos: [6, 1, -3], speed: 0.3 },
+            { name: 'octahedron', color: 0xffb06f, scale: 3.2, pos: [-4, -2, -6], speed: 0.7 },
+            { name: 'dodecahedron', color: 0x9f6fff, scale: 2.5, pos: [5, -1, 5], speed: 0.4 },
+            { name: 'icosahedron', color: 0x6fffb0, scale: 3.0, pos: [0, 3, 0], speed: 0.6 }
+        ];
+
+        solidTypes.forEach((type, index) => {
+            let geometry;
+            switch(type.name) {
+                case 'tetrahedron':
+                    geometry = new THREE.TetrahedronGeometry(1, 0);
+                    break;
+                case 'cube':
+                    geometry = new THREE.BoxGeometry(1.6, 1.6, 1.6);
+                    break;
+                case 'octahedron':
+                    geometry = new THREE.OctahedronGeometry(1, 0);
+                    break;
+                case 'dodecahedron':
+                    geometry = new THREE.DodecahedronGeometry(1, 0);
+                    break;
+                case 'icosahedron':
+                    geometry = new THREE.IcosahedronGeometry(1, 0);
+                    break;
+            }
+            
+            // material for edges (wireframe)
+            const edges = new THREE.EdgesGeometry(geometry);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: type.color, linewidth: 1 }));
+            
+            // material for faces (translucent)
+            const material = new THREE.MeshPhongMaterial({
+                color: type.color,
+                transparent: true,
+                opacity: 0.15,
+                emissive: new THREE.Color(type.color).multiplyScalar(0.3),
+                side: THREE.DoubleSide
+            });
+            
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            const group = new THREE.Group();
+            group.add(line);
+            group.add(mesh);
+            
+            group.position.set(type.pos[0], type.pos[1], type.pos[2]);
+            group.scale.set(type.scale, type.scale, type.scale);
+            
+            group.userData = {
+                speed: type.speed,
+                basePos: new THREE.Vector3(type.pos[0], type.pos[1], type.pos[2]),
+                color: type.color,
+                angle: 0
+            };
+            
+            solidGroup.add(group);
+            solids.push(group);
+        });
+        
+        scene.add(solidGroup);
+
+        // add connecting beams from each solid to a central point
+        const beamMaterial = new THREE.LineBasicMaterial({ color: 0x8866cc, transparent: true, opacity: 0.2 });
+        
+        solids.forEach(solid => {
+            const points = [solid.position.clone(), new THREE.Vector3(0, 0, 0)];
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geo, beamMaterial);
+            scene.add(line);
+        });
+
+        // add a central glowing sphere
+        const coreGeo = new THREE.SphereGeometry(0.8, 32, 32);
+        const coreMat = new THREE.MeshStandardMaterial({
+            color: 0xffdd99,
+            emissive: 0x442200,
+            roughness: 0.2,
+            metalness: 0.1
+        });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        core.position.set(0, 0, 0);
+        scene.add(core);
+
+        // floating particles around core
+        const particleCount = 800;
+        const particleGeo = new THREE.BufferGeometry();
+        const particlePos = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            const r = 2 + Math.random() * 4;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            particlePos[i*3] = Math.sin(phi) * Math.cos(theta) * r;
+            particlePos[i*3+1] = Math.sin(phi) * Math.sin(theta) * r;
+            particlePos[i*3+2] = Math.cos(phi) * r;
+        }
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePos, 3));
+        const particleMat = new THREE.PointsMaterial({ color: 0xffaa88, size: 0.1, transparent: true, blending: THREE.AdditiveBlending });
+        const particles = new THREE.Points(particleGeo, particleMat);
+        scene.add(particles);
+
+        // UI
+        let chantMode = false;
+        let alignMode = false;
+        const resonanceEl = document.getElementById('resonance-val');
+
+        document.getElementById('chant').addEventListener('click', () => {
+            chantMode = !chantMode;
+            document.getElementById('chant').innerHTML = chantMode ? '༄ chant (on)' : '༄ chant';
+        });
+        
+        document.getElementById('align').addEventListener('click', () => {
+            alignMode = !alignMode;
+            document.getElementById('align').innerHTML = alignMode ? '◉ align (on)' : '◉ align';
+            
+            if (alignMode) {
+                // snap all solids to alignment
+                solids.forEach((solid, i) => {
+                    solid.rotation.set(0, 0, 0);
+                });
+            }
+        });
+
+        // animation loop
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const delta = clock.getDelta();
+            const elapsed = performance.now() / 1000;
+
+            // rotate solids at their own speeds
+            solids.forEach((solid, i) => {
+                if (!alignMode) {
+                    solid.rotation.x += 0.002 * solid.userData.speed;
+                    solid.rotation.y += 0.003 * solid.userData.speed;
+                    solid.rotation.z += 0.001 * solid.userData.speed;
+                }
+                
+                // gentle floating motion
+                if (chantMode) {
+                    solid.position.x = solid.userData.basePos.x + Math.sin(elapsed * 2 + i) * 1.5;
+                    solid.position.y = solid.userData.basePos.y + Math.cos(elapsed * 1.5 + i) * 1.5;
+                    solid.position.z = solid.userData.basePos.z + Math.sin(elapsed * 1.8 + i) * 1.5;
+                } else {
+                    // return to base
+                    solid.position.lerp(solid.userData.basePos, 0.05);
+                }
+            });
+
+            // rotate particles
+            particles.rotation.y += 0.001;
+            particles.rotation.x += 0.0005;
+
+            // rotate stars
+            stars.rotation.y += 0.0002;
+
+            // update resonance display
+            const resonance = (0.7 + Math.sin(elapsed * 2) * 0.2).toFixed(2);
+            resonanceEl.textContent = resonance;
+
+            controls.update();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // light shifts
+        setInterval(() => {
+            const t = performance.now() / 2000;
+            light1.color.setHSL(0.68 + Math.sin(t)*0.06, 0.8, 0.6);
+            light2.color.setHSL(0.92 + Math.cos(t*1.2)*0.05, 0.9, 0.6);
+        }, 200);
+    </script>
+</body>
+</html>

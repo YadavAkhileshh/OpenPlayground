@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StegoLab | LSB Forensics Suite</title>
+    <link rel="stylesheet" href="style.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+    <div id="app-container">
+        <aside class="sidebar">
+            <div class="brand">
+                <i class='bx bx-fingerprint'></i> StegoLab_
+            </div>
+            
+            <nav class="nav-menu">
+                <div class="nav-header">MODULES</div>
+                <button class="nav-btn active" data-tab="encode">
+                    <i class='bx bx-hide'></i> Conceal (Encode)
+                </button>
+                <button class="nav-btn" data-tab="decode">
+                    <i class='bx bx-show'></i> Reveal (Decode)
+                </button>
+                <button class="nav-btn" data-tab="analyze">
+                    <i class='bx bx-pulse'></i> Bit Analysis
+                </button>
+            </nav>
+
+            <div class="status-panel">
+                <div class="status-row">
+                    <span>CAPACITY</span>
+                    <span id="stat-capacity">0 KB</span>
+                </div>
+                <div class="status-row">
+                    <span>USED</span>
+                    <div class="progress-bar">
+                        <div class="fill" id="stat-usage" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="status-row">
+                    <span>INTEGRITY</span>
+                    <span class="secure">SECURE</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="workspace">
+            <header class="top-bar">
+                <div class="file-info" id="file-info-display">
+                    <i class='bx bx-image-alt'></i> NO IMAGE LOADED
+                </div>
+                <div class="actions">
+                    <button id="btn-reset" class="action-btn danger"><i class='bx bx-refresh'></i> RESET</button>
+                    <button id="btn-download" class="action-btn primary" disabled><i class='bx bx-download'></i> EXPORT PNG</button>
+                </div>
+            </header>
+
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <i class='bx bxs-cloud-upload'></i>
+                    <h3>DRAG IMAGE FILE HERE</h3>
+                    <p>Supports PNG, JPG (Auto-converts to PNG)</p>
+                    <input type="file" id="file-input" hidden accept="image/*">
+                    <button class="btn-browse" onclick="document.getElementById('file-input').click()">BROWSE FILES</button>
+                </div>
+            </div>
+
+            <section id="tab-encode" class="tab-content active">
+                <div class="split-view">
+                    <div class="viewport-container">
+                        <div class="label-badge">SOURCE IMAGE PREVIEW</div>
+                        <canvas id="canvas-source"></canvas>
+                    </div>
+                    
+                    <div class="controls-container">
+                        <div class="panel-box">
+                            <div class="panel-header"><i class='bx bx-message-square-edit'></i> PAYLOAD CONFIGURATION</div>
+                            <div class="panel-body">
+                                <div class="form-group">
+                                    <label>SECRET MESSAGE</label>
+                                    <textarea id="input-message" placeholder="Enter sensitive data to hide..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>ENCRYPTION PASSWORD (OPTIONAL)</label>
+                                    <div class="input-icon">
+                                        <i class='bx bx-lock-alt'></i>
+                                        <input type="password" id="input-pass-enc" placeholder="Unlock Key">
+                                    </div>
+                                </div>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <label>CHARS</label>
+                                        <span id="count-chars">0</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>BITS</label>
+                                        <span id="count-bits">0</span>
+                                    </div>
+                                </div>
+                                <button id="btn-encode" class="btn-execute">
+                                    <i class='bx bx-microchip'></i> INJECT DATA
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-decode" class="tab-content">
+                <div class="split-view">
+                    <div class="viewport-container">
+                        <div class="label-badge">ENCODED IMAGE ANALYZER</div>
+                        <canvas id="canvas-decode"></canvas>
+                    </div>
+                    
+                    <div class="controls-container">
+                        <div class="panel-box">
+                            <div class="panel-header"><i class='bx bx-lock-open'></i> EXTRACTION CONFIGURATION</div>
+                            <div class="panel-body">
+                                <div class="form-group">
+                                    <label>DECRYPTION PASSWORD</label>
+                                    <div class="input-icon">
+                                        <i class='bx bx-key'></i>
+                                        <input type="password" id="input-pass-dec" placeholder="Unlock Key">
+                                    </div>
+                                </div>
+                                <button id="btn-decode" class="btn-execute success">
+                                    <i class='bx bx-radar'></i> EXTRACT DATA
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="panel-box result-box">
+                            <div class="panel-header"><i class='bx bx-terminal'></i> DECODED PAYLOAD</div>
+                            <div class="panel-body console-output" id="output-console">
+                                <span class="blink">_</span> WAITING FOR EXTRACTION...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-analyze" class="tab-content">
+                <div class="analysis-grid">
+                    <div class="panel-box full-width">
+                        <div class="panel-header">
+                            <span><i class='bx bx-layer'></i> BIT PLANE INSPECTOR</span>
+                            <select id="plane-select" class="sm-select">
+                                <option value="0">Red Channel (LSB)</option>
+                                <option value="1">Green Channel (LSB)</option>
+                                <option value="2">Blue Channel (LSB)</option>
+                                <option value="7">Alpha Channel (MSB)</option>
+                            </select>
+                        </div>
+                        <div class="panel-body row-layout">
+                            <canvas id="canvas-bitplane" width="300" height="200"></canvas>
+                            <div class="plane-info">
+                                <h4>Visual Artifact Detection</h4>
+                                <p>This tool isolates specific bits of color channels. If you see static noise in the LSB plane that looks "structured" or "patterned," it indicates hidden data.</p>
+                                <button id="btn-render-plane" class="btn-sm">RENDER PLANE</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-box full-width">
+                        <div class="panel-header">
+                            <span><i class='bx bx-code-alt'></i> RAW BINARY INSPECTOR (First 512 Bytes)</span>
+                        </div>
+                        <div class="panel-body hex-viewer" id="hex-view">
+                            </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="toast-container"></div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

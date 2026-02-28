@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Catch the Block Game</title>
+    <style src="style.css"></style>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			font-family: sans-serif;
+		}
+
+		body {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+			background: linear-gradient(135deg, #2c3e50, #4ca1af);
+			overflow: hidden;
+		}
+
+		.game-container {
+			position: relative;
+			width: 300px;
+			height: 500px;
+			background: #1e1e1e;
+			border-radius: 20px;
+			border: 3px solid #fff;
+			overflow: hidden;
+			box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+		}
+
+		.block {
+			position: absolute;
+			top: 0;
+			left: 50%;
+			width: 40px;
+			height: 40px;
+			background: #e74c3c;
+			border-radius: 10px;
+			transform: translateX(-50%);
+			box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+		}
+
+		.paddle {
+			position: absolute;
+			bottom: 20px;
+			width: 80px;
+			height: 20px;
+			background: #2ecc71;
+			border-radius: 10px;
+			left: 50%;
+			transform: translateX(-50%);
+			box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+		}
+
+		.score {
+			position: absolute;
+			top: 10px;
+			left: 10px;
+			color: #fff;
+			font-size: 18px;
+			font-weight: bold;
+		}
+	</style>
+</head>
+
+<body>
+
+	<div class="game-container">
+		<div class="score">Score: 0</div>
+		<div class="block"></div>
+		<div class="paddle"></div>
+	</div>
+
+	<script>
+		const block = document.querySelector('.block');
+		const paddle = document.querySelector('.paddle');
+		const scoreEl = document.querySelector('.score');
+		const container = document.querySelector('.game-container');
+		let containerWidth = container.clientWidth;
+		let paddleWidth = paddle.offsetWidth;
+		let blockSize = block.offsetWidth;
+		let paddleX = (containerWidth - paddleWidth) / 2;
+		let blockX = Math.random() * (containerWidth - blockSize);
+		let blockY = 0;
+		let speed = 2;
+		let score = 0;
+		paddle.style.left = `${paddleX}px`;
+		block.style.left = `${blockX}px`;
+		// Move paddle with mouse
+		container.addEventListener('mousemove', e => {
+			let rect = container.getBoundingClientRect();
+			paddleX = e.clientX - rect.left - paddleWidth / 2;
+			paddleX = Math.max(0, Math.min(containerWidth - paddleWidth, paddleX));
+			paddle.style.left = `${paddleX}px`;
+		});
+
+		function gameLoop() {
+			blockY += speed;
+			block.style.top = blockY + 'px';
+			// Collision detection
+			if (
+				blockY + blockSize >= container.clientHeight - 20 && // near paddle
+				blockX + blockSize > paddleX &&
+				blockX < paddleX + paddleWidth
+			) {
+				score++;
+				scoreEl.textContent = `Score: ${score}`;
+				resetBlock();
+			}
+			// Missed
+			if (blockY > container.clientHeight) {
+				score = 0;
+				scoreEl.textContent = `Score: ${score}`;
+				resetBlock();
+			}
+			requestAnimationFrame(gameLoop);
+		}
+
+		function resetBlock() {
+			blockY = 0;
+			blockX = Math.random() * (containerWidth - blockSize);
+			block.style.left = blockX + 'px';
+		}
+		gameLoop();
+	</script>
+    <script src="app.js"></script>
+
+</body>
+
+</html>

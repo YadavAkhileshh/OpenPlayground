@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIRTUFS - Virtual File System Simulator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo-container">
+            <div class="logo">
+                <i class="fas fa-server"></i>
+            </div>
+            <div class="logo-text">
+                <h1>VIRTUFS</h1>
+                <div class="subtitle">VIRTUAL FILE SYSTEM SIMULATOR</div>
+            </div>
+        </div>
+        <div class="user-controls">
+            <div class="user-badge">
+                <div class="user-avatar" id="user-avatar">A</div>
+                <div class="user-info">
+                    <div class="user-name" id="user-name">Admin</div>
+                    <div class="user-role" id="user-role">Root User</div>
+                </div>
+            </div>
+            <div class="admin-toggle">
+                <span>Admin Mode</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="admin-mode">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <button class="btn-terminal" id="toggle-terminal">
+                <i class="fas fa-terminal"></i>
+                <span>Terminal</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="section">
+                <div class="section-title">File Operations</div>
+                <div class="btn-group">
+                    <button class="btn" id="btn-new-file" data-tooltip="Create new file">
+                        <i class="fas fa-file-circle-plus"></i>
+                        <span>New File</span>
+                    </button>
+                    <button class="btn" id="btn-new-folder" data-tooltip="Create new folder">
+                        <i class="fas fa-folder-plus"></i>
+                        <span>New Folder</span>
+                    </button>
+                    <button class="btn" id="btn-rename" data-tooltip="Rename selected item">
+                        <i class="fas fa-i-cursor"></i>
+                        <span>Rename</span>
+                    </button>
+                    <button class="btn btn-danger" id="btn-delete" data-tooltip="Delete selected item">
+                        <i class="fas fa-trash"></i>
+                        <span>Delete</span>
+                    </button>
+                    <button class="btn" id="btn-permissions" data-tooltip="Change permissions">
+                        <i class="fas fa-lock"></i>
+                        <span>Permissions</span>
+                    </button>
+                    <button class="btn" id="btn-copy" data-tooltip="Copy to clipboard">
+                        <i class="fas fa-copy"></i>
+                        <span>Copy</span>
+                    </button>
+                    <button class="btn" id="btn-move" data-tooltip="Move to another location">
+                        <i class="fas fa-arrow-right-arrow-left"></i>
+                        <span>Move</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">System Tools</div>
+                <div class="btn-group">
+                    <button class="btn btn-corruption btn-danger" id="btn-corrupt-random" data-tooltip="Simulate random file corruption">
+                        <i class="fas fa-bug"></i>
+                        <span>Random Corruption</span>
+                    </button>
+                    <button class="btn btn-success" id="btn-repair" data-tooltip="Scan and repair filesystem">
+                        <i class="fas fa-tools"></i>
+                        <span>Repair Filesystem</span>
+                    </button>
+                    <button class="btn btn-warning" id="btn-snapshot" data-tooltip="Create system snapshot">
+                        <i class="fas fa-camera"></i>
+                        <span>Create Snapshot</span>
+                    </button>
+                    <button class="btn" id="btn-restore" data-tooltip="Restore from snapshot">
+                        <i class="fas fa-history"></i>
+                        <span>Restore Snapshot</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">System Information</div>
+                <div class="system-info">
+                    <div class="info-item">
+                        <span class="info-label">Disk Usage</span>
+                        <span class="info-value" id="disk-usage">0 KB / 10 MB</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total Items</span>
+                        <span class="info-value" id="item-count">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Corrupted Items</span>
+                        <span class="info-value corruption" id="corruption-count">0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Current User</span>
+                        <span class="info-value" id="current-user-display">admin</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Explorer -->
+        <div class="explorer-container">
+            <div class="breadcrumbs" id="breadcrumbs">
+                <div class="breadcrumb-item active" data-path="/">
+                    <i class="fas fa-home"></i>
+                    <span>Root</span>
+                </div>
+            </div>
+            <div class="file-explorer" id="file-explorer">
+                <!-- Files will be populated here -->
+            </div>
+        </div>
+
+        <!-- Logs Panel -->
+        <div class="logs-container">
+            <div class="logs-header">
+                <h3>
+                    <i class="fas fa-scroll"></i>
+                    System Logs
+                </h3>
+                <button class="btn" id="btn-clear-logs">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="logs-list" id="logs-list">
+                <div class="log-entry info">
+                    <div class="log-time">Just now</div>
+                    <div class="log-message">VIRTUFS initialized. Welcome to the virtual filesystem simulator.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terminal -->
+    <div class="terminal-container" id="terminal">
+        <div class="terminal-header">
+            <div class="terminal-title">
+                <i class="fas fa-terminal"></i>
+                VIRTUFS Terminal
+                <span class="terminal-status" id="terminal-status">● Ready</span>
+            </div>
+            <button class="close-modal" id="close-terminal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="terminal-body" id="terminal-output">
+            <div class="terminal-output prompt">VIRTUFS Terminal v2.0 - Type 'help' for available commands</div>
+            <div class="terminal-output prompt">$</div>
+        </div>
+        <div class="terminal-input">
+            <span class="terminal-prompt" id="terminal-prompt">$</span>
+            <input type="text" class="terminal-input-field" id="terminal-input" autocomplete="off" placeholder="Type a command...">
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="modal-new-file">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-file-circle-plus"></i>
+                    Create New File
+                </h3>
+                <button class="close-modal" data-modal="modal-new-file">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="file-name">File Name</label>
+                    <input type="text" id="file-name" class="form-control" placeholder="example.txt">
+                </div>
+                <div class="form-group">
+                    <label for="file-content">Content (Optional)</label>
+                    <textarea id="file-content" class="form-control" rows="6" placeholder="Enter file content here..."></textarea>
+                </div>
+                <button class="btn btn-primary" id="btn-create-file" style="width: 100%; padding: 1rem;">
+                    <i class="fas fa-plus"></i>
+                    Create File
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-new-folder">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-folder-plus"></i>
+                    Create New Folder
+                </h3>
+                <button class="close-modal" data-modal="modal-new-folder">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="folder-name">Folder Name</label>
+                    <input type="text" id="folder-name" class="form-control" placeholder="New Folder">
+                </div>
+                <button class="btn btn-primary" id="btn-create-folder" style="width: 100%; padding: 1rem;">
+                    <i class="fas fa-plus"></i>
+                    Create Folder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-rename">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-i-cursor"></i>
+                    Rename Item
+                </h3>
+                <button class="close-modal" data-modal="modal-rename">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="rename-name">New Name</label>
+                    <input type="text" id="rename-name" class="form-control">
+                </div>
+                <button class="btn btn-primary" id="btn-rename-item" style="width: 100%; padding: 1rem;">
+                    <i class="fas fa-check"></i>
+                    Rename
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-permissions">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-lock"></i>
+                    Set Permissions
+                </h3>
+                <button class="close-modal" data-modal="modal-permissions">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="permission-owner">Owner</label>
+                    <select id="permission-owner" class="form-control">
+                        <option value="admin">admin (root)</option>
+                        <option value="user">user</option>
+                        <option value="guest">guest</option>
+                    </select>
+                </div>
+                <div class="permission-grid">
+                    <div class="permission-group">
+                        <h4>Owner</h4>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="owner-read" checked>
+                                <label for="owner-read">Read</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="owner-write" checked>
+                                <label for="owner-write">Write</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="owner-execute">
+                                <label for="owner-execute">Execute</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="permission-group">
+                        <h4>Group</h4>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="group-read">
+                                <label for="group-read">Read</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="group-write">
+                                <label for="group-write">Write</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="group-execute">
+                                <label for="group-execute">Execute</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="permission-group">
+                        <h4>Others</h4>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="others-read">
+                                <label for="others-read">Read</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="others-write">
+                                <label for="others-write">Write</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="others-execute">
+                                <label for="others-execute">Execute</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="btn-set-permissions" style="width: 100%; padding: 1rem;">
+                    <i class="fas fa-check"></i>
+                    Apply Permissions
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-repair">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-tools"></i>
+                    Filesystem Repair
+                </h3>
+                <button class="close-modal" data-modal="modal-repair">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="repair-results" id="repair-results">
+                    <p>Click "Start Repair Scan" to begin filesystem analysis and repair.</p>
+                </div>
+                <button class="btn btn-success" id="btn-start-repair" style="width: 100%; padding: 1rem;">
+                    <i class="fas fa-play"></i>
+                    Start Repair Scan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sound Station | Zenith Focus</title>
+
+    <!-- Fonts & Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Space+Grotesk:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/features.css">
+
+    <style>
+        .mixer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            padding-bottom: 50px;
+        }
+
+        .mixer-main {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .sound-card {
+            background: var(--surface-1);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .sound-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .sound-card .icon-wrapper {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: var(--surface-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--primary);
+        }
+
+        .sound-card h3 {
+            font-size: 1.1rem;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        .vol-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .mixer-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .visualizer-card {
+            height: 200px;
+            background: #000;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            position: relative;
+        }
+
+        canvas#vis-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .master-controls {
+            background: var(--surface-2);
+            padding: 20px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-light);
+        }
+
+        .save-mix-input {
+            background: var(--bg-base);
+            border: 1px solid var(--border-light);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .saved-mix-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--surface-1);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .saved-mix-item:hover {
+            background: var(--surface-3);
+        }
+
+        /* Binaural Section */
+        .binaural-controls {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .binaural-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .binaural-btn {
+            background: var(--surface-2);
+            border: 1px solid var(--border-light);
+            padding: 10px;
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .binaural-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app-container" class="app-container">
+
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                    </svg>
+                </div>
+                <h1>Zenith</h1>
+            </div>
+
+            <div class="nav-links">
+                <a href="index.html" class="nav-btn" title="Focus">
+                    <span class="icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </span>
+                    <span class="label">Focus</span>
+                </a>
+                <a href="tasks.html" class="nav-btn" title="Tasks">
+                    <span class="icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        </svg>
+                    </span>
+                    <span class="label">Tasks</span>
+                </a>
+                <a href="stats.html" class="nav-btn" title="Analytics">
+                    <span class="icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                    </span>
+                    <span class="label">Stats</span>
+                </a>
+                <a href="mixer.html" class="nav-btn active" title="Mixer">
+                    <span class="icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 10h3M9 6v8M15 10h3M21 6v8M9 20h3M15 16v8"></path>
+                        </svg>
+                    </span>
+                    <span class="label">Mixer</span>
+                </a>
+            </div>
+
+            <div class="bottom-controls">
+                <button id="theme-toggle" class="icon-btn" aria-label="Toggle Theme">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="greeting">
+                    <h2>Sound Station</h2>
+                    <p class="date-display">Customize your ambient environment</p>
+                </div>
+                <div class="master-actions">
+                    <button class="btn btn-primary" id="master-play">Play All</button>
+                </div>
+            </header>
+
+            <div class="mixer-container">
+                <div class="mixer-main" id="sounds-grid">
+                    <!-- Loaded dynamically -->
+                </div>
+
+                <div class="mixer-sidebar">
+                    <div class="visualizer-card">
+                        <canvas id="vis-canvas"></canvas>
+                    </div>
+
+                    <div class="master-controls">
+                        <h3>Master Control</h3>
+                        <div class="vol-slider-container" style="margin-top: 15px;">
+                            <span>Gain</span>
+                            <input type="range" min="0" max="100" value="80" class="slider" id="master-vol">
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Save Mix</h3>
+                        <input type="text" class="save-mix-input" id="mix-name" placeholder="Morning Rain...">
+                        <button class="btn btn-secondary" style="width: 100%" id="save-mix-btn">Save Current
+                            Preset</button>
+
+                        <div style="margin-top: 20px;" id="saved-mixes-list">
+                            <!-- Saved mixes here -->
+                        </div>
+                    </div>
+
+                    <div class="binaural-controls">
+                        <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3>Brainwaves</h3>
+                            <button id="binaural-toggle" class="icon-btn small">off</button>
+                        </div>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Binaural beats for
+                            entrainment.</p>
+                        <div class="binaural-grid">
+                            <button class="binaural-btn" data-type="alpha">Alpha (Focus)</button>
+                            <button class="binaural-btn" data-type="beta">Beta (Alert)</button>
+                            <button class="binaural-btn" data-type="theta">Theta (Relax)</button>
+                            <button class="binaural-btn" data-type="delta">Delta (Sleep)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        import MixerEngine from './js/mixer/mixer-engine.js';
+        import Store from './js/store.js';
+        import AuthSystem from './js/auth.js';
+
+        // Security
+        const auth = new AuthSystem();
+        auth.requireAuth();
+
+        // Theme
+        const store = new Store('zenith_config');
+        document.body.setAttribute('data-theme', store.get('theme', 'dark'));
+
+        // Init Engine
+        const mixer = new MixerEngine();
+        await mixer.init();
+
+        const grid = document.getElementById('sounds-grid');
+        const savedList = document.getElementById('saved-mixes-list');
+        const mixNameInput = document.getElementById('mix-name');
+
+        // Icons for sounds
+        const icons = {
+            'rain': '🌧️',
+            'forest': '🌳',
+            'cafe': '☕',
+            'wind': '💨',
+            'white-noise': '⚪',
+            'pink-noise': '🌸',
+            'brown-noise': '🟤'
+        };
+
+        function renderSounds() {
+            grid.innerHTML = '';
+            Object.entries(mixer.channels).forEach(([key, channel]) => {
+                const card = document.createElement('div');
+                card.className = 'sound-card';
+                card.innerHTML = `
+                    <div class="icon-wrapper">${icons[key] || '🎵'}</div>
+                    <h3>${channel.config.label}</h3>
+                    <div class="vol-slider-container">
+                        <input type="range" min="0" max="100" value="${channel.volume}" class="slider sound-vol" data-key="${key}">
+                        <button class="mute-btn" data-key="${key}">${channel.isMuted ? 'U' : 'M'}</button>
+                    </div>
+                `;
+
+                const slider = card.querySelector('.sound-vol');
+                slider.addEventListener('input', (e) => {
+                    mixer.setChannelVolume(key, parseInt(e.target.value));
+                });
+
+                const mute = card.querySelector('.mute-btn');
+                mute.addEventListener('click', () => {
+                    const isMuted = mixer.toggleMute(key);
+                    mute.textContent = isMuted ? 'U' : 'M';
+                    mute.classList.toggle('active', isMuted);
+                });
+
+                grid.appendChild(card);
+            });
+        }
+
+        function renderSavedMixes() {
+            const mixes = store.get('custom_mixes', {});
+            savedList.innerHTML = '';
+            Object.entries(mixes).forEach(([name, data]) => {
+                const item = document.createElement('div');
+                item.className = 'saved-mix-item';
+                item.innerHTML = `
+                    <span>${name}</span>
+                    <button class="icon-btn small" onclick="deleteMix('${name}')">&times;</button>
+                `;
+                item.onclick = (e) => {
+                    if (e.target.tagName !== 'BUTTON') {
+                        Object.entries(data).forEach(([k, v]) => {
+                            mixer.setChannelVolume(k, v);
+                        });
+                        renderSounds();
+                    }
+                };
+                savedList.appendChild(item);
+            });
+        }
+
+        window.deleteMix = (name) => {
+            const mixes = store.get('custom_mixes', {});
+            delete mixes[name];
+            store.set('custom_mixes', mixes);
+            renderSavedMixes();
+        };
+
+        document.getElementById('save-mix-btn').onclick = () => {
+            const name = mixNameInput.value.trim();
+            if (!name) return;
+            const mixes = store.get('custom_mixes', {});
+            const currentMix = {};
+            Object.entries(mixer.channels).forEach(([k, c]) => {
+                if (c.volume > 0) currentMix[k] = c.volume;
+            });
+            mixes[name] = currentMix;
+            store.set('custom_mixes', mixes);
+            mixNameInput.value = '';
+            renderSavedMixes();
+        };
+
+        document.getElementById('master-play').onclick = async () => {
+            await mixer.resume();
+        };
+
+        document.getElementById('master-vol').oninput = (e) => {
+            mixer.masterGain.gain.setTargetAtTime(e.target.value / 100, mixer.ctxManager.context.currentTime, 0.1);
+        };
+
+        // Binaural Controls
+        const binToggle = document.getElementById('binaural-toggle');
+        const binBtns = document.querySelectorAll('.binaural-btn');
+        let activeBin = null;
+
+        binToggle.onclick = () => {
+            const isOff = binToggle.textContent === 'off';
+            binToggle.textContent = isOff ? 'on' : 'off';
+            binToggle.classList.toggle('active', isOff);
+
+            if (!isOff) {
+                mixer.binaural.setVolume(0);
+            } else if (activeBin) {
+                mixer.binaural.setType(activeBin);
+                mixer.binaural.setVolume(0.15); // Default subtle volume
+            }
+        };
+
+        binBtns.forEach(btn => {
+            btn.onclick = () => {
+                const type = btn.dataset.type;
+                activeBin = type;
+
+                binBtns.forEach(b => b.classList.toggle('active', b === btn));
+                mixer.binaural.setType(type);
+
+                if (binToggle.textContent === 'on') {
+                    mixer.binaural.setVolume(0.15);
+                }
+            };
+        });
+
+        renderSounds();
+        renderSavedMixes();
+
+        // Brainwaves - Basic Implementation (Procedural)
+        // In a real app we'd add an OscillatorNode for these
+    </script>
+</body>
+
+</html>

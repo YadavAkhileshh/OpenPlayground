@@ -1,0 +1,466 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(to bottom, #1a1a2e 0%, #16213e 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.game-container {
+  position: relative;
+  width: 800px;
+  height: 600px;
+  max-width: 100%;
+  max-height: 100vh;
+  background: linear-gradient(to bottom, #0f3460 0%, #16213e 100%);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.track {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  perspective: 1000px;
+  transition: filter 0.3s ease;
+}
+
+/* Track shake effect for unpredictability */
+.track.shake {
+  animation: trackShake 0.1s ease-in-out infinite;
+}
+
+@keyframes trackShake {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  25% { transform: translateX(-3px) translateY(2px); }
+  50% { transform: translateX(3px) translateY(-2px); }
+  75% { transform: translateX(-2px) translateY(-3px); }
+}
+
+/* Speed surge visual effect */
+.track.speed-surge {
+  filter: blur(0.5px) brightness(1.1);
+}
+
+.lane-container {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 100%;
+}
+
+.lane {
+  position: absolute;
+  bottom: 0;
+  width: 180px;
+  height: 100%;
+  border-left: 2px solid rgba(255,255,255,0.1);
+  border-right: 2px solid rgba(255,255,255,0.1);
+}
+
+.lane:nth-child(1) { left: 10px; }
+.lane:nth-child(2) { left: 210px; }
+.lane:nth-child(3) { left: 410px; }
+
+.ground-line {
+  position: absolute;
+  width: 100%;
+  height: 3px;
+  background: rgba(255,255,255,0.3);
+  animation: moveDown 1s linear infinite;
+}
+
+@keyframes moveDown {
+  0% { top: -20px; }
+  100% { top: 100%; }
+}
+
+.player {
+  position: absolute;
+  bottom: 50px;
+  width: 60px;
+  height: 80px;
+  transition: left 0.15s ease-out;
+  z-index: 10;
+}
+
+.player-body {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  border-radius: 8px;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0,212,255,0.4);
+}
+
+.player-head {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0,212,255,0.4);
+}
+
+.player.jumping {
+  animation: jump 0.5s ease-in-out;
+}
+
+@keyframes jump {
+  0%, 100% { bottom: 50px; }
+  50% { bottom: 200px; }
+}
+
+.player.sliding .player-body {
+  height: 40px;
+  margin-top: 40px;
+}
+
+.player.sliding .player-head {
+  top: 5px;
+}
+
+.obstacle {
+  position: absolute;
+  width: 60px;
+  transition: none;
+}
+
+.obstacle-high {
+  height: 60px;
+  bottom: 50px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(255,107,107,0.4);
+}
+
+.obstacle-low {
+  height: 40px;
+  bottom: 130px;
+  background: linear-gradient(135deg, #ffd93d 0%, #f39c12 100%);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(255,217,61,0.4);
+}
+
+.hud {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  z-index: 100;
+}
+
+.stat {
+  background: rgba(0,0,0,0.3);
+  padding: 10px 20px;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.game-over {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.9);
+  padding: 40px;
+  border-radius: 16px;
+  text-align: center;
+  color: white;
+  display: none;
+  z-index: 200;
+}
+
+.game-over.show {
+  display: block;
+}
+
+.game-over h2 {
+  font-size: 36px;
+  margin-bottom: 20px;
+  color: #ff6b6b;
+}
+
+.game-over p {
+  font-size: 18px;
+  margin: 10px 0;
+  color: #aaa;
+}
+
+.restart-btn {
+  margin-top: 30px;
+  padding: 15px 40px;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.restart-btn:hover {
+  transform: scale(1.05);
+}
+
+.start-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  z-index: 300;
+}
+
+.start-screen h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.controls {
+  margin: 30px 0;
+  text-align: center;
+}
+
+.controls p {
+  margin: 8px 0;
+  font-size: 16px;
+  color: #ccc;
+}
+
+.start-btn {
+  padding: 15px 40px;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+.adaptation-info {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(0,0,0,0.3);
+  padding: 15px;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  backdrop-filter: blur(10px);
+  max-width: 250px;
+}
+
+.adaptation-info h3 {
+  margin-bottom: 8px;
+  color: #00d4ff;
+  font-size: 16px;
+}
+
+.adaptation-stat {
+  margin: 4px 0;
+  font-size: 12px;
+  color: #aaa;
+}
+
+/* AI Personality Message */
+.ai-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  background: rgba(0, 0, 0, 0.85);
+  color: #00d4ff;
+  padding: 20px 30px;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  font-style: italic;
+  text-align: center;
+  z-index: 150;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(0, 212, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 212, 255, 0.2);
+  max-width: 400px;
+}
+
+.ai-message.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  body {
+    padding: 0;
+  }
+  
+  .game-container {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+  
+  .hud {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    font-size: 14px;
+  }
+  
+  .stat {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .adaptation-info {
+    bottom: 10px;
+    left: 10px;
+    padding: 10px;
+    font-size: 11px;
+    max-width: 180px;
+  }
+  
+  .adaptation-info h3 {
+    font-size: 13px;
+  }
+  
+  .adaptation-stat {
+    font-size: 10px;
+  }
+  
+  .ai-message {
+    font-size: 16px;
+    padding: 15px 20px;
+    max-width: 80%;
+  }
+  
+  .start-screen h1 {
+    font-size: 32px;
+  }
+  
+  .controls {
+    margin: 20px 0;
+  }
+  
+  .controls p {
+    font-size: 14px;
+  }
+  
+  .start-btn {
+    padding: 12px 30px;
+    font-size: 16px;
+  }
+  
+  .game-over h2 {
+    font-size: 28px;
+  }
+  
+  .game-over p {
+    font-size: 16px;
+  }
+  
+  .restart-btn {
+    padding: 12px 30px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .lane-container {
+    width: 100%;
+    max-width: 400px;
+  }
+  
+  .hud {
+    font-size: 12px;
+  }
+  
+  .stat {
+    padding: 6px 10px;
+  }
+  
+  .adaptation-info {
+    font-size: 10px;
+    padding: 8px;
+    max-width: 150px;
+  }
+  
+  .adaptation-info h3 {
+    font-size: 12px;
+  }
+  
+  .adaptation-stat {
+    font-size: 9px;
+  }
+  
+  .ai-message {
+    font-size: 14px;
+    padding: 12px 16px;
+  }
+  
+  .start-screen h1 {
+    font-size: 28px;
+  }
+  
+  .start-screen p {
+    font-size: 14px;
+  }
+}
+
+/* Landscape mobile orientation */
+@media (max-height: 500px) and (orientation: landscape) {
+  .adaptation-info {
+    display: none;
+  }
+  
+  .hud {
+    top: 5px;
+  }
+  
+  .stat {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+}

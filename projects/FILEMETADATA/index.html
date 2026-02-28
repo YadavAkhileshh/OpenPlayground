@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Metadata Viewer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f8fafc;
+            color: #334155;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            border-radius: 18px;
+            color: white;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto 20px;
+        }
+        
+        .tagline {
+            background-color: rgba(255, 255, 255, 0.15);
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        @media (max-width: 992px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background-color: white;
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            transition: transform 0.3s ease;
+        }
+        
+        .panel:hover {
+            transform: translateY(-5px);
+        }
+        
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            color: #4338ca;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .panel-title i {
+            color: #6366f1;
+        }
+        
+        .upload-area {
+            border: 3px dashed #c7d2fe;
+            border-radius: 16px;
+            padding: 60px 30px;
+            text-align: center;
+            background-color: #f8fafc;
+            margin-bottom: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #6366f1;
+            background-color: #f0f4ff;
+        }
+        
+        .upload-icon {
+            font-size: 4rem;
+            color: #818cf8;
+            margin-bottom: 20px;
+        }
+        
+        .upload-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #4f46e5;
+        }
+        
+        .upload-subtext {
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background-color: #6366f1;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #4f46e5;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+        }
+        
+        .btn-secondary {
+            background-color: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e2e8f0;
+            transform: translateY(-2px);
+        }
+        
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+        
+        .selected-file {
+            background-color: #f0f4ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+            border-left: 5px solid #6366f1;
+        }
+        
+        .selected-file.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .file-icon {
+            font-size: 2.5rem;
+            color: #6366f1;
+        }
+        
+        .file-details {
+            flex-grow: 1;
+        }
+        
+        .file-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #4338ca;
+            word-break: break-all;
+        }
+        
+        .file-size {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        .metadata-section {
+            margin-bottom: 30px;
+        }
+        
+        .metadata-title {
+            font-size: 1.3rem;
+            color: #4338ca;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .metadata-item {
+            background-color: #f8fafc;
+            border-radius: 10px;
+            padding: 15px;
+            border-left: 4px solid #6366f1;
+        }
+        
+        .metadata-label {
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .metadata-value {
+            font-weight: 500;
+            color: #1e293b;
+            word-break: break-all;
+        }
+        
+        .metadata-value.empty {
+            color: #94a3b8;
+            font-style: italic;
+        }
+        
+        .metadata-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .metadata-table th {
+            background-color: #6366f1;
+            color: white;
+            text-align: left;
+            padding: 15px;
+            font-weight: 600;
+        }
+        
+        .metadata-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .metadata-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        
+        .metadata-table tr:hover {
+            background-color: #f0f4ff;
+        }
+        
+        .hex-view {
+            background-color: #0f172a;
+            color: #cbd5e1;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .hex-line {
+            display: flex;
+            margin-bottom: 5px;
+        }
+        
+        .hex-offset {
+            color: #818cf8;
+            min-width: 80px;
+            margin-right: 20px;
+        }
+        
+        .hex-bytes {
+            margin-right: 20px;
+        }
+        
+        .hex-ascii {
+            color: #94a3b8;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #10b981;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(150%);
+            transition: transform 0.4s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.error {
+            background-color: #ef4444;
+        }
+        
+        .notification.warning {
+            background-color: #f59e0b;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+        
+        .file-types {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        
+        .file-type-badge {
+            background-color: #f0f4ff;
+            border: 1px solid #c7d2fe;
+            border-radius: 50px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            color: #4f46e5;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .file-type-badge i {
+            font-size: 0.8rem;
+        }
+        
+        .info-box {
+            background-color: #f0f9ff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            border-left: 5px solid #0ea5e9;
+        }
+        
+        .info-box h3 {
+            color: #0369a1;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-box p {
+            margin-bottom: 10px;
+            color: #475569;
+        }
+        
+        .info-box ul {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .panel {
+                padding: 20px;
+            }
+            
+            .upload-area {
+                padding: 40px 20px;
+            }
+            
+            .metadata-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        
+        .empty-state i {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            color: #cbd5e1;
+        }
+        
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>File Metadata Viewer</h1>
+            <p class="subtitle">Upload any file to view detailed metadata, properties, and technical information</p>
+            <div class="tagline">
+                <i class="fas fa-info-circle"></i> Supports images, documents, videos, audio files, and more
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="panel">
+                <h2 class="panel-title"><i class="fas fa-upload"></i> Upload File</h2>
+                
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">Choose a file or drag & drop here</div>
+                    <div class="upload-subtext">Maximum file size: 50 MB</div>
+                    <button class="btn btn-primary" id="browse-btn">
+                        <i class="fas fa-folder-open"></i> Browse Files
+                    </button>
+                    <input type="file" class="file-input" id="file-input" multiple>
+                </div>
+                
+                <div class="file-types">
+                    <div class="file-type-badge">
+                        <i class="fas fa-image"></i> Images (JPG, PNG, GIF, etc.)
+                    </div>
+                    <div class="file-type-badge">
+                        <i class="fas fa-file-alt"></i> Documents (PDF, DOC, TXT, etc.)
+                    </div>
+                    <div class="file-type-badge">
+                        <i class="fas fa-video"></i> Videos (MP4, AVI, MOV, etc.)
+                    </div>
+                    <div class="file-type-badge">
+                        <i class="fas fa-music"></i> Audio (MP3, WAV, FLAC, etc.)
+                    </div>
+                </div>
+                
+                <div class="selected-file" id="selected-file">
+                    <div class="file-info">
+                        <div class="file-icon">
+                            <i class="fas fa-file" id="file-icon"></i>
+                        </div>
+                        <div class="file-details">
+                            <div class="file-name" id="file-name">example.jpg</div>
+                            <div class="file-size" id="file-size">2.4 MB</div>
+                        </div>
+                        <button class="btn btn-secondary btn-small" id="remove-file-btn">
+                            <i class="fas fa-times"></i> Remove
+                        </button>
+                    </div>
+                    
+                    <div class="actions">
+                        <button class="btn btn-primary" id="view-metadata-btn">
+                            <i class="fas fa-chart-bar"></i> View Metadata
+                        </button>
+                        <button class="btn btn-secondary" id="reset-btn">
+                            <i class="fas fa-redo"></i> Reset All
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2 class="panel-title"><i class="fas fa-info-circle"></i> File Metadata</h2>
+                
+                <div id="metadata-content">
+                    <div class="empty-state" id="empty-state">
+                        <i class="fas fa-file-alt"></i>
+                        <h3>No file selected</h3>
+                        <p>Upload a file to view its metadata and properties</p>
+                    </div>
+                    
+                    <div id="metadata-display" style="display: none;">
+                        <div class="metadata-section">
+                            <h3 class="metadata-title"><i class="fas fa-info-circle"></i> Basic Information</h3>
+                            <div class="metadata-grid" id="basic-info">
+                                <!-- Basic info will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <div class="metadata-section">
+                            <h3 class="metadata-title"><i class="fas fa-cog"></i> Technical Details</h3>
+                            <div class="metadata-grid" id="technical-details">
+                                <!-- Technical details will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <div class="metadata-section" id="image-metadata-section" style="display: none;">
+                            <h3 class="metadata-title"><i class="fas fa-camera"></i> Image Metadata</h3>
+                            <div class="metadata-grid" id="image-metadata">
+                                <!-- Image metadata will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <div class="metadata-section">
+                            <h3 class="metadata-title"><i class="fas fa-table"></i> File Properties</h3>
+                            <table class="metadata-table">
+                                <thead>
+                                    <tr>
+                                        <th>Property</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="file-properties">
+                                    <!-- File properties will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="metadata-section" id="hex-section" style="display: none;">
+                            <h3 class="metadata-title"><i class="fas fa-code"></i> Hex Preview (First 512 bytes)</h3>
+                            <div class="hex-view" id="hex-view">
+                                <!-- Hex preview will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h3><i class="fas fa-lightbulb"></i> What is File Metadata?</h3>
+            <p>Metadata is information about a file that describes its characteristics, such as file size, creation date, file type, and more. For certain file types like images, metadata can include additional details like camera settings, GPS coordinates, and software used.</p>
+            <p>This tool extracts and displays metadata from various file formats without uploading your files to a server. All processing happens directly in your browser for privacy and security.</p>
+        </div>
+        
+        <footer>
+            <p>File Metadata Viewer Tool &copy; 2026 | All file processing happens locally in your browser</p>
+            <p>Supports common file formats up to 50 MB in size</p>
+        </footer>
+    </div>
+    
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notification-text">File uploaded successfully!</span>
+    </div>
+
+    <script>
+        // DOM Elements
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const browseBtn = document.getElementById('browse-btn');
+        const selectedFile = document.getElementById('selected-file');
+        const fileName = document.getElementById('file-name');
+        const fileSize = document.getElementById('file-size');
+        const fileIcon = document.getElementById('file-icon');
+        const removeFileBtn = document.getElementById('remove-file-btn');
+        const viewMetadataBtn = document.getElementById('view-metadata-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const emptyState = document.getElementById('empty-state');
+        const metadataDisplay = document.getElementById('metadata-display');
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notification-text');
+        
+        // File icon mapping by extension
+        const fileIcons = {
+            // Images
+            'jpg': 'fa-file-image', 'jpeg': 'fa-file-image', 'png': 'fa-file-image',
+            'gif': 'fa-file-image', 'bmp': 'fa-file-image', 'svg': 'fa-file-image',
+            'webp': 'fa-file-image', 'ico': 'fa-file-image', 'tiff': 'fa-file-image',
+            
+            // Documents
+            'pdf': 'fa-file-pdf', 'doc': 'fa-file-word', 'docx': 'fa-file-word',
+            'txt': 'fa-file-alt', 'rtf': 'fa-file-alt', 'md': 'fa-file-alt',
+            'html': 'fa-file-code', 'htm': 'fa-file-code', 'xml': 'fa-file-code',
+            'csv': 'fa-file-csv', 'xls': 'fa-file-excel', 'xlsx': 'fa-file-excel',
+            'ppt': 'fa-file-powerpoint', 'pptx': 'fa-file-powerpoint',
+            
+            // Archives
+            'zip': 'fa-file-archive', 'rar': 'fa-file-archive', '7z': 'fa-file-archive',
+            'tar': 'fa-file-archive', 'gz': 'fa-file-archive',
+            
+            // Audio
+            'mp3': 'fa-file-audio', 'wav': 'fa-file-audio', 'flac': 'fa-file-audio',
+            'ogg': 'fa-file-audio', 'm4a': 'fa-file-audio', 'aac': 'fa-file-audio',
+            
+            // Video
+            'mp4': 'fa-file-video', 'avi': 'fa-file-video', 'mov': 'fa-file-video',
+            'wmv': 'fa-file-video', 'flv': 'fa-file-video', 'mkv': 'fa-file-video',
+            'webm': 'fa-file-video',
+            
+            // Code
+            'js': 'fa-file-code', 'json': 'fa-file-code', 'php': 'fa-file-code',
+            'py': 'fa-file-code', 'java': 'fa-file-code', 'cpp': 'fa-file-code',
+            'c': 'fa-file-code', 'cs': 'fa-file-code', 'swift': 'fa-file-code',
+            
+            // Default
+            'default': 'fa-file'
+        };
+        
+        // Current file
+        let currentFile = null;
+        
+        // Event Listeners
+        browseBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+        
+        removeFileBtn.addEventListener('click', () => {
+            resetFile();
+            showNotification('File removed');
+        });
+        
+        viewMetadataBtn.addEventListener('click', () => {
+            if (currentFile) {
+                extractMetadata(currentFile);
+            }
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            resetAll();
+            showNotification('All data reset');
+        });
+        
+        // Handle file selection
+        function handleFile(file) {
+            // Check file size (max 50MB)
+            if (file.size > 50 * 1024 * 1024) {
+                showNotification('File size exceeds 50 MB limit', 'error');
+                return;
+            }
+            
+            currentFile = file;
+            
+            // Update UI with file info
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            
+            // Set file icon based on extension
+            const extension = getFileExtension(file.name).toLowerCase();
+            const iconClass = fileIcons[extension] || fileIcons.default;
+            fileIcon.className = `fas ${iconClass}`;
+            
+            // Show selected file section
+            selectedFile.classList.add('show');
+            
+            // Hide empty state
+            emptyState.style.display = 'none';
+            metadataDisplay.style.display = 'block';
+            
+            // Extract basic metadata immediately
+            extractBasicMetadata(file);
+            
+            showNotification(`File "${file.name}" uploaded successfully`);
+        }
+        
+        // Extract and display basic metadata
+        function extractBasicMetadata(file) {
+            const basicInfoContainer = document.getElementById('basic-info');
+            const technicalContainer = document.getElementById('technical-details');
+            
+            // Clear previous content
+            basicInfoContainer.innerHTML = '';
+            technicalContainer.innerHTML = '';
+            
+            // Get file extension
+            const extension = getFileExtension(file.name);
+            
+            // Basic information
+            const basicInfo = [
+                { label: 'File Name', value: file.name },
+                { label: 'File Type', value: file.type || `Unknown (.${extension})` },
+                { label: 'File Size', value: formatFileSize(file.size) },
+                { label: 'Last Modified', value: new Date(file.lastModified).toLocaleString() }
+            ];
+            
+            // Technical details
+            const technicalDetails = [
+                { label: 'MIME Type', value: file.type || 'Unknown' },
+                { label: 'File Extension', value: `.${extension}` },
+                { label: 'Size in Bytes', value: file.size.toLocaleString() },
+                { label: 'Readable', value: 'Yes' }
+            ];
+            
+            // Add basic info to UI
+            basicInfo.forEach(info => {
+                const item = createMetadataItem(info.label, info.value);
+                basicInfoContainer.appendChild(item);
+            });
+            
+            // Add technical details to UI
+            technicalDetails.forEach(detail => {
+                const item = createMetadataItem(detail.label, detail.value);
+                technicalContainer.appendChild(item);
+            });
+            
+            // Update file properties table
+            updateFilePropertiesTable(file);
+        }
+        
+        // Extract detailed metadata
+        function extractMetadata(file) {
+            // Show loading state
+            viewMetadataBtn.innerHTML = '<span class="spinner"></span> Processing...';
+            viewMetadataBtn.disabled = true;
+            
+            // Simulate processing time for UX
+            setTimeout(() => {
+                // Process file based on type
+                const extension = getFileExtension(file.name).toLowerCase();
+                const mimeType = file.type;
+                
+                // Reset button state
+                viewMetadataBtn.innerHTML = '<i class="fas fa-chart-bar"></i> View Metadata';
+                viewMetadataBtn.disabled = false;
+                
+                // Show image metadata if it's an image
+                if (mimeType.startsWith('image/')) {
+                    extractImageMetadata(file);
+                } else {
+                    // Hide image metadata section for non-image files
+                    document.getElementById('image-metadata-section').style.display = 'none';
+                }
+                
+                // Generate hex preview
+                generateHexPreview(file);
+                
+                showNotification('Metadata extraction complete');
+            }, 800);
+        }
+        
+        // Extract image-specific metadata
+        function extractImageMetadata(file) {
+            const imageMetadataSection = document.getElementById('image-metadata-section');
+            const imageMetadataContainer = document.getElementById('image-metadata');
+            
+            // Clear previous content
+            imageMetadataContainer.innerHTML = '';
+            
+            // Create an image element to get dimensions
+            const img = new Image();
+            const objectUrl = URL.createObjectURL(file);
+            
+            img.onload = function() {
+                const imageMetadata = [
+                    { label: 'Dimensions', value: `${img.width} × ${img.height} pixels` },
+                    { label: 'Aspect Ratio', value: calculateAspectRatio(img.width, img.height) },
+                    { label: 'Color Depth', value: '24-bit' },
+                    { label: 'Resolution', value: '72 DPI (estimated)' }
+                ];
+                
+                // Add image metadata to UI
+                imageMetadata.forEach(info => {
+                    const item = createMetadataItem(info.label, info.value);
+                    imageMetadataContainer.appendChild(item);
+                });
+                
+                // Show the image metadata section
+                imageMetadataSection.style.display = 'block';
+                
+                // Release the object URL
+                URL.revokeObjectURL(objectUrl);
+            };
+            
+            img.onerror = function() {
+                // If we can't load the image, hide the image metadata section
+                imageMetadataSection.style.display = 'none';
+                URL.revokeObjectURL(objectUrl);
+            };
+            
+            img.src = objectUrl;
+        }
+        
+        // Generate hex preview of the file
+        function generateHexPreview(file) {
+            const hexSection = document.getElementById('hex-section');
+            const hexView = document.getElementById('hex-view');
+            
+            // Clear previous content
+            hexView.innerHTML = '';
+            
+            // Only read first 512 bytes for performance
+            const slice = file.slice(0, 512);
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const arrayBuffer = e.target.result;
+                const uint8Array = new Uint8Array(arrayBuffer);
+                
+                let hexContent = '';
+                const bytesPerLine = 16;
+                
+                for (let i = 0; i < uint8Array.length; i += bytesPerLine) {
+                    const lineBytes = uint8Array.slice(i, i + bytesPerLine);
+                    
+                    // Create hex line
+                    const hexLine = document.createElement('div');
+                    hexLine.className = 'hex-line';
+                    
+                    // Offset
+                    const offset = document.createElement('div');
+                    offset.className = 'hex-offset';
+                    offset.textContent = i.toString(16).padStart(8, '0');
+                    hexLine.appendChild(offset);
+                    
+                    // Hex bytes
+                    const bytes = document.createElement('div');
+                    bytes.className = 'hex-bytes';
+                    
+                    let bytesText = '';
+                    let asciiText = '';
+                    
+                    for (let j = 0; j < bytesPerLine; j++) {
+                        if (i + j < uint8Array.length) {
+                            const byte = uint8Array[i + j];
+                            bytesText += byte.toString(16).padStart(2, '0') + ' ';
+                            
+                            // Create ASCII representation
+                            if (byte >= 32 && byte <= 126) {
+                                asciiText += String.fromCharCode(byte);
+                            } else {
+                                asciiText += '.';
+                            }
+                        } else {
+                            bytesText += '   ';
+                            asciiText += ' ';
+                        }
+                        
+                        // Add extra space after 8 bytes for readability
+                        if (j === 7) bytesText += ' ';
+                    }
+                    
+                    bytes.textContent = bytesText;
+                    hexLine.appendChild(bytes);
+                    
+                    // ASCII representation
+                    const ascii = document.createElement('div');
+                    ascii.className = 'hex-ascii';
+                    ascii.textContent = asciiText;
+                    hexLine.appendChild(ascii);
+                    
+                    hexView.appendChild(hexLine);
+                }
+                
+                // Show the hex section
+                hexSection.style.display = 'block';
+            };
+            
+            reader.onerror = function() {
+                hexView.innerHTML = '<div class="empty-state">Unable to generate hex preview</div>';
+                hexSection.style.display = 'block';
+            };
+            
+            reader.readAsArrayBuffer(slice);
+        }
+        
+        // Update file properties table
+        function updateFilePropertiesTable(file) {
+            const filePropertiesContainer = document.getElementById('file-properties');
+            
+            // Clear previous content
+            filePropertiesContainer.innerHTML = '';
+            
+            // File properties
+            const properties = [
+                { property: 'Name', value: file.name },
+                { property: 'Type', value: file.type || 'Unknown' },
+                { property: 'Location', value: 'Local file system' },
+                { property: 'Size', value: formatFileSize(file.size) },
+                { property: 'Size on Disk', value: formatFileSize(calculateSizeOnDisk(file.size)) },
+                { property: 'Created', value: new Date(file.lastModified).toLocaleString() },
+                { property: 'Modified', value: new Date(file.lastModified).toLocaleString() },
+                { property: 'Accessed', value: new Date().toLocaleString() },
+                { property: 'Attributes', value: 'Normal' },
+                { property: 'Owner', value: 'Current User' }
+            ];
+            
+            // Add properties to table
+            properties.forEach(prop => {
+                const row = document.createElement('tr');
+                
+                const propertyCell = document.createElement('td');
+                propertyCell.textContent = prop.property;
+                propertyCell.style.fontWeight = '600';
+                
+                const valueCell = document.createElement('td');
+                valueCell.textContent = prop.value;
+                
+                row.appendChild(propertyCell);
+                row.appendChild(valueCell);
+                filePropertiesContainer.appendChild(row);
+            });
+        }
+        
+        // Reset file selection
+        function resetFile() {
+            currentFile = null;
+            fileInput.value = '';
+            selectedFile.classList.remove('show');
+            emptyState.style.display = 'block';
+            metadataDisplay.style.display = 'none';
+            
+            // Hide sections
+            document.getElementById('image-metadata-section').style.display = 'none';
+            document.getElementById('hex-section').style.display = 'none';
+        }
+        
+        // Reset everything
+        function resetAll() {
+            resetFile();
+            
+            // Clear all metadata displays
+            document.getElementById('basic-info').innerHTML = '';
+            document.getElementById('technical-details').innerHTML = '';
+            document.getElementById('image-metadata').innerHTML = '';
+            document.getElementById('file-properties').innerHTML = '';
+            document.getElementById('hex-view').innerHTML = '';
+        }
+        
+        // Helper functions
+        function getFileExtension(filename) {
+            return filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 2);
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function calculateSizeOnDisk(size) {
+            // Simulate size on disk (usually rounded up to cluster size)
+            const clusterSize = 4096; // 4KB typical cluster size
+            return Math.ceil(size / clusterSize) * clusterSize;
+        }
+        
+        function calculateAspectRatio(width, height) {
+            const gcd = (a, b) => {
+                return b ? gcd(b, a % b) : a;
+            };
+            
+            const divisor = gcd(width, height);
+            return `${width/divisor}:${height/divisor}`;
+        }
+        
+        function createMetadataItem(label, value) {
+            const item = document.createElement('div');
+            item.className = 'metadata-item';
+            
+            const labelElement = document.createElement('div');
+            labelElement.className = 'metadata-label';
+            labelElement.textContent = label;
+            
+            const valueElement = document.createElement('div');
+            valueElement.className = 'metadata-value';
+            valueElement.textContent = value || 'Not available';
+            
+            if (!value) {
+                valueElement.classList.add('empty');
+            }
+            
+            item.appendChild(labelElement);
+            item.appendChild(valueElement);
+            
+            return item;
+        }
+        
+        function showNotification(message, type = 'success') {
+            notificationText.textContent = message;
+            notification.className = 'notification';
+            
+            if (type === 'error') {
+                notification.classList.add('error');
+                notification.querySelector('i').className = 'fas fa-exclamation-circle';
+            } else if (type === 'warning') {
+                notification.classList.add('warning');
+                notification.querySelector('i').className = 'fas fa-exclamation-triangle';
+            } else {
+                notification.querySelector('i').className = 'fas fa-check-circle';
+            }
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Show initial empty state
+            emptyState.style.display = 'block';
+            metadataDisplay.style.display = 'none';
+        });
+    </script>
+</body>
+</html>

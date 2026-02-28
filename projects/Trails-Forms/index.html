@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+            body { margin: 0; overflow: hidden; background-color: #141414; }
+        canvas { display: block; }
+        .lil-gui.root {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            top: auto !important;
+            --background-color: #1a1a1a;
+            --text-color: #eee;
+        }
+</style>
+<body>
+        <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+                import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        // --- 1. Scene Setup ---
+        const scene = new THREE.Scene();
+        
+        // Settings based on the provided screenshot
+        const params = {
+            shape: 'Cube',
+            
+            // Visuals
+            backgroundColor: '#141414',
+            lineColor: '#5c5c5c',
+            dotColor: '#33ccff',
+            
+            // Fog
+            useFog: true,
+            fogDensity: 0.02,
+
+            // Bloom (Post-processing)
+            useBloom: false,
+            bloomThreshold: 0.1,
+            bloomStrength: 1.5,
+            bloomRadius: 0.4,
+
+            // Logic
+            onlyExternal: true, // Shell mode
+
+            // Signal
+            speed: 0.1311,
+            dotLength: 0.0181,
+            dotDensity: 2.0
+        };
+
+        scene.background = new THREE.Color(params.backgroundColor);
+        // Initial fog setup
+        scene.fog = new THREE.FogExp2(params.backgroundColor, params.fogDensity);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // Moved camera closer as requested
+        camera.position.set(0, -1, 30);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        // Tone mapping for better bloom blending
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+
+        // --- 2. Post Processing (Bloom) ---
+        const renderScene = new RenderPass(scene, camera);
+
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = params.bloomThreshold;
+        bloomPass.strength = params.bloomStrength;
+        bloomPass.radius = params.bloomRadius;
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // --- 3. Math & Geometry Logic ---
+
+        // Checks if point is inside the math volume
+        function isPointInside(v, shapeType) {
+            const x = v.x, y = v.y, z = v.z;
+            const r = 12; // Base Size
+
+            switch (shapeType) {
+                case 'Cube':
+                    return Math.abs(x) < r && Math.abs(y) < r && Math.abs(z) < r;
+                
+                case 'Sphere':
+                    return (x*x + y*y + z*z) < (r*r);
+                
+                case 'Pyramid':
+                    if (y < -r || y > r) return false;
+                    const scale = (r - y) / (2 * r);
+                    const limit = r * 2 * scale;
+                    return Math.abs(x) < limit && Math.abs(z) < limit;
+
+                case 'Hexagon':
+                    if (Math.abs(y) > r) return false;
+                    const q2 = Math.abs(x);
+                    const r2 = Math.abs(z);
+                    return (q2 * 0.866 + r2 * 0.5) < r && q2 < r;
+
+                case 'Torus':
+                    const tubeRadius = 4;
+                    const mainRadius = 10;
+                    const distXZ = Math.sqrt(x*x + z*z) - mainRadius;
+                    return (distXZ*distXZ + y*y) < (tubeRadius*tubeRadius);
+
+                default:
+                    return Math.abs(x) < r && Math.abs(y) < r && Math.abs(z) < r;
+            }
+        }
+
+        // Checks if point is on the "surface" (inside, but neighbor is outside)
+        // Used for "Only External" mode
+        function isSurface(v, shapeType, step) {
+            if (!isPointInside(v, shapeType)) return false;
+
+            // Check neighbors in 6 directions
+            const dirs = [
+                new THREE.Vector3(step,0,0), new THREE.Vector3(-step,0,0),
+                new THREE.Vector3(0,step,0), new THREE.Vector3(0,-step,0),
+                new THREE.Vector3(0,0,step), new THREE.Vector3(0,0,-step)
+            ];
+
+            for (let d of dirs) {
+                const neighbor = v.clone().add(d);
+                if (!isPointInside(neighbor, shapeType)) {
+                    return true; // Found a neighbor outside, so this is surface
+                }
+            }
+            return false; // All neighbors inside, so this is internal
+        }
+
+        function createShapeGeometry(shapeType, onlyExternal) {
+            const positions = [];
+            const attributes = [];
+            
+            const step = 2; // Grid step size
+            const maxSegments = 6000;
+            
+            let currentPos = new THREE.Vector3(0, 0, 0);
+            let currentDist = 0;
+            
+            // Helper to find a valid starting point
+            const findStartPoint = () => {
+                let p = new THREE.Vector3();
+                for(let k=0; k<200; k++){
+                    p.set(
+                        (Math.random()-0.5)*26, 
+                        (Math.random()-0.5)*26, 
+                        (Math.random()-0.5)*26
+                    ).round().multiplyScalar(1); // align
+                    
+                    // Snap to grid based on step
+                    p.x = Math.round(p.x/step)*step;
+                    p.y = Math.round(p.y/step)*step;
+                    p.z = Math.round(p.z/step)*step;
+
+                    if (onlyExternal) {
+                        if (isSurface(p, shapeType, step)) return p;
+                    } else {
+                        if (isPointInside(p, shapeType)) return p;
+                    }
+                }
+                return new THREE.Vector3(0,0,0);
+            };
+
+            currentPos = findStartPoint();
+
+            for (let i = 0; i < maxSegments; i++) {
+                // Directions
+                const dirs = [
+                    new THREE.Vector3(step, 0, 0), new THREE.Vector3(-step, 0, 0),
+                    new THREE.Vector3(0, step, 0), new THREE.Vector3(0, -step, 0),
+                    new THREE.Vector3(0, 0, step), new THREE.Vector3(0, 0, -step)
+                ];
+
+                const dirIndex = Math.floor(Math.random() * 6);
+                const direction = dirs[dirIndex];
+                const nextPos = currentPos.clone().add(direction);
+
+                let isValid = false;
+
+                if (onlyExternal) {
+                    // Must move from surface to surface
+                    // (Simplification: as long as destination is on surface, we add line)
+                    if (isSurface(nextPos, shapeType, step)) isValid = true;
+                } else {
+                    if (isPointInside(nextPos, shapeType)) isValid = true;
+                }
+
+                if (isValid) {
+                    positions.push(currentPos.x, currentPos.y, currentPos.z);
+                    positions.push(nextPos.x, nextPos.y, nextPos.z);
+                    
+                    attributes.push(currentDist);
+                    attributes.push(currentDist + step);
+                    
+                    currentDist += step;
+                    currentPos.copy(nextPos);
+                } else {
+                    // Hit wall or internal volume (in external mode)
+                    currentDist += 50.0; // Break signal visually
+                    currentPos = findStartPoint();
+                }
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute('lineDistance', new THREE.Float32BufferAttribute(attributes, 1));
+            return geometry;
+        }
+
+        // --- 4. Shader ---
+        const vertexShader = `
+            attribute float lineDistance;
+            varying float vDistance;
+            
+            void main() {
+                vDistance = lineDistance;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragmentShader = `
+            uniform vec3 colorLine;
+            uniform vec3 colorDot;
+            uniform float uTime;
+            uniform float uSpeed;
+            uniform float uDotLength;
+            uniform float uDotRepeat;
+            uniform vec3 uFogColor;
+            uniform float uFogDensity;
+            uniform bool uUseFog;
+
+            varying float vDistance;
+
+            void main() {
+                float alpha = 0.2; 
+
+                float distanceState = vDistance - uTime * uSpeed * 10.0;
+                float flow = mod(distanceState, uDotRepeat * 10.0);
+                float lengthVal = (uDotRepeat * 10.0) * uDotLength;
+                
+                float signal = smoothstep((uDotRepeat * 10.0) - lengthVal, (uDotRepeat * 10.0), flow);
+                if(flow < (uDotRepeat * 10.0) - lengthVal) signal = 0.0;
+
+                vec3 finalColor = mix(colorLine, colorDot, signal);
+                float finalAlpha = max(alpha, signal);
+
+                gl_FragColor = vec4(finalColor, finalAlpha);
+
+                // Manual Fog Implementation for ShaderMaterial
+                if (uUseFog) {
+                    float depth = gl_FragCoord.z / gl_FragCoord.w;
+                    float fogFactor = exp2(-uFogDensity * uFogDensity * depth * depth * 1.442695);
+                    fogFactor = clamp(fogFactor, 0.0, 1.0);
+                    gl_FragColor.rgb = mix(uFogColor, gl_FragColor.rgb, fogFactor);
+                }
+            }
+        `;
+
+        const material = new THREE.ShaderMaterial({
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            uniforms: {
+                colorLine: { value: new THREE.Color(params.lineColor) },
+                colorDot: { value: new THREE.Color(params.dotColor) },
+                uTime: { value: 0 },
+                uSpeed: { value: params.speed },
+                uDotLength: { value: params.dotLength },
+                uDotRepeat: { value: params.dotDensity },
+                uFogColor: { value: new THREE.Color(params.backgroundColor) },
+                uFogDensity: { value: params.fogDensity },
+                uUseFog: { value: params.useFog }
+            },
+            transparent: true,
+            depthTest: false,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide
+        });
+
+        let mesh = new THREE.LineSegments(createShapeGeometry(params.shape, params.onlyExternal), material);
+        scene.add(mesh);
+
+        // --- 5. GUI & Events ---
+        
+        const gui = new GUI({ title: 'System Core' });
+
+        // Update function for geometry regeneration
+        const rebuildGeo = () => {
+            scene.remove(mesh);
+            const geo = createShapeGeometry(params.shape, params.onlyExternal);
+            mesh = new THREE.LineSegments(geo, material);
+            scene.add(mesh);
+        };
+
+        // --- Folders ---
+
+        const fGeo = gui.addFolder('Geometry');
+        fGeo.add(params, 'shape', ['Cube', 'Sphere', 'Pyramid', 'Hexagon', 'Torus']).name('Form Factor').onChange(rebuildGeo);
+        fGeo.add(params, 'onlyExternal').name('Only External').onChange(rebuildGeo);
+
+        const fColors = gui.addFolder('Colors');
+        fColors.addColor(params, 'backgroundColor').name('Background').onChange(val => {
+            scene.background.set(val);
+            scene.fog.color.set(val);
+            material.uniforms.uFogColor.value.set(val);
+        });
+        fColors.addColor(params, 'lineColor').name('Wire Color').onChange(val => material.uniforms.colorLine.value.set(val));
+        fColors.addColor(params, 'dotColor').name('Signal Color').onChange(val => material.uniforms.colorDot.value.set(val));
+
+        const fSignal = gui.addFolder('Signal Props');
+        fSignal.add(params, 'speed', 0.1, 2.0).name('Flow Speed').onChange(val => material.uniforms.uSpeed.value = val);
+        fSignal.add(params, 'dotLength', 0.01, 0.5).name('Signal Tail').onChange(val => material.uniforms.uDotLength.value = val);
+        fSignal.add(params, 'dotDensity', 1.0, 10.0).name('Density (1/Freq)').onChange(val => material.uniforms.uDotRepeat.value = val);
+
+        const fRender = gui.addFolder('Rendering');
+        
+        // Fog Settings
+        fRender.add(params, 'useFog').name('Fog Enabled').onChange(val => {
+            material.uniforms.uUseFog.value = val;
+        });
+        fRender.add(params, 'fogDensity', 0.0, 0.1).name('Fog Density').onChange(val => {
+            scene.fog.density = val;
+            material.uniforms.uFogDensity.value = val;
+        });
+
+        // Bloom Settings
+        fRender.add(params, 'useBloom').name('Bloom Effect');
+        fRender.add(params, 'bloomThreshold', 0.0, 1.0).name('Bloom Thresh').onChange(val => bloomPass.threshold = val);
+        fRender.add(params, 'bloomStrength', 0.0, 3.0).name('Bloom Strength').onChange(val => bloomPass.strength = val);
+        fRender.add(params, 'bloomRadius', 0.0, 1.0).name('Bloom Radius').onChange(val => bloomPass.radius = val);
+
+
+        // --- 6. Animation ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = clock.getElapsedTime();
+            material.uniforms.uTime.value = time;
+            controls.update();
+
+            // Render Switch
+            if (params.useBloom) {
+                // To avoid black background issue in post-processing if scene bg is dark
+                composer.render();
+            } else {
+                renderer.render(scene, camera);
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

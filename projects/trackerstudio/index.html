@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrackerStudio — Retro DAW</title>
+    <meta name="description" content="A FastTracker-style music production studio in the browser.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/tracker.css">
+    <link rel="stylesheet" href="css/visuals.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- HEADER / TRANSPORT -->
+        <header class="studio-header">
+            <div class="brand">
+                <span class="brand-icon">▶</span> TrackerStudio
+                <span class="version">v2.0</span>
+            </div>
+            <div class="transport-controls">
+                <button id="btn-play" class="btn-transport" title="Play (Space)">▶ PLAY</button>
+                <button id="btn-stop" class="btn-transport" title="Stop (Esc)">■ STOP</button>
+                <div class="bpm-display">
+                    <label for="bpm-input">BPM</label>
+                    <input type="number" id="bpm-input" value="130" min="40" max="300">
+                </div>
+                <div class="pattern-len-display">
+                    <label for="pattern-len">ROWS</label>
+                    <select id="pattern-len">
+                        <option value="16">16</option>
+                        <option value="32">32</option>
+                        <option value="64" selected>64</option>
+                    </select>
+                </div>
+                <div class="octave-display">
+                    <label>OCT</label>
+                    <span id="octave-label">4</span>
+                    <div class="oct-btns">
+                        <button id="oct-down" class="btn-small">-</button>
+                        <button id="oct-up" class="btn-small">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="vis-container">
+                <canvas id="oscilloscope" width="260" height="50" title="Oscilloscope"></canvas>
+                <canvas id="spectrum" width="260" height="50" title="Spectrum Analyzer"></canvas>
+            </div>
+        </header>
+
+        <!-- MAIN AREA -->
+        <main class="studio-main">
+            <!-- LEFT SIDEBAR: Instruments -->
+            <aside class="sidebar-left">
+                <div class="panel instrument-list">
+                    <h3>INSTRUMENTS</h3>
+                    <ul id="instrument-list-ui">
+                        <li class="inst-item active" data-inst="1" title="Square Wave">
+                            <span class="inst-num">01</span>
+                            <span class="inst-name">Square</span>
+                            <span class="inst-wave">⊓</span>
+                        </li>
+                        <li class="inst-item" data-inst="2" title="Sawtooth Wave">
+                            <span class="inst-num">02</span>
+                            <span class="inst-name">Sawtooth</span>
+                            <span class="inst-wave">⟋</span>
+                        </li>
+                        <li class="inst-item" data-inst="3" title="Triangle Wave">
+                            <span class="inst-num">03</span>
+                            <span class="inst-name">Triangle</span>
+                            <span class="inst-wave">△</span>
+                        </li>
+                        <li class="inst-item" data-inst="4" title="Noise">
+                            <span class="inst-num">04</span>
+                            <span class="inst-name">Noise</span>
+                            <span class="inst-wave">≋</span>
+                        </li>
+                        <li class="inst-item" data-inst="5" title="Sine Wave">
+                            <span class="inst-num">05</span>
+                            <span class="inst-name">Sine</span>
+                            <span class="inst-wave">∿</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="panel pattern-io">
+                    <h3>PATTERN I/O</h3>
+                    <button id="btn-export" class="btn-io">EXPORT JSON</button>
+                    <button id="btn-import" class="btn-io">IMPORT JSON</button>
+                    <input type="file" id="import-file" accept=".json" style="display:none">
+                    <button id="btn-clear" class="btn-io btn-danger">CLEAR</button>
+                </div>
+                <div class="panel kbd-help">
+                    <h3>KEYBOARD</h3>
+                    <div class="help-row"><kbd>Z-M</kbd> Enter Notes</div>
+                    <div class="help-row"><kbd>↑↓←→</kbd> Navigate</div>
+                    <div class="help-row"><kbd>&lt; &gt;</kbd> Octave</div>
+                    <div class="help-row"><kbd>Del</kbd> Erase Cell</div>
+                    <div class="help-row"><kbd>Ctrl+C</kbd> Copy Row</div>
+                    <div class="help-row"><kbd>Ctrl+V</kbd> Paste Row</div>
+                    <div class="help-row"><kbd>Space</kbd> Play/Stop</div>
+                </div>
+            </aside>
+
+            <!-- CENTER: Tracker Grid -->
+            <section class="tracker-grid-container" id="grid-container">
+                <div class="tracker-header" id="channel-headers">
+                    <div class="row-num-header">#</div>
+                    <div class="channel-header" data-ch="0">
+                        <span>CH 1</span>
+                        <button class="btn-mute" data-ch="0" title="Mute">M</button>
+                        <button class="btn-solo" data-ch="0" title="Solo">S</button>
+                    </div>
+                    <div class="channel-header" data-ch="1">
+                        <span>CH 2</span>
+                        <button class="btn-mute" data-ch="1" title="Mute">M</button>
+                        <button class="btn-solo" data-ch="1" title="Solo">S</button>
+                    </div>
+                    <div class="channel-header" data-ch="2">
+                        <span>CH 3</span>
+                        <button class="btn-mute" data-ch="2" title="Mute">M</button>
+                        <button class="btn-solo" data-ch="2" title="Solo">S</button>
+                    </div>
+                    <div class="channel-header" data-ch="3">
+                        <span>CH 4</span>
+                        <button class="btn-mute" data-ch="3" title="Mute">M</button>
+                        <button class="btn-solo" data-ch="3" title="Solo">S</button>
+                    </div>
+                </div>
+                <div id="tracker-grid" class="tracker-grid" tabindex="0">
+                    <!-- Rows populated by JS -->
+                </div>
+            </section>
+
+            <!-- RIGHT SIDEBAR: DSP + Mixer -->
+            <aside class="sidebar-right">
+                <div class="panel dsp-rack">
+                    <h3>DSP EFFECTS</h3>
+                    <div class="dsp-module" id="dsp-delay">
+                        <h4>⟳ DELAY</h4>
+                        <div class="knob-row">
+                            <div class="knob-group">
+                                <input type="range" id="delay-time" min="0.01" max="1" step="0.01" value="0.3">
+                                <label>Time</label>
+                            </div>
+                            <div class="knob-group">
+                                <input type="range" id="delay-feedback" min="0" max="0.9" step="0.01" value="0.4">
+                                <label>Fdbk</label>
+                            </div>
+                            <div class="knob-group">
+                                <input type="range" id="delay-mix" min="0" max="1" step="0.01" value="0.3">
+                                <label>Mix</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dsp-module" id="dsp-reverb">
+                        <h4>◎ REVERB</h4>
+                        <div class="knob-row">
+                            <div class="knob-group">
+                                <input type="range" id="reverb-mix" min="0" max="1" step="0.01" value="0.2">
+                                <label>Mix</label>
+                            </div>
+                            <div class="knob-group">
+                                <input type="range" id="reverb-size" min="0.1" max="1" step="0.01" value="0.5">
+                                <label>Size</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dsp-module" id="dsp-crush">
+                        <h4>⊞ BITCRUSHER</h4>
+                        <div class="knob-row">
+                            <div class="knob-group">
+                                <input type="range" id="crush-bits" min="1" max="16" step="1" value="16">
+                                <label>Bits</label>
+                            </div>
+                            <div class="knob-group">
+                                <input type="range" id="crush-rate" min="1" max="16" step="1" value="1">
+                                <label>Rate÷</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel channel-volumes">
+                    <h3>CHANNEL VOLUMES</h3>
+                    <div class="ch-vol-row" id="ch-vol-0">
+                        <span>CH1</span>
+                        <input type="range" class="ch-vol-slider" data-ch="0" min="0" max="1" step="0.01" value="1">
+                        <div class="vu-meter">
+                            <div class="vu-bar" id="vu-0"></div>
+                        </div>
+                    </div>
+                    <div class="ch-vol-row" id="ch-vol-1">
+                        <span>CH2</span>
+                        <input type="range" class="ch-vol-slider" data-ch="1" min="0" max="1" step="0.01" value="1">
+                        <div class="vu-meter">
+                            <div class="vu-bar" id="vu-1"></div>
+                        </div>
+                    </div>
+                    <div class="ch-vol-row" id="ch-vol-2">
+                        <span>CH3</span>
+                        <input type="range" class="ch-vol-slider" data-ch="2" min="0" max="1" step="0.01" value="1">
+                        <div class="vu-meter">
+                            <div class="vu-bar" id="vu-2"></div>
+                        </div>
+                    </div>
+                    <div class="ch-vol-row" id="ch-vol-3">
+                        <span>CH4</span>
+                        <input type="range" class="ch-vol-slider" data-ch="3" min="0" max="1" step="0.01" value="1">
+                        <div class="vu-meter">
+                            <div class="vu-bar" id="vu-3"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel master-section">
+                    <h3>MASTER</h3>
+                    <div class="knob-group">
+                        <input type="range" id="master-vol" min="0" max="1" step="0.01" value="0.8">
+                        <label>Volume</label>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <footer class="studio-footer">
+            <div id="status-bar">READY. Press PLAY or enter notes with keyboard.</div>
+            <div id="step-counter">STEP: 00</div>
+        </footer>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

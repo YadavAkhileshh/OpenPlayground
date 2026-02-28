@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rain on Glass Simulator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a192f;
+            color: #e6f1ff;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Background cityscape */
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #0a192f 0%, #112240 30%, #1a365d 100%);
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .cityscape {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            background: 
+                /* Buildings */
+                linear-gradient(90deg, transparent 49%, #112240 49%, #112240 51%, transparent 51%) 0 0,
+                linear-gradient(90deg, transparent 49%, #0c2541 49%, #0c2541 51%, transparent 51%) 20% 10%,
+                linear-gradient(90deg, transparent 49%, #1a365d 49%, #1a365d 51%, transparent 51%) 40% 5%,
+                linear-gradient(90deg, transparent 49%, #112240 49%, #112240 51%, transparent 51%) 60% 15%,
+                linear-gradient(90deg, transparent 49%, #0c2541 49%, #0c2541 51%, transparent 51%) 80% 8%,
+                linear-gradient(90deg, transparent 49%, #1a365d 49%, #1a365d 51%, transparent 51%) 100% 12%;
+            background-size: 20% 100%;
+            background-repeat: repeat-x;
+            opacity: 0.7;
+        }
+
+        .cityscape::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                /* Windows */
+                radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.3) 2px, transparent 2px),
+                radial-gradient(circle at 30% 40%, rgba(255, 255, 255, 0.3) 2px, transparent 2px),
+                radial-gradient(circle at 50% 60%, rgba(255, 255, 255, 0.3) 2px, transparent 2px),
+                radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.3) 2px, transparent 2px),
+                radial-gradient(circle at 90% 50%, rgba(255, 255, 255, 0.3) 2px, transparent 2px);
+            background-size: 100px 100px;
+            opacity: 0.3;
+        }
+
+        /* Glass window overlay */
+        .glass {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(1px);
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Raindrops container */
+        .raindrops {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        /* Individual raindrop */
+        .raindrop {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            transform-origin: top center;
+            filter: blur(0.5px);
+            z-index: 3;
+        }
+
+        /* Streaks from sliding raindrops */
+        .streak {
+            position: absolute;
+            background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.8) 0%, 
+                rgba(255, 255, 255, 0.6) 30%, 
+                rgba(255, 255, 255, 0.3) 70%, 
+                transparent 100%);
+            border-radius: 0 0 2px 2px;
+            filter: blur(1px);
+            z-index: 2;
+        }
+
+        /* Distortion effect where raindrops are */
+        .distortion {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, 
+                rgba(255, 255, 255, 0.1) 0%, 
+                rgba(255, 255, 255, 0.05) 30%, 
+                transparent 70%);
+            filter: blur(3px);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Control panel */
+        .controls {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(10, 25, 47, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            width: 320px;
+            z-index: 10;
+            border: 1px solid rgba(100, 150, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #64ffda;
+        }
+
+        .controls p {
+            font-size: 0.9rem;
+            color: #a8b2d1;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: #e6f1ff;
+        }
+
+        .control-value {
+            color: #64ffda;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .slider-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(100, 150, 255, 0.1);
+            border-radius: 3px;
+            position: relative;
+        }
+
+        .slider-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #64ffda, #52d7ff);
+            border-radius: 3px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: transparent;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #64ffda;
+            cursor: pointer;
+            border: 3px solid #0a192f;
+            box-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
+        }
+
+        .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .control-btn {
+            background: rgba(100, 150, 255, 0.1);
+            border: 1px solid rgba(100, 150, 255, 0.2);
+            border-radius: 10px;
+            padding: 12px;
+            color: #e6f1ff;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .control-btn:hover {
+            background: rgba(100, 150, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .control-btn i {
+            font-size: 1.2rem;
+            color: #64ffda;
+        }
+
+        .control-btn.active {
+            background: rgba(100, 255, 218, 0.1);
+            border-color: rgba(100, 255, 218, 0.3);
+        }
+
+        /* Stats display */
+        .stats {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(10, 25, 47, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            width: 250px;
+            z-index: 10;
+            border: 1px solid rgba(100, 150, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .stats h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #64ffda;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #e6f1ff;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #a8b2d1;
+            margin-top: 5px;
+        }
+
+        /* Instructions */
+        .instructions {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(10, 25, 47, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            width: 300px;
+            z-index: 10;
+            border: 1px solid rgba(100, 150, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .instructions h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #64ffda;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .instructions ul {
+            list-style-type: none;
+        }
+
+        .instructions li {
+            padding: 8px 0;
+            font-size: 0.9rem;
+            color: #a8b2d1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(100, 150, 255, 0.1);
+        }
+
+        .instructions li:last-child {
+            border-bottom: none;
+        }
+
+        .instructions i {
+            color: #64ffda;
+            font-size: 0.9rem;
+            width: 20px;
+        }
+
+        /* Water droplets that can be added by clicking */
+        .click-droplets {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .controls, .stats, .instructions {
+                width: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                top: 20px;
+                right: 20px;
+                width: calc(100% - 40px);
+                max-width: 400px;
+            }
+            
+            .stats, .instructions {
+                position: static;
+                width: calc(100% - 40px);
+                max-width: 400px;
+                margin: 20px;
+            }
+            
+            .container {
+                display: flex;
+                flex-direction: column;
+                padding-bottom: 20px;
+                overflow-y: auto;
+            }
+        }
+
+        /* Animation for new raindrop */
+        @keyframes dropForm {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Animation for sliding raindrop */
+        @keyframes slideDown {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(100px) scale(0.8); opacity: 0; }
+        }
+
+        /* Animation for streak */
+        @keyframes streakGrow {
+            0% { height: 0; opacity: 0; }
+            20% { opacity: 0.8; }
+            100% { height: 100px; opacity: 0; }
+        }
+
+        /* Light flicker effect */
+        @keybuilding flicker {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.5; }
+        }
+
+        .light {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: white;
+            border-radius: 50%;
+            animation: flicker 2s infinite alternate;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="container">
+        <!-- Background with cityscape -->
+        <div class="background">
+            <div class="cityscape"></div>
+            
+            <!-- Random lights in buildings -->
+            <div id="lightsContainer"></div>
+        </div>
+        
+        <!-- Glass window overlay -->
+        <div class="glass" id="glass"></div>
+        
+        <!-- Raindrops container -->
+        <div class="raindrops" id="raindrops"></div>
+        
+        <!-- Distortion effects container -->
+        <div id="distortions"></div>
+        
+        <!-- Click droplets container -->
+        <div class="click-droplets" id="clickDroplets"></div>
+        
+        <!-- Control panel -->
+        <div class="controls">
+            <h1><i class="fas fa-cloud-rain"></i> Rain on Glass</h1>
+            <p>Realistic raindrop simulation with blur effects. Adjust settings to change the rain intensity and behavior.</p>
+            
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Rain Intensity</span>
+                    <span class="control-value" id="intensityValue">Medium</span>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-fill" id="intensityFill" style="width: 50%"></div>
+                    <input type="range" id="intensitySlider" min="0" max="100" value="50">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Wind Strength</span>
+                    <span class="control-value" id="windValue">Calm</span>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-fill" id="windFill" style="width: 20%"></div>
+                    <input type="range" id="windSlider" min="0" max="100" value="20">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Blur Effect</span>
+                    <span class="control-value" id="blurValue">On</span>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-fill" id="blurFill" style="width: 80%"></div>
+                    <input type="range" id="blurSlider" min="0" max="100" value="80">
+                </div>
+            </div>
+            
+            <div class="control-buttons">
+                <button class="control-btn" id="lightRainBtn">
+                    <i class="fas fa-cloud-sun-rain"></i>
+                    <span>Light Rain</span>
+                </button>
+                <button class="control-btn active" id="mediumRainBtn">
+                    <i class="fas fa-cloud-rain"></i>
+                    <span>Medium Rain</span>
+                </button>
+                <button class="control-btn" id="heavyRainBtn">
+                    <i class="fas fa-cloud-showers-heavy"></i>
+                    <span>Heavy Rain</span>
+                </button>
+                <button class="control-btn" id="stormBtn">
+                    <i class="fas fa-bolt"></i>
+                    <span>Storm</span>
+                </button>
+                <button class="control-btn" id="fogBtn">
+                    <i class="fas fa-smog"></i>
+                    <span>Foggy</span>
+                </button>
+                <button class="control-btn" id="clearBtn">
+                    <i class="fas fa-sun"></i>
+                    <span>Clear</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Statistics -->
+        <div class="stats">
+            <h3><i class="fas fa-chart-bar"></i> Live Stats</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="dropCount">0</div>
+                    <div class="stat-label">Active Drops</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="streakCount">0</div>
+                    <div class="stat-label">Streaks</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalDrops">0</div>
+                    <div class="stat-label">Total Drops</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="fpsCounter">60</div>
+                    <div class="stat-label">FPS</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Instructions -->
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle"></i> Interaction Guide</h3>
+            <ul>
+                <li>
+                    <i class="fas fa-mouse-pointer"></i>
+                    <span>Click anywhere to add raindrops</span>
+                </li>
+                <li>
+                    <i class="fas fa-arrows-alt-h"></i>
+                    <span>Drag horizontally to simulate wind</span>
+                </li>
+                <li>
+                    <i class="fas fa-sliders-h"></i>
+                    <span>Use sliders to adjust effects</span>
+                </li>
+                <li>
+                    <i class="fas fa-tint"></i>
+                    <span>Preset buttons for different weather</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

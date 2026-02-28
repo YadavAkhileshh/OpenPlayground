@@ -1,0 +1,799 @@
+@import url("https://fonts.googleapis.com/css2?family=Grenze+Gotisch&display=swap");
+
+:root {
+	--text-color: oklch(98.5% 0 0);
+	--bg-color: oklch(14.5% 0 0);
+	--surface-color: oklch(39.6% 0.141 25.723);
+
+	--button-bg-color: oklch(40.8% 0.123 38.172);
+	--button-hover-bg-color: oklch(47% 0.157 37.304);
+	--button-active-bg-color: oklch(26.6% 0.079 36.259);
+	--button-match-bg-color: oklch(20.5% 0 0);
+	--button-match-active-bg-color: oklch(62.3% 0.214 259.815);
+	--button-border-color: oklch(47% 0.157 37.304);
+	--button-active-border-color: oklch(47% 0.157 37.304);
+	--button-match-border-color: oklch(27.4% 0.006 286.033);
+	--button-match-shine-color: oklch(64.6% 0.222 41.116);
+
+	/* prettier-ignore */
+	--ease-elastic: linear(0, 1.114 8.5%, 1.37 12.9%, 1.315 16.2%, 0.941 24%, 0.869 27.8%, 0.882 30.7%, 1.012 38.3%, 1.046 42.7%, 0.984, 1.006 72.2%, 1);
+	--ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+	--ease-in-back: cubic-bezier(0.68, -0.6, 0.32, 1);
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	height: 100%;
+}
+
+body {
+	display: grid;
+	place-items: center;
+	font-family: system-ui, sans-serif;
+	font-family: "Grenze Gotisch", system-ui;
+	color: var(--text-color);
+	background: var(--bg-color);
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+main {
+	display: grid;
+	gap: 2rem;
+	inline-size: 85vmin;
+	margin: auto;
+}
+
+.game {
+	position: relative;
+	container-type: inline-size;
+}
+
+.interface {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	padding-inline: 0.2rem;
+	gap: 1rem;
+	font-size: calc(0.6rem + 2vmin);
+}
+
+.interface-data {
+	display: flex;
+	align-items: center;
+	gap: 0.3rem;
+	line-height: 1;
+
+	span {
+		display: inline-block;
+		position: relative;
+		top: -0.1em;
+		font-size: 1.8em;
+		font-variant-numeric: tabular-nums;
+		letter-spacing: -0.05em;
+	}
+}
+
+.interface-data-best {
+	display: none;
+}
+
+.interface-btn {
+	margin-inline-start: auto;
+}
+
+button {
+	appearance: none;
+	font: inherit;
+	line-height: 1;
+	border: unset;
+	color: inherit;
+	padding: 0.5rem 1rem 0.6rem;
+	border-radius: 0.3rem;
+	background: var(--button-bg-color);
+	border: 1px solid var(--button-border-color);
+	cursor: pointer;
+	touch-action: manipulation;
+
+	&:focus-visible {
+		outline: 1px dashed white;
+		outline-offset: 2px;
+	}
+
+	&:not(:disabled):where(:hover, :focus-visible) {
+		--button-bg-color: var(--button-hover-bg-color);
+	}
+}
+
+.marquee {
+	--deg: -6deg;
+	--duration: 2.2s;
+	display: none;
+	place-content: center;
+	position: absolute;
+	inset: -5%;
+	width: 110%;
+	z-index: 1;
+	font-size: 26cqmin;
+	line-height: 1;
+	white-space: nowrap;
+	transform: rotate(var(--deg)) skew(var(--deg));
+	pointer-events: none;
+	paint-order: stroke;
+	-webkit-text-stroke: 6cqmin var(--bg-color);
+	animation: marquee-reveal var(--duration) var(--ease-out),
+		marquee-mask-position 3s var(--ease-out);
+	mask-image: linear-gradient(to left, transparent 50%, black 75%);
+	mask-position: 100% center;
+	mask-size: 400% 100%;
+}
+
+.marquee.is-combo {
+	--duration: 600ms;
+	letter-spacing: -0.05em;
+}
+
+.marquee-text {
+	animation: marquee-drift var(--duration) linear forwards;
+}
+
+.board {
+	position: relative;
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 2cqmin;
+}
+
+.card {
+	position: relative;
+	display: grid;
+	place-items: center;
+	overflow: hidden;
+	padding: 0;
+	font-size: 6cqmin;
+	aspect-ratio: 1;
+	border-radius: 10cqmin;
+	corner-shape: squircle;
+	will-change: transform;
+	transition: opacity 300ms var(--ease-out), background 100ms var(--ease-out);
+	box-shadow: inset 0 0 1cqmin 0.5cqmin var(--button-bg-color),
+		inset 0 0 0 1.5cqmin hsl(0 0% 0% / 0.1);
+
+	&[aria-pressed="true"] {
+		--button-bg-color: var(--button-active-bg-color);
+		--button-border-color: var(--button-active-border-color);
+	}
+
+	&:disabled {
+		--button-bg-color: var(--button-match-bg-color);
+		--button-border-color: var(--button-match-border-color);
+		cursor: revert;
+		color: currentcolor;
+	}
+
+	@supports not (corner-shape: squircle) {
+		border-radius: 7cqmin;
+	}
+}
+
+/* Card highlight effect */
+.card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	corner-shape: inherit;
+	box-shadow: inset 0 0 4cqmin 3cqmin var(--button-match-shine-color);
+	opacity: 0;
+}
+
+.content {
+	position: relative;
+	margin: auto;
+	pointer-events: none;
+	user-select: none;
+	transform: translateZ(0);
+}
+
+.prop {
+	position: relative;
+	transition: opacity 200ms 500ms var(--ease-out);
+}
+
+.face {
+	display: inline-block;
+	font-size: 1.25em;
+}
+
+.mask {
+	display: inline-block;
+	font-size: 1.8em;
+}
+
+.hand {
+	--opacity-duration: 60ms;
+	display: inline-block;
+	opacity: 0;
+	transform: scale(0.5);
+	transition: transform 0s var(--opacity-duration) var(--ease-out),
+		opacity var(--opacity-duration) var(--ease-out);
+}
+
+.card:is(:hover, :focus-visible, [aria-pressed="true"]) .hand {
+	opacity: 1;
+	transform: scale(1);
+	transition: transform 200ms var(--ease-out), opacity 0s;
+}
+
+/* -------- Alien -------- */
+.alien-mask {
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	translate: -50% 0;
+	transform-origin: bottom left;
+	transition: rotate 500ms var(--ease-out);
+}
+
+.alien-mask .mask {
+	position: absolute;
+	bottom: 100%;
+	translate: -25% 10%;
+}
+
+.alien-mask .hand {
+	position: relative;
+}
+
+.card[aria-pressed="true"] .alien-mask {
+	rotate: 45deg;
+	transition-duration: 300ms;
+}
+
+/* -------- Clown -------- */
+.clown-mask {
+	display: flex;
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	translate: -50% 15%;
+	transition: translate 300ms var(--ease-out);
+}
+
+.clown-mask .hand {
+	--offset: 92%;
+	--rotate: 10deg;
+	position: absolute;
+	top: 60%;
+	translate: 0 -50%;
+
+	&:first-child {
+		right: var(--offset);
+		rotate: calc(var(--rotate) * -1);
+	}
+
+	&:last-child {
+		left: var(--offset);
+		rotate: var(--rotate);
+	}
+}
+
+.card[aria-pressed="true"] .clown-mask {
+	translate: -50% -55%;
+	transition-duration: 300ms;
+	transition-timing-function: var(--ease-in-back);
+}
+
+/* -------- Cow -------- */
+.cow-mask {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	translate: -50% -80%;
+	transform-origin: bottom right;
+	transition: 400ms var(--ease-out);
+	transition-property: translate, rotate;
+}
+
+.cow-mask .mask {
+	position: absolute;
+	top: 30%;
+	translate: 12% 0;
+}
+
+.cow-mask .hand {
+	position: relative;
+	rotate: -10deg;
+}
+
+.card[aria-pressed="true"] .cow-mask {
+	rotate: -15deg;
+	translate: -80% -190%;
+	transition-duration: 200ms;
+}
+
+/* -------- Disguise -------- */
+.disguise-mask {
+	display: flex;
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	translate: -50% 15%;
+	transition: 300ms var(--ease-out);
+	transition-property: translate, rotate;
+	transition-origin: bottom left;
+}
+
+.disguise-mask .hand {
+	--offset: 92%;
+	--rotate: 10deg;
+	position: absolute;
+	top: 60%;
+	translate: 0 -50%;
+
+	&:first-child {
+		right: var(--offset);
+		rotate: calc(var(--rotate) * -1);
+	}
+
+	&:last-child {
+		left: var(--offset);
+		rotate: var(--rotate);
+	}
+}
+
+.card[aria-pressed="true"] .disguise-mask {
+	translate: 10% 80%;
+	rotate: 25deg;
+	transition-duration: 300ms;
+	transition-timing-function: var(--ease-in-back);
+}
+
+/* -------- Dragon -------- */
+.dragon-mask {
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	translate: -50% 0;
+	transform-origin: bottom right;
+	transition: rotate 500ms var(--ease-out);
+}
+
+.dragon-mask .mask {
+	position: absolute;
+	bottom: 80%;
+	left: -40%;
+}
+
+.dragon-mask .hand {
+	position: relative;
+	translate: 55% -10%;
+	rotate: -30deg;
+	scale: -1 1;
+}
+
+.card[aria-pressed="true"] .dragon-mask {
+	rotate: -45deg;
+	transition-duration: 300ms;
+}
+
+/* -------- Eye -------- */
+.eye-mask {
+	position: absolute;
+	top: 80%;
+	left: 50%;
+	translate: -50% 0;
+	transform-origin: bottom left;
+	transition: 400ms var(--ease-out);
+	transition-property: translate, rotate;
+}
+
+.eye-mask .mask {
+	position: absolute;
+	bottom: 0;
+	translate: -25% -40%;
+}
+
+.eye-mask .hand {
+	position: relative;
+	translate: 100% -80%;
+	rotate: 5deg;
+}
+
+.card[aria-pressed="true"] .eye-mask {
+	rotate: 15deg;
+	translate: 5% -90%;
+	transition-duration: 200ms;
+}
+
+/* -------- Fox -------- */
+.fox-mask {
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	translate: -50% 0;
+	transform-origin: bottom right;
+	transition: 500ms var(--ease-out);
+	transition-property: translate, rotate;
+}
+
+.fox-mask .mask {
+	position: absolute;
+	bottom: 80%;
+	left: -40%;
+}
+
+.fox-mask .hand {
+	position: relative;
+}
+
+.card[aria-pressed="true"] .fox-mask {
+	rotate: 15deg;
+	translate: 0 100%;
+	transition-duration: 300ms;
+}
+
+/* -------- Frog -------- */
+.frog-mask {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	translate: -50% -25%;
+	transform-origin: bottom left;
+	transition: rotate 500ms var(--ease-out);
+}
+
+.frog-mask .mask {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	translate: -24% -30%;
+}
+
+.frog-mask .hand {
+	position: relative;
+	translate: -75% 0;
+	rotate: 30deg;
+}
+
+.card[aria-pressed="true"] .frog-mask {
+	rotate: -45deg;
+	transition-duration: 300ms;
+}
+
+/* -------- Ogre -------- */
+.ogre-mask {
+	display: flex;
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	translate: -50% 15%;
+	transition: translate 300ms var(--ease-out);
+}
+
+.ogre-mask .hand {
+	--offset: 90%;
+	--rotate: -10deg;
+	position: absolute;
+	top: 40%;
+	translate: 0 -50%;
+
+	&:first-child {
+		right: var(--offset);
+		rotate: calc(var(--rotate) * -1);
+	}
+
+	&:last-child {
+		left: var(--offset);
+		rotate: var(--rotate);
+	}
+}
+
+.card[aria-pressed="true"] .ogre-mask {
+	translate: -50% -60%;
+	transition-duration: 300ms;
+	transition-timing-function: var(--ease-in-back);
+}
+
+/* -------- Pumpkin -------- */
+.pumpkin-mask {
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	translate: -50% 10%;
+	transform-origin: bottom right;
+	transition: 400ms var(--ease-out);
+	transition-property: rotate, translate;
+}
+
+.pumpkin-mask .hand {
+	position: absolute;
+	bottom: 60%;
+	left: 40%;
+	scale: -1 1;
+	rotate: 35deg;
+}
+
+.card[aria-pressed="true"] .pumpkin-mask {
+	rotate: 25deg;
+	translate: -35% -35%;
+	transition-duration: 250ms;
+}
+
+/* -------- Robot -------- */
+.robot-mask {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	translate: -16% 10%;
+	transform-origin: bottom left;
+	transition: 400ms var(--ease-out);
+	transition-property: rotate, translate;
+}
+
+.robot-mask .hand {
+	position: absolute;
+	bottom: 70%;
+	left: 8%;
+	rotate: -15deg;
+}
+
+.card[aria-pressed="true"] .robot-mask {
+	rotate: -25deg;
+	translate: -10% -40%;
+	transition-duration: 250ms;
+}
+
+/* -------- Skull -------- */
+.skull-mask {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	translate: -51% -20%;
+	transform-origin: bottom left;
+	transition: 400ms var(--ease-out);
+	transition-property: translate, rotate;
+}
+
+.skull-mask .mask {
+	position: absolute;
+	bottom: 60%;
+	left: -40%;
+}
+
+.skull-mask .hand {
+	position: relative;
+	translate: 50% -40%;
+	rotate: 15deg;
+}
+
+.card[aria-pressed="true"] .skull-mask {
+	rotate: 15deg;
+	translate: 25%;
+	transition-duration: 200ms;
+}
+
+/* Card match state */
+.card.is-matched {
+	--duration: 1.2s;
+	--delay: 50ms;
+	animation: card-pop-up var(--duration) var(--delay) forwards,
+		z-position 1s forwards;
+
+	&::before {
+		animation: match-shine calc(var(--duration) / 1.5) var(--delay)
+			var(--ease-out) forwards;
+	}
+
+	.face,
+	.prop {
+		animation: pop-up var(--duration) var(--delay) forwards;
+	}
+
+	.face {
+		--scale: 1;
+	}
+
+	.prop {
+		--scale: 0.4;
+		opacity: 0;
+	}
+}
+
+/* Loading state */
+.board.is-loading {
+	cursor: wait;
+
+	.card {
+		opacity: 0;
+		pointer-events: none;
+		animation: load-card-scale-up 1.2s calc(var(--i, 1) * 0.033s)
+				var(--ease-elastic) forwards,
+			load-card-fade-in 400ms calc(var(--i, 1) * 0.033s) var(--ease-out) forwards;
+	}
+}
+
+/* Waiting state */
+.board.is-waiting {
+	--shake-offset: 1%;
+	pointer-events: none;
+
+	.card:not([aria-pressed="true"]) {
+		opacity: 0.25;
+		transition-duration: 200ms;
+	}
+
+	.card[aria-pressed="true"]:not(.is-matched) {
+		animation: shake 200ms 300ms ease infinite;
+		transition-origin: bottom center;
+	}
+}
+
+/* Completed state */
+.board.is-complete {
+	pointer-events: none;
+
+	.card,
+	.face {
+		animation: 1.5s calc(var(--i) * 0.1s + 800ms) infinite;
+	}
+
+	.card {
+		overflow: visible;
+		animation-name: card-jump;
+	}
+
+	.face {
+		animation-name: face-jump;
+	}
+}
+
+/* Animation keyframes */
+@keyframes shake {
+	25% {
+		translate: calc(var(--shake-offset) * -1);
+	}
+	75% {
+		translate: var(--shake-offset);
+	}
+}
+
+@keyframes z-position {
+	0%,
+	99% {
+		z-index: 1;
+	}
+	100% {
+		z-index: 0;
+	}
+}
+
+@keyframes card-pop-up {
+	0% {
+		animation-timing-function: ease-out;
+	}
+	10%,
+	40% {
+		scale: 1.5;
+		/* prettier-ignore */
+		animation-timing-function: linear(0, 1.114 8.5%, 1.37 12.9%, 1.315 16.2%, 0.941 24%, 0.869 27.8%, 0.882 30.7%, 1.012 38.3%, 1.046 42.7%, 0.984, 1.006 72.2%, 1);
+	}
+	100% {
+		scale: 1;
+	}
+}
+
+@keyframes pop-up {
+	0% {
+		animation-timing-function: ease-out;
+	}
+	25%,
+	50% {
+		scale: 1.2;
+		/* prettier-ignore */
+		animation-timing-function: linear(0, 1.114 8.5%, 1.37 12.9%, 1.315 16.2%, 0.941 24%, 0.869 27.8%, 0.882 30.7%, 1.012 38.3%, 1.046 42.7%, 0.984, 1.006 72.2%, 1);
+	}
+	100% {
+		scale: var(--scale);
+	}
+}
+
+@keyframes card-jump {
+	0% {
+		animation-timing-function: ease;
+	}
+	10% {
+		translate: 0 -5%;
+		/* prettier-ignore */
+		animation-timing-function: linear(0, 1.114 8.5%, 1.37 12.9%, 1.315 16.2%, 0.941 24%, 0.869 27.8%, 0.882 30.7%, 1.012 38.3%, 1.046 42.7%, 0.984, 1.006 72.2%, 1);
+	}
+	75% {
+		translate: 0 0;
+	}
+}
+
+@keyframes face-jump {
+	0% {
+		animation-timing-function: ease;
+	}
+	15% {
+		translate: 0 -120%;
+		scale: 1.2;
+		/* prettier-ignore */
+		animation-timing-function: linear(0, 1.114 8.5%, 1.37 12.9%, 1.315 16.2%, 0.941 24%, 0.869 27.8%, 0.882 30.7%, 1.012 38.3%, 1.046 42.7%, 0.984, 1.006 72.2%, 1);
+	}
+	60% {
+		scale: 1;
+	}
+	75% {
+		translate: 0 0;
+	}
+}
+
+@keyframes match-shine {
+	0%,
+	25% {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+		scale: 2;
+	}
+}
+
+@keyframes marquee-drift {
+	from {
+		translate: 0 2%;
+	}
+	to {
+		translate: 0 -5%;
+	}
+}
+
+@keyframes marquee-reveal {
+	0%,
+	80% {
+		scale: 1;
+	}
+	100% {
+		scale: 0.98;
+	}
+	0%,
+	100% {
+		opacity: 0;
+	}
+	10%,
+	80% {
+		opacity: 1;
+	}
+}
+
+@keyframes marquee-mask-position {
+	30%,
+	100% {
+		mask-position: 0% center;
+	}
+}
+
+@keyframes load-card-scale-up {
+	from {
+		scale: 0.9;
+	}
+	to {
+		scale: 1;
+	}
+}
+
+@keyframes load-card-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}

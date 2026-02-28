@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚗️ The Alchemist's Lab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #1a1f0c;
+            background-image: radial-gradient(#3d5e3d 1px, transparent 1px);
+            background-size: 40px 40px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Cinzel', 'Times New Roman', serif;
+        }
+        .lab {
+            width: 900px;
+            background: #2c2c1c;
+            border: 20px solid #5e4b3c;
+            border-radius: 100px 100px 50px 50px;
+            padding: 30px;
+            box-shadow: 0 30px 40px #00000099, inset 0 0 50px #6b4f32;
+            position: relative;
+        }
+        .lab::before {
+            content: "⚗️";
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 60px;
+            filter: drop-shadow(0 10px 5px #00000099);
+        }
+        
+        .element-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .element {
+            aspect-ratio: 1;
+            background: #3a4a2a;
+            border-radius: 50% 50% 20% 20%;
+            border: 4px solid #b69b6b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: #ffd78c;
+            text-shadow: 0 0 10px #ffaa00;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: inset 0 -10px 20px #1e2a0e, 0 10px 0 #5a4a2e;
+            position: relative;
+            overflow: hidden;
+        }
+        .element.selected {
+            transform: translateY(-10px);
+            box-shadow: inset 0 -10px 20px #1e2a0e, 0 20px 0 #7a653a, 0 0 50px gold;
+            border-color: gold;
+        }
+        .element::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,200,0.3), transparent);
+            pointer-events: none;
+        }
+        
+        .cauldron-area {
+            display: flex;
+            gap: 30px;
+            margin: 40px 0;
+        }
+        
+        .cauldron {
+            flex: 2;
+            aspect-ratio: 1;
+            background: #2e2218;
+            border-radius: 50% 50% 30% 30%;
+            border: 10px solid #7a653a;
+            box-shadow: inset 0 -30px 30px #0f0a06, 0 20px 0 #4a3a28;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #potionEffect {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            background: #3a6b5e;
+            box-shadow: 0 0 80px currentColor;
+            transition: background 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .bubbles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        .bubble {
+            position: absolute;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            animation: bubble 2s infinite;
+        }
+        @keyframes bubble {
+            0% { transform: translateY(0) scale(1); opacity: 0.8; }
+            100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
+        }
+        
+        .recipe-book {
+            flex: 1;
+            background: #d8c29b;
+            border: 8px double #7a5c3a;
+            padding: 20px;
+            border-radius: 20px;
+            color: #2e2218;
+            font-size: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .recipe-entry {
+            border-bottom: 1px dashed #7a5c3a;
+            padding: 8px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .recipe-entry:hover {
+            background: #b69b6b;
+            color: white;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        .alchemize-btn {
+            background: #6b4f32;
+            border: none;
+            color: #ffd966;
+            font-size: 32px;
+            padding: 20px 60px;
+            border-radius: 60px;
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+            border-bottom: 10px solid #3a2e1e;
+            cursor: pointer;
+            transition: 0.05s linear;
+            letter-spacing: 8px;
+        }
+        .alchemize-btn:active {
+            border-bottom-width: 4px;
+            transform: translateY(6px);
+        }
+        
+        .element-name {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="lab">
+        <div class="element-grid" id="elementGrid">
+            <div class="element" data-element="fire">🔥<span class="element-name">FIRE</span></div>
+            <div class="element" data-element="water">💧<span class="element-name">WATER</span></div>
+            <div class="element" data-element="earth">🌍<span class="element-name">EARTH</span></div>
+            <div class="element" data-element="air">💨<span class="element-name">AIR</span></div>
+            <div class="element" data-element="light">✨<span class="element-name">LIGHT</span></div>
+            <div class="element" data-element="shadow">🌑<span class="element-name">SHADOW</span></div>
+            <div class="element" data-element="crystal">💎<span class="element-name">CRYSTAL</span></div>
+            <div class="element" data-element="void">🌀<span class="element-name">VOID</span></div>
+        </div>
+        
+        <div class="cauldron-area">
+            <div class="cauldron">
+                <div id="potionEffect"></div>
+                <div class="bubbles" id="bubbles"></div>
+            </div>
+            
+            <div class="recipe-book" id="recipeBook">
+                <h3 style="text-align: center; border-bottom: 2px solid #7a5c3a;">📜 RECIPES</h3>
+                <div class="recipe-entry" data-recipe="fire+water">🔥 + 💧 = Steam (Myst)</div>
+                <div class="recipe-entry" data-recipe="fire+earth">🔥 + 🌍 = Lava (Magma)</div>
+                <div class="recipe-entry" data-recipe="water+earth">💧 + 🌍 = Mud (Clay)</div>
+                <div class="recipe-entry" data-recipe="air+water">💨 + 💧 = Mist (Fog)</div>
+                <div class="recipe-entry" data-recipe="light+shadow">✨ + 🌑 = Twilight (Eclipse)</div>
+                <div class="recipe-entry" data-recipe="crystal+void">💎 + 🌀 = Void Crystal</div>
+                <div class="recipe-entry" data-recipe="fire+air">🔥 + 💨 = Lightning</div>
+                <div class="recipe-entry" data-recipe="earth+crystal">🌍 + 💎 = Geode</div>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <button class="alchemize-btn" id="alchemizeBtn">⚗️ ALCHEMIZE ⚗️</button>
+        </div>
+        
+        <div style="text-align: center; color: #b69b6b; margin-top: 20px;">
+            select two elements to combine
+        </div>
+    </div>
+
+    <script>
+        const elements = document.querySelectorAll('.element');
+        const potionEffect = document.getElementById('potionEffect');
+        const bubbles = document.getElementById('bubbles');
+        const alchemizeBtn = document.getElementById('alchemizeBtn');
+        const recipeEntries = document.querySelectorAll('.recipe-entry');
+        
+        let selected = [];
+        
+        // Element to color mapping
+        const elementColors = {
+            fire: '#ff4d4d',
+            water: '#4da6ff',
+            earth: '#8b5a2b',
+            air: '#e6e6e6',
+            light: '#ffff99',
+            shadow: '#4d4d4d',
+            crystal: '#ffb3ff',
+            void: '#330033'
+        };
+        
+        // Combination recipes
+        const recipes = {
+            'fire+water': { name: 'Myst', color: '#a0d6ff', desc: 'Steam' },
+            'fire+earth': { name: 'Magma', color: '#ff6600', desc: 'Lava' },
+            'water+earth': { name: 'Clay', color: '#996633', desc: 'Mud' },
+            'air+water': { name: 'Fog', color: '#c2d9e6', desc: 'Mist' },
+            'light+shadow': { name: 'Eclipse', color: '#660066', desc: 'Twilight' },
+            'crystal+void': { name: 'Void Crystal', color: '#33004d', desc: 'Abyss' },
+            'fire+air': { name: 'Lightning', color: '#ffff00', desc: 'Storm' },
+            'earth+crystal': { name: 'Geode', color: '#9966cc', desc: 'Crystal Earth' },
+            'fire+shadow': { name: 'Infernal', color: '#990000', desc: 'Hellfire' },
+            'water+light': { name: 'Rainbow', color: '#ff99ff', desc: 'Prism' }
+        };
+        
+        function selectElement(element) {
+            const elem = element.target.closest('.element');
+            if (!elem) return;
+            
+            const elementName = elem.dataset.element;
+            
+            if (selected.includes(elem)) {
+                elem.classList.remove('selected');
+                selected = selected.filter(e => e !== elem);
+            } else {
+                if (selected.length < 2) {
+                    elem.classList.add('selected');
+                    selected.push(elem);
+                } else {
+                    // Deselect oldest
+                    selected[0].classList.remove('selected');
+                    selected.shift();
+                    elem.classList.add('selected');
+                    selected.push(elem);
+                }
+            }
+        }
+        
+        function createBubbles() {
+            for (let i = 0; i < 10; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                const size = Math.random() * 30 + 10;
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = Math.random() * 100 + '%';
+                bubble.style.bottom = '0';
+                bubble.style.animationDelay = Math.random() * 2 + 's';
+                bubbles.appendChild(bubble);
+                
+                setTimeout(() => bubble.remove(), 2000);
+            }
+        }
+        
+        function alchemize() {
+            if (selected.length < 2) {
+                potionEffect.style.background = '#333333';
+                return;
+            }
+            
+            const elem1 = selected[0].dataset.element;
+            const elem2 = selected[1].dataset.element;
+            
+            // Try both orders
+            let recipe = recipes[`${elem1}+${elem2}`] || recipes[`${elem2}+${elem1}`];
+            
+            if (recipe) {
+                potionEffect.style.background = recipe.color;
+                potionEffect.style.boxShadow = `0 0 100px ${recipe.color}`;
+                
+                // Show recipe name
+                const nameDiv = document.createElement('div');
+                nameDiv.style.position = 'absolute';
+                nameDiv.style.top = '50%';
+                nameDiv.style.left = '50%';
+                nameDiv.style.transform = 'translate(-50%, -50%)';
+                nameDiv.style.color = 'white';
+                nameDiv.style.fontSize = '24px';
+                nameDiv.style.textShadow = '2px 2px 0 black';
+                nameDiv.textContent = recipe.name;
+                potionEffect.appendChild(nameDiv);
+                setTimeout(() => nameDiv.remove(), 2000);
+            } else {
+                // Failed combination
+                potionEffect.style.background = '#4a2e1e';
+                potionEffect.style.boxShadow = '0 0 50px #4a2e1e';
+            }
+            
+            createBubbles();
+            
+            // Deselect after use
+            selected.forEach(e => e.classList.remove('selected'));
+            selected = [];
+        }
+        
+        elements.forEach(e => e.addEventListener('click', selectElement));
+        alchemizeBtn.addEventListener('click', alchemize);
+        
+        // Recipe book clicks
+        recipeEntries.forEach(entry => {
+            entry.addEventListener('click', () => {
+                const recipe = entry.dataset.recipe.split('+');
+                // Clear selection
+                selected.forEach(e => e.classList.remove('selected'));
+                selected = [];
+                
+                // Find and select matching elements
+                elements.forEach(e => {
+                    if (e.dataset.element === recipe[0] || e.dataset.element === recipe[1]) {
+                        e.classList.add('selected');
+                        selected.push(e);
+                    }
+                });
+            });
+        });
+        
+        // Periodic bubbles
+        setInterval(createBubbles, 3000);
+    </script>
+</body>
+</html>

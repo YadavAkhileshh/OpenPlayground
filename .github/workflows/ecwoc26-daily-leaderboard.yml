@@ -1,0 +1,133 @@
+name: 🏆 ECWoC'26 Daily Contributor Leaderboard
+
+on:
+  schedule:
+    - cron: "30 13 * * *"   # Runs daily at 7:00 PM IST (13:30 UTC)
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: read
+  contents: read
+
+jobs:
+  leaderboard:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate ECWoC'26 Daily Contributor Leaderboard
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const DAYS = 1; // Daily leaderboard
+
+            console.log(`🏆 Generating ECWoC'26 leaderboard for last ${DAYS} day(s)`);
+
+            const since = new Date();
+            since.setDate(since.getDate() - DAYS);
+
+            const stats = {};
+
+            const isValidUser = (user) =>
+              user &&
+              !user.endsWith('[bot]') &&
+              user !== owner;
+
+            const add = (user, type) => {
+              if (!isValidUser(user)) return;
+              if (!stats[user]) {
+                stats[user] = { prs: 0, merged: 0, issues: 0 };
+              }
+              stats[user][type]++;
+            };
+
+            // Fetch Pull Requests
+            const prs = await github.paginate(
+              github.rest.pulls.list,
+              { owner, repo, state: "all", per_page: 100 }
+            );
+
+            prs.forEach(pr => {
+              if (new Date(pr.created_at) >= since) {
+                add(pr.user.login, "prs");
+                if (pr.merged_at) add(pr.user.login, "merged");
+              }
+            });
+
+            // Fetch Issues
+            const issues = await github.paginate(
+              github.rest.issues.listForRepo,
+              { owner, repo, state: "all", per_page: 100 }
+            );
+
+            issues.forEach(issue => {
+              if (!issue.pull_request && new Date(issue.created_at) >= since) {
+                add(issue.user.login, "issues");
+              }
+            });
+
+            const leaderboard = Object.entries(stats)
+              .map(([user, data]) => ({
+                user,
+                ...data,
+                total: data.prs + data.merged + data.issues
+              }))
+              .sort((a, b) => b.total - a.total)
+              .slice(0, 10);
+
+            if (leaderboard.length === 0) {
+              console.log("⚠️ No ECWoC'26 contributors found today.");
+              return;
+            }
+
+            const medals = ["🥇", "🥈", "🥉"];
+
+            const rows = leaderboard.map((c, i) => {
+              const rank = medals[i] || `#${i + 1}`;
+              return `| ${rank} | @${c.user} | ${c.prs} | ${c.merged} | ${c.issues} | ${c.total} |`;
+            });
+
+            const body = `
+            ## 🏆 ECWoC'26 Daily Contributor Leaderboard
+            ⏱ **Last ${DAYS} Day**
+
+            | Rank | Contributor | PRs | Merged | Issues | Total |
+            |------|-------------|-----|--------|--------|-------|
+            ${rows.join("\n")}
+
+            🎉 **Keep contributing!**
+            Every PR & Issue counts towards **ECWoC'26** 🚀
+
+            ---
+            🤖 _Auto-generated daily for ECWoC'26_
+            `;
+
+            // Check existing leaderboard issue
+            const existing = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              labels: "ECWoC26,leaderboard",
+              state: "open"
+            });
+
+            if (existing.data.length > 0) {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.data[0].number,
+                body
+              });
+              console.log("♻️ Updated ECWoC'26 leaderboard issue");
+            } else {
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title: "🏆 ECWoC'26 Daily Contributor Leaderboard",
+                body,
+                labels: ["ECWoC26", "leaderboard", "automated"]
+              });
+              console.log("✅ Created ECWoC'26 leaderboard issue");
+            }

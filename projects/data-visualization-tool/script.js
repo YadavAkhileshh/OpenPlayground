@@ -1,5 +1,3 @@
-// script.js
-
 // Initialize Chart
 let dataChart;
 const chartColors = {
@@ -8,6 +6,10 @@ const chartColors = {
     mono: ['#6C757D', '#868E96', '#ADB5BD', '#CED4DA', '#DEE2E6', '#E9ECEF', '#F8F9FA', '#FFFFFF'],
     earth: ['#8D6E63', '#A1887F', '#BCAAA4', '#D7CCC8', '#3E2723', '#5D4037', '#795548', '#A1887F']
 };
+
+const uploadedDatasets = new Map();
+
+let isFileDialogOpen = false;
 
 // Datasets
 const datasets = {
@@ -53,7 +55,12 @@ function initializeChart() {
     const dataset = document.getElementById('dataset').value;
     const colorScheme = document.getElementById('color-scheme').value;
     
-    const currentData = datasets[dataset];
+    let currentData;
+    if (uploadedDatasets.has(dataset)) {
+        currentData = uploadedDatasets.get(dataset);
+    } else {
+        currentData = datasets[dataset];
+    }
     
     // Destroy existing chart if it exists
     if (dataChart) {
@@ -130,6 +137,213 @@ function getChartColors(scheme, count) {
     return result;
 }
 
+function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    const labels = [];
+    const data = [];
+    
+    lines.forEach((line, index) => {
+        if (line.trim() === '') return;
+        
+        const parts = line.split(',').map(part => part.trim());
+        
+        if (parts.length >= 2) {
+            const label = parts[0];
+            const value = parseFloat(parts[1]);
+            
+            if (!isNaN(value)) {
+                labels.push(label);
+                data.push(value);
+            } else if (index === 0) {
+                return;
+            }
+        }
+    });
+    
+    return { labels, data };
+}
+
+function parseJSON(text) {
+    try {
+        const json = JSON.parse(text);
+        const labels = [];
+        const data = [];
+        
+        if (Array.isArray(json)) {
+            json.forEach(item => {
+                if (item.label && typeof item.value === 'number') {
+                    labels.push(item.label);
+                    data.push(item.value);
+                } else if (Object.keys(item).length >= 2) {
+                    const keys = Object.keys(item);
+                    const label = item[keys[0]];
+                    const value = parseFloat(item[keys[1]]);
+                    
+                    if (!isNaN(value)) {
+                        labels.push(String(label));
+                        data.push(value);
+                    }
+                }
+            });
+        } else if (typeof json === 'object') {
+            if (json.labels && json.data && Array.isArray(json.labels) && Array.isArray(json.data)) {
+                json.labels.forEach((label, index) => {
+                    if (json.data[index] !== undefined) {
+                        const value = parseFloat(json.data[index]);
+                        if (!isNaN(value)) {
+                            labels.push(String(label));
+                            data.push(value);
+                        }
+                    }
+                });
+            } else {
+                Object.entries(json).forEach(([key, value]) => {
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue)) {
+                        labels.push(key);
+                        data.push(numValue);
+                    }
+                });
+            }
+        }
+        
+        return { labels, data };
+    } catch (error) {
+        throw new Error('Invalid JSON format: ' + error.message);
+    }
+}
+
+function addUploadedDataset(name, data) {
+    const datasetSelect = document.getElementById('dataset');
+    const datasetId = 'uploaded_' + Date.now();
+    
+    uploadedDatasets.set(datasetId, {
+        labels: data.labels,
+        data: data.data,
+        description: `Uploaded dataset: ${name}. Contains ${data.labels.length} data points.`
+    });
+    
+    const option = document.createElement('option');
+    option.value = datasetId;
+    option.textContent = `📁 ${name}`;
+    datasetSelect.appendChild(option);
+    
+    datasetSelect.value = datasetId;
+    
+    return datasetId;
+}
+
+function showUploadStatus(message, type = 'info') {
+    const statusDiv = document.getElementById('upload-status');
+    statusDiv.textContent = message;
+    statusDiv.className = 'upload-status ' + type;
+    
+    setTimeout(() => {
+        if (statusDiv.textContent === message) {
+            statusDiv.textContent = '';
+            statusDiv.className = 'upload-status';
+        }
+    }, 5000);
+}
+
+function handleFileUpload(file, type) {
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            const content = e.target.result;
+            let parsedData;
+            
+            if (type === 'csv') {
+                parsedData = parseCSV(content);
+                if (parsedData.labels.length === 0) {
+                    throw new Error('CSV must contain label and value columns');
+                }
+            } else {
+                parsedData = parseJSON(content);
+            }
+            
+            if (parsedData.labels.length === 0 || parsedData.data.length === 0) {
+                throw new Error('No valid data found in file');
+            }
+            
+            if (parsedData.labels.length !== parsedData.data.length) {
+                throw new Error('Number of labels and values must match');
+            }
+            
+            const datasetId = addUploadedDataset(file.name, parsedData);
+            
+            initializeChart();
+            updateDataTable();
+            updateChartInfo();
+            
+            showUploadStatus(`Successfully uploaded ${file.name} with ${parsedData.labels.length} data points`, 'success');
+            
+        } catch (error) {
+            showUploadStatus(`Error parsing ${file.name}: ${error.message}`, 'error');
+            console.error('File parsing error:', error);
+        }
+    };
+    
+    reader.onerror = function() {
+        showUploadStatus(`Error reading file: ${file.name}`, 'error');
+    };
+    
+    reader.readAsText(file);
+}
+
+function setupFileInputHandler(fileInputId, buttonId, fileType) {
+    const fileInput = document.getElementById(fileInputId);
+    const button = document.getElementById(buttonId);
+    
+    let isProcessing = false;
+    
+    button.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (isProcessing || isFileDialogOpen) {
+            return;
+        }
+        
+        isProcessing = true;
+        isFileDialogOpen = true;
+        
+        fileInput.value = '';
+        
+        fileInput.click();
+        
+        setTimeout(() => {
+            isProcessing = false;
+        }, 300);
+    });
+    
+    fileInput.addEventListener('change', function(e) {
+        isFileDialogOpen = false;
+        const file = e.target.files[0];
+        if (file) {
+            if (fileType === 'csv') {
+                if (file.type !== 'text/csv' && !file.name.toLowerCase().endsWith('.csv')) {
+                    showUploadStatus('Please select a valid CSV file', 'error');
+                    return;
+                }
+            } else {
+                if (file.type !== 'application/json' && !file.name.toLowerCase().endsWith('.json')) {
+                    showUploadStatus('Please select a valid JSON file', 'error');
+                    return;
+                }
+            }
+            handleFileUpload(file, fileType);
+        }
+    });
+    
+    window.addEventListener('focus', function() {
+        setTimeout(() => {
+            isFileDialogOpen = false;
+        }, 300);
+    });
+}
+
 // Set up event listeners for controls
 function setupEventListeners() {
     // Update chart button
@@ -150,7 +364,13 @@ function setupEventListeners() {
     // Randomize data button
     document.getElementById('random-data').addEventListener('click', function() {
         const dataset = document.getElementById('dataset').value;
-        const currentData = datasets[dataset];
+        let currentData;
+        
+        if (uploadedDatasets.has(dataset)) {
+            currentData = uploadedDatasets.get(dataset);
+        } else {
+            currentData = datasets[dataset];
+        }
         
         // Generate random data
         for (let i = 0; i < currentData.data.length; i++) {
@@ -193,19 +413,41 @@ function setupEventListeners() {
     // Dataset selector - update custom data fields when custom is selected
     document.getElementById('dataset').addEventListener('change', function() {
         const dataset = this.value;
-        const currentData = datasets[dataset];
         
-        if (dataset === 'custom') {
+        if (uploadedDatasets.has(dataset)) {
+            const currentData = uploadedDatasets.get(dataset);
+            document.getElementById('custom-labels').value = currentData.labels.join(', ');
+            document.getElementById('custom-values').value = currentData.data.join(', ');
+        } else if (dataset === 'custom') {
+            const currentData = datasets[dataset];
             document.getElementById('custom-labels').value = currentData.labels.join(', ');
             document.getElementById('custom-values').value = currentData.data.join(', ');
         }
+    });
+    
+    setupFileInputHandler('csv-upload', 'csv-upload-btn', 'csv');
+    setupFileInputHandler('json-upload', 'json-upload-btn', 'json');
+    
+    document.getElementById('csv-upload').addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+    
+    document.getElementById('json-upload').addEventListener('click', function(e) {
+        e.stopPropagation();
     });
 }
 
 // Update the data table
 function updateDataTable() {
     const dataset = document.getElementById('dataset').value;
-    const currentData = datasets[dataset];
+    let currentData;
+    
+    if (uploadedDatasets.has(dataset)) {
+        currentData = uploadedDatasets.get(dataset);
+    } else {
+        currentData = datasets[dataset];
+    }
+    
     const tableBody = document.querySelector('#data-table tbody');
     
     // Clear existing rows
@@ -234,7 +476,7 @@ function updateDataTable() {
         
         row.innerHTML = `
             <td>${currentData.labels[i]}</td>
-            <td>${currentData.data[i].toLocaleString()}</td>
+            <td>${typeof currentData.data[i] === 'number' ? currentData.data[i].toLocaleString() : currentData.data[i]}</td>
             <td>${change}</td>
         `;
         
@@ -246,7 +488,13 @@ function updateDataTable() {
 function updateChartInfo() {
     const dataset = document.getElementById('dataset').value;
     const chartType = document.getElementById('chart-type').value;
-    const currentData = datasets[dataset];
+    let currentData;
+    
+    if (uploadedDatasets.has(dataset)) {
+        currentData = uploadedDatasets.get(dataset);
+    } else {
+        currentData = datasets[dataset];
+    }
     
     // Update description
     document.getElementById('chart-description').textContent = currentData.description;

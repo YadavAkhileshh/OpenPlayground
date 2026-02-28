@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Lego Builder Pro</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        canvas { display: block; }
+        
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 150px;
+        }
+
+        .section-label { font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase; }
+
+        .color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+        .color-btn {
+            width: 100%; aspect-ratio: 1; border: 2px solid #fff;
+            cursor: pointer; border-radius: 4px; transition: transform 0.1s;
+        }
+        .color-btn:hover { transform: scale(1.1); }
+
+        .size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+        .size-btn {
+            padding: 8px; cursor: pointer; border: 1px solid #ccc;
+            background: #eee; border-radius: 4px; font-weight: bold;
+        }
+        .size-btn:hover { background: #ddd; }
+        .size-btn.active { background: #3498db; color: white; border-color: #2980b9; }
+
+        .controls-hint {
+            position: absolute; bottom: 20px; right: 20px;
+            color: white; background: rgba(0,0,0,0.7);
+            padding: 12px 20px; border-radius: 30px; font-size: 14px;
+            pointer-events: none; border: 1px solid rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div class="section-label">Brick Size</div>
+    <div class="size-grid">
+        <button class="size-btn active" onclick="setSize(1, 1, this)">1x1</button>
+        <button class="size-btn" onclick="setSize(2, 2, this)">2x2</button>
+        <button class="size-btn" onclick="setSize(2, 4, this)">2x4</button>
+        <button class="size-btn" onclick="setSize(1, 4, this)">1x4</button>
+    </div>
+
+    <div class="section-label">Color</div>
+    <div class="color-grid">
+        <div class="color-btn" style="background: #e74c3c;" onclick="setColor(0xe74c3c)"></div>
+        <div class="color-btn" style="background: #3498db;" onclick="setColor(0x3498db)"></div>
+        <div class="color-btn" style="background: #f1c40f;" onclick="setColor(0xf1c40f)"></div>
+        <div class="color-btn" style="background: #2ecc71;" onclick="setColor(0x2ecc71)"></div>
+        <div class="color-btn" style="background: #ffffff;" onclick="setColor(0xffffff)"></div>
+        <div class="color-btn" style="background: #2c3e50;" onclick="setColor(0x2c3e50)"></div>
+        <div class="color-btn" style="background: #9b59b6;" onclick="setColor(0x9b59b6)"></div>
+        <div class="color-btn" style="background: #e67e22;" onclick="setColor(0xe67e22)"></div>
+    </div>
+
+    <button onclick="clearScene()" style="margin-top: 10px; padding: 8px; cursor: pointer;">Clear All</button>
+</div>
+
+<div class="controls-hint">
+    <b>Left Click:</b> Place | <b>Middle Click:</b> Delete | <b>'R' Key:</b> Rotate | <b>Right Click:</b> Orbit
+</div>
+
+<script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // --- INITIALIZATION ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x222233);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(15, 15, 15);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE };
+
+    // --- LIGHTS ---
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(10, 20, 10);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    // --- STATE ---
+    let currentColor = 0xe74c3c;
+    let currentW = 1;
+    let currentD = 1;
+    let currentRotation = 0;
+    const bricks = [];
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // --- HELPERS ---
+    const grid = new THREE.GridHelper(30, 30, 0x444455, 0x444455);
+    scene.add(grid);
+
+    const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(30, 30),
+        new THREE.MeshStandardMaterial({ color: 0x111111, visible: false })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.name = "floor";
+    scene.add(floor);
+
+    // --- CORE LOGIC ---
+    function createLegoBrick(color, w, d, isGhost = false) {
+        const group = new THREE.Group();
+        const mat = new THREE.MeshStandardMaterial({ 
+            color: color, 
+            transparent: isGhost, 
+            opacity: isGhost ? 0.5 : 1 
+        });
+
+        // Main Body (0.1 gap between bricks for visual separation)
+        const bodyGeo = new THREE.BoxGeometry(w - 0.05, 0.8, d - 0.05);
+        const body = new THREE.Mesh(bodyGeo, mat);
+        body.position.y = 0.4;
+        body.castShadow = !isGhost;
+        body.receiveShadow = !isGhost;
+        group.add(body);
+
+        // Studs
+        const studGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.2, 16);
+        for (let x = 0; x < w; x++) {
+            for (let z = 0; z < d; z++) {
+                const stud = new THREE.Mesh(studGeo, mat);
+                // Center the studs on the brick
+                stud.position.x = (x - (w - 1) / 2);
+                stud.position.z = (z - (d - 1) / 2);
+                stud.position.y = 0.9;
+                group.add(stud);
+            }
+        }
+        return group;
+    }
+
+    let ghostBrick = createLegoBrick(currentColor, currentW, currentD, true);
+    scene.add(ghostBrick);
+
+    // --- EVENT LISTENERS ---
+    window.addEventListener('mousemove', (e) => {
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'r') {
+            currentRotation += Math.PI / 2;
+            ghostBrick.rotation.y = currentRotation;
+        }
+    });
+
+    window.addEventListener('mousedown', (e) => {
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects([floor, ...bricks], true);
+
+        if (intersects.length > 0) {
+            const intersect = intersects[0];
+
+            // LEFT CLICK: Place
+            if (e.button === 0) {
+                const pos = new THREE.Vector3().copy(intersect.point).add(intersect.face.normal.multiplyScalar(0.1));
+                const newBrick = createLegoBrick(currentColor, currentW, currentD);
+                
+                newBrick.position.x = Math.round(pos.x);
+                newBrick.position.z = Math.round(pos.z);
+                newBrick.position.y = Math.floor(pos.y / 0.8) * 0.8;
+                newBrick.rotation.y = currentRotation;
+
+                scene.add(newBrick);
+                bricks.push(newBrick);
+            } 
+            // MIDDLE CLICK: Delete
+            else if (e.button === 1) {
+                let target = intersect.object;
+                while (target.parent && target.parent !== scene) {
+                    target = target.parent;
+                }
+                if (target !== floor) {
+                    scene.remove(target);
+                    const index = bricks.indexOf(target);
+                    if (index > -1) bricks.splice(index, 1);
+                }
+            }
+        }
+    });
+
+    // --- UI FUNCTIONS ---
+    window.setColor = (c) => {
+        currentColor = c;
+        updateGhost();
+    };
+
+    window.setSize = (w, d, btn) => {
+        currentW = w;
+        currentD = d;
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateGhost();
+    };
+
+    window.clearScene = () => {
+        bricks.forEach(b => scene.remove(b));
+        bricks.length = 0;
+    };
+
+    function updateGhost() {
+        scene.remove(ghostBrick);
+        ghostBrick = createLegoBrick(currentColor, currentW, currentD, true);
+        ghostBrick.rotation.y = currentRotation;
+        scene.add(ghostBrick);
+    }
+
+    // --- LOOP ---
+    function animate() {
+        requestAnimationFrame(animate);
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects([floor, ...bricks], true);
+        
+        if (intersects.length > 0) {
+            const intersect = intersects[0];
+            const pos = new THREE.Vector3().copy(intersect.point).add(intersect.face.normal.multiplyScalar(0.1));
+            
+            ghostBrick.position.x = Math.round(pos.x);
+            ghostBrick.position.z = Math.round(pos.z);
+            ghostBrick.position.y = Math.floor(pos.y / 0.8) * 0.8;
+            ghostBrick.visible = true;
+        } else {
+            ghostBrick.visible = false;
+        }
+
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Eye Contact – Ultimate Focus Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  margin:0;
+  background:#020617;
+  color:#e5e7eb;
+  font-family:system-ui;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+}
+.game{
+  text-align:center;
+  max-width:420px;
+}
+.eye{
+  width:220px;height:140px;
+  background:#e5e7eb;
+  border-radius:100px;
+  margin:20px auto;
+  position:relative;
+}
+.pupil{
+  width:46px;height:46px;
+  background:#020617;
+  border-radius:50%;
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+}
+video{
+  width:160px;
+  border-radius:12px;
+  margin-top:10px;
+  opacity:.8;
+}
+.alert{color:#ef4444;margin-top:10px;}
+.stats{font-size:.85rem;color:#94a3b8;margin-top:10px;}
+button{
+  margin-top:14px;
+  padding:10px 18px;
+  border-radius:10px;
+  border:none;
+  background:#2563eb;
+  color:white;
+}
+</style>
+</head>
+
+<body>
+<div class="game">
+  <h2>👁️ DO NOT LOOK AWAY</h2>
+
+  <div class="eye" id="eye">
+    <div class="pupil" id="pupil"></div>
+  </div>
+
+  <video id="cam" autoplay muted></video>
+
+  <div>⏱ Time: <span id="time">0.0</span>s</div>
+  <div>🧠 Attention: <span id="score">100</span>%</div>
+
+  <div class="alert" id="alert"></div>
+  <div class="stats" id="stats"></div>
+
+  <button onclick="restart()">Restart</button>
+</div>
+
+<audio id="heartbeat" loop>
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_60fbd1c3c4.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const pupil=document.getElementById("pupil");
+const eye=document.getElementById("eye");
+const cam=document.getElementById("cam");
+const alertBox=document.getElementById("alert");
+const timeEl=document.getElementById("time");
+const scoreEl=document.getElementById("score");
+const stats=document.getElementById("stats");
+const heartbeat=document.getElementById("heartbeat");
+
+let start=Date.now(),lastMove=Date.now(),attention=100;
+let blinkTrap=false,fail=false;
+let distractions=0,focusLoss=0;
+
+navigator.mediaDevices.getUserMedia({video:true})
+.then(stream=>{cam.srcObject=stream;heartbeat.play();})
+.catch(()=>alertBox.textContent="Camera access required");
+
+document.addEventListener("mousemove",e=>{
+  lastMove=Date.now();
+  const r=eye.getBoundingClientRect();
+  const dx=Math.max(-30,Math.min(30,e.clientX-(r.left+r.width/2)));
+  const dy=Math.max(-20,Math.min(20,e.clientY-(r.top+r.height/2)));
+  pupil.style.transform=`translate(${dx}px,${dy}px)`;
+});
+
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden) end("Tab switched");
+});
+
+setInterval(()=>{
+  if(fail) return;
+  const t=(Date.now()-start)/1000;
+  timeEl.textContent=t.toFixed(1);
+
+  // attention decay
+  attention-=0.05;
+  if(Date.now()-lastMove>1500){attention-=0.5;focusLoss++;}
+
+  // blink trap
+  if(Math.random()<0.01 && !blinkTrap){
+    blinkTrap=true;
+    alertBox.textContent="❗ DON'T BLINK";
+    setTimeout(()=>{
+      if(Date.now()-lastMove>300){
+        end("Blink trap failed");
+      }
+      blinkTrap=false;
+      alertBox.textContent="";
+    },600);
+  }
+
+  attention=Math.max(0,attention);
+  scoreEl.textContent=Math.round(attention);
+
+  heartbeat.playbackRate=1+(100-attention)/120;
+
+  if(attention<=0) end("Attention depleted");
+
+},100);
+
+function end(reason){
+  fail=true;
+  alertBox.textContent="❌ "+reason;
+  heartbeat.pause();
+
+  const best=Math.max(
+    Number(localStorage.getItem("best")||0),
+    Number(timeEl.textContent)
+  );
+  localStorage.setItem("best",best);
+
+  stats.innerHTML=`
+  Best Time: ${best}s<br>
+  Focus Loss Events: ${focusLoss}<br>
+  Distraction Score: ${Math.round(100-attention)}
+  `;
+}
+
+function restart(){location.reload();}
+</script>
+</body>
+</html>

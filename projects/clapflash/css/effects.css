@@ -1,0 +1,212 @@
+/**
+ * =============================================================================
+ * CLAPFLASH - EFFECTS STYLESHEET (effects.css)
+ * =============================================================================
+ * 
+ * CORE RESPONSIBILITY:
+ * This file handles the "Visual Performance" of the application. It creates
+ * the lightning effect, screen shakes, and cinematic overlays that respond
+ * to audio triggers.
+ * 
+ * THE ANATOMY OF A LIGHTNING BOLT:
+ * In this application, we don't draw vector lightning. Instead, we simulate 
+ * the *light profile* of a lightning strike on a camera sensor.
+ * 1. Attack: Instant white-out (Peak brightness in <5ms).
+ * 2. Flutter: High-frequency oscillation (Flicker) imitating electrical arcs.
+ * 3. Decay: Exponential fade back to black (The "Afterimage").
+ * 
+ * -----------------------------------------------------------------------------
+ * 1. FLASH TRIGGER LAYER
+ * -----------------------------------------------------------------------------
+ */
+
+.flash-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--clr-primary);
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0;
+    mix-blend-mode: overlay;
+}
+
+.lightning-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 999;
+    pointer-events: none;
+    filter: blur(0.5px) drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+    mix-blend-mode: screen;
+}
+
+/* 
+ * Active class triggered via js/effects-engine.js 
+ */
+.flash-layer.active {
+    animation: lightning-strike 1.4s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+/**
+ * 2. LIGHTNING STRIKE KEYFRAMES
+ * -----------------------------------------------------------------------------
+ * This is a highly specific keyframe sequence designed to mimic 
+ * high-voltage discharge.
+ */
+
+@keyframes lightning-strike {
+
+    /* PHASE 1: INITIAL CONTACT (0-10%) */
+    0% {
+        opacity: 0;
+        filter: brightness(1) contrast(1) blur(0);
+    }
+
+    1% {
+        opacity: 1;
+        filter: brightness(2) contrast(2) blur(5px);
+    }
+
+    /* PHASE 2: PLASMA OSCILLATION (10-25%) */
+    3% {
+        opacity: 0.4;
+        filter: brightness(1.5) blur(2px);
+    }
+
+    5% {
+        opacity: 0.95;
+        filter: brightness(2) blur(10px);
+    }
+
+    7% {
+        opacity: 0.3;
+        filter: brightness(1);
+    }
+
+    12% {
+        opacity: 1;
+        filter: brightness(2) blur(2px);
+    }
+
+    /* PHASE 3: THERMAL DECAY (25-100%) */
+    30% {
+        opacity: 0.6;
+        filter: brightness(1.5) blur(0);
+    }
+
+    100% {
+        opacity: 0;
+        filter: brightness(1) contrast(1) blur(0);
+    }
+}
+
+/**
+ * 3. CINEMATIC TEXTURE
+ * -----------------------------------------------------------------------------
+ */
+
+/* Flash Overlay Grain - adds high-frequency noise during the peak of the flash */
+.flash-layer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48ZmlsdGVyIGlkPSJmIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC44NSIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNmIiBvcGFjaXR5PSIwLjIiLz48L3N2Zz4=');
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s;
+}
+
+.flash-layer.active::after {
+    opacity: 0.15;
+}
+
+/**
+ * 4. PHYSICAL RESPONSE (SCREEN SHAKE)
+ * -----------------------------------------------------------------------------
+ * Triggered concurrently with the flash to give a sense of "Weight".
+ */
+
+.shake-effect {
+    /* Uses a 3D translate for GPU acceleration */
+    animation: physically-impactful-shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+@keyframes physically-impactful-shake {
+
+    10%,
+    90% {
+        transform: translate3d(calc(-2px * var(--shake-scale, 1)), 0, 0) rotate(calc(-0.5deg * var(--shake-scale, 1)));
+    }
+
+    20%,
+    80% {
+        transform: translate3d(calc(4px * var(--shake-scale, 1)), 0, 0) rotate(calc(1deg * var(--shake-scale, 1)));
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(calc(-6px * var(--shake-scale, 1)), calc(-2px * var(--shake-scale, 1)), 0) rotate(calc(-1.5deg * var(--shake-scale, 1)));
+    }
+
+    40%,
+    60% {
+        transform: translate3d(calc(6px * var(--shake-scale, 1)), calc(2px * var(--shake-scale, 1)), 0) rotate(calc(1.5deg * var(--shake-scale, 1)));
+    }
+}
+
+/**
+ * 5. POST-STRIKE VIGNETTE
+ * -----------------------------------------------------------------------------
+ * Provides a localized framing effect.
+ */
+
+.vignette {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    background: radial-gradient(circle, transparent 30%, rgba(0, 0, 0, 0.85) 100%);
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+/**
+ * 6. GLOW PULSES
+ * -----------------------------------------------------------------------------
+ */
+
+.pulse-glow {
+    animation: soft-pulse 4s infinite ease-in-out;
+}
+
+@keyframes soft-pulse {
+
+    0%,
+    100% {
+        opacity: 0.15;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.25;
+        transform: scale(1.05);
+    }
+}
+
+/**
+ * END OF FILE (effects.css)
+ */

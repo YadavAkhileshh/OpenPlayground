@@ -1,0 +1,612 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kinetic Wave - Dark</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;700&display=swap" rel="stylesheet">
+</head>
+<style>
+    :root {
+    --bg: #050505;
+    --text: #ffffff;
+    --accent: #00ff88;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Space Grotesk', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+}
+
+#canvas-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.ui-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.header {
+    text-align: center;
+    pointer-events: auto;
+    mix-blend-mode: difference;
+}
+
+h1 {
+    font-size: 4rem;
+    font-weight: 700;
+    letter-spacing: 10px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    background: linear-gradient(to right, #fff, #888);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 20px rgba(255,255,255,0.5);
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.8);
+    font-weight: 600;
+}
+
+.controls p {
+    position: relative;
+}
+
+.controls p::before {
+    content: '•';
+    position: absolute;
+    left: -15px;
+    color: var(--accent);
+    text-shadow: 0 0 10px var(--accent);
+}
+
+.controls p:first-child::before {
+    display: none;
+}
+
+.palette-selector {
+    pointer-events: auto;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
+    padding: 15px;
+    border-radius: 30px;
+    width: fit-content;
+    margin: 0 auto;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.color-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    position: relative;
+    box-shadow: 0 0 10px currentColor;
+}
+
+.color-dot:hover {
+    transform: scale(1.2);
+}
+
+.color-dot.active::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 10px white;
+}
+
+/* Themes */
+.color-dot[data-theme="neon"] { background: linear-gradient(45deg, #ff00cc, #3333ff); color: #ff00cc; }
+.color-dot[data-theme="ocean"] { background: linear-gradient(45deg, #00ffff, #0000ff); color: #00ffff; }
+.color-dot[data-theme="sunset"] { background: linear-gradient(45deg, #ff9900, #ff0000); color: #ff9900; }
+.color-dot[data-theme="matrix"] { background: linear-gradient(45deg, #00ff00, #003300); color: #00ff00; }
+
+.theme-toggle {
+    position: absolute;
+    top: 40px;
+    right: 40px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    font-size: 1.5rem;
+    padding: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: all 0.3s ease;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+}
+
+.theme-toggle:hover {
+    background: rgba(255,255,255,0.2);
+    transform: scale(1.1);
+}
+
+/* Light Mode Overrides */
+body.light-mode {
+    --bg: #f0f0f0;
+    --text: #111111;
+}
+
+body.light-mode .header h1 {
+    background: linear-gradient(to right, #333, #000);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+}
+
+body.light-mode .controls {
+    color: rgba(0,0,0,0.7);
+}
+
+body.light-mode .theme-toggle {
+    background: rgba(0,0,0,0.05);
+    border-color: rgba(0,0,0,0.1);
+    color: #333;
+}
+
+body.light-mode .theme-toggle:hover {
+    background: rgba(0,0,0,0.1);
+}
+
+body.light-mode .palette-selector {
+    background: rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+    h1 { font-size: 2.5rem; letter-spacing: 5px; }
+    .controls { flex-direction: column; gap: 10px; align-items: center; }
+    .controls p::before { display: none; }
+}
+</style>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div class="ui-layer">
+        <div class="header">
+            <h1>KINETIC WAVE</h1>
+            <div class="controls">
+                <p>Move cursor to ripple</p>
+                <p>Click to explode</p>
+                <p>Drag to rotate</p>
+            </div>
+        </div>
+        <div class="palette-selector">
+            <div class="color-dot active" data-theme="neon"></div>
+            <div class="color-dot" data-theme="ocean"></div>
+            <div class="color-dot" data-theme="sunset"></div>
+            <div class="color-dot" data-theme="matrix"></div>
+        </div>
+        <button id="theme-toggle" class="theme-toggle">☀️</button>
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GSAP for smooth animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.7.1/gsap.min.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Using AI to write coommmeetnnnss
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050505);
+scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 30, 30);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+// Configuration
+const CONFIG = {
+    gridSize: 40,
+    spacing: 0.9,
+    boxSize: 0.6,
+    waveSpeed: 1.5,
+    waveHeight: 2.5,
+    mouseRadius: 10,
+    mouseStrength: 4,
+    chaos: 0 // New property for explosion chaos
+};
+
+// Create InstancedMesh
+const geometry = new THREE.BoxGeometry(CONFIG.boxSize, CONFIG.boxSize, CONFIG.boxSize);
+// Shiny, metallic material for "glowier" look
+const material = new THREE.MeshStandardMaterial({
+    color: 0xffffff, // White base for instance colors
+    roughness: 0.2,  // Slightly rougher to catch more light
+    metalness: 0.6,  // Less metallic so it shows its own color more
+    emissive: 0x111111, // Slight self-illumination
+    emissiveIntensity: 0.2
+});
+
+const count = CONFIG.gridSize * CONFIG.gridSize;
+const mesh = new THREE.InstancedMesh(geometry, material, count);
+mesh.castShadow = true;
+mesh.receiveShadow = true;
+
+// Initialize Instance Colors - Lighter base color
+const baseColor = new THREE.Color(0x444444);
+for (let i = 0; i < count; i++) {
+    mesh.setColorAt(i, baseColor);
+}
+mesh.instanceColor.needsUpdate = true;
+
+scene.add(mesh);
+
+// Lighting - High intensity for shine
+const ambientLight = new THREE.AmbientLight(0x404040, 4); // Stronger ambient light
+scene.add(ambientLight);
+
+// Mouse Light for dynamic reflections
+const mouseLight = new THREE.PointLight(0xffffff, 2, 15);
+scene.add(mouseLight);
+
+// Main directional light
+
+// Main directional light
+const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+dirLight.position.set(20, 40, 20);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+// Colored lights - High intensity
+const pointLight1 = new THREE.PointLight(0xff00cc, 5, 100);
+pointLight1.position.set(0, 10, 0);
+scene.add(pointLight1);
+
+const pointLight2 = new THREE.PointLight(0x3333ff, 5, 100);
+pointLight2.position.set(20, 10, 20);
+scene.add(pointLight2);
+
+const pointLight3 = new THREE.PointLight(0x00ffff, 5, 100);
+pointLight3.position.set(-20, 10, -20);
+scene.add(pointLight3);
+
+// State
+const dummy = new THREE.Object3D();
+const mouse = new THREE.Vector2();
+const raycaster = new THREE.Raycaster();
+const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+let mousePos3D = new THREE.Vector3();
+let isExploding = false;
+let cameraAngle = 0; // Horizontal rotation
+let cameraPhi = Math.PI / 4; // Start higher up
+let hoveredInstanceId = null;
+let currentGlowColor = new THREE.Color(0x00ffff); // Default glow
+
+// Initialize Grid Positions & Random Offsets
+const initialPositions = [];
+const randomOffsets = [];
+for (let i = 0; i < CONFIG.gridSize; i++) {
+    for (let j = 0; j < CONFIG.gridSize; j++) {
+        const x = (i - CONFIG.gridSize / 2) * CONFIG.spacing;
+        const z = (j - CONFIG.gridSize / 2) * CONFIG.spacing;
+        initialPositions.push({ x, y: 0, z, ox: x, oz: z });
+        
+        // Pre-calculate random rotation axes for explosion
+        randomOffsets.push({
+            rx: (Math.random() - 0.5) * 2,
+            ry: (Math.random() - 0.5) * 2,
+            rz: (Math.random() - 0.5) * 2
+        });
+    }
+}
+
+// Interaction
+let isDragging = false;
+let previousMouseX = 0;
+let previousMouseY = 0;
+let startDragX = 0;
+let startDragY = 0;
+
+window.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    previousMouseX = e.clientX;
+    previousMouseY = e.clientY;
+    startDragX = e.clientX;
+    startDragY = e.clientY;
+});
+
+window.addEventListener('mousemove', (event) => {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    // Handle Rotation
+    if (isDragging) {
+        const deltaX = event.clientX - previousMouseX;
+        const deltaY = event.clientY - previousMouseY;
+
+        cameraAngle -= deltaX * 0.005;
+        cameraPhi -= deltaY * 0.005;
+
+        // Expanded range: Allow going lower (closer to horizon/floor) and higher (top down)
+        // 0.1 (Top) to Math.PI / 1.8 (Low angle)
+        cameraPhi = Math.max(0.1, Math.min(Math.PI / 1.8, cameraPhi));
+
+        previousMouseX = event.clientX;
+        previousMouseY = event.clientY;
+    }
+
+    // Handle Ripple & Glow
+    raycaster.setFromCamera(mouse, camera);
+    
+    // Ripple Physics (Plane intersection)
+    const target = new THREE.Vector3();
+    const intersection = raycaster.ray.intersectPlane(plane, target);
+    
+    if (intersection) {
+        // Direct update for instant response, or very fast tween
+        gsap.to(mousePos3D, {
+            x: target.x,
+            z: target.z,
+            duration: 0.1, // Much faster for better accuracy
+            ease: "power2.out"
+        });
+        
+        // Move mouse light
+        mouseLight.position.set(target.x, 5, target.z);
+    }
+});
+
+window.addEventListener('mouseup', (e) => {
+    isDragging = false;
+    
+    // Check if it was a click (minimal movement < 5px)
+    const moveDist = Math.sqrt(
+        Math.pow(e.clientX - startDragX, 2) + 
+        Math.pow(e.clientY - startDragY, 2)
+    );
+    
+    if (moveDist < 5) {
+        triggerExplosion();
+    }
+});
+
+// Keep scroll as alternative
+window.addEventListener('wheel', (event) => {
+    cameraAngle += event.deltaY * 0.001;
+});
+
+function triggerExplosion() {
+    if (isExploding) return;
+    isExploding = true;
+    
+    // More dramatic explosion
+    const tl = gsap.timeline({ onComplete: () => { isExploding = false; } });
+    
+    tl.to(CONFIG, {
+        spacing: 4,
+        chaos: 1, // Increase chaos
+        duration: 0.4,
+        ease: "power4.out"
+    })
+    .to(CONFIG, {
+        spacing: 0.9,
+        chaos: 0,
+        duration: 1.2,
+        ease: "elastic.out(1, 0.3)"
+    });
+    
+    // Flash effect
+    gsap.to(pointLight1, { intensity: 10, duration: 0.1, yoyo: true, repeat: 1 });
+    gsap.to(pointLight2, { intensity: 10, duration: 0.1, yoyo: true, repeat: 1 });
+    gsap.to(pointLight3, { intensity: 10, duration: 0.1, yoyo: true, repeat: 1 });
+}
+
+// Theme Switching
+document.querySelectorAll('.color-dot').forEach(dot => {
+    dot.addEventListener('click', (e) => {
+        document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+        e.target.classList.add('active');
+        
+        const theme = e.target.dataset.theme;
+        updateTheme(theme);
+    });
+});
+
+function updateTheme(theme) {
+    const colors = {
+        neon: [0xff00cc, 0x3333ff, 0x00ffff],
+        ocean: [0x00ffff, 0x0000ff, 0x0088ff],
+        sunset: [0xff9900, 0xff0000, 0xffff00],
+        matrix: [0x00ff00, 0x003300, 0xccffcc]
+    };
+    
+    const c = colors[theme];
+    
+    // Update Glow Color
+    currentGlowColor.setHex(c[0]);
+
+    gsap.to(pointLight1.color, { r: new THREE.Color(c[0]).r, g: new THREE.Color(c[0]).g, b: new THREE.Color(c[0]).b, duration: 1 });
+    gsap.to(pointLight2.color, { r: new THREE.Color(c[1]).r, g: new THREE.Color(c[1]).g, b: new THREE.Color(c[1]).b, duration: 1 });
+    gsap.to(pointLight3.color, { r: new THREE.Color(c[2]).r, g: new THREE.Color(c[2]).g, b: new THREE.Color(c[2]).b, duration: 1 });
+}
+
+// Theme Toggle Logic
+const themeToggle = document.getElementById('theme-toggle');
+let isDark = true;
+
+themeToggle.addEventListener('click', () => {
+    isDark = !isDark;
+    document.body.classList.toggle('light-mode');
+    themeToggle.textContent = isDark ? '☀️' : '🌙';
+    
+    if (isDark) {
+        // Dark Mode
+        gsap.to(scene.background, { r: 0.05, g: 0.05, b: 0.05, duration: 1 }); // Slightly lighter background
+        gsap.to(scene.fog, { density: 0.02, duration: 1 });
+        gsap.to(scene.fog.color, { r: 0.05, g: 0.05, b: 0.05, duration: 1 });
+        
+        // Correctly animate material colors
+        const darkColor = new THREE.Color(0xffffff);
+        gsap.to(material.color, { r: darkColor.r, g: darkColor.g, b: darkColor.b, duration: 1 });
+        
+        gsap.to(material, { 
+            roughness: 0.2,
+            metalness: 0.6,
+            emissiveIntensity: 0.2,
+            duration: 1 
+        });
+        
+        gsap.to(ambientLight, { intensity: 4, duration: 1 });
+        
+    } else {
+        // Light Mode
+        gsap.to(scene.background, { r: 0.95, g: 0.95, b: 0.95, duration: 1 });
+        gsap.to(scene.fog, { density: 0.01, duration: 1 });
+        gsap.to(scene.fog.color, { r: 0.95, g: 0.95, b: 0.95, duration: 1 });
+        
+        // Correctly animate material colors
+        const lightColor = new THREE.Color(0xeeeeee);
+        gsap.to(material.color, { r: lightColor.r, g: lightColor.g, b: lightColor.b, duration: 1 });
+
+        gsap.to(material, { 
+            roughness: 0.2,
+            metalness: 0.5,
+            emissiveIntensity: 0,
+            duration: 1 
+        });
+        
+        gsap.to(ambientLight, { intensity: 1.5, duration: 1 });
+    }
+});
+
+// Animation Loop
+const clock = new THREE.Clock();
+
+function animate() {
+    requestAnimationFrame(animate);
+    const time = clock.getElapsedTime();
+
+    let i = 0;
+    for (let x = 0; x < CONFIG.gridSize; x++) {
+        for (let z = 0; z < CONFIG.gridSize; z++) {
+            const pos = initialPositions[i];
+            const offset = randomOffsets[i];
+            
+            const dx = pos.ox - mousePos3D.x;
+            const dz = pos.oz - mousePos3D.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            
+            let y = Math.sin(dist * 0.4 - time * CONFIG.waveSpeed) * 0.8;
+            
+            if (dist < CONFIG.mouseRadius) {
+                const force = (1 - dist / CONFIG.mouseRadius) * CONFIG.mouseStrength;
+                y += Math.sin(dist * 1.5 - time * 4) * force;
+            }
+
+            const currentSpacing = CONFIG.spacing;
+            const finalX = (x - CONFIG.gridSize / 2) * currentSpacing;
+            const finalZ = (z - CONFIG.gridSize / 2) * currentSpacing;
+
+            dummy.position.set(finalX, y, finalZ);
+            
+            // Rotation: Base wave rotation + Explosion Chaos
+            dummy.rotation.x = (y * 0.1) + (offset.rx * CONFIG.chaos * 2);
+            dummy.rotation.y = (offset.ry * CONFIG.chaos * 2);
+            dummy.rotation.z = (y * 0.1) + (offset.rz * CONFIG.chaos * 2);
+            
+            const scale = 1 + y * 0.2;
+            dummy.scale.set(scale, scale, scale);
+
+            dummy.updateMatrix();
+            mesh.setMatrixAt(i, dummy.matrix);
+            
+            // Proximity Glow
+            if (dist < CONFIG.mouseRadius * 0.8) {
+                const intensity = 1 - (dist / (CONFIG.mouseRadius * 0.8));
+                const r = THREE.MathUtils.lerp(baseColor.r, currentGlowColor.r, intensity);
+                const g = THREE.MathUtils.lerp(baseColor.g, currentGlowColor.g, intensity);
+                const b = THREE.MathUtils.lerp(baseColor.b, currentGlowColor.b, intensity);
+                mesh.setColorAt(i, new THREE.Color(r, g, b));
+            } else {
+                mesh.setColorAt(i, baseColor);
+            }
+            
+            i++;
+        }
+    }
+    
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.instanceColor.needsUpdate = true;
+    
+    // Camera rotation controlled by mouse drag
+    const radius = 45;
+    
+    // Spherical coordinates for full orbit
+    const targetX = radius * Math.sin(cameraPhi) * Math.sin(cameraAngle);
+    const targetY = radius * Math.cos(cameraPhi);
+    const targetZ = radius * Math.sin(cameraPhi) * Math.cos(cameraAngle);
+    
+    camera.position.x += (targetX - camera.position.x) * 0.1;
+    camera.position.y += (targetY - camera.position.y) * 0.1;
+    camera.position.z += (targetZ - camera.position.z) * 0.1;
+    
+    camera.lookAt(0, 0, 0);
+
+    renderer.render(scene, camera);
+}
+
+animate();
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+    </script>
+</body>
+</html>

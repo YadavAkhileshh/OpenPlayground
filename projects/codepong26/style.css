@@ -1,0 +1,371 @@
+:root {
+	--title: "CODEPONG 26";
+	--author: "Matt Cannon";
+	--contact: "mc@mattcannon.design";
+	--description: "A neon CRT paddle duel built with Canvas 2D and adaptive AI that ramps difficulty over the course of a match. Gameplay is layered over a stylized vapor backdrop with animated glow fields, RGB fringing, vignette, and scanlines to simulate a phosphor display. Includes responsive mouse, touch, and keyboard controls, performance-capped particle trails and spark bursts, cinematic match-point slow motion, optional Web Audio sound effects, and a Press Start 2P UI with live scoring, final match stats, and replay flow. Works best on a smaller window in full screen mode";
+	--keywords: "cpc-press-start, codepenchallenge, codepong, pong, paddle game, arcade, retro, crt, phosphor, scanlines, vignette, rgb split, glow, neon fog, vaporwave, canvas, canvas 2d, particle system, sparks, trails, slow motion, match point, adaptive ai, difficulty ramp, web audio, sound effects, responsive, touch controls, keyboard controls, ui overlay, press start 2p, codepen";
+	--last-modified: "2026-01-10";
+	--content-language: "en";
+	--generator: "HTML5, CSS3, JavaScript, Canvas 2D, Web Audio";
+}
+
+:root {
+	--bg0: #04040a;
+	--bg1: #070816;
+	--stroke: rgba(255, 255, 255, 0.14);
+	--txt: rgba(255, 255, 255, 0.92);
+	--muted: rgba(255, 255, 255, 0.62);
+	--shadow: 0 18px 70px rgba(0, 0, 0, 0.55);
+
+	--a: #7c5cff;
+	--b: #00e5ff;
+	--c: #ff4fd8;
+}
+
+* {
+	box-sizing: border-box;
+}
+html,
+body {
+	height: 100%;
+}
+
+body {
+	margin: 0;
+	font-family: "Rubik", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+		Helvetica, Arial;
+	color: var(--txt);
+	background: radial-gradient(
+			1200px 800px at 15% 15%,
+			rgba(255, 79, 216, 0.12),
+			transparent 60%
+		),
+		radial-gradient(
+			1200px 800px at 80% 25%,
+			rgba(0, 229, 255, 0.11),
+			transparent 60%
+		),
+		radial-gradient(
+			1100px 800px at 55% 90%,
+			rgba(124, 92, 255, 0.1),
+			transparent 60%
+		),
+		linear-gradient(180deg, var(--bg0), var(--bg1));
+	overflow: hidden;
+}
+
+.app {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	padding: 16px;
+}
+
+.hud {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 14px 16px;
+	border-radius: 18px;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid var(--stroke);
+	box-shadow: var(--shadow);
+	backdrop-filter: blur(10px);
+}
+
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.brandLogo {
+	display: block;
+	height: 60px;
+	width: auto;
+	margin-top: 10px;
+	max-width: 320px;
+	object-fit: contain;
+}
+
+.hudRight {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+.chip {
+	border: 1px solid var(--stroke);
+	background: rgba(255, 255, 255, 0.06);
+	color: var(--txt);
+	padding: 10px 12px;
+	border-radius: 999px;
+	cursor: pointer;
+	text-transform: uppercase;
+}
+.chip i {
+	font-size: 14px;
+	line-height: 1;
+}
+.chip[aria-pressed="false"] {
+	opacity: 0.78;
+}
+
+.frame {
+	position: relative;
+	flex: 1;
+	border-radius: 22px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	box-shadow: var(--shadow);
+	overflow: hidden;
+	backdrop-filter: blur(12px);
+}
+
+#c {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+.crt {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	opacity: 0.85;
+}
+.scanlines {
+	position: absolute;
+	inset: 0;
+	background: repeating-linear-gradient(
+		to bottom,
+		rgba(255, 255, 255, 0.06) 0px,
+		rgba(255, 255, 255, 0.06) 1px,
+		rgba(0, 0, 0, 0) 3px,
+		rgba(0, 0, 0, 0) 6px
+	);
+	opacity: 0.22;
+}
+.vignette {
+	position: absolute;
+	inset: -30px;
+	background: radial-gradient(
+		circle at center,
+		rgba(0, 0, 0, 0),
+		rgba(0, 0, 0, 0.55) 70%,
+		rgba(0, 0, 0, 0.75) 100%
+	);
+}
+.rgb {
+	position: absolute;
+	inset: 0;
+	box-shadow: inset 1px 0 0 rgba(0, 229, 255, 0.06),
+		inset -1px 0 0 rgba(255, 79, 216, 0.05);
+}
+
+.score {
+	position: absolute;
+	inset: auto 0 18px 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 18px;
+	pointer-events: none;
+	user-select: none;
+}
+.score .s {
+	font-family: "Press Start 2P", monospace;
+	font-weight: 400;
+	font-size: 46px;
+	letter-spacing: 0.02em;
+	color: rgba(255, 255, 255, 0.22);
+}
+.sep {
+	width: 2px;
+	height: 44px;
+	border-radius: 999px;
+	background: linear-gradient(
+		180deg,
+		transparent,
+		rgba(255, 255, 255, 0.22),
+		transparent
+	);
+	opacity: 0.7;
+}
+
+.hint {
+	position: absolute;
+	left: 14px;
+	bottom: 14px;
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+	pointer-events: none;
+	user-select: none;
+}
+.pill {
+	font-family: "Press Start 2P", monospace;
+	font-size: 10px;
+	color: rgba(255, 255, 255, 0.75);
+	padding: 8px 10px;
+	border-radius: 999px;
+	background: rgba(0, 0, 0, 0.18);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	backdrop-filter: blur(10px);
+	text-transform: uppercase;
+}
+
+.overlay {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	padding: 18px;
+	background: rgba(0, 0, 0, 0.62);
+}
+.overlay.hidden {
+	display: none;
+}
+
+.panel {
+	width: min(560px, 92vw);
+	border-radius: 22px;
+	padding: 20px 18px 16px;
+	background: rgba(255, 255, 255, 0.08);
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	box-shadow: 0 24px 100px rgba(0, 0, 0, 0.65);
+	backdrop-filter: blur(12px);
+	text-align: center;
+}
+
+.overlayImg {
+	display: block;
+	max-width: 500px;
+	width: 100%;
+	height: auto;
+	margin: 0 auto 10px;
+}
+
+.panelTitle {
+	font-family: "Press Start 2P", monospace;
+	margin: 10px 0 8px;
+	font-size: 18px;
+	letter-spacing: 0.08em;
+	font-weight: 400;
+	text-transform: uppercase;
+}
+
+.panelBody {
+	font-family: "Press Start 2P", monospace;
+	margin: 0 auto 14px;
+	max-width: 46ch;
+	color: rgba(255, 255, 255, 0.8);
+	line-height: 1.55;
+	font-size: 10px;
+	text-transform: uppercase;
+}
+
+.panelRow {
+	display: flex;
+	justify-content: center;
+	gap: 12px;
+	margin: 6px 0 10px;
+	transform: translateY(-8px);
+}
+
+.btn {
+	font-family: "Press Start 2P", monospace;
+	border: 2px solid #000;
+	cursor: pointer;
+	padding: 14px 18px;
+	border-radius: 6px;
+	color: #000;
+	background: #fff;
+	font-weight: 400;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	box-shadow: 0 4px 0 #000;
+}
+
+.btn:active {
+	transform: translateY(4px);
+	box-shadow: none;
+}
+
+.btn.ghost {
+	color: rgba(255, 255, 255, 0.9);
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.22);
+	box-shadow: none;
+}
+
+#btnPlay {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	line-height: 1;
+}
+
+#btnPlay i {
+	font-size: 19px;
+	transform: translateY(-1px);
+}
+
+#btnPlay span {
+	display: inline-block;
+}
+
+.tiny {
+	margin-top: 8px;
+	font-size: 9px;
+	font-family: "Press Start 2P", monospace;
+	color: rgba(255, 255, 255, 0.62);
+	text-transform: uppercase;
+}
+
+.overlay.intro #panelTitle,
+.overlay.intro #panelBody,
+.overlay.intro #btnHow {
+	display: none;
+}
+
+.cutscene {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	pointer-events: none;
+	opacity: 0;
+	transform: scale(1.02);
+	transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.cutscene.on {
+	opacity: 1;
+	transform: scale(1);
+}
+.cutText {
+	font-family: "Press Start 2P", monospace;
+	font-weight: 400;
+	letter-spacing: 0.12em;
+	font-size: min(44px, 7vw);
+	background: linear-gradient(
+		90deg,
+		rgba(0, 229, 255, 0.95),
+		rgba(255, 79, 216, 0.95)
+	);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	text-transform: uppercase;
+}
+.cutSub {
+	margin-top: 10px;
+	text-align: center;
+	color: rgba(255, 255, 255, 0.75);
+	letter-spacing: 0.08em;
+	font-family: "Press Start 2P", monospace;
+	text-transform: uppercase;
+	font-size: 10px;
+}

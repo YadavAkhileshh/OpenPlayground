@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        @import url(https://fonts.bunny.net/css?family=jura:300,500);
+@layer base, demo-box, custom-select;
+
+@layer custom-select {
+  :root{
+		/* select element */
+    --select-width: 140px;
+    --select-text-color: white;
+    --select-bg-color: dodgerblue;
+    --select-bg-color-hover: rgb(0 105 168 / 1);
+    --select-border: 1px solid var(--clr-lines);
+    --select-border-color-open:rgb(94, 165, 0);
+    --select-radius: 3px;
+    --select-padding: .25rem .75rem;
+    --select-trans-duration: 300ms;
+    --select-trans-duration-open: 300ms;
+    --select-trans-easing: ease-in-out;
+    
+		/* :picker options wrapper */
+    --option-list-bg-color: light-dark(rgb(226, 232, 240), rgb(29, 41, 61));
+    --option-list-border: 1px solid var(--clr-lines);
+    --option-list-radius: 3px;
+    --option-list-offset: 10px; /* distance from select element */
+    --option-list-spacing: 8px; /* distance between options */
+    
+		/* select list options*/
+    --option-bg-color: var(--clr-bg);
+    --option-bg-color-hover: rgb(0 105 168 / 1);
+    --option-bg-color-selected: rgb(94, 165, 0);
+    --option-line-color: var(--clr-lines);
+    --option-text-color: white;
+    --option-text-color-hover: white;
+    --option-text-color-selected: white;
+    --option-radius: 2px;
+    --option-corner-shape-radius: 25%;/* this needs to be a decent amount so that the shape is visible*/
+		
+		/* demo element */
+    --demo-bg-color:rgb(94, 165, 0);
+		--demo-border-color: light-dark(black,white);
+		--demo-text-color: white;
+  }
+
+  .wrapper{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .5rem;
+    label{
+      text-transform: capitalize;
+    }
+  }
+
+  /* Basic select styling */
+  select{
+    border: var(--select-border);
+    border-radius: var(--select-radius);
+    background-color: var(--select-bg-color);
+    color: var(--select-text-color);
+    padding: var(--select-padding);
+    width: var(--select-width);
+    text-transform: capitalize;
+    transition: background-color 150ms ease-in-out;
+    
+    /* hover and focus when NOT open */
+    &:where(:hover,:focus-visible){
+        background-color: var(--select-bg-color-hover);
+    }
+    &:focus-visible{
+      outline: 1px dashed var(--select-bg-color);
+      outline-offset: 2px;
+    }
+  }
+
+  
+  /* cusotm select list - only if supported */
+  @supports (appearance: base-select) {
+    
+		@position-try --inline-center {
+      position-area: span-all;
+      margin-inline: 0;
+    }
+    @position-try --inline-start {
+      position-area: inline-start span-all;
+      margin-inline: 0 var(--option-list-offset);
+    }
+        
+    select,
+    ::picker(select) {
+      appearance: base-select;
+    }
+    
+    select {
+      /* no arrow */
+      &::picker-icon {
+        /*display: none;*/
+        transition: rotate 300ms;
+      }
+    }
+    select:open{
+      border-color: var(--select-border-color-open);
+    }
+    select:open::picker-icon{
+      content: '\292B';
+      rotate: 90deg;
+      scale: 1.5;
+    }
+    /* picker group - common styling */
+		/*:popover-open*/
+    select:open::picker(select) {
+      --select-trans-duration: var(--select-trans-duration-open);
+      position-area: inline-end span-all; /* after */
+     /* position-area: block-end span-all; /* below*/
+      /*position-area: span-all; /* over */
+      position-try: --inline-start,--inline-center;
+      margin-inline-start: var(--option-list-offset);
+      
+      pointer-events: auto;
+      display: grid;
+      place-items: center;
+      gap: var(--option-list-spacing);
+      padding: .5em;
+      background: var(--option-list-bg-color);
+      border: var(--option-list-border);
+      border-radius: var(--option-list-radius);
+      scale: 1;
+      opacity: 1;
+      visibility: visible;
+      transition-property: all;
+      transition-duration: var(--select-trans-duration);
+      transition-timing-function: var(--select-trans-easing);
+      transition-behavior: allow-discrete;
+      
+      /* transition in */
+      @starting-style{
+        opacity: 0;
+        scale: 0;
+        visibility: hidden;
+      }
+    }
+    
+    /* options  - common styling */
+    option {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: steelblue;
+      border: none;
+      border-radius: var(--option-radius);
+      color: var(--option-text-color);
+      font-size: .8rem;
+      text-transform: capitalize;
+      transition-property:background-color,color,scale;
+      transition-duration: 150ms;
+      transition-timing-function: ease-in-out;
+      
+      /* no checkmark on selected option*/
+      &::checkmark {
+        display: none;
+      }
+      /* the current selected option */
+      &:checked {
+         background: var(--option-bg-color-selected);
+        color: var(--option-text-color-selected);
+      }
+      &:where(:hover,:focus-visible) {
+        background-color: var(--option-bg-color-hover);
+        color: var(--option-text-color-hover);
+        scale: 1.05;
+      }
+    }
+
+    
+    /* corner shape select */
+    select[data-type="corner-shape"]:open{
+      &::picker(select) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      option{
+        --option-value: attr(value type(<custom-ident>));
+        --option-radius: var(--option-corner-shape-radius);
+        corner-shape: var(--option-value);
+        aspect-ratio: 1;
+         &:first-child{
+          /* none */
+          --option-radius: 0;
+        }
+        &:last-child{
+          /* squircle */
+          --option-radius: 100%;
+        }
+      }
+    }
+    
+    /* border width */
+    select[data-type="border-width"]:open{
+       option{
+        --option-value: attr(value type(<length>));
+         isolation: isolate;
+         &::before{
+           content: '';
+           position: absolute;
+           height: var(--option-value);
+           width: 80%;
+           background-color:white;
+           z-index: -2;
+         }
+         &::after{
+           
+           content: '';
+           position: absolute;
+           left: 50%;
+           translate: -50%;
+           
+           background: inherit;
+           padding: .75em 1.35em;
+           z-index: -1;
+         }
+       }
+    }
+    /* border style */
+    select[data-type="border-style"]:open{
+       option{
+         --option-value: attr(value type(<custom-ident>));
+         border: var(--option-value) 3px white;
+       }
+    }
+
+    /* border radius */
+    select[data-type="border-radius"]:open{
+       &::picker(select) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      option{
+        --option-value: attr(value type(<length>));
+        aspect-ratio: 1;
+         border-radius: 0 var(--option-value) 0 0;
+        
+       }
+    }
+
+    /* diameter*/
+    select[data-type="diameter"]:open{
+      &::picker(select){
+        /* make  the container a circle */
+        border-radius: 9in;
+      }
+      option{
+        --option-value: attr(value type(<length>));
+        --option-radius: 9in;
+
+        grid-area: 1/1;
+        /* reverse order so that smallest option is at the front, over the larger options */
+        order: calc(sibling-count() - sibling-index());
+        width: var(--option-value);
+        aspect-ratio: 1;
+        border: 1px solid var(--option-list-bg-color);
+        padding-block-start: .25em;
+        display: grid;
+        place-items: start;
+        &:first-child{
+          /* show text in center of smallest element */
+          place-items: center;
+        } 
+        &:where(:hover,:focus-visible) {
+          scale: inherit; /* no scale as that creates a new stacking index, pulling the hovered element over it's siblings */
+        }
+      }
+    }
+
+    /* font weight */
+    select[data-type="font-size"]:open{
+       option{
+         --option-value: attr(value type(<length>));
+          font-size: var(--option-value);
+       }
+    }
+
+    
+  } /* if supports */
+
+  
+}
+
+@layer demo-box{
+  .demo{
+    place-self: center;
+    width: 300px;
+    height:200px;
+    display: grid;
+    place-content: center;
+    padding: 1em;
+    text-align:center;
+    font-size: var(--demo-font-size);
+		color: var(--demo-text-color);
+    background: var(--demo-bg-color);
+    border: var(--demo-border-width,0) var(--demo-border-style) var(--demo-border-color);
+    border-radius: var(--demo-border-radius,40px);
+    corner-shape: var(--demo-corner-shape,none);
+    transition: all 300ms ease-in-out;
+    
+		@container style(--demo-corner-shape:none){
+       /* none */
+        border-radius: 0;
+    }
+    @container style(--demo-corner-shape:squircle){
+       /* squircle */
+      border-radius: 100%;
+    }
+    
+  }
+}
+
+/* general styling not relevant for this demo */
+@layer base {
+	* {
+		box-sizing: border-box;
+	}
+	:root {
+		color-scheme: light dark;
+		--bg-dark: rgb(16, 24, 40);
+		--bg-light: rgb(248, 244, 238);
+		--txt-light: rgb(10, 10, 10);
+		--txt-dark: rgb(245, 245, 245););
+		--line-light: rgba(0 0 0 / .75);
+		--line-dark: rgba(255 255 255 / .25);
+    
+    --clr-bg: light-dark(var(--bg-light), var(--bg-dark));
+    --clr-txt: light-dark(var(--txt-light), var(--txt-dark));
+    --clr-lines: light-dark(var(--line-light), var(--line-dark));
+	}
+ 
+	body {
+		background-color: var(--clr-bg);
+		color: var(--clr-txt);
+		min-height: 100svh;
+		margin: 0;
+		padding: 2rem;
+		font-family: "Jura", sans-serif;
+		font-size: 1rem;
+		line-height: 1.5;
+    display: grid;
+    place-content: center;
+    gap: 2rem;
+    @supports not (appearance: base-select) {
+      &::before {
+				content:"Sorry, your browser doesn't support appearance: base-select";
+				position: fixed;
+				top: 1rem;
+				left: 50%;
+				translate: -50% 0;
+				font-size: 0.8rem;
+        color: red;
+			}
+    }
+	}
+	h1 {
+		margin: 0;
+		font-size: 1.2rem;
+	}
+}
+
+    </style>
+</head>
+<body>
+    <h1>Custom selectors using <code>appearance:base-select</code></h1>
+<div class="wrapper">
+  <label for="select-font-size">Font Size:</label>
+  <select id="select-font-size" data-type="font-size">
+    <option value=".7rem">.7rem</option>
+    <option value=".8rem">.8rem</option>
+    <option value=".9rem">.9rem</option>
+    <option value="1rem" selected>1rem</option>
+    <option value="1.2rem">1.2rem</option>
+    <option value="1.4rem">1.4rem</option>
+    <option value="1.5rem">1.5rem</option>
+    <option value="2rem">2rem</option>
+  </select>
+
+  <label for="select-border-width">Border Width:</label>
+  <select id="select-border-width" data-type="border-width">
+    <option value="1px">1px</option>
+    <option value="2px" >2px</option>
+    <option value="3px">3px</option>
+    <option value="4px">4px</option>
+    <option value="5px">5px</option>
+    <option value="6px">6px</option>
+    <option value="7px" selected>7px</option>
+    <option value="8px">8px</option>
+    <option value="9px">9px</option>
+    <option value="10px">10px</option>
+    <option value="15px">15px</option>
+  </select>
+
+  <label for="select-border-style">Border Style:</label>
+  <select id="select-border-style" data-type="border-style">
+    <option value="none">none</option>
+    <option value="dotted" selected >dotted</option>
+    <option value="solid">solid</option>
+    <option value="double">double</option>
+    <option value="groove">groove</option>
+    <option value="ridge">ridge</option>
+    <option value="inset">inset</option>
+    <option value="outset">outset</option>
+  </select>
+  
+  <label for="select-border-radius">Border Radius:</label>
+  <select id="select-border-radius" data-type="border-radius">
+    <option value="0px">0px</option>
+    <option value="3px">3px</option>
+    <option value="5px">5px</option>
+    <option value="8px">8px</option>
+    <option value="10px">10px</option>
+    <option value="15px">15px</option>
+    <option value="20px">20px</option>
+    <option value="30px" selected>30px</option>
+    <option value="40px">40px</option>
+    <option value="999px">999px</option>
+  </select>
+
+  <label for="select-corner-shape">corner-shape:</label>
+  <select id="select-corner-shape" data-type="corner-shape">
+    <option value="none">none</option>
+    <option value="bevel">Bevel</option>
+    <option value="notch" selected>Notch</option>
+    <option value="round">Round</option>
+    <option value="scoop">Scoop</option>
+    <option value="square">Square</option>
+    <option value="squircle">Squircle</option>
+  </select>
+
+  <label for="select-diameter">Diameter:</label>
+  <select id="select-diameter" data-type="diameter">
+    <option value="50px">50px</option>
+    <option value="100px">100px</option>
+    <option value="150px" selected>150px</option>
+    <option value="200px">200px</option>
+    <option value="250px">250px</option>
+  </select>
+</div>
+
+<div id="demo" class="demo">Demo to show selected options</div>
+<script>
+    console.clear();
+function applySelect(select) {
+  document.documentElement.style.setProperty(`--demo-${select.dataset.type}`,select.value);
+}
+document.querySelectorAll('select[data-type]').forEach(select => {
+  applySelect(select);
+  select.addEventListener('change', () => applySelect(select));
+});
+</script>
+</body>
+</html>

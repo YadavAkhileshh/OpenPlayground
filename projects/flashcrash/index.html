@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlashCrash - HFT Simulation Engine</title>
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" href="css/vars.css">
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/typography.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/scrollbars.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/dom.css">
+    <link rel="stylesheet" href="css/chart.css">
+    <link rel="stylesheet" href="css/heatmap.css">
+    <link rel="stylesheet" href="css/bots.css">
+    <link rel="stylesheet" href="css/tooltips.css">
+    <link rel="stylesheet" href="css/volatility.css">
+</head>
+
+<body>
+    <div id="app-container">
+        <!-- Header / Stats Bar -->
+        <header id="top-bar">
+            <div class="logo">FLASH<span>CRASH</span></div>
+            <div class="global-stats">
+                <div class="stat-box">
+                    <span class="stat-label">SYMBOL</span>
+                    <span class="stat-value highlight">XBT/USD</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">LAST PRICE</span>
+                    <span class="stat-value" id="global-last-price">0.00</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">SPREAD</span>
+                    <span class="stat-value" id="global-spread">0.00</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">24H VOL</span>
+                    <span class="stat-value" id="global-volume">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">TPS</span>
+                    <span class="stat-value performance-metric" id="global-tps">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">ENGINE LATENCY</span>
+                    <span class="stat-value performance-metric" id="global-latency">0ms</span>
+                </div>
+            </div>
+            <div class="top-controls">
+                <button id="btn-flash-crash" class="danger-btn">SIMULATE FLASH CRASH</button>
+                <button id="btn-pause" class="toggle-btn">PAUSE</button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main id="workspace">
+
+            <!-- Left Column: Order Book & Trades -->
+            <section id="col-left" class="panel">
+                <div class="panel-header">
+                    <h2>LIMIT ORDER BOOK</h2>
+                    <div class="imbalance-meter">
+                        <div class="imbalance-fill bid-fill" id="imbalance-bid"></div>
+                        <div class="imbalance-fill ask-fill" id="imbalance-ask"></div>
+                    </div>
+                </div>
+                <div class="panel-content dom-container">
+                    <!-- Asks -->
+                    <div class="dom-half" id="dom-asks">
+                        <!-- Rows injected by JS -->
+                    </div>
+
+                    <!-- Mid Stats -->
+                    <div class="dom-mid">
+                        <span id="mid-price-display">0.00</span>
+                        <span id="mid-spread-display">0.00</span>
+                    </div>
+
+                    <!-- Bids -->
+                    <div class="dom-half" id="dom-bids">
+                        <!-- Rows injected by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Center Column: Charts -->
+            <section id="col-center">
+                <!-- Top Chart: Price / Volume -->
+                <article class="panel chart-panel">
+                    <div class="panel-header">
+                        <h2>REAL-TIME PRICE & VOLUME</h2>
+                        <div class="chart-toggles">
+                            <button class="active">1s</button>
+                            <button>5s</button>
+                            <button>15s</button>
+                        </div>
+                    </div>
+                    <div class="panel-content canvas-wrapper">
+                        <canvas id="price-chart-canvas"></canvas>
+                        <!-- Grid overlays -->
+                        <div class="chart-hud" id="price-chart-hud"></div>
+                    </div>
+                </article>
+
+                <!-- Bottom Chart: Liquidity Heatmap -->
+                <article class="panel heatmap-panel">
+                    <div class="panel-header">
+                        <h2>LIQUIDITY HEATMAP</h2>
+                    </div>
+                    <div class="panel-content canvas-wrapper">
+                        <canvas id="heatmap-canvas"></canvas>
+                        <div class="chart-hud" id="heatmap-hud"></div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- Right Column: Algo Bots & Volatility -->
+            <section id="col-right">
+
+                <!-- Volatility Indicator -->
+                <article class="panel volatility-panel">
+                    <div class="panel-header">
+                        <h2>MARKET VOLATILITY</h2>
+                    </div>
+                    <div class="panel-content">
+                        <canvas id="volatility-canvas" height="150"></canvas>
+                        <div class="volatility-metrics">
+                            <div class="metric">
+                                <span class="label">VIX (Simulated)</span>
+                                <span class="val" id="vix-val">12.4</span>
+                            </div>
+                            <div class="metric">
+                                <span class="label">Micro-Trend</span>
+                                <span class="val trend-up" id="trend-val">BULLISH</span>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Algo Bot Deployment -->
+                <article class="panel bots-panel">
+                    <div class="panel-header">
+                        <h2>ALGO BOT DEPLOYMENT</h2>
+                    </div>
+                    <div class="panel-content scrollable" id="bot-list">
+                        <!-- Injected by JS -->
+                    </div>
+                    <div class="panel-footer">
+                        <button id="add-bot-btn" class="primary-btn">+ ADD CUSTOM BOT</button>
+                    </div>
+                </article>
+
+                <!-- Diagnostics Hub -->
+                <article class="panel debug-panel">
+                    <div class="panel-header">
+                        <h2>SYSTEM LOGS</h2>
+                    </div>
+                    <div class="panel-content terminal-style" id="system-logs">
+                        <ul id="log-list"></ul>
+                    </div>
+                </article>
+
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals & Overlays -->
+    <div id="alert-overlay"></div>
+
+    <!-- Data Structures -->
+    <script src="js/data-structures/redBlackNode.js"></script>
+    <script src="js/data-structures/redBlackTree.js"></script>
+    <script src="js/data-structures/queue.js"></script>
+    <script src="js/data-structures/priorityQueue.js"></script>
+    <script src="js/data-structures/doublyLinkedList.js"></script>
+    <script src="js/data-structures/circularBuffer.js"></script>
+    <script src="js/data-structures/minHeap.js"></script>
+    <script src="js/data-structures/maxHeap.js"></script>
+
+    <!-- Core -->
+    <script src="js/core/constants.js"></script>
+    <script src="js/core/config.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/core/math.js"></script>
+    <script src="js/core/uid.js"></script>
+    <script src="js/core/time.js"></script>
+    <script src="js/core/logger.js"></script>
+    <script src="js/core/eventBus.js"></script>
+
+    <!-- Market Mechanics -->
+    <script src="js/engine/order.js"></script>
+    <script src="js/engine/trade.js"></script>
+    <script src="js/engine/priceLevel.js"></script>
+    <script src="js/engine/orderQueue.js"></script>
+    <script src="js/engine/limitOrderBook.js"></script>
+    <script src="js/engine/matchingEngine.js"></script>
+    <script src="js/engine/metrics.js"></script>
+    <script src="js/engine/latencySimulator.js"></script>
+    <script src="js/engine/liquidityImbalance.js"></script>
+    <script src="js/engine/volatilityCalculator.js"></script>
+    <script src="js/engine/flashCrashSim.js"></script>
+    <script src="js/engine/marketFeed.js"></script>
+
+    <!-- Appended Extensions -->
+    <script src="js/core/configValidator.js"></script>
+    <script src="js/core/marketStateHistory.js"></script>
+    <script src="js/core/quantMath.js"></script>
+    <script src="js/engine/orderTracker.js"></script>
+    <script src="js/engine/networkSimulator.js"></script>
+    <script src="js/engine/technicalIndicators.js"></script>
+    <script src="js/engine/riskManagementSystem.js"></script>
+    <script src="js/engine/executionAlgorithm.js"></script>
+    <script src="js/bots/botAnalytics.js"></script>
+
+    <!-- Bots -->
+    <script src="js/bots/botManager.js"></script>
+    <script src="js/bots/marketMaker.js"></script>
+    <script src="js/bots/arbitrageBot.js"></script>
+    <script src="js/bots/momentumBot.js"></script>
+    <script src="js/bots/noiseBot.js"></script>
+    <script src="js/bots/whaleBot.js"></script>
+    <script src="js/bots/predatoryBot.js"></script>
+    <script src="js/bots/sniperBot.js"></script>
+
+    <!-- UI & Renderers -->
+    <script src="js/render/canvasHelper.js"></script>
+    <script src="js/render/chartRenderer.js"></script>
+    <script src="js/render/heatmapRenderer.js"></script>
+    <script src="js/render/volatilityRenderer.js"></script>
+    <script src="js/render/orderBookRenderer.js"></script>
+    <script src="js/render/rendererManager.js"></script>
+
+    <script src="js/ui/alertSystem.js"></script>
+    <script src="js/ui/domPanel.js"></script>
+    <script src="js/ui/chartPanel.js"></script>
+    <script src="js/ui/botPanel.js"></script>
+    <script src="js/ui/heatmapPanel.js"></script>
+    <script src="js/ui/uiManager.js"></script>
+
+    <script src="js/core/app.js"></script>
+</body>
+
+</html>

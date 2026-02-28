@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ScrollSynth - A musical instrument controlled by scrolling">
+    <title>ScrollSynth - Scroll-Controlled Synthesizer</title>
+    
+    <!-- Stylesheets -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loader" class="loader">
+        <div class="loader-content">
+            <h1 class="loader-title">ScrollSynth</h1>
+            <p class="loader-subtitle">Initializing Audio Engine...</p>
+            <div class="loader-bar">
+                <div class="loader-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <main id="app" class="app hidden">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="app-title">ScrollSynth</h1>
+            <p class="app-subtitle">Scroll to Play</p>
+        </header>
+
+        <!-- Visualization Area -->
+        <section class="visualization-container">
+            <!-- Waveform Display -->
+            <div class="visualizer-wrapper">
+                <canvas id="waveformCanvas" class="visualizer-canvas"></canvas>
+                <div class="visualizer-label">Waveform</div>
+            </div>
+
+            <!-- Spectrum Analyzer -->
+            <div class="visualizer-wrapper">
+                <canvas id="spectrumCanvas" class="visualizer-canvas"></canvas>
+                <div class="visualizer-label">Spectrum</div>
+            </div>
+
+            <!-- Pitch Indicator -->
+            <div class="pitch-display">
+                <div class="pitch-value" id="pitchValue">A4</div>
+                <div class="frequency-value" id="frequencyValue">440 Hz</div>
+                <div class="pitch-bar-container">
+                    <div class="pitch-bar" id="pitchBar"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Control Panel -->
+        <section class="control-panel">
+            <div class="control-group">
+                <h3 class="control-title">Oscillator</h3>
+                <div class="control-row">
+                    <label for="waveformSelect">Waveform</label>
+                    <select id="waveformSelect" class="control-select">
+                        <option value="sine">Sine</option>
+                        <option value="square">Square</option>
+                        <option value="sawtooth">Sawtooth</option>
+                        <option value="triangle">Triangle</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <label for="volumeSlider">Volume</label>
+                    <input type="range" id="volumeSlider" class="control-slider" min="0" max="100" value="50">
+                    <span class="control-value" id="volumeValue">50%</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3 class="control-title">Filter</h3>
+                <div class="control-row">
+                    <label for="filterTypeSelect">Type</label>
+                    <select id="filterTypeSelect" class="control-select">
+                        <option value="lowpass">Lowpass</option>
+                        <option value="highpass">Highpass</option>
+                        <option value="bandpass">Bandpass</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <label for="filterQSlider">Resonance</label>
+                    <input type="range" id="filterQSlider" class="control-slider" min="0" max="100" value="50">
+                    <span class="control-value" id="filterQValue">50%</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3 class="control-title">Effects</h3>
+                <div class="control-row">
+                    <label for="distortionSlider">Distortion</label>
+                    <input type="range" id="distortionSlider" class="control-slider" min="0" max="100" value="0">
+                    <span class="control-value" id="distortionValue">0%</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Feature Toggles -->
+        <section class="features-panel">
+            <h3 class="features-title">Features</h3>
+            <div class="feature-buttons">
+                <button id="arpToggle" class="feature-btn" data-feature="arpeggiator">
+                    <span class="feature-icon">🎵</span>
+                    <span class="feature-label">Arpeggiator</span>
+                </button>
+                <button id="loopToggle" class="feature-btn" data-feature="loop">
+                    <span class="feature-icon">⭕</span>
+                    <span class="feature-label">Loop Recorder</span>
+                </button>
+                <button id="presetToggle" class="feature-btn" data-feature="preset">
+                    <span class="feature-icon">💾</span>
+                    <span class="feature-label">Presets</span>
+                </button>
+                <button id="gestureToggle" class="feature-btn" data-feature="gesture">
+                    <span class="feature-icon">✨</span>
+                    <span class="feature-label">Gestures</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Arpeggiator Panel -->
+        <section id="arpPanel" class="feature-panel hidden">
+            <h3 class="panel-title">Arpeggiator</h3>
+            <div class="control-row">
+                <label for="arpPattern">Pattern</label>
+                <select id="arpPattern" class="control-select">
+                    <option value="up">Up</option>
+                    <option value="down">Down</option>
+                    <option value="updown">Up-Down</option>
+                    <option value="random">Random</option>
+                </select>
+            </div>
+            <div class="control-row">
+                <label for="arpSpeed">Speed</label>
+                <input type="range" id="arpSpeed" class="control-slider" min="1" max="10" value="4">
+                <span class="control-value" id="arpSpeedValue">4</span>
+            </div>
+            <div class="control-row">
+                <label for="arpInterval">Interval</label>
+                <select id="arpInterval" class="control-select">
+                    <option value="3">Third</option>
+                    <option value="5">Fifth</option>
+                    <option value="7">Seventh</option>
+                    <option value="12">Octave</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Loop Recorder Panel -->
+        <section id="loopPanel" class="feature-panel hidden">
+            <h3 class="panel-title">Loop Recorder</h3>
+            <div class="loop-controls">
+                <button id="loopRecord" class="loop-btn record-btn">
+                    <span class="btn-icon">⏺</span> Record
+                </button>
+                <button id="loopPlay" class="loop-btn play-btn" disabled>
+                    <span class="btn-icon">▶</span> Play
+                </button>
+                <button id="loopStop" class="loop-btn stop-btn" disabled>
+                    <span class="btn-icon">⏹</span> Stop
+                </button>
+                <button id="loopClear" class="loop-btn clear-btn" disabled>
+                    <span class="btn-icon">🗑</span> Clear
+                </button>
+            </div>
+            <div class="loop-timeline" id="loopTimeline">
+                <canvas id="loopCanvas" class="loop-canvas"></canvas>
+            </div>
+        </section>
+
+        <!-- Preset Panel -->
+        <section id="presetPanel" class="feature-panel hidden">
+            <h3 class="panel-title">Presets</h3>
+            <div class="preset-controls">
+                <input type="text" id="presetName" class="preset-input" placeholder="Preset name...">
+                <button id="presetSave" class="preset-btn save-btn">Save</button>
+            </div>
+            <div class="preset-list" id="presetList">
+                <!-- Presets will be dynamically added here -->
+            </div>
+        </section>
+
+        <!-- Gesture Panel -->
+        <section id="gesturePanel" class="feature-panel hidden">
+            <h3 class="panel-title">Gesture Detection</h3>
+            <div class="gesture-info">
+                <p class="gesture-hint">Try these scroll patterns:</p>
+                <ul class="gesture-list">
+                    <li>🔄 <strong>Circle</strong> - Reverb burst</li>
+                    <li>⚡ <strong>Zigzag</strong> - Pitch glide</li>
+                    <li>📈 <strong>Diagonal</strong> - Filter sweep</li>
+                </ul>
+            </div>
+            <div class="gesture-display">
+                <canvas id="gestureCanvas" class="gesture-canvas"></canvas>
+                <div class="gesture-status" id="gestureStatus">No gesture detected</div>
+            </div>
+        </section>
+
+        <!-- Scroll Content Area -->
+        <section class="scroll-area">
+            <div class="scroll-content">
+                <div class="scroll-indicator vertical-indicator">
+                    <div class="indicator-label">Vertical Scroll</div>
+                    <div class="indicator-arrow">↕</div>
+                    <div class="indicator-desc">Controls Pitch</div>
+                </div>
+                <div class="scroll-indicator horizontal-indicator">
+                    <div class="indicator-label">Horizontal Scroll</div>
+                    <div class="indicator-arrow">↔</div>
+                    <div class="indicator-desc">Controls Filter</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Instructions -->
+        <section class="instructions">
+            <h2 class="instructions-title">How to Play</h2>
+            <div class="instruction-grid">
+                <div class="instruction-item">
+                    <div class="instruction-icon">↕</div>
+                    <h3>Vertical Scroll</h3>
+                    <p>Scroll up and down to change the pitch frequency</p>
+                </div>
+                <div class="instruction-item">
+                    <div class="instruction-icon">↔</div>
+                    <h3>Horizontal Scroll</h3>
+                    <p>Scroll left and right to control filter cutoff</p>
+                </div>
+                <div class="instruction-item">
+                    <div class="instruction-icon">🎛</div>
+                    <h3>Controls</h3>
+                    <p>Adjust waveform, volume, and effects in the control panel</p>
+                </div>
+                <div class="instruction-item">
+                    <div class="instruction-icon">✨</div>
+                    <h3>Features</h3>
+                    <p>Enable arpeggiator, loop recorder, or gesture detection</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 ScrollSynth | Built with Web Audio API</p>
+        </footer>
+    </main>
+
+    <!-- JavaScript Modules -->
+    <script src="js/constants.js"></script>
+    <script src="js/audioParams.js"></script>
+    <script src="js/audioEngine.js"></script>
+    <script src="js/scrollPhysics.js"></script>
+    <script src="js/scrollMapper.js"></script>
+    <script src="js/waveformVisualizer.js"></script>
+    <script src="js/spectrumAnalyzer.js"></script>
+    <script src="js/pitchIndicator.js"></script>
+    <script src="js/arpeggiator.js"></script>
+    <script src="js/loopRecorder.js"></script>
+    <script src="js/presetManager.js"></script>
+    <script src="js/gestureDetector.js"></script>
+    <script src="js/touchHandler.js"></script>
+    <script src="js/uiController.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

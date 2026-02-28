@@ -112,3 +112,32 @@ imagebtn.addEventListener("click",()=>{
     imagebtn.querySelector("input").click()
 
 })
+function waitForSearchInput() {
+  const input = document.querySelector('input[placeholder="Search projects..."]');
+  if (!input) return false;
+
+  const placeholders = [
+    "Search 'Tic Tac Toe'…",
+    "Search 'Expense Tracker'…",
+    "Search 'Weather App'…",
+    "Search 'Password Generator'…"
+  ];
+
+  let index = 0;
+
+  setInterval(() => {
+    if (document.activeElement !== input) {
+      input.placeholder = placeholders[index % placeholders.length];
+      index++;
+    }
+  }, 2500);
+
+  console.log("✅ Dynamic placeholder activated");
+  return true;
+}
+
+const searchWatcher = setInterval(() => {
+  if (waitForSearchInput()) {
+    clearInterval(searchWatcher);
+  }
+}, 300);

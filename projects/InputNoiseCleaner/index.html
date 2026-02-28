@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Noise Cleaner - Clean Messy Text Intelligently</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <i class="ri-spam-2-line header-icon"></i>
+                <h1>Input Noise Cleaner</h1>
+            </div>
+            <p class="subtitle">Clean messy user input intelligently</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Input Section -->
+            <section class="input-section">
+                <div class="section-header">
+                    <h2><i class="ri-file-text-line"></i> Input Text</h2>
+                    <div class="input-actions">
+                        <button class="btn-secondary" id="clearInput">
+                            <i class="ri-delete-bin-line"></i> Clear
+                        </button>
+                        <button class="btn-secondary" id="loadSample">
+                            <i class="ri-file-list-line"></i> Load Sample
+                        </button>
+                    </div>
+                </div>
+                <textarea 
+                    id="inputText" 
+                    placeholder="Paste or type your messy text here...&#10;&#10;Example:&#10;HELLOOOO    WORLD!!!   😀😀😀&#10;This   has    too     many     spaces&#10;reeeepeated   chaaaracters"></textarea>
+                <div class="char-count">
+                    <span id="inputCharCount">0 characters</span>
+                    <span id="noiseLevel" class="noise-indicator"></span>
+                </div>
+            </section>
+
+            <!-- Cleanup Rules -->
+            <section class="rules-section">
+                <div class="section-header">
+                    <h2><i class="ri-settings-3-line"></i> Cleanup Rules</h2>
+                    <button class="btn-secondary" id="toggleAll">
+                        <i class="ri-checkbox-multiple-line"></i> Toggle All
+                    </button>
+                </div>
+                <div class="rules-grid">
+                    <label class="rule-item">
+                        <input type="checkbox" id="ruleSpaces" checked>
+                        <div class="rule-content">
+                            <i class="ri-space"></i>
+                            <span class="rule-name">Extra Spaces</span>
+                            <span class="rule-desc">Remove multiple spaces</span>
+                        </div>
+                    </label>
+                    <label class="rule-item">
+                        <input type="checkbox" id="ruleRepeated" checked>
+                        <div class="rule-content">
+                            <i class="ri-repeat-line"></i>
+                            <span class="rule-name">Repeated Characters</span>
+                            <span class="rule-desc">Fix reeeepeated letters</span>
+                        </div>
+                    </label>
+                    <label class="rule-item">
+                        <input type="checkbox" id="ruleCaps" checked>
+                        <div class="rule-content">
+                            <i class="ri-character-recognition-line"></i>
+                            <span class="rule-name">Fix Caps Lock</span>
+                            <span class="rule-desc">Normalize SHOUTING text</span>
+                        </div>
+                    </label>
+                    <label class="rule-item">
+                        <input type="checkbox" id="ruleEmoji" checked>
+                        <div class="rule-content">
+                            <i class="ri-emotion-line"></i>
+                            <span class="rule-name">Emoji Noise</span>
+                            <span class="rule-desc">Remove excessive emojis</span>
+                        </div>
+                    </label>
+                    <label class="rule-item">
+                        <input type="checkbox" id="rulePunctuation" checked>
+                        <div class="rule-content">
+                            <i class="ri-asterisk"></i>
+                            <span class="rule-name">Punctuation</span>
+                            <span class="rule-desc">Fix !!!! and ???</span>
+                        </div>
+                    </label>
+                    <label class="rule-item">
+                        <input type="checkbox" id="ruleTrim" checked>
+                        <div class="rule-content">
+                            <i class="ri-indent-decrease"></i>
+                            <span class="rule-name">Trim Edges</span>
+                            <span class="rule-desc">Remove leading/trailing spaces</span>
+                        </div>
+                    </label>
+                </div>
+            </section>
+
+            <!-- Output Section -->
+            <section class="output-section">
+                <div class="section-header">
+                    <h2><i class="ri-checkbox-circle-line"></i> Cleaned Output</h2>
+                    <button class="btn-primary" id="copyOutput">
+                        <i class="ri-file-copy-line"></i> Copy
+                    </button>
+                </div>
+                <div id="outputText" class="output-display">
+                    Your cleaned text will appear here...
+                </div>
+                <div class="char-count">
+                    <span id="outputCharCount">0 characters</span>
+                    <span id="reductionPercent"></span>
+                </div>
+            </section>
+
+            <!-- Diff View -->
+            <section class="diff-section">
+                <div class="section-header">
+                    <h2><i class="ri-git-commit-line"></i> Before/After Diff</h2>
+                    <button class="btn-secondary" id="toggleDiff">
+                        <i class="ri-eye-line"></i> Show Diff
+                    </button>
+                </div>
+                <div id="diffView" class="diff-container" style="display: none;">
+                    <div class="diff-content" id="diffContent"></div>
+                </div>
+            </section>
+
+            <!-- Noise Classification -->
+            <section class="stats-section">
+                <div class="section-header">
+                    <h2><i class="ri-bar-chart-box-line"></i> Noise Classification</h2>
+                </div>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <i class="ri-space stat-icon"></i>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statSpaces">0</div>
+                            <div class="stat-label">Extra Spaces</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="ri-repeat-line stat-icon"></i>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statRepeated">0</div>
+                            <div class="stat-label">Repeated Chars</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="ri-character-recognition-line stat-icon"></i>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statCaps">0</div>
+                            <div class="stat-label">Caps Issues</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="ri-emotion-line stat-icon"></i>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statEmojis">0</div>
+                            <div class="stat-label">Emoji Noise</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="ri-asterisk stat-icon"></i>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statPunctuation">0</div>
+                            <div class="stat-label">Punctuation</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="ri-percent-line stat-icon"></i>
+                        <div class="stat-info">
+                            <div class="stat-value" id="statTotal">0%</div>
+                            <div class="stat-label">Total Noise</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer>
+            <p>Built with <i class="ri-heart-fill"></i> for cleaner input</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

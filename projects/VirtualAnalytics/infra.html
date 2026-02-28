@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infrastructure | DataFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .server-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .server-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+        }
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        .server-id { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-dim); }
+        .server-status { width: 10px; height: 10px; border-radius: 50%; }
+        .server-status.online { background: var(--green); box-shadow: 0 0 10px var(--green); }
+        .server-status.busy { background: var(--orange); }
+        
+        .server-stat-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .stat-bar-container { display: flex; flex-direction: column; gap: 0.3rem; }
+        .stat-info { display: flex; justify-content: space-between; font-size: 0.7rem; font-family: 'JetBrains Mono'; }
+        .stat-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+        .stat-fill { height: 100%; background: var(--blue); transition: width 0.5s; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <main class="workspace">
+            <header class="workspace-header">
+                <div class="system-status">
+                    <span class="status-indicator online"></span>
+                    <span class="status-text">CLUSTER_01 SECURE</span>
+                </div>
+                <div class="header-tools">
+                    <div class="live-clock" id="clock">00:00:00</div>
+                    <div class="user-pill"></div>
+                    <button class="mobile-toggle" id="mobileToggle"><i class="fa-solid fa-bars-staggered"></i></button>
+                </div>
+            </header>
+
+            <h1 style="margin-bottom: 2rem;">Infrastructure Monitor</h1>
+
+            <div class="server-grid" id="serverGrid">
+                <!-- Servers injected by JS -->
+            </div>
+        </main>
+    </div>
+
+    <script src="js/db.js"></script>
+    <script src="js/shared.js"></script>
+    <script>
+        const servers = [
+            { id: 'SVR-CORE-01', cpu: 45, mem: 62, disk: 30, status: 'online' },
+            { id: 'SVR-EDGE-LX', cpu: 78, mem: 85, disk: 12, status: 'busy' },
+            { id: 'DB-CLUSTER-A', cpu: 32, mem: 45, disk: 68, status: 'online' },
+            { id: 'CACHE-REDIS-B', cpu: 12, mem: 92, disk: 5, status: 'online' },
+            { id: 'AUTH-NODE-01', cpu: 55, mem: 40, disk: 10, status: 'online' },
+            { id: 'LB-FRONT-HA', cpu: 65, mem: 30, disk: 8, status: 'online' }
+        ];
+
+        const renderServers = () => {
+            const container = document.getElementById('serverGrid');
+            container.innerHTML = servers.map(s => `
+                <div class="server-card">
+                    <div class="server-header">
+                        <span class="server-id">${s.id}</span>
+                        <div class="server-status ${s.status}"></div>
+                    </div>
+                    <div class="server-stat-group">
+                        <div class="stat-bar-container">
+                            <div class="stat-info"><span>CPU</span><span>${s.cpu}%</span></div>
+                            <div class="stat-bar"><div class="stat-fill" style="width: ${s.cpu}%"></div></div>
+                        </div>
+                        <div class="stat-bar-container">
+                            <div class="stat-info"><span>RAM</span><span>${s.mem}%</span></div>
+                            <div class="stat-bar"><div class="stat-fill" style="width: ${s.mem}%"></div></div>
+                        </div>
+                        <div class="stat-bar-container">
+                            <div class="stat-info"><span>DISK</span><span>${s.disk}%</span></div>
+                            <div class="stat-bar"><div class="stat-fill" style="width: ${s.disk}%"></div></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        };
+        renderServers();
+
+        // Update clock
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour12: false });
+        }, 1000);
+
+        document.getElementById('mobileToggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+    </script>
+</body>
+</html>

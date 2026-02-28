@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geo-Traffic | DataFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <!-- Leaflet JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <main class="workspace">
+            <header class="workspace-header">
+                <div class="system-status">
+                    <span class="status-indicator online"></span>
+                    <span class="status-text">GEO_TRACKER ACTIVE</span>
+                </div>
+                <div class="header-tools">
+                    <div class="live-clock" id="clock">00:00:00</div>
+                    <div class="user-pill"></div>
+                    <button class="mobile-toggle" id="mobileToggle"><i class="fa-solid fa-bars-staggered"></i></button>
+                </div>
+            </header>
+
+            <h1 style="margin-bottom: 2rem;">Global Traffic Distribution</h1>
+
+            <div class="content-grid">
+                <section class="grid-card span-8 stretch">
+                    <div class="card-header">
+                        <h2>Global Traffic Inflow Map</h2>
+                        <div class="card-actions">
+                            <span class="tag live">REAL-TIME_GEOLOCATION</span>
+                        </div>
+                    </div>
+                    <div id="map" style="height: 100%; border-radius: 12px; background: #000; border: 1px solid var(--border);"></div>
+                </section>
+
+                <section class="grid-card span-4">
+                    <div class="card-header">
+                        <h2>Live Network Events</h2>
+                    </div>
+                    <div class="log-stream" id="geo-log" style="font-size: 0.75rem; max-height: 250px;">
+                        <!-- Injected by JS -->
+                    </div>
+                </section>
+
+                <!-- New Feature: Regional Stats -->
+                <section class="grid-card span-6">
+                    <div class="card-header">
+                        <h2>Top Contributing Countries</h2>
+                    </div>
+                    <div class="geo-list" id="geo-list">
+                        <!-- Re-injecting previously removed content -->
+                    </div>
+                </section>
+
+                <!-- New Feature: Device Distribution -->
+                <section class="grid-card span-6">
+                    <div class="card-header">
+                        <h2>Device Composition</h2>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center; flex: 1;">
+                        <div id="device-viz" style="width: 150px; height: 150px;"></div>
+                        <div style="margin-left: 2rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem; font-family: 'JetBrains Mono';">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;"><span style="width: 10px; height: 10px; background: var(--blue); border-radius: 2px;"></span> DESKTOP: 64%</div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;"><span style="width: 10px; height: 10px; background: var(--orange); border-radius: 2px;"></span> MOBILE: 28%</div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;"><span style="width: 10px; height: 10px; background: var(--text-dim); border-radius: 2px;"></span> TABLET: 8%</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="grid-card span-12">
+                    <div class="card-header">
+                        <h2>Regional Latency Breakdown</h2>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div class="metric-card">
+                            <span class="label">NORTH AMERICA</span>
+                            <div class="metric-value">22ms</div>
+                            <span class="metric-change positive">OPTIMIZED</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="label">EUROPE</span>
+                            <div class="metric-value">48ms</div>
+                            <span class="metric-change positive">STABLE</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="label">ASIA PACIFIC</span>
+                            <div class="metric-value">142ms</div>
+                            <span class="metric-change negative">HIGH_LOAD</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="label">SOUTH AMERICA</span>
+                            <div class="metric-value">85ms</div>
+                            <span class="metric-change stable">AVERAGE</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/db.js"></script>
+    <script src="js/shared.js"></script>
+    <script>
+        // --- Map Initialization ---
+        const map = L.map('map', {
+            zoomControl: false,
+            attributionControl: false
+        }).setView([20, 0], 2);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19
+        }).addTo(map);
+
+        // Custom Pulse Icon
+        const pulseIcon = L.divIcon({
+            className: 'pulse-icon',
+            html: '<div class="pulse-ring"></div>',
+            iconSize: [20, 20]
+        });
+
+        const locations = [
+            { name: 'New York', coords: [40.7128, -74.0060] },
+            { name: 'London', coords: [51.5074, -0.1278] },
+            { name: 'Tokyo', coords: [35.6762, 139.6503] },
+            { name: 'Berlin', coords: [52.5200, 13.4050] },
+            { name: 'Mumbai', coords: [19.0760, 72.8777] },
+            { name: 'Sydney', coords: [-33.8688, 151.2093] },
+            { name: 'Sao Paulo', coords: [-23.5505, -46.6333] },
+            { name: 'Singapore', coords: [1.3521, 103.8198] }
+        ];
+
+        // Simulate incoming pings
+        function addPing() {
+            const loc = locations[Math.floor(Math.random() * locations.length)];
+            const marker = L.marker(loc.coords, { icon: pulseIcon }).addTo(map);
+            
+            // Log entry
+            const logContainer = document.getElementById('geo-log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry info';
+            entry.innerHTML = `<span class="log-time">[${new Date().toLocaleTimeString([], {hour12:false})}]</span> Traffic detected from <strong>${loc.name}</strong>`;
+            logContainer.prepend(entry);
+            
+            if(logContainer.children.length > 20) logContainer.removeChild(logContainer.lastChild);
+
+            setTimeout(() => {
+                map.removeLayer(marker);
+            }, 2000);
+        }
+
+        setInterval(addPing, 1500);
+
+        // --- Stats Renderers ---
+        const renderGeo = () => {
+            const data = [
+                { country: 'United States', count: 1240, percent: 88 },
+                { country: 'Germany', count: 890, percent: 72 },
+                { country: 'Singapore', count: 560, percent: 45 },
+                { country: 'Brazil', count: 420, percent: 35 },
+                { country: 'India', count: 380, percent: 30 }
+            ];
+            document.getElementById('geo-list').innerHTML = data.map((d, i) => `
+                <div class="geo-row">
+                    <span class="geo-rank">#${i+1}</span>
+                    <span class="geo-country">${d.country}</span>
+                    <div class="geo-progress-container">
+                        <div class="geo-progress-fill" style="width: ${d.percent}%"></div>
+                    </div>
+                    <span class="geo-count">${d.count}</span>
+                </div>
+            `).join('');
+        };
+
+        const renderDeviceChart = () => {
+            const data = [{label: 'Desktop', val: 64}, {label: 'Mobile', val: 28}, {label: 'Tablet', val: 8}];
+            const width = 150, height = 150, radius = 70;
+            const colors = ['#00d2ff', '#ff9f43', '#1a1a1c'];
+            
+            const svg = d3.select("#device-viz")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .append("g")
+                .attr("transform", `translate(${width/2},${height/2})`);
+
+            const pie = d3.pie().value(d => d.val).sort(null);
+            const arc = d3.arc().innerRadius(50).outerRadius(radius);
+
+            svg.selectAll("path")
+                .data(pie(data))
+                .enter()
+                .append("path")
+                .attr("d", arc)
+                .attr("fill", (d, i) => colors[i])
+                .attr("stroke", "#000")
+                .style("stroke-width", "2px");
+        };
+
+        renderGeo();
+        renderDeviceChart();
+
+        // --- Clock & Mobile Toggle ---
+        const updateClock = () => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour12: false });
+        };
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        document.getElementById('mobileToggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+    </script>
+
+    <style>
+        .pulse-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pulse-ring {
+            width: 10px;
+            height: 10px;
+            background: var(--blue);
+            border-radius: 50%;
+            box-shadow: 0 0 0 rgba(0, 210, 255, 0.4);
+            animation: pulse-ring 1.5s infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 210, 255, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); }
+        }
+    </style>
+</body>
+</html>

@@ -9,7 +9,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
-  --bg:#fdf6ec;--card:#fff;--text:#333;--primary:#ff7043;--shadow:0 20px 40px rgba(0,0,0,.1)
+  --bg:#fdf6ec;--card:#fff;--text:#333;--primary:#ff7043;--shadow:0 20px 40px rgba(0,0,0,.1);
+  --tag-vegetarian:#4caf50;--tag-quick:#2196f3;--tag-healthy:#ff9800;
+  --tag-vegan:#8bc34a;--tag-glutenfree:#9c27b0;--tag-spicy:#f44336;
+  --tag-comfort:#795548;--tag-easy:#03a9f4
 }
 body.dark{
   --bg:#121212;--card:#1f1f1f;--text:#f5f5f5;--primary:#ffab91
@@ -38,7 +41,9 @@ header{display:flex;justify-content:space-between;align-items:center;padding:24p
 .modal-content{background:var(--card);padding:22px;border-radius:18px;width:92%;max-width:720px;max-height:85vh;overflow:auto;box-shadow:0 30px 60px rgba(0,0,0,.25)}
 input,textarea{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(0,0,0,.12);margin:6px 0;background:transparent;color:var(--text)}
 .timer{font-size:1.2rem;margin:10px 0}
-.favorite{font-size:1.3rem;cursor:pointer}
+.favorite{font-size:1.3rem;cursor:pointer;background:transparent;border:none;padding:4px;line-height:1;transition:transform .15s ease}
+.favorite:hover{transform:scale(1.1)}
+.favorite:active{transform:scale(0.95)}
 .badge{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.55);color:#fff;padding:6px 10px;border-radius:999px;font-size:.75rem;display:flex;align-items:center;gap:6px}
 .meta{display:flex;gap:10px;color:#666;font-size:.85rem}
 .button-row{display:flex;gap:10px;flex-wrap:wrap}
@@ -75,6 +80,31 @@ input,textarea{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(
 .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:60px;border:1px dashed rgba(0,0,0,.15);border-radius:16px;color:#666;background:rgba(0,0,0,.02);margin:24px}
 .empty-state .title{font-weight:700;font-size:1.2rem;color:var(--text)}
 .img-error{display:none;color:#b00020;font-size:12px;margin-top:6px}
+/* Category and Tag Styles */
+.filter-bar{display:flex;gap:12px;padding:12px 24px;background:var(--card);border-bottom:1px solid rgba(0,0,0,.08);flex-wrap:wrap;align-items:center}
+.filter-bar label{font-size:.9rem;font-weight:600;color:var(--text)}
+.filter-bar select{padding:8px 12px;border-radius:8px;border:1px solid rgba(0,0,0,.12);background:var(--bg);color:var(--text);cursor:pointer}
+.tag-filter-group{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tag-checkbox{display:none}
+.tag-label{padding:6px 12px;border-radius:20px;border:2px solid rgba(0,0,0,.12);background:transparent;color:var(--text);cursor:pointer;font-size:.85rem;display:inline-flex;align-items:center;gap:6px;transition:all .2s ease}
+.tag-label:hover{transform:translateY(-1px);border-color:var(--primary)}
+.tag-checkbox:checked + .tag-label{background:var(--primary);border-color:var(--primary);color:white;font-weight:600}
+.tag-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:12px;font-size:.75rem;font-weight:600;color:white;margin:2px}
+.tag-badge.vegetarian{background:var(--tag-vegetarian)}
+.tag-badge.quick{background:var(--tag-quick)}
+.tag-badge.healthy{background:var(--tag-healthy)}
+.tag-badge.vegan{background:var(--tag-vegan)}
+.tag-badge.glutenfree{background:var(--tag-glutenfree)}
+.tag-badge.spicy{background:var(--tag-spicy)}
+.tag-badge.comfort{background:var(--tag-comfort)}
+.tag-badge.easy{background:var(--tag-easy)}
+.category-badge{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.75);color:#fff;padding:5px 10px;border-radius:8px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.tag-select-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:10px 0}
+.tag-select-label{display:flex;align-items:center;gap:6px;padding:8px;border:2px solid rgba(0,0,0,.12);border-radius:8px;cursor:pointer;transition:all .2s ease}
+.tag-select-label:hover{background:rgba(0,0,0,.02);border-color:var(--primary)}
+.tag-select-label input:checked + span{font-weight:700}
+.filter-reset{font-size:.8rem;color:var(--primary);cursor:pointer;text-decoration:underline;margin-left:auto}
+.filter-reset:hover{color:#d84315}
 </style>
 </head>
 <body>
@@ -96,6 +126,38 @@ input,textarea{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(
     </button>
   </div>
 </header>
+
+<div class="filter-bar" role="region" aria-label="Recipe filters">
+  <label for="categoryFilter"><i data-lucide="filter" class="icon" style="width:16px;height:16px"></i> Category:</label>
+  <select id="categoryFilter" onchange="applyFilters()" aria-label="Filter by category">
+    <option value="">All Categories</option>
+    <option value="breakfast">🍳 Breakfast</option>
+    <option value="lunch">🍜 Lunch</option>
+    <option value="dinner">🍝 Dinner</option>
+    <option value="dessert">🍰 Dessert</option>
+    <option value="snacks">🍿 Snacks</option>
+  </select>
+  
+  <div class="tag-filter-group">
+    <label><i data-lucide="tags" class="icon" style="width:16px;height:16px"></i> Tags:</label>
+    <input type="checkbox" id="tag-vegetarian" class="tag-checkbox" onchange="applyFilters()">
+    <label for="tag-vegetarian" class="tag-label"><i data-lucide="leaf" class="icon" style="width:14px;height:14px"></i>Vegetarian</label>
+    
+    <input type="checkbox" id="tag-quick" class="tag-checkbox" onchange="applyFilters()">
+    <label for="tag-quick" class="tag-label"><i data-lucide="zap" class="icon" style="width:14px;height:14px"></i>Quick</label>
+    
+    <input type="checkbox" id="tag-healthy" class="tag-checkbox" onchange="applyFilters()">
+    <label for="tag-healthy" class="tag-label"><i data-lucide="heart" class="icon" style="width:14px;height:14px"></i>Healthy</label>
+    
+    <input type="checkbox" id="tag-vegan" class="tag-checkbox" onchange="applyFilters()">
+    <label for="tag-vegan" class="tag-label"><i data-lucide="sprout" class="icon" style="width:14px;height:14px"></i>Vegan</label>
+    
+    <input type="checkbox" id="tag-spicy" class="tag-checkbox" onchange="applyFilters()">
+    <label for="tag-spicy" class="tag-label"><i data-lucide="flame" class="icon" style="width:14px;height:14px"></i>Spicy</label>
+  </div>
+  
+  <span class="filter-reset" onclick="resetFilters()" role="button" tabindex="0" aria-label="Reset all filters">Reset All</span>
+</div>
 
 <div class="grid" id="recipes"></div>
 
@@ -128,7 +190,9 @@ let recipes = JSON.parse(localStorage.getItem('recipes')) || [
     ingredients: ['Rice','Vegetables','Spices'],
     steps: ['Cook rice','Prepare masala','Mix & steam'],
     time: 900,
-    requiresPNG: true
+    requiresPNG: true,
+    category: 'lunch',
+    tags: ['vegetarian', 'spicy']
   },
   {
     id: 2,
@@ -136,7 +200,9 @@ let recipes = JSON.parse(localStorage.getItem('recipes')) || [
     img: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?auto=format&fit=crop&w=600&q=80',
     ingredients: ['Flour','Cheese','Tomato Sauce'],
     steps: ['Prepare dough','Add toppings','Bake'],
-    time: 800
+    time: 800,
+    category: 'dinner',
+    tags: ['vegetarian', 'comfort']
   },
   {
     id: 3,
@@ -145,7 +211,9 @@ let recipes = JSON.parse(localStorage.getItem('recipes')) || [
     ingredients: ['Flour','Milk','Eggs'],
     steps: ['Make batter','Cook on pan','Serve hot'],
     time: 400,
-    requiresPNG: true
+    requiresPNG: true,
+    category: 'breakfast',
+    tags: ['quick', 'easy']
   },
   {
     id: 4,
@@ -153,7 +221,9 @@ let recipes = JSON.parse(localStorage.getItem('recipes')) || [
     img: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=600&q=80',
     ingredients: ['Lettuce','Croutons','Dressing'],
     steps: ['Chop','Mix','Serve'],
-    time: 300
+    time: 300,
+    category: 'lunch',
+    tags: ['healthy', 'quick', 'vegetarian']
   },
   {
     id: 5,
@@ -161,7 +231,9 @@ let recipes = JSON.parse(localStorage.getItem('recipes')) || [
     img: 'https://images.unsplash.com/photo-1495214783159-3503fd1b572d?auto=format&fit=crop&w=600&q=80',
     ingredients: ['Cocoa','Butter','Sugar','Flour'],
     steps: ['Mix ingredients','Bake','Cool & slice'],
-    time: 700
+    time: 700,
+    category: 'dessert',
+    tags: ['easy', 'comfort']
   },
   {
     id: 6,
@@ -169,15 +241,95 @@ let recipes = JSON.parse(localStorage.getItem('recipes')) || [
     img: 'https://images.pexels.com/photos/5560763/pexels-photo-5560763.jpeg?auto=compress&cs=tinysrgb&w=600',
     ingredients: ['Rice batter','Potato','Spices'],
     steps: ['Prepare filling','Spread batter','Cook & fold'],
-    time: 600
+    time: 600,
+    category: 'breakfast',
+    tags: ['vegetarian', 'vegan', 'spicy']
   }
 ];
 
 let favs = JSON.parse(localStorage.getItem('favs')) || [];
 
+// Active filters
+let activeFilters = {
+  category: '',
+  tags: []
+};
+
 function save(){localStorage.setItem('recipes',JSON.stringify(recipes));localStorage.setItem('favs',JSON.stringify(favs));}
 
 function toggleTheme(){document.body.classList.toggle('dark')}
+
+// Filter functions
+function applyFilters() {
+  // Get category filter
+  const categorySelect = document.getElementById('categoryFilter');
+  activeFilters.category = categorySelect ? categorySelect.value : '';
+  
+  // Get tag filters
+  const tagCheckboxes = ['vegetarian', 'quick', 'healthy', 'vegan', 'spicy'];
+  activeFilters.tags = tagCheckboxes.filter(tag => {
+    const checkbox = document.getElementById(`tag-${tag}`);
+    return checkbox && checkbox.checked;
+  });
+  
+  render();
+}
+
+function resetFilters() {
+  // Reset category
+  const categorySelect = document.getElementById('categoryFilter');
+  if (categorySelect) categorySelect.value = '';
+  
+  // Reset tags
+  const tagCheckboxes = ['vegetarian', 'quick', 'healthy', 'vegan', 'spicy'];
+  tagCheckboxes.forEach(tag => {
+    const checkbox = document.getElementById(`tag-${tag}`);
+    if (checkbox) checkbox.checked = false;
+  });
+  
+  activeFilters = { category: '', tags: [] };
+  render();
+}
+
+function filterRecipes(recipes) {
+  return recipes.filter(recipe => {
+    // Category filter
+    if (activeFilters.category && recipe.category !== activeFilters.category) {
+      return false;
+    }
+    
+    // Tag filter (recipe must have ALL selected tags)
+    if (activeFilters.tags.length > 0) {
+      const recipeTags = recipe.tags || [];
+      const hasAllTags = activeFilters.tags.every(tag => recipeTags.includes(tag));
+      if (!hasAllTags) return false;
+    }
+    
+    return true;
+  });
+}
+
+function getCategoryEmoji(category) {
+  const emojis = {
+    breakfast: '🍳',
+    lunch: '🍜',
+    dinner: '🍝',
+    dessert: '🍰',
+    snacks: '🍿'
+  };
+  return emojis[category] || '🍽️';
+}
+
+function getCategoryLabel(category) {
+  const labels = {
+    breakfast: 'Breakfast',
+    lunch: 'Lunch',
+    dinner: 'Dinner',
+    dessert: 'Dessert',
+    snacks: 'Snacks'
+  };
+  return labels[category] || 'Other';
+}
 
 // Image format detection and handling
 function detectImageFormat(url) {
@@ -250,6 +402,8 @@ function getImageUrl(recipe) {
 // Enhanced render function with format validation
 function render(){
  const el=document.getElementById('recipes');el.innerHTML='';
+ const filteredRecipes = filterRecipes(recipes);
+ 
  if (!recipes || recipes.length === 0) {
   el.innerHTML = `
     <div class="empty-state" role="status" aria-live="polite">
@@ -261,21 +415,54 @@ function render(){
   if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
   return;
  }
- recipes.forEach(r=>{
+ 
+ if (filteredRecipes.length === 0) {
+  el.innerHTML = `
+    <div class="empty-state" role="status" aria-live="polite">
+      <i data-lucide="filter-x" class="icon" aria-hidden="true"></i>
+      <div class="title">No recipes match your filters</div>
+      <p>Try adjusting your category or tag selections.</p>
+      <button class="btn secondary" onclick="resetFilters()" aria-label="Clear all filters"><i data-lucide="x" class="icon" aria-hidden="true"></i> Clear Filters</button>
+    </div>`;
+  if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+  return;
+ }
+ 
+ filteredRecipes.forEach(r=>{
   const fav=favs.includes(r.id)?'❤️':'🤍';
   const imgUrl = getImageUrl(r);
   const formatBadge = r.requiresPNG ? '<div class="format-badge">🖼️ PNG</div>' : '';
+  
+  // Category badge
+  const categoryBadge = r.category ? `<div class="category-badge">${getCategoryEmoji(r.category)} ${getCategoryLabel(r.category)}</div>` : '';
+  
+  // Tag badges
+  const tagBadges = (r.tags || []).map(tag => {
+    const tagIcons = {
+      vegetarian: '🥬',
+      quick: '⚡',
+      healthy: '💚',
+      vegan: '🌱',
+      glutenfree: '🌾',
+      spicy: '🌶️',
+      comfort: '🏠',
+      easy: '✨'
+    };
+    return `<span class="tag-badge ${tag}">${tagIcons[tag] || ''} ${tag.charAt(0).toUpperCase() + tag.slice(1)}</span>`;
+  }).join('');
   
   el.innerHTML+=`<div class="card" aria-label="Recipe card: ${r.title}">
     <div class="image-wrap">
       <img src="${imgUrl}" alt="${r.title}" onerror="imageError(this, ${r.id})">
       ${formatBadge}
+      ${categoryBadge}
     </div>
     <div class="info">
       <div class="title-row">
         <h3 class="title"><i data-lucide="utensils" class="icon"></i>${r.title}</h3>
         <button class="favorite" aria-label="Toggle favorite for ${r.title}" aria-pressed="${favs.includes(r.id)}" onclick="favToggle(${r.id})">${fav}</button>
       </div>
+      ${tagBadges ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin:6px 0">${tagBadges}</div>` : ''}
       <div class="meta">
         <span><i data-lucide="timer" class="icon" style="width:16px;height:16px"></i> ${Math.round((r.time||600)/60)} min</span>
         <span><i data-lucide="list" class="icon" style="width:16px;height:16px"></i> ${r.ingredients.length} items</span>
@@ -288,8 +475,12 @@ function render(){
       </div>
     </div>
   </div>`
- })
+ });
+ 
+ // Re-initialize Lucide icons
+ if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
 }
+
 
 function favToggle(id){favs.includes(id)?favs=favs.filter(f=>f!==id):favs.push(id);save();render()}
 
@@ -335,26 +526,45 @@ function openRecipe(id){
  const formatWarning = r.requiresPNG && r.img && r.img.includes('unsplash.com') ? 
    '<div class="format-warning">⚠️ <strong>Format Notice:</strong> This recipe requires PNG format for transparency support. External image served as JPEG. Using local PNG fallback for optimal display.</div>' : '';
    
+ // Generate category badge
+ const categoryDisplay = r.category ? `<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:rgba(0,0,0,.1);border-radius:8px;font-size:.85rem;margin-left:8px">${getCategoryEmoji(r.category)} ${getCategoryLabel(r.category)}</span>` : '';
+ 
+ // Generate tag badges
+ const tagBadges = (r.tags || []).map(tag => {
+   const tagIcons = {
+     vegetarian: '🥬',
+     quick: '⚡',
+     healthy: '💚',
+     vegan: '🌱',
+     glutenfree: '🌾',
+     spicy: '🌶️',
+     comfort: '🏠',
+     easy: '✨'
+   };
+   return `<span class="tag-badge ${tag}">${tagIcons[tag] || ''} ${tag.charAt(0).toUpperCase() + tag.slice(1)}</span>`;
+ }).join('');
+   
  document.getElementById('modal').style.display='flex';
  document.getElementById('modal').innerHTML=`<div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="recipe-title-${id}" tabindex="-1">
-   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-     <h2 id="recipe-title-${id}" style="margin:0;display:flex;align-items:center;gap:10px"><i data-lucide="salad" class="icon" aria-hidden="true"></i>${r.title}${r.requiresPNG ? ' <span class=\"badge\"><i data-lucide=\"image\" class=\"icon\" aria-hidden=\"true\"></i>PNG</span>' : ''}</h2>
+   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+     <h2 id="recipe-title-${id}" style="margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><i data-lucide="salad" class="icon" aria-hidden="true"></i>${r.title}${r.requiresPNG ? ' <span class=\"badge\"><i data-lucide=\"image\" class=\"icon\" aria-hidden=\"true\"></i>PNG</span>' : ''}${categoryDisplay}</h2>
      <button class="btn secondary" onclick="closeModal()" aria-label="Close dialog"><i data-lucide="x" class="icon" aria-hidden="true"></i>Close</button>
    </div>
+   ${tagBadges ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${tagBadges}</div>` : ''}
    <div class="image-wrap" style="margin:10px 0;">
      <img src="${imgUrl}" alt="${r.title}" style="width:100%;max-height:280px;object-fit:cover;border-radius:10px;" onerror="this.src='${IMAGE_CONFIG.defaultFallback}'">
    </div>
    ${formatWarning}
-   <h3 style="margin-bottom:6px;display:flex;align-items:center;gap:8px"><i data-lucide="clipboard-list" class="icon"></i>Ingredients</h3>
+   <h3 style="margin-bottom:6px;display:flex;align-items:center;gap:8px"><i data-lucide="clipboard-list" class="icon" aria-hidden="true"></i>Ingredients</h3>
    <ul>${r.ingredients.map(i=>`<li>${i}</li>`).join('')}</ul>
-   <h3 style="margin:10px 0 6px;display:flex;align-items:center;gap:8px"><i data-lucide="chef-hat" class="icon"></i>Steps</h3>
+   <h3 style="margin:10px 0 6px;display:flex;align-items:center;gap:8px"><i data-lucide="chef-hat" class="icon" aria-hidden="true"></i>Steps</h3>
    <ol>${r.steps.map(s=>`<li>${s}</li>`).join('')}</ol>
-   <div class="timer" id="timer" style="display:flex;align-items:center;gap:8px"><i data-lucide="alarm-clock" class="icon"></i>${t}s</div>
+   <div class="timer" id="timer" style="display:flex;align-items:center;gap:8px"><i data-lucide="alarm-clock" class="icon" aria-hidden="true"></i>${t}s</div>
    <div class="button-row">
-     <button class="btn" onclick="startTimer(${t})"><i data-lucide="flame" class="icon"></i>Start Timer</button>
-     <button class="btn secondary" onclick="exportPDF(${id})"><i data-lucide="file-down" class="icon"></i>Export PDF</button>
-     <button class="btn secondary" onclick="aiSuggest()"><i data-lucide="brain" class="icon"></i>AI Suggest</button>
-     ${r.requiresPNG ? '<button class="btn" onclick="checkImageFormat(' + id + ')"><i data-lucide="scan" class="icon"></i>Check Format</button>' : ''}
+     <button class="btn" onclick="startTimer(${t})" aria-label="Start cooking timer for ${Math.round(t/60)} minutes"><i data-lucide="flame" class="icon" aria-hidden="true"></i>Start Timer</button>
+     <button class="btn secondary" onclick="exportPDF(${id})" aria-label="Export ${r.title} recipe as PDF"><i data-lucide="file-down" class="icon" aria-hidden="true"></i>Export PDF</button>
+     <button class="btn secondary" onclick="aiSuggest()" aria-label="Get AI cooking suggestions"><i data-lucide="brain" class="icon" aria-hidden="true"></i>AI Suggest</button>
+     ${r.requiresPNG ? '<button class="btn" onclick="checkImageFormat(' + id + ')" aria-label="Check image format for ' + r.title + '"><i data-lucide="scan" class="icon" aria-hidden="true"></i>Check Format</button>' : ''}
    </div>
  </div>`
  setupModalA11y();
@@ -388,31 +598,87 @@ function openAdd(){
      • <strong>Supported:</strong> JPEG, PNG, WebP, SVG • <strong>Max Size:</strong> 2MB<br>
      • <strong>Recommendation:</strong> Use local PNG files for transparency requirements
    </div>
-   <input id="t" placeholder="Recipe Title (e.g., 'Fluffy Pancakes')">
+   <input id="t" placeholder="Recipe Title (e.g., 'Fluffy Pancakes')" aria-label="Recipe title">
+   
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+     <div>
+       <label style="font-size:.9rem;font-weight:600;margin-bottom:4px;display:block"><i data-lucide="tag" class="icon" style="width:14px;height:14px" aria-hidden="true"></i> Category</label>
+       <select id="category" aria-label="Recipe category" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,.12)">
+         <option value="">Select Category</option>
+         <option value="breakfast">🍳 Breakfast</option>
+         <option value="lunch">🍜 Lunch</option>
+         <option value="dinner">🍝 Dinner</option>
+         <option value="dessert">🍰 Dessert</option>
+         <option value="snacks">🍿 Snacks</option>
+       </select>
+     </div>
+     <div>
+       <label style="font-size:.9rem;font-weight:600;margin-bottom:4px;display:block"><i data-lucide="clock" class="icon" style="width:14px;height:14px" aria-hidden="true"></i> Time (seconds)</label>
+       <input id="time" type="number" placeholder="Cooking time" value="600" min="60" max="7200" aria-label="Cooking time in seconds" style="width:100%">
+     </div>
+   </div>
+   
+   <div>
+     <label style="font-size:.9rem;font-weight:600;margin:10px 0 6px;display:block"><i data-lucide="tags" class="icon" style="width:14px;height:14px" aria-hidden="true"></i> Tags (select all that apply)</label>
+     <div class="tag-select-grid">
+       <label class="tag-select-label">
+         <input type="checkbox" id="tag-add-vegetarian" value="vegetarian">
+         <span>🥬 Vegetarian</span>
+       </label>
+       <label class="tag-select-label">
+         <input type="checkbox" id="tag-add-quick" value="quick">
+         <span>⚡ Quick</span>
+       </label>
+       <label class="tag-select-label">
+         <input type="checkbox" id="tag-add-healthy" value="healthy">
+         <span>💚 Healthy</span>
+       </label>
+       <label class="tag-select-label">
+         <input type="checkbox" id="tag-add-vegan" value="vegan">
+         <span>🌱 Vegan</span>
+       </label>
+       <label class="tag-select-label">
+         <input type="checkbox" id="tag-add-glutenfree" value="glutenfree">
+         <span>🌾 Gluten-Free</span>
+       </label>
+       <label class="tag-select-label">
+         <input type="checkbox" id="tag-add-spicy" value="spicy">
+         <span>🌶️ Spicy</span>
+       </label>
+       <label class="tag-select-label">
+         <input type="checkbox" id="tag-add-comfort" value="comfort">
+         <span>🏠 Comfort Food</span>
+       </label>
+       <label class="tag-select-label">
+         <input type="checkbox" id="tag-add-easy" value="easy">
+         <span>✨ Easy</span>
+       </label>
+     </div>
+   </div>
+   
     <div style="display:grid;grid-template-columns:1fr;gap:10px">
-      <input id="i" placeholder="Image URL (https://...)">
+      <input id="i" placeholder="Image URL (https://...)" aria-label="Image URL">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <label class="btn secondary" style="margin:0" for="fileInput"><i data-lucide="image-up" class="icon"></i> Upload Image</label>
-        <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none">
-        <div id="uploadInfo" style="font-size:12px;color:#666"></div>
+        <label class="btn secondary" style="margin:0" for="fileInput" aria-label="Upload image file"><i data-lucide="image-up" class="icon" aria-hidden="true"></i> Upload Image</label>
+        <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none" aria-label="Choose image file">
+        <div id="uploadInfo" style="font-size:12px;color:#666" role="status" aria-live="polite"></div>
       </div>
       <div id="imagePreviewWrap" style="display:none">
-        <div style="font-size:12px;color:#666;margin-bottom:6px;display:flex;align-items:center;gap:6px"><i data-lucide="eye" class="icon" style="width:14px;height:14px"></i>Preview</div>
-        <img id="imagePreview" alt="Preview" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;border:1px solid rgba(0,0,0,.08)">
+        <div style="font-size:12px;color:#666;margin-bottom:6px;display:flex;align-items:center;gap:6px"><i data-lucide="eye" class="icon" style="width:14px;height:14px" aria-hidden="true"></i>Preview</div>
+        <img id="imagePreview" alt="Recipe image preview" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;border:1px solid rgba(0,0,0,.08)">
       </div>
     </div>
    <div style="margin:10px 0;">
      <label style="display:flex;align-items:center;gap:8px;">
-       <input type="checkbox" id="pngRequired"> 
+       <input type="checkbox" id="pngRequired" aria-label="Require PNG format for transparency"> 
        <span>🖼️ This recipe requires PNG format (transparency/alpha channel support)</span>
      </label>
    </div>
-   <textarea id="ing" placeholder="Ingredients (comma separated)&#10;e.g., Flour, Milk, Eggs, Baking Powder"></textarea>
-   <textarea id="st" placeholder="Cooking Steps (comma separated)&#10;e.g., Mix dry ingredients, Add wet ingredients, Cook on pan"></textarea>
-   <input id="time" type="number" placeholder="Cooking time in seconds" value="600" min="60" max="7200">
+   <textarea id="ing" placeholder="Ingredients (comma separated)&#10;e.g., Flour, Milk, Eggs, Baking Powder" aria-label="Recipe ingredients, comma separated"></textarea>
+   <textarea id="st" placeholder="Cooking Steps (comma separated)&#10;e.g., Mix dry ingredients, Add wet ingredients, Cook on pan" aria-label="Cooking steps, comma separated"></textarea>
    <div style="margin-top:15px;">
-     <button class="btn" onclick="addRecipe()"><i data-lucide="save" class="icon"></i>Save Recipe</button>
-     <button class="btn secondary" onclick="closeModal()" style="margin-left:10px;"><i data-lucide="ban" class="icon"></i>Cancel</button>
+     <button class="btn" onclick="addRecipe()" aria-label="Save new recipe"><i data-lucide="save" class="icon" aria-hidden="true"></i>Save Recipe</button>
+     <button class="btn secondary" onclick="closeModal()" style="margin-left:10px;" aria-label="Cancel and close dialog"><i data-lucide="ban" class="icon" aria-hidden="true"></i>Cancel</button>
    </div>
  </div>`
 
@@ -466,6 +732,16 @@ function addRecipe(){
  const time = parseInt(document.getElementById('time').value) || 600;
  const requiresPNG = document.getElementById('pngRequired').checked;
  
+ // Get category
+ const category = document.getElementById('category').value;
+ 
+ // Get selected tags
+ const tagCheckboxes = ['vegetarian', 'quick', 'healthy', 'vegan', 'glutenfree', 'spicy', 'comfort', 'easy'];
+ const selectedTags = tagCheckboxes.filter(tag => {
+   const checkbox = document.getElementById(`tag-add-${tag}`);
+   return checkbox && checkbox.checked;
+ });
+ 
  const hasImage = Boolean(window.__uploadedImageDataURL) || Boolean(imgUrlInput);
  if (!title || !hasImage || ingredients.length === 0 || steps.length === 0) {
    alert('Please fill in all required fields');
@@ -509,7 +785,9 @@ function addRecipe(){
    ingredients,
    steps,
    time,
-   requiresPNG
+   requiresPNG,
+   category: category || undefined,
+   tags: selectedTags.length > 0 ? selectedTags : undefined
  };
  
  recipes.push(newRecipe);
@@ -531,17 +809,26 @@ function imageError(imgEl, id){
   }
 }
 
-// Modal accessibility: focus trap + Esc to close
+// Modal accessibility: focus trap + Esc to close + return focus
 let __modalKeyHandler = null;
+let __modalOpenerElement = null;
+
 function setupModalA11y(){
   const overlay = document.getElementById('modal');
   const dialog = overlay && overlay.querySelector('.modal-content');
   if (!overlay || !dialog) return;
+  
+  // Store the element that opened the modal
+  __modalOpenerElement = document.activeElement;
+  
   const focusable = dialog.querySelectorAll('button, [href], input, textarea, [tabindex]:not([tabindex="-1"])');
   if (!focusable.length) return;
   const first = focusable[0];
   const last = focusable[focusable.length - 1];
-  dialog.focus();
+  
+  // Focus the first focusable element or the dialog itself
+  setTimeout(() => first ? first.focus() : dialog.focus(), 10);
+  
   dialog.addEventListener('keydown', (e)=>{
     if (e.key === 'Tab'){
       if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
@@ -555,10 +842,22 @@ function setupModalA11y(){
 function closeModal(){
   const overlay = document.getElementById('modal');
   if (overlay) overlay.style.display='none';
-  if (__modalKeyHandler){ document.removeEventListener('keydown', __modalKeyHandler); __modalKeyHandler = null; }
+  if (__modalKeyHandler){ 
+    document.removeEventListener('keydown', __modalKeyHandler); 
+    __modalKeyHandler = null; 
+  }
+  // Return focus to the element that opened the modal
+  if (__modalOpenerElement && __modalOpenerElement.focus) {
+    __modalOpenerElement.focus();
+    __modalOpenerElement = null;
+  }
 }
-function closeModal(){document.getElementById('modal').style.display='none'}
+
 render();
+// Initialize Lucide icons after render
+if (window.lucide && window.lucide.createIcons) {
+  window.lucide.createIcons();
+}
 
 // Initialize Lucide icons after DOM updates
 document.addEventListener('DOMContentLoaded', () => {

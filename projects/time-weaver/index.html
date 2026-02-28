@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⏳ The Time Weaver</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #2b1b0e;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="none" stroke="%23b99b6b" stroke-width="0.5" stroke-dasharray="5,5"/></svg>');
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Cinzel', 'Times New Roman', serif;
+        }
+        
+        .loom {
+            width: 800px;
+            background: #c3a375;
+            background: linear-gradient(145deg, #b58b5b, #e3c9a0);
+            padding: 40px;
+            border-radius: 120px 120px 60px 60px;
+            border: 20px solid #7a5c3a;
+            box-shadow: inset 0 -10px 20px #5a3e2b, 0 30px 40px #1a0f0a;
+            position: relative;
+        }
+        
+        .loom::before {
+            content: "⚜️";
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 60px;
+            filter: drop-shadow(0 10px 5px #3f2e1c);
+        }
+        
+        .time-thread {
+            background: #2c1e12;
+            border-radius: 100px;
+            padding: 30px;
+            border: 6px inset #dbb47a;
+        }
+        
+        .thread-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        
+        .past, .future {
+            font-size: 22px;
+            color: #ffe3b0;
+            text-shadow: 2px 2px 0 #4f3f2f;
+            writing-mode: vertical-rl;
+        }
+        .past { transform: rotate(180deg); }
+        
+        .knot-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+        
+        .knot {
+            width: 60px;
+            height: 60px;
+            background: #d9b382;
+            border-radius: 50% 50% 0 50%;
+            transform: rotate(45deg);
+            border: 4px solid #ffd700;
+            box-shadow: 0 0 0 4px #b87333, 0 8px 0 #7a5230;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .knot.active {
+            background: #ffd966;
+            box-shadow: 0 0 30px gold, 0 0 0 6px white, 0 8px 0 #b8860b;
+            transform: rotate(45deg) scale(1.1);
+        }
+        
+        .weave-controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 40px 0;
+        }
+        
+        .shuttle {
+            background: #5d3a1a;
+            color: #ffd78c;
+            border: none;
+            font-size: 28px;
+            padding: 20px 30px;
+            border-radius: 50px 10px 50px 10px;
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+            cursor: pointer;
+            border-bottom: 8px solid #3f2b18;
+            transition: 0.05s linear;
+            box-shadow: 0 5px 20px #221608;
+        }
+        .shuttle:active {
+            border-bottom-width: 2px;
+            transform: translateY(6px);
+        }
+        
+        .time-string {
+            background: #442f1e;
+            padding: 30px;
+            border-radius: 100px;
+            border: 4px dashed #c6a15b;
+            color: #eedbaa;
+            font-size: 28px;
+            text-align: center;
+            font-style: italic;
+            letter-spacing: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="loom">
+        <div class="time-thread">
+            <div class="thread-display">
+                <span class="past">ᛉ PAST ᛉ</span>
+                <span id="timeWeave" class="time-string">⏳  weave the threads  ⏳</span>
+                <span class="future">ᛦ FUTURE ᛦ</span>
+            </div>
+            
+            <div class="knot-container" id="knots">
+                <div class="knot"></div>
+                <div class="knot"></div>
+                <div class="knot"></div>
+                <div class="knot"></div>
+                <div class="knot"></div>
+            </div>
+            
+            <div class="weave-controls">
+                <button class="shuttle" id="weavePast">⟵ WEAVE PAST</button>
+                <button class="shuttle" id="weaveFuture">WEAVE FUTURE ⟶</button>
+            </div>
+            
+            <div style="text-align: center; color: #4f3000; margin-top: 20px;">
+                ☾ click knots to lock memories ☽
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const knots = document.querySelectorAll('.knot');
+        const timeWeave = document.getElementById('timeWeave');
+        
+        const pastEvents = [
+            "The first sunrise", "A forgotten vow", "The broken hourglass", 
+            "A letter never sent", "The last dance", "A whisper in the dark"
+        ];
+        
+        const futureEvents = [
+            "A meeting with fate", "The silver door opens", "Echoes of tomorrow",
+            "A crown of starlight", "The final page turns", "Wings of dawn"
+        ];
+        
+        // State of knots (active = memory locked)
+        let knotStates = [false, false, false, false, false];
+        let currentWeave = "⏳ weave the threads ⏳";
+        
+        function updateKnots() {
+            knots.forEach((knot, index) => {
+                if (knotStates[index]) {
+                    knot.classList.add('active');
+                } else {
+                    knot.classList.remove('active');
+                }
+            });
+        }
+        
+        function weaveTime(direction) {
+            // Count active knots (memories)
+            const activeCount = knotStates.filter(v => v).length;
+            if (activeCount === 0) {
+                timeWeave.textContent = "⚡ no memories locked ⚡";
+                return;
+            }
+            
+            let selectedEvents = [];
+            if (direction === 'past') {
+                // Pick random past events based on active knots
+                for (let i = 0; i < activeCount; i++) {
+                    selectedEvents.push(pastEvents[Math.floor(Math.random() * pastEvents.length)]);
+                }
+            } else {
+                for (let i = 0; i < activeCount; i++) {
+                    selectedEvents.push(futureEvents[Math.floor(Math.random() * futureEvents.length)]);
+                }
+            }
+            
+            // Remove duplicates for mystique
+            selectedEvents = [...new Set(selectedEvents)];
+            
+            if (selectedEvents.length === 0) {
+                timeWeave.textContent = "🌀 the loom is silent 🌀";
+            } else {
+                timeWeave.textContent = "❄ " + selectedEvents.join(" ❄ ... ❄ ") + " ❄";
+            }
+            
+            // Also change knot appearance based on destiny
+            knots.forEach((knot, idx) => {
+                if (knotStates[idx]) {
+                    knot.style.background = direction === 'past' ? '#a56b3a' : '#d4af37';
+                }
+            });
+        }
+        
+        // Knot click toggles memory lock
+        knots.forEach((knot, index) => {
+            knot.addEventListener('click', () => {
+                knotStates[index] = !knotStates[index];
+                updateKnots();
+                
+                // If any knot active, show hint
+                if (knotStates.some(v => v)) {
+                    timeWeave.textContent = "☯ memories locked, weave time ☯";
+                } else {
+                    timeWeave.textContent = "⏳ weave the threads ⏳";
+                }
+            });
+        });
+        
+        document.getElementById('weavePast').addEventListener('click', () => weaveTime('past'));
+        document.getElementById('weaveFuture').addEventListener('click', () => weaveTime('future'));
+    </script>
+</body>
+</html>

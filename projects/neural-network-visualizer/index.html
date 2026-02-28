@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Network Visualizer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="ri-brain-line"></i> Neural Network Visualizer</h1>
+            <p>Build, train, and observe neural networks in real-time</p>
+        </header>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="panel-section">
+                    <h2><i class="ri-settings-3-line"></i> Network Architecture</h2>
+                    <div class="arch-config">
+                        <div class="layer-config">
+                            <label>Input Layer:</label>
+                            <input type="number" id="inputNeurons" value="2" min="1" max="10">
+                        </div>
+                        <div class="layer-config">
+                            <label>Hidden Layers:</label>
+                            <input type="number" id="hiddenLayers" value="1" min="0" max="5">
+                        </div>
+                        <div class="layer-config">
+                            <label>Hidden Neurons:</label>
+                            <input type="number" id="hiddenNeurons" value="4" min="1" max="20">
+                        </div>
+                        <div class="layer-config">
+                            <label>Output Neurons:</label>
+                            <input type="number" id="outputNeurons" value="1" min="1" max="10">
+                        </div>
+                        <button id="buildBtn" class="primary-btn"><i class="ri-hammer-line"></i> Build Network</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2><i class="ri-dataset-line"></i> Dataset</h2>
+                    <div class="dataset-selector">
+                        <select id="datasetSelect">
+                            <option value="xor">XOR Problem</option>
+                            <option value="and">AND Gate</option>
+                            <option value="or">OR Gate</option>
+                            <option value="nand">NAND Gate</option>
+                        </select>
+                        <button id="loadDatasetBtn" class="secondary-btn"><i class="ri-upload-cloud-line"></i> Load Data</button>
+                    </div>
+                    <div class="dataset-preview">
+                        <h3>Training Data:</h3>
+                        <div id="dataPreview" class="data-table"></div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2><i class="ri-settings-line"></i> Training Settings</h2>
+                    <div class="training-config">
+                        <div class="config-row">
+                            <label>Learning Rate:</label>
+                            <input type="range" id="learningRate" min="0.001" max="1" step="0.01" value="0.1">
+                            <span id="lrValue">0.1</span>
+                        </div>
+                        <div class="config-row">
+                            <label>Epochs:</label>
+                            <input type="number" id="epochs" value="1000" min="10" max="10000">
+                        </div>
+                        <div class="config-row">
+                            <label>Activation:</label>
+                            <select id="activationFn">
+                                <option value="sigmoid">Sigmoid</option>
+                                <option value="tanh">Tanh</option>
+                                <option value="relu">ReLU</option>
+                            </select>
+                        </div>
+                        <button id="trainBtn" class="primary-btn"><i class="ri-play-line"></i> Train Network</button>
+                        <button id="stepBtn" class="secondary-btn"><i class="ri-skip-forward-line"></i> Step</button>
+                        <button id="stopBtn" class="danger-btn"><i class="ri-stop-line"></i> Stop</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2><i class="ri-test-tube-line"></i> Test Input</h2>
+                    <div class="test-inputs" id="testInputs"></div>
+                    <button id="predictBtn" class="primary-btn"><i class="ri-magic-line"></i> Predict</button>
+                    <div id="predictionResult" class="prediction"></div>
+                </div>
+            </div>
+
+            <div class="center-panel">
+                <div class="canvas-header">
+                    <h2><i class="ri-eye-line"></i> Network Visualization</h2>
+                    <div class="viz-controls">
+                        <button id="forwardPassBtn" class="control-btn" title="Show Forward Pass"><i class="ri-arrow-right-line"></i></button>
+                        <button id="backwardPassBtn" class="control-btn" title="Show Backward Pass"><i class="ri-arrow-left-line"></i></button>
+                        <button id="resetVizBtn" class="control-btn" title="Reset"><i class="ri-refresh-line"></i></button>
+                    </div>
+                </div>
+                <canvas id="networkCanvas" width="700" height="500"></canvas>
+                <div class="legend">
+                    <span class="legend-item"><span class="dot neuron"></span> Neuron</span>
+                    <span class="legend-item"><span class="dot connection-pos"></span> Positive Weight</span>
+                    <span class="legend-item"><span class="dot connection-neg"></span> Negative Weight</span>
+                    <span class="legend-item"><span class="dot activation"></span> Activation Flow</span>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="panel-section">
+                    <h2><i class="ri-line-chart-line"></i> Training Metrics</h2>
+                    <div class="metrics">
+                        <div class="metric">
+                            <span class="metric-label">Epoch:</span>
+                            <span class="metric-value" id="currentEpoch">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Loss:</span>
+                            <span class="metric-value" id="currentLoss">-</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Accuracy:</span>
+                            <span class="metric-value" id="currentAccuracy">-</span>
+                        </div>
+                    </div>
+                    <canvas id="lossChart" width="250" height="150"></canvas>
+                </div>
+
+                <div class="panel-section">
+                    <h2><i class="ri-information-line"></i> Network Info</h2>
+                    <div class="network-info">
+                        <div class="info-row">
+                            <span>Total Parameters:</span>
+                            <span id="totalParams">0</span>
+                        </div>
+                        <div class="info-row">
+                            <span>Layers:</span>
+                            <span id="layerCount">0</span>
+                        </div>
+                        <div class="info-row">
+                            <span>Activation:</span>
+                            <span id="activationInfo">Sigmoid</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2><i class="ri-book-3-line"></i> How It Works</h2>
+                    <div class="info-content">
+                        <p><strong>Forward Pass:</strong> Data flows from input to output through weighted connections. Each neuron applies an activation function to the weighted sum of its inputs.</p>
+                        <p><strong>Loss Calculation:</strong> The difference between predicted and actual output is measured using a loss function (MSE for regression, Cross-Entropy for classification).</p>
+                        <p><strong>Backpropagation:</strong> Gradients flow backward from output to input, updating weights to minimize loss using gradient descent.</p>
+                        <p><strong>Visualization:</strong> Node colors represent activation values (darker = higher). Connection colors show weight signs (blue = positive, red = negative).</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
