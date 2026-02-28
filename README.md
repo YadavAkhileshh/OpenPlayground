@@ -117,45 +117,21 @@ Then create a Pull Request on GitHub!
 ---
 
 ## 📁 Project Structure
-To ensure scalability, maintainability, and consistency across the repository, all standalone frontend projects must follow a standardized folder structure.
 
 ```
 OpenPlayground/
-├── 📂 projects/
-│   ├── 📂 project-name/
-│   │   ├── 📄 index.html
-│   │   ├── 📄 style.css
-│   │   ├── 📄 script.js
-│   │   └── 📄 project.json (optional)
+├── 📂 projects/              # 🎯 All community projects live here
 │   ├── 📂 calculator/
 │   ├── 📂 tic-tac-toe/
-│   └── 📂 your-project/
-├── 📂 components/
-├── 📂 css/
-├── 📂 js/
-├── 📄 index.html
-├── 📄 projects.json
-├── 📄 README.md
-└── 📄 CONTRIBUTING.md
+│   └── 📂 your-project/      # 🚀 Your project goes here!
+├── 📂 components/            # Reusable HTML components
+├── 📂 css/                   # Global website styles
+├── 📂 js/                    # Global website scripts
+├── 📄 index.html             # Main website entry
+├── 📄 projects.json          # ⭐ Project registry (add your project here!)
+├── 📄 README.md              # This file
+└── 📄 CONTRIBUTING.md        # Detailed contribution guidelines
 ```
----
-## 📌 Structure Rules
-- All standalone projects must reside inside /projects.
-- No standalone project folders should exist at the root level.
-- Folder names must use lowercase kebab-case.
-- Each project must contain:
-  - index.html
-  - style.css
-  - script.js
-  - Entry point must always be index.html.
-
----
-
-## 🎯 Why This Standard Matters
-- Predictable architecture
-- Easier automation
-- Cleaner repository
-- Better long-term scalability
 
 ---
 
