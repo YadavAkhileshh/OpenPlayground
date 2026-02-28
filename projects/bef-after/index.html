@@ -1,0 +1,2499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Before vs After Comparator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+            padding: 25px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            font-size: 3.2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ff9a9e, #fad0c4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 10px rgba(255, 154, 158, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto;
+            }
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            overflow-y: auto;
+        }
+        
+        .panel-title {
+            font-size: 1.5rem;
+            color: #1e3c72;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        
+        .panel-title i {
+            color: #ff9a9e;
+        }
+        
+        .controls-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .upload-btn {
+            width: 100%;
+            padding: 15px;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+            color: #666;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .upload-btn:hover {
+            border-color: #1e3c72;
+            background-color: #f0f5ff;
+            color: #1e3c72;
+        }
+        
+        .upload-preview {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .preview-container {
+            text-align: center;
+        }
+        
+        .preview-img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 0.9rem;
+        }
+        
+        .preview-label {
+            margin-top: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9rem;
+        }
+        
+        .comparison-modes {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .mode-btn {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-weight: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .mode-btn:hover {
+            border-color: #1e3c72;
+            background-color: #f0f5ff;
+        }
+        
+        .mode-btn.active {
+            border-color: #1e3c72;
+            background-color: #1e3c72;
+            color: white;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .slider-value {
+            min-width: 40px;
+            text-align: center;
+            font-weight: 600;
+            color: #1e3c72;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #e0e0e0;
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            background: #1e3c72;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(30, 60, 114, 0.3);
+        }
+        
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(to right, #18315e, #234587);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(30, 60, 114, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #f0f5ff;
+            color: #1e3c72;
+            border: 2px solid #1e3c72;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0ebff;
+            transform: translateY(-3px);
+        }
+        
+        .btn-success {
+            background: linear-gradient(to right, #00b09b, #96c93d);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(to right, #009e8a, #86b636);
+            transform: translateY(-3px);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(to right, #e63956, #e63a1f);
+            transform: translateY(-3px);
+        }
+        
+        .comparison-container {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .comparison-wrapper {
+            flex: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            background-color: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            min-height: 500px;
+        }
+        
+        .comparison-canvas {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .image-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        #beforeImage, #afterImage {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        #afterImage {
+            clip-path: inset(0 0 0 50%);
+        }
+        
+        .divider {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background-color: white;
+            cursor: ew-resize;
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            transform: translateX(-50%);
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background-color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .divider::after {
+            content: '↔';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+        
+        .comparison-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .tools-panel {
+            margin-top: 30px;
+        }
+        
+        .tools-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .tool-btn {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tool-btn:hover {
+            border-color: #1e3c72;
+            background-color: #f0f5ff;
+        }
+        
+        .tool-btn.active {
+            border-color: #1e3c72;
+            background-color: #1e3c72;
+            color: white;
+        }
+        
+        .annotations-container {
+            margin-top: 30px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .annotation-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: white;
+            border-radius: 5px;
+            border-left: 4px solid #1e3c72;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .annotation-text {
+            font-size: 0.9rem;
+        }
+        
+        .annotation-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .annotation-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .annotation-actions button:hover {
+            color: #1e3c72;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            color: #1e3c72;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #777;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            padding: 15px 25px;
+            background: linear-gradient(to right, #00b09b, #96c93d);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            transform: translateX(150%);
+            transition: transform 0.5s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .mode-slider {
+            display: none;
+        }
+        
+        .mode-slider.active {
+            display: block;
+        }
+        
+        .mode-fade {
+            display: none;
+        }
+        
+        .mode-fade.active {
+            display: block;
+        }
+        
+        .mode-fade #afterImage {
+            opacity: 0.5;
+            clip-path: none;
+        }
+        
+        .mode-sidebyside {
+            display: none;
+        }
+        
+        .mode-sidebyside.active {
+            display: flex;
+        }
+        
+        .mode-sidebyside .image-container {
+            width: 50%;
+        }
+        
+        .mode-sidebyside #beforeImage {
+            left: 0;
+        }
+        
+        .mode-sidebyside #afterImage {
+            left: 50%;
+            clip-path: none;
+        }
+        
+        .mode-difference {
+            display: none;
+        }
+        
+        .mode-difference.active {
+            display: block;
+        }
+        
+        .mode-difference #afterImage {
+            mix-blend-mode: difference;
+            clip-path: none;
+        }
+        
+        .annotation-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        .annotation-canvas.active {
+            pointer-events: all;
+        }
+        
+        .color-picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .color-option.active {
+            border-color: #333;
+            transform: scale(1.1);
+        }
+        
+        .export-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .history-container {
+            margin-top: 30px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .history-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border-left: 3px solid #1e3c72;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .history-item:hover {
+            background-color: #f0f5ff;
+            transform: translateX(5px);
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                gap: 20px;
+            }
+            
+            .panel {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .comparison-modes {
+                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            }
+            
+            .tools-container {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+            
+            .export-options {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #f0f5ff;
+            border: 2px solid #1e3c72;
+            color: #1e3c72;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .zoom-btn:hover {
+            background-color: #1e3c72;
+            color: white;
+        }
+        
+        .zoom-level {
+            font-weight: 600;
+            color: #1e3c72;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .flip-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .flip-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .flip-btn:hover {
+            border-color: #1e3c72;
+            background-color: #f0f5ff;
+        }
+        
+        .image-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #1e3c72;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .comparison-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            z-index: 10;
+        }
+        
+        .before-label {
+            left: 10px;
+        }
+        
+        .after-label {
+            right: 10px;
+            left: auto;
+        }
+        
+        .slider-mode .divider {
+            display: block;
+        }
+        
+        .fade-mode .divider, .sidebyside-mode .divider, .difference-mode .divider {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-exchange-alt"></i> Before vs After Comparator</h1>
+            <p class="subtitle">Upload two images to compare and visualize differences. Use slider, fade, side-by-side, or difference modes to highlight changes with annotation tools.</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="panel controls-panel">
+                <h2 class="panel-title"><i class="fas fa-upload"></i> Upload Images</h2>
+                
+                <div class="control-group">
+                    <label class="control-label">Before Image</label>
+                    <label class="upload-btn" id="uploadBeforeBtn">
+                        <i class="fas fa-cloud-upload-alt fa-2x"></i>
+                        <span>Choose Before Image</span>
+                        <span style="font-size: 0.8rem; color: #999;">(JPG, PNG, GIF up to 5MB)</span>
+                    </label>
+                    <input type="file" id="beforeFile" accept="image/*">
+                    
+                    <div class="upload-preview">
+                        <div class="preview-container">
+                            <div class="preview-img" id="beforePreview">
+                                <i class="fas fa-image"></i>
+                                <span>No image selected</span>
+                            </div>
+                            <div class="preview-label">Before</div>
+                        </div>
+                        
+                        <div class="preview-container">
+                            <div class="preview-img" id="afterPreview">
+                                <i class="fas fa-image"></i>
+                                <span>No image selected</span>
+                            </div>
+                            <div class="preview-label">After</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">After Image</label>
+                    <label class="upload-btn" id="uploadAfterBtn">
+                        <i class="fas fa-cloud-upload-alt fa-2x"></i>
+                        <span>Choose After Image</span>
+                        <span style="font-size: 0.8rem; color: #999;">(JPG, PNG, GIF up to 5MB)</span>
+                    </label>
+                    <input type="file" id="afterFile" accept="image/*">
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Comparison Mode</label>
+                    <div class="comparison-modes">
+                        <div class="mode-btn active" data-mode="slider">
+                            <i class="fas fa-sliders-h"></i>
+                            <span>Slider</span>
+                        </div>
+                        <div class="mode-btn" data-mode="fade">
+                            <i class="fas fa-layer-group"></i>
+                            <span>Fade</span>
+                        </div>
+                        <div class="mode-btn" data-mode="sidebyside">
+                            <i class="fas fa-columns"></i>
+                            <span>Side-by-Side</span>
+                        </div>
+                        <div class="mode-btn" data-mode="difference">
+                            <i class="fas fa-adjust"></i>
+                            <span>Difference</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-group mode-slider active">
+                    <label class="control-label">Slider Position: <span id="sliderValue">50%</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="sliderPosition" min="0" max="100" value="50">
+                        <span class="slider-value" id="sliderPositionDisplay">50%</span>
+                    </div>
+                </div>
+                
+                <div class="control-group mode-fade">
+                    <label class="control-label">Fade Opacity: <span id="fadeValue">50%</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="fadeOpacity" min="0" max="100" value="50">
+                        <span class="slider-value" id="fadeOpacityDisplay">50%</span>
+                    </div>
+                </div>
+                
+                <div class="zoom-controls">
+                    <button class="zoom-btn" id="zoomOutBtn">-</button>
+                    <div class="zoom-level" id="zoomLevel">100%</div>
+                    <button class="zoom-btn" id="zoomInBtn">+</button>
+                </div>
+                
+                <div class="flip-controls">
+                    <button class="flip-btn" id="flipHorizontalBtn">
+                        <i class="fas fa-arrows-alt-h"></i> Flip Horizontal
+                    </button>
+                    <button class="flip-btn" id="flipVerticalBtn">
+                        <i class="fas fa-arrows-alt-v"></i> Flip Vertical
+                    </button>
+                </div>
+                
+                <button class="btn btn-primary" id="compareBtn">
+                    <i class="fas fa-play-circle"></i> Compare Images
+                </button>
+                
+                <button class="btn btn-secondary" id="resetBtn">
+                    <i class="fas fa-redo"></i> Reset Comparison
+                </button>
+                
+                <div class="toggle-container">
+                    <span>Show Annotations</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showAnnotationsToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="toggle-container">
+                    <span>Show Labels</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showLabelsToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="panel comparison-container">
+                <h2 class="panel-title"><i class="fas fa-eye"></i> Comparison Viewer</h2>
+                
+                <div class="comparison-wrapper">
+                    <div class="comparison-canvas slider-mode active" id="comparisonCanvas">
+                        <div class="image-container">
+                            <img id="beforeImage" src="" alt="Before">
+                            <div class="comparison-overlay before-label">BEFORE</div>
+                        </div>
+                        <div class="image-container">
+                            <img id="afterImage" src="" alt="After">
+                            <div class="comparison-overlay after-label">AFTER</div>
+                            <div class="divider" id="divider"></div>
+                        </div>
+                        <canvas class="annotation-canvas" id="annotationCanvas"></canvas>
+                    </div>
+                </div>
+                
+                <div class="comparison-controls">
+                    <div>
+                        <button class="btn btn-secondary" id="saveComparisonBtn">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                    </div>
+                    <div>
+                        <button class="btn btn-success" id="shareComparisonBtn">
+                            <i class="fas fa-share-alt"></i> Share
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="image-info">
+                    <div id="beforeInfo">Before: No image</div>
+                    <div id="afterInfo">After: No image</div>
+                </div>
+                
+                <div class="tools-panel">
+                    <h2 class="panel-title"><i class="fas fa-paint-brush"></i> Annotation Tools</h2>
+                    
+                    <div class="control-group">
+                        <label class="control-label">Annotation Color</label>
+                        <div class="color-picker" id="colorPicker">
+                            <!-- Colors will be added dynamically -->
+                        </div>
+                    </div>
+                    
+                    <div class="tools-container">
+                        <div class="tool-btn active" data-tool="arrow">
+                            <i class="fas fa-long-arrow-alt-right"></i>
+                            <span>Arrow</span>
+                        </div>
+                        <div class="tool-btn" data-tool="rectangle">
+                            <i class="fas fa-square"></i>
+                            <span>Rectangle</span>
+                        </div>
+                        <div class="tool-btn" data-tool="circle">
+                            <i class="fas fa-circle"></i>
+                            <span>Circle</span>
+                        </div>
+                        <div class="tool-btn" data-tool="text">
+                            <i class="fas fa-font"></i>
+                            <span>Text</span>
+                        </div>
+                        <div class="tool-btn" data-tool="line">
+                            <i class="fas fa-minus"></i>
+                            <span>Line</span>
+                        </div>
+                        <div class="tool-btn" data-tool="freehand">
+                            <i class="fas fa-pencil-alt"></i>
+                            <span>Freehand</span>
+                        </div>
+                    </div>
+                    
+                    <div class="annotations-container" id="annotationsContainer">
+                        <h3 style="color: #1e3c72; margin-bottom: 10px; font-size: 1.1rem;">Annotations</h3>
+                        <div id="annotationsList">
+                            <!-- Annotations will be added here -->
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-danger" id="clearAnnotationsBtn">
+                        <i class="fas fa-trash"></i> Clear All Annotations
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel" style="margin-top: 30px;">
+            <h2 class="panel-title"><i class="fas fa-history"></i> Comparison History</h2>
+            <div class="history-container" id="historyContainer">
+                <div class="history-item">
+                    <div><strong>Home Renovation</strong> - Living room before and after renovation</div>
+                    <div style="font-size: 0.8rem; color: #666;">Added 2 hours ago</div>
+                </div>
+                <div class="history-item">
+                    <div><strong>Website Redesign</strong> - Old vs new homepage design</div>
+                    <div style="font-size: 0.8rem; color: #666;">Added 1 day ago</div>
+                </div>
+                <!-- History items will be added dynamically -->
+            </div>
+            
+            <h2 class="panel-title" style="margin-top: 30px;"><i class="fas fa-download"></i> Export Options</h2>
+            <div class="export-options">
+                <button class="btn btn-secondary" id="exportImageBtn">
+                    <i class="fas fa-image"></i> Export as Image
+                </button>
+                <button class="btn btn-secondary" id="exportPDFBtn">
+                    <i class="fas fa-file-pdf"></i> Export as PDF
+                </button>
+                <button class="btn btn-secondary" id="copyLinkBtn">
+                    <i class="fas fa-link"></i> Copy Shareable Link
+                </button>
+                <button class="btn btn-secondary" id="saveProjectBtn">
+                    <i class="fas fa-folder-plus"></i> Save Project
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Share Modal -->
+    <div class="modal" id="shareModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-share-alt"></i> Share Comparison</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="control-group">
+                    <label class="control-label">Shareable Link</label>
+                    <input type="text" id="shareableLink" readonly style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Embed Code</label>
+                    <textarea id="embedCode" rows="4" readonly style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: monospace;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="copyLinkModalBtn">
+                    <i class="fas fa-copy"></i> Copy Link
+                </button>
+                <button class="btn btn-primary" id="closeShareModalBtn">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Text Annotation Modal -->
+    <div class="modal" id="textModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-font"></i> Add Text Annotation</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="control-group">
+                    <label class="control-label">Text Content</label>
+                    <textarea id="annotationText" rows="3" placeholder="Enter your annotation text here" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px;"></textarea>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Font Size</label>
+                    <div class="slider-container">
+                        <input type="range" id="fontSize" min="12" max="48" value="20">
+                        <span class="slider-value" id="fontSizeDisplay">20px</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelTextBtn">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn btn-primary" id="addTextBtn">
+                    <i class="fas fa-check"></i> Add Text
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span id="notification-text">Comparison saved successfully!</span>
+    </div>
+
+    <script>
+        // Comparison state
+        let comparisonState = {
+            beforeImage: null,
+            afterImage: null,
+            beforeImageUrl: null,
+            afterImageUrl: null,
+            beforeImageName: null,
+            afterImageName: null,
+            beforeImageSize: null,
+            afterImageSize: null,
+            mode: 'slider',
+            zoom: 1,
+            annotations: [],
+            currentTool: 'arrow',
+            currentColor: '#ff416c',
+            colors: [
+                '#ff416c', '#ff4b2b', '#1e3c72', '#2a5298', 
+                '#00b09b', '#96c93d', '#FFC107', '#9C27B0',
+                '#333333', '#ffffff'
+            ],
+            drawing: false,
+            startX: 0,
+            startY: 0,
+            currentAnnotation: null,
+            annotationCanvas: null,
+            annotationCtx: null,
+            history: []
+        };
+        
+        // Initialize the comparator
+        function initComparator() {
+            // Initialize annotation canvas
+            comparisonState.annotationCanvas = document.getElementById('annotationCanvas');
+            comparisonState.annotationCtx = comparisonState.annotationCanvas.getContext('2d');
+            
+            // Initialize color picker
+            initColorPicker();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Load saved history
+            loadHistory();
+            
+            // Set default images for demo
+            loadDemoImages();
+        }
+        
+        // Initialize color picker
+        function initColorPicker() {
+            const colorPicker = document.getElementById('colorPicker');
+            colorPicker.innerHTML = '';
+            
+            comparisonState.colors.forEach(color => {
+                const colorOption = document.createElement('div');
+                colorOption.className = `color-option ${color === comparisonState.currentColor ? 'active' : ''}`;
+                colorOption.style.backgroundColor = color;
+                colorOption.dataset.color = color;
+                
+                // Add border for white color
+                if (color === '#ffffff') {
+                    colorOption.style.border = '1px solid #ccc';
+                }
+                
+                colorOption.addEventListener('click', function() {
+                    document.querySelectorAll('#colorPicker .color-option').forEach(el => el.classList.remove('active'));
+                    this.classList.add('active');
+                    comparisonState.currentColor = this.dataset.color;
+                });
+                
+                colorPicker.appendChild(colorOption);
+            });
+        }
+        
+        // Load demo images
+        function loadDemoImages() {
+            // Create sample images for demonstration
+            const beforeCanvas = document.createElement('canvas');
+            const beforeCtx = beforeCanvas.getContext('2d');
+            beforeCanvas.width = 600;
+            beforeCanvas.height = 400;
+            
+            // Draw a simple "before" image
+            beforeCtx.fillStyle = '#f0f0f0';
+            beforeCtx.fillRect(0, 0, 600, 400);
+            
+            beforeCtx.fillStyle = '#8B4513';
+            beforeCtx.fillRect(100, 100, 200, 150); // Brown rectangle (old furniture)
+            
+            beforeCtx.fillStyle = '#808080';
+            beforeCtx.font = 'bold 24px Arial';
+            beforeCtx.fillText('OLD DESIGN', 180, 200);
+            
+            beforeCtx.fillStyle = '#ff9999';
+            beforeCtx.beginPath();
+            beforeCtx.arc(400, 200, 50, 0, Math.PI * 2);
+            beforeCtx.fill();
+            
+            // Convert to data URL
+            comparisonState.beforeImageUrl = beforeCanvas.toDataURL('image/png');
+            comparisonState.beforeImageName = 'demo-before.png';
+            comparisonState.beforeImageSize = '600x400';
+            
+            // Update preview
+            document.getElementById('beforePreview').innerHTML = `<img src="${comparisonState.beforeImageUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`;
+            document.getElementById('beforeInfo').textContent = 'Before: demo-before.png (600x400)';
+            
+            // Create "after" image
+            const afterCanvas = document.createElement('canvas');
+            const afterCtx = afterCanvas.getContext('2d');
+            afterCanvas.width = 600;
+            afterCanvas.height = 400;
+            
+            // Draw a simple "after" image
+            afterCtx.fillStyle = '#e6f7ff';
+            afterCtx.fillRect(0, 0, 600, 400);
+            
+            afterCtx.fillStyle = '#4CAF50';
+            afterCtx.fillRect(100, 100, 200, 150); // Green rectangle (new furniture)
+            
+            afterCtx.fillStyle = '#1e3c72';
+            afterCtx.font = 'bold 24px Arial';
+            afterCtx.fillText('NEW DESIGN', 180, 200);
+            
+            afterCtx.fillStyle = '#66bb6a';
+            afterCtx.beginPath();
+            afterCtx.arc(400, 200, 50, 0, Math.PI * 2);
+            afterCtx.fill();
+            
+            // Add a star to show improvement
+            afterCtx.fillStyle = '#FFC107';
+            afterCtx.beginPath();
+            afterCtx.moveTo(500, 300);
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 72 - 90) * Math.PI / 180;
+                const x = 500 + 30 * Math.cos(angle);
+                const y = 300 + 30 * Math.sin(angle);
+                afterCtx.lineTo(x, y);
+                
+                const innerAngle = (angle + 36 * Math.PI / 180);
+                const innerX = 500 + 12 * Math.cos(innerAngle);
+                const innerY = 300 + 12 * Math.sin(innerAngle);
+                afterCtx.lineTo(innerX, innerY);
+            }
+            afterCtx.closePath();
+            afterCtx.fill();
+            
+            // Convert to data URL
+            comparisonState.afterImageUrl = afterCanvas.toDataURL('image/png');
+            comparisonState.afterImageName = 'demo-after.png';
+            comparisonState.afterImageSize = '600x400';
+            
+            // Update preview
+            document.getElementById('afterPreview').innerHTML = `<img src="${comparisonState.afterImageUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`;
+            document.getElementById('afterInfo').textContent = 'After: demo-after.png (600x400)';
+            
+            // Load images into comparison viewer
+            loadImagesToViewer();
+        }
+        
+        // Load images to comparison viewer
+        function loadImagesToViewer() {
+            const beforeImage = document.getElementById('beforeImage');
+            const afterImage = document.getElementById('afterImage');
+            
+            if (comparisonState.beforeImageUrl) {
+                beforeImage.src = comparisonState.beforeImageUrl;
+                beforeImage.onload = function() {
+                    updateCanvasSize();
+                    applyCurrentMode();
+                };
+            }
+            
+            if (comparisonState.afterImageUrl) {
+                afterImage.src = comparisonState.afterImageUrl;
+                afterImage.onload = function() {
+                    updateCanvasSize();
+                    applyCurrentMode();
+                };
+            }
+            
+            // Add to history
+            addToHistory('Demo Comparison', 'Before/after demo images');
+        }
+        
+        // Update canvas size based on images
+        function updateCanvasSize() {
+            const beforeImage = document.getElementById('beforeImage');
+            const afterImage = document.getElementById('afterImage');
+            const annotationCanvas = document.getElementById('annotationCanvas');
+            const comparisonCanvas = document.getElementById('comparisonCanvas');
+            
+            if (beforeImage.naturalWidth && beforeImage.naturalHeight) {
+                // Set canvas size to match image size
+                const width = beforeImage.naturalWidth * comparisonState.zoom;
+                const height = beforeImage.naturalHeight * comparisonState.zoom;
+                
+                comparisonCanvas.style.width = width + 'px';
+                comparisonCanvas.style.height = height + 'px';
+                
+                annotationCanvas.width = width;
+                annotationCanvas.height = height;
+                
+                // Redraw annotations
+                redrawAnnotations();
+            }
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // File upload buttons
+            document.getElementById('uploadBeforeBtn').addEventListener('click', () => {
+                document.getElementById('beforeFile').click();
+            });
+            
+            document.getElementById('uploadAfterBtn').addEventListener('click', () => {
+                document.getElementById('afterFile').click();
+            });
+            
+            // File inputs
+            document.getElementById('beforeFile').addEventListener('change', handleBeforeFileUpload);
+            document.getElementById('afterFile').addEventListener('change', handleAfterFileUpload);
+            
+            // Comparison mode buttons
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const mode = this.dataset.mode;
+                    setComparisonMode(mode);
+                });
+            });
+            
+            // Slider position
+            document.getElementById('sliderPosition').addEventListener('input', function() {
+                const value = this.value;
+                document.getElementById('sliderValue').textContent = value + '%';
+                document.getElementById('sliderPositionDisplay').textContent = value + '%';
+                
+                // Update divider position
+                const divider = document.getElementById('divider');
+                const afterImage = document.getElementById('afterImage');
+                
+                if (divider && afterImage) {
+                    const position = value + '%';
+                    afterImage.style.clipPath = `inset(0 0 0 ${position})`;
+                    divider.style.left = position;
+                }
+            });
+            
+            // Fade opacity
+            document.getElementById('fadeOpacity').addEventListener('input', function() {
+                const value = this.value;
+                document.getElementById('fadeValue').textContent = value + '%';
+                document.getElementById('fadeOpacityDisplay').textContent = value + '%';
+                
+                // Update after image opacity
+                const afterImage = document.getElementById('afterImage');
+                if (afterImage) {
+                    afterImage.style.opacity = (value / 100);
+                }
+            });
+            
+            // Compare button
+            document.getElementById('compareBtn').addEventListener('click', loadImagesToViewer);
+            
+            // Reset button
+            document.getElementById('resetBtn').addEventListener('click', resetComparison);
+            
+            // Zoom controls
+            document.getElementById('zoomInBtn').addEventListener('click', zoomIn);
+            document.getElementById('zoomOutBtn').addEventListener('click', zoomOut);
+            
+            // Flip controls
+            document.getElementById('flipHorizontalBtn').addEventListener('click', flipHorizontal);
+            document.getElementById('flipVerticalBtn').addEventListener('click', flipVertical);
+            
+            // Annotation tool buttons
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tool = this.dataset.tool;
+                    setAnnotationTool(tool);
+                });
+            });
+            
+            // Clear annotations button
+            document.getElementById('clearAnnotationsBtn').addEventListener('click', clearAllAnnotations);
+            
+            // Toggle switches
+            document.getElementById('showAnnotationsToggle').addEventListener('change', function() {
+                const annotationCanvas = document.getElementById('annotationCanvas');
+                if (this.checked) {
+                    annotationCanvas.style.display = 'block';
+                    redrawAnnotations();
+                } else {
+                    annotationCanvas.style.display = 'none';
+                }
+            });
+            
+            document.getElementById('showLabelsToggle').addEventListener('change', function() {
+                const labels = document.querySelectorAll('.comparison-overlay');
+                labels.forEach(label => {
+                    label.style.display = this.checked ? 'block' : 'none';
+                });
+            });
+            
+            // Save comparison button
+            document.getElementById('saveComparisonBtn').addEventListener('click', saveComparison);
+            
+            // Share comparison button
+            document.getElementById('shareComparisonBtn').addEventListener('click', showShareModal);
+            
+            // Export buttons
+            document.getElementById('exportImageBtn').addEventListener('click', exportAsImage);
+            document.getElementById('exportPDFBtn').addEventListener('click', exportAsPDF);
+            document.getElementById('copyLinkBtn').addEventListener('click', copyShareableLink);
+            document.getElementById('saveProjectBtn').addEventListener('click', saveProject);
+            
+            // Modal close buttons
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.closest('.modal').style.display = 'none';
+                });
+            });
+            
+            // Share modal buttons
+            document.getElementById('closeShareModalBtn').addEventListener('click', () => {
+                document.getElementById('shareModal').style.display = 'none';
+            });
+            
+            document.getElementById('copyLinkModalBtn').addEventListener('click', copyShareableLink);
+            
+            // Text annotation modal buttons
+            document.getElementById('cancelTextBtn').addEventListener('click', () => {
+                document.getElementById('textModal').style.display = 'none';
+            });
+            
+            document.getElementById('addTextBtn').addEventListener('click', addTextAnnotation);
+            
+            // Font size slider
+            document.getElementById('fontSize').addEventListener('input', function() {
+                document.getElementById('fontSizeDisplay').textContent = this.value + 'px';
+            });
+            
+            // Divider drag functionality
+            setupDividerDrag();
+            
+            // Annotation canvas events
+            setupAnnotationCanvas();
+            
+            // History items
+            document.getElementById('historyContainer').addEventListener('click', function(e) {
+                if (e.target.closest('.history-item')) {
+                    const historyItem = e.target.closest('.history-item');
+                    loadFromHistory(historyItem);
+                }
+            });
+        }
+        
+        // Handle before file upload
+        function handleBeforeFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.match('image.*')) {
+                showNotification('Please select an image file', 'error');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('Image size should be less than 5MB', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                comparisonState.beforeImageUrl = event.target.result;
+                comparisonState.beforeImageName = file.name;
+                comparisonState.beforeImageSize = file.size;
+                
+                // Update preview
+                const preview = document.getElementById('beforePreview');
+                preview.innerHTML = `<img src="${comparisonState.beforeImageUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`;
+                
+                // Update info
+                const img = new Image();
+                img.onload = function() {
+                    comparisonState.beforeImageSize = `${img.naturalWidth}x${img.naturalHeight}`;
+                    document.getElementById('beforeInfo').textContent = `Before: ${file.name} (${comparisonState.beforeImageSize})`;
+                };
+                img.src = comparisonState.beforeImageUrl;
+                
+                showNotification('Before image uploaded successfully');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Handle after file upload
+        function handleAfterFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.match('image.*')) {
+                showNotification('Please select an image file', 'error');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('Image size should be less than 5MB', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                comparisonState.afterImageUrl = event.target.result;
+                comparisonState.afterImageName = file.name;
+                comparisonState.afterImageSize = file.size;
+                
+                // Update preview
+                const preview = document.getElementById('afterPreview');
+                preview.innerHTML = `<img src="${comparisonState.afterImageUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">`;
+                
+                // Update info
+                const img = new Image();
+                img.onload = function() {
+                    comparisonState.afterImageSize = `${img.naturalWidth}x${img.naturalHeight}`;
+                    document.getElementById('afterInfo').textContent = `After: ${file.name} (${comparisonState.afterImageSize})`;
+                };
+                img.src = comparisonState.afterImageUrl;
+                
+                showNotification('After image uploaded successfully');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Set comparison mode
+        function setComparisonMode(mode) {
+            comparisonState.mode = mode;
+            
+            // Update UI
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.mode === mode) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Show/hide mode-specific controls
+            document.querySelectorAll('.mode-slider, .mode-fade').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            if (mode === 'slider') {
+                document.querySelector('.mode-slider').classList.add('active');
+            } else if (mode === 'fade') {
+                document.querySelector('.mode-fade').classList.add('active');
+            }
+            
+            // Update comparison canvas
+            const comparisonCanvas = document.getElementById('comparisonCanvas');
+            document.querySelectorAll('.comparison-canvas').forEach(canvas => {
+                canvas.classList.remove('active');
+            });
+            
+            comparisonCanvas.className = `comparison-canvas ${mode}-mode active`;
+            
+            // Apply mode
+            applyCurrentMode();
+            
+            // Show notification
+            showNotification(`Switched to ${mode} mode`);
+        }
+        
+        // Apply current comparison mode
+        function applyCurrentMode() {
+            const beforeImage = document.getElementById('beforeImage');
+            const afterImage = document.getElementById('afterImage');
+            const divider = document.getElementById('divider');
+            
+            if (!beforeImage || !afterImage) return;
+            
+            // Reset styles
+            beforeImage.style.clipPath = '';
+            afterImage.style.clipPath = '';
+            afterImage.style.opacity = '';
+            afterImage.style.mixBlendMode = '';
+            
+            // Hide divider by default
+            if (divider) divider.style.display = 'none';
+            
+            // Apply mode-specific styles
+            switch(comparisonState.mode) {
+                case 'slider':
+                    const sliderValue = document.getElementById('sliderPosition').value;
+                    afterImage.style.clipPath = `inset(0 0 0 ${sliderValue}%)`;
+                    if (divider) {
+                        divider.style.left = sliderValue + '%';
+                        divider.style.display = 'block';
+                    }
+                    break;
+                    
+                case 'fade':
+                    const fadeValue = document.getElementById('fadeOpacity').value;
+                    afterImage.style.opacity = (fadeValue / 100);
+                    break;
+                    
+                case 'sidebyside':
+                    // Already handled by CSS
+                    break;
+                    
+                case 'difference':
+                    afterImage.style.mixBlendMode = 'difference';
+                    break;
+            }
+        }
+        
+        // Setup divider drag functionality
+        function setupDividerDrag() {
+            const divider = document.getElementById('divider');
+            const afterImage = document.getElementById('afterImage');
+            
+            if (!divider || !afterImage) return;
+            
+            let isDragging = false;
+            
+            divider.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                document.body.style.cursor = 'ew-resize';
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging || comparisonState.mode !== 'slider') return;
+                
+                const comparisonCanvas = document.getElementById('comparisonCanvas');
+                const rect = comparisonCanvas.getBoundingClientRect();
+                
+                // Calculate position percentage
+                let x = e.clientX - rect.left;
+                x = Math.max(0, Math.min(x, rect.width));
+                const percent = (x / rect.width) * 100;
+                
+                // Update slider and images
+                document.getElementById('sliderPosition').value = percent;
+                document.getElementById('sliderValue').textContent = percent.toFixed(0) + '%';
+                document.getElementById('sliderPositionDisplay').textContent = percent.toFixed(0) + '%';
+                
+                afterImage.style.clipPath = `inset(0 0 0 ${percent}%)`;
+                divider.style.left = percent + '%';
+            });
+            
+            document.addEventListener('mouseup', function() {
+                isDragging = false;
+                document.body.style.cursor = 'default';
+            });
+        }
+        
+        // Setup annotation canvas
+        function setupAnnotationCanvas() {
+            const canvas = document.getElementById('annotationCanvas');
+            if (!canvas) return;
+            
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // For touch devices
+            canvas.addEventListener('touchstart', handleTouchStart);
+            canvas.addEventListener('touchmove', handleTouchMove);
+            canvas.addEventListener('touchend', handleTouchEnd);
+        }
+        
+        // Start drawing annotation
+        function startDrawing(e) {
+            if (comparisonState.currentTool === 'text') {
+                showTextModal(e);
+                return;
+            }
+            
+            comparisonState.drawing = true;
+            const rect = comparisonState.annotationCanvas.getBoundingClientRect();
+            
+            comparisonState.startX = (e.clientX || e.touches[0].clientX) - rect.left;
+            comparisonState.startY = (e.clientY || e.touches[0].clientY) - rect.top;
+            
+            // Create new annotation
+            comparisonState.currentAnnotation = {
+                tool: comparisonState.currentTool,
+                color: comparisonState.currentColor,
+                points: [{x: comparisonState.startX, y: comparisonState.startY}],
+                text: '',
+                fontSize: 20
+            };
+        }
+        
+        // Draw annotation
+        function draw(e) {
+            if (!comparisonState.drawing || !comparisonState.currentAnnotation) return;
+            
+            e.preventDefault();
+            const rect = comparisonState.annotationCanvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            
+            // Add point for freehand drawing
+            if (comparisonState.currentAnnotation.tool === 'freehand') {
+                comparisonState.currentAnnotation.points.push({x, y});
+            } else {
+                // Update end point for other tools
+                if (comparisonState.currentAnnotation.points.length > 1) {
+                    comparisonState.currentAnnotation.points[1] = {x, y};
+                } else {
+                    comparisonState.currentAnnotation.points.push({x, y});
+                }
+            }
+            
+            // Redraw canvas
+            redrawAnnotations();
+            
+            // Draw current annotation
+            drawAnnotation(comparisonState.currentAnnotation);
+        }
+        
+        // Stop drawing
+        function stopDrawing() {
+            if (!comparisonState.drawing || !comparisonState.currentAnnotation) return;
+            
+            comparisonState.drawing = false;
+            
+            // Add annotation to list if valid
+            if (comparisonState.currentAnnotation.points.length > 1 || 
+                comparisonState.currentAnnotation.tool === 'freehand' && comparisonState.currentAnnotation.points.length > 10) {
+                
+                // Generate ID and timestamp
+                comparisonState.currentAnnotation.id = Date.now();
+                comparisonState.currentAnnotation.timestamp = new Date().toISOString();
+                
+                // Add to annotations array
+                comparisonState.annotations.push(comparisonState.currentAnnotation);
+                
+                // Update annotations list
+                updateAnnotationsList();
+                
+                // Add to history
+                addEventToHistory(`Added ${comparisonState.currentAnnotation.tool} annotation`);
+            }
+            
+            comparisonState.currentAnnotation = null;
+        }
+        
+        // Draw a single annotation
+        function drawAnnotation(annotation) {
+            const ctx = comparisonState.annotationCtx;
+            ctx.strokeStyle = annotation.color;
+            ctx.fillStyle = annotation.color;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            if (annotation.tool === 'freehand') {
+                // Draw freehand path
+                ctx.beginPath();
+                ctx.moveTo(annotation.points[0].x, annotation.points[0].y);
+                
+                for (let i = 1; i < annotation.points.length; i++) {
+                    ctx.lineTo(annotation.points[i].x, annotation.points[i].y);
+                }
+                
+                ctx.stroke();
+            } else if (annotation.points.length === 2) {
+                const start = annotation.points[0];
+                const end = annotation.points[1];
+                
+                switch(annotation.tool) {
+                    case 'arrow':
+                        drawArrow(ctx, start.x, start.y, end.x, end.y);
+                        break;
+                    case 'line':
+                        ctx.beginPath();
+                        ctx.moveTo(start.x, start.y);
+                        ctx.lineTo(end.x, end.y);
+                        ctx.stroke();
+                        break;
+                    case 'rectangle':
+                        const width = end.x - start.x;
+                        const height = end.y - start.y;
+                        ctx.strokeRect(start.x, start.y, width, height);
+                        break;
+                    case 'circle':
+                        const radius = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+                        ctx.beginPath();
+                        ctx.arc(start.x, start.y, radius, 0, Math.PI * 2);
+                        ctx.stroke();
+                        break;
+                }
+            }
+            
+            // Draw text
+            if (annotation.tool === 'text' && annotation.text) {
+                ctx.font = `${annotation.fontSize}px Arial`;
+                ctx.fillText(annotation.text, annotation.points[0].x, annotation.points[0].y);
+            }
+        }
+        
+        // Draw an arrow
+        function drawArrow(ctx, fromX, fromY, toX, toY) {
+            const headLength = 15;
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            
+            // Draw arrow head
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(
+                toX - headLength * Math.cos(angle - Math.PI / 6),
+                toY - headLength * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.lineTo(
+                toX - headLength * Math.cos(angle + Math.PI / 6),
+                toY - headLength * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        // Redraw all annotations
+        function redrawAnnotations() {
+            const ctx = comparisonState.annotationCtx;
+            const canvas = comparisonState.annotationCanvas;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw all saved annotations
+            comparisonState.annotations.forEach(annotation => {
+                drawAnnotation(annotation);
+            });
+        }
+        
+        // Show text annotation modal
+        function showTextModal(e) {
+            // Store click position for text placement
+            const rect = comparisonState.annotationCanvas.getBoundingClientRect();
+            comparisonState.textPosition = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            
+            // Show modal
+            document.getElementById('textModal').style.display = 'flex';
+            document.getElementById('annotationText').focus();
+        }
+        
+        // Add text annotation
+        function addTextAnnotation() {
+            const text = document.getElementById('annotationText').value.trim();
+            if (!text) return;
+            
+            const fontSize = parseInt(document.getElementById('fontSize').value);
+            
+            // Create text annotation
+            const annotation = {
+                id: Date.now(),
+                tool: 'text',
+                color: comparisonState.currentColor,
+                points: [comparisonState.textPosition],
+                text: text,
+                fontSize: fontSize,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Add to annotations
+            comparisonState.annotations.push(annotation);
+            
+            // Redraw annotations
+            redrawAnnotations();
+            
+            // Update annotations list
+            updateAnnotationsList();
+            
+            // Close modal
+            document.getElementById('textModal').style.display = 'none';
+            document.getElementById('annotationText').value = '';
+            
+            // Add to history
+            addEventToHistory('Added text annotation');
+            
+            showNotification('Text annotation added');
+        }
+        
+        // Update annotations list in UI
+        function updateAnnotationsList() {
+            const annotationsList = document.getElementById('annotationsList');
+            annotationsList.innerHTML = '';
+            
+            if (comparisonState.annotations.length === 0) {
+                annotationsList.innerHTML = '<div style="color:#999; text-align:center; padding:20px;">No annotations yet</div>';
+                return;
+            }
+            
+            // Add each annotation to list
+            comparisonState.annotations.forEach((annotation, index) => {
+                const item = document.createElement('div');
+                item.className = 'annotation-item';
+                item.dataset.index = index;
+                
+                const toolNames = {
+                    'arrow': 'Arrow',
+                    'rectangle': 'Rectangle',
+                    'circle': 'Circle',
+                    'text': 'Text',
+                    'line': 'Line',
+                    'freehand': 'Freehand'
+                };
+                
+                const time = new Date(annotation.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                item.innerHTML = `
+                    <div class="annotation-text">
+                        <strong>${toolNames[annotation.tool]}</strong> - ${time}
+                        ${annotation.text ? `<div style="font-size:0.8rem; color:#666;">"${annotation.text}"</div>` : ''}
+                    </div>
+                    <div class="annotation-actions">
+                        <button class="edit-annotation" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button class="delete-annotation" title="Delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                
+                annotationsList.appendChild(item);
+            });
+            
+            // Add event listeners for annotation actions
+            document.querySelectorAll('.delete-annotation').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.closest('.annotation-item').dataset.index);
+                    deleteAnnotation(index);
+                });
+            });
+        }
+        
+        // Delete annotation
+        function deleteAnnotation(index) {
+            if (index >= 0 && index < comparisonState.annotations.length) {
+                comparisonState.annotations.splice(index, 1);
+                redrawAnnotations();
+                updateAnnotationsList();
+                addEventToHistory('Deleted annotation');
+                showNotification('Annotation deleted');
+            }
+        }
+        
+        // Clear all annotations
+        function clearAllAnnotations() {
+            if (comparisonState.annotations.length === 0) return;
+            
+            if (confirm('Are you sure you want to delete all annotations?')) {
+                comparisonState.annotations = [];
+                redrawAnnotations();
+                updateAnnotationsList();
+                addEventToHistory('Cleared all annotations');
+                showNotification('All annotations cleared');
+            }
+        }
+        
+        // Set annotation tool
+        function setAnnotationTool(tool) {
+            comparisonState.currentTool = tool;
+            
+            // Update UI
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.tool === tool) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Enable/disable annotation canvas
+            const annotationCanvas = document.getElementById('annotationCanvas');
+            if (tool) {
+                annotationCanvas.classList.add('active');
+            } else {
+                annotationCanvas.classList.remove('active');
+            }
+        }
+        
+        // Zoom in
+        function zoomIn() {
+            if (comparisonState.zoom < 3) {
+                comparisonState.zoom += 0.1;
+                updateZoom();
+            }
+        }
+        
+        // Zoom out
+        function zoomOut() {
+            if (comparisonState.zoom > 0.2) {
+                comparisonState.zoom -= 0.1;
+                updateZoom();
+            }
+        }
+        
+        // Update zoom
+        function updateZoom() {
+            document.getElementById('zoomLevel').textContent = Math.round(comparisonState.zoom * 100) + '%';
+            updateCanvasSize();
+        }
+        
+        // Flip horizontal
+        function flipHorizontal() {
+            const beforeImage = document.getElementById('beforeImage');
+            const afterImage = document.getElementById('afterImage');
+            
+            if (beforeImage) {
+                beforeImage.style.transform = beforeImage.style.transform.includes('scaleX(-1)') 
+                    ? beforeImage.style.transform.replace('scaleX(-1)', 'scaleX(1)')
+                    : beforeImage.style.transform + ' scaleX(-1)';
+            }
+            
+            if (afterImage) {
+                afterImage.style.transform = afterImage.style.transform.includes('scaleX(-1)') 
+                    ? afterImage.style.transform.replace('scaleX(-1)', 'scaleX(1)')
+                    : afterImage.style.transform + ' scaleX(-1)';
+            }
+            
+            addEventToHistory('Flipped images horizontally');
+        }
+        
+        // Flip vertical
+        function flipVertical() {
+            const beforeImage = document.getElementById('beforeImage');
+            const afterImage = document.getElementById('afterImage');
+            
+            if (beforeImage) {
+                beforeImage.style.transform = beforeImage.style.transform.includes('scaleY(-1)') 
+                    ? beforeImage.style.transform.replace('scaleY(-1)', 'scaleY(1)')
+                    : beforeImage.style.transform + ' scaleY(-1)';
+            }
+            
+            if (afterImage) {
+                afterImage.style.transform = afterImage.style.transform.includes('scaleY(-1)') 
+                    ? afterImage.style.transform.replace('scaleY(-1)', 'scaleY(1)')
+                    : afterImage.style.transform + ' scaleY(-1)';
+            }
+            
+            addEventToHistory('Flipped images vertically');
+        }
+        
+        // Reset comparison
+        function resetComparison() {
+            if (confirm('Reset comparison to default settings?')) {
+                // Reset zoom
+                comparisonState.zoom = 1;
+                document.getElementById('zoomLevel').textContent = '100%';
+                
+                // Reset slider
+                document.getElementById('sliderPosition').value = 50;
+                document.getElementById('sliderValue').textContent = '50%';
+                document.getElementById('sliderPositionDisplay').textContent = '50%';
+                
+                // Reset fade
+                document.getElementById('fadeOpacity').value = 50;
+                document.getElementById('fadeValue').textContent = '50%';
+                document.getElementById('fadeOpacityDisplay').textContent = '50%';
+                
+                // Reset image transforms
+                const beforeImage = document.getElementById('beforeImage');
+                const afterImage = document.getElementById('afterImage');
+                
+                if (beforeImage) beforeImage.style.transform = '';
+                if (afterImage) afterImage.style.transform = '';
+                
+                // Reapply current mode
+                applyCurrentMode();
+                
+                // Update canvas size
+                updateCanvasSize();
+                
+                addEventToHistory('Reset comparison settings');
+                showNotification('Comparison reset');
+            }
+        }
+        
+        // Save comparison
+        function saveComparison() {
+            // Generate comparison data
+            const comparisonData = {
+                beforeImageName: comparisonState.beforeImageName,
+                afterImageName: comparisonState.afterImageName,
+                mode: comparisonState.mode,
+                zoom: comparisonState.zoom,
+                annotations: comparisonState.annotations,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Save to localStorage
+            const savedComparisons = JSON.parse(localStorage.getItem('comparisons') || '[]');
+            savedComparisons.push(comparisonData);
+            localStorage.setItem('comparisons', JSON.stringify(savedComparisons));
+            
+            // Add to history
+            addToHistory(
+                `Comparison: ${comparisonState.beforeImageName || 'Before'} vs ${comparisonState.afterImageName || 'After'}`,
+                `Saved in ${comparisonState.mode} mode with ${comparisonState.annotations.length} annotations`
+            );
+            
+            showNotification('Comparison saved successfully!');
+        }
+        
+        // Show share modal
+        function showShareModal() {
+            // Generate shareable link (simulated)
+            const uniqueId = 'cmp_' + Date.now().toString(36) + Math.random().toString(36).substr(2);
+            const shareableLink = `${window.location.origin}/comparison/${uniqueId}`;
+            
+            document.getElementById('shareableLink').value = shareableLink;
+            
+            // Generate embed code
+            const embedCode = `<iframe src="${shareableLink}/embed" width="800" height="600" frameborder="0" allowfullscreen></iframe>`;
+            document.getElementById('embedCode').value = embedCode;
+            
+            // Show modal
+            document.getElementById('shareModal').style.display = 'flex';
+        }
+        
+        // Copy shareable link
+        function copyShareableLink() {
+            const linkInput = document.getElementById('shareableLink');
+            linkInput.select();
+            document.execCommand('copy');
+            showNotification('Link copied to clipboard!');
+        }
+        
+        // Export as image
+        function exportAsImage() {
+            // Create a canvas with the comparison
+            const comparisonCanvas = document.getElementById('comparisonCanvas');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = comparisonCanvas.offsetWidth;
+            canvas.height = comparisonCanvas.offsetHeight;
+            
+            // Draw white background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw before image (left side)
+            const beforeImage = document.getElementById('beforeImage');
+            if (beforeImage) {
+                ctx.drawImage(beforeImage, 0, 0, canvas.width / 2, canvas.height);
+                
+                // Add label
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.font = 'bold 20px Arial';
+                ctx.fillText('BEFORE', 20, 30);
+            }
+            
+            // Draw after image (right side)
+            const afterImage = document.getElementById('afterImage');
+            if (afterImage) {
+                ctx.drawImage(afterImage, canvas.width / 2, 0, canvas.width / 2, canvas.height);
+                
+                // Add label
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.font = 'bold 20px Arial';
+                ctx.fillText('AFTER', canvas.width / 2 + 20, 30);
+            }
+            
+            // Draw annotations
+            redrawAnnotationsOnCanvas(ctx, canvas);
+            
+            // Add watermark
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.font = '14px Arial';
+            ctx.fillText('Created with Before/After Comparator', canvas.width - 250, canvas.height - 10);
+            
+            // Convert to data URL and trigger download
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `comparison-${Date.now()}.png`;
+            link.href = dataUrl;
+            link.click();
+            
+            addEventToHistory('Exported comparison as image');
+            showNotification('Image exported successfully!');
+        }
+        
+        // Redraw annotations on export canvas
+        function redrawAnnotationsOnCanvas(ctx, canvas) {
+            const scaleX = canvas.width / comparisonState.annotationCanvas.width;
+            const scaleY = canvas.height / comparisonState.annotationCanvas.height;
+            
+            comparisonState.annotations.forEach(annotation => {
+                ctx.strokeStyle = annotation.color;
+                ctx.fillStyle = annotation.color;
+                ctx.lineWidth = 2;
+                
+                // Scale points
+                const scaledPoints = annotation.points.map(point => ({
+                    x: point.x * scaleX,
+                    y: point.y * scaleY
+                }));
+                
+                if (annotation.tool === 'freehand') {
+                    ctx.beginPath();
+                    ctx.moveTo(scaledPoints[0].x, scaledPoints[0].y);
+                    
+                    for (let i = 1; i < scaledPoints.length; i++) {
+                        ctx.lineTo(scaledPoints[i].x, scaledPoints[i].y);
+                    }
+                    
+                    ctx.stroke();
+                } else if (scaledPoints.length === 2) {
+                    const start = scaledPoints[0];
+                    const end = scaledPoints[1];
+                    
+                    switch(annotation.tool) {
+                        case 'arrow':
+                            drawArrow(ctx, start.x, start.y, end.x, end.y);
+                            break;
+                        case 'line':
+                            ctx.beginPath();
+                            ctx.moveTo(start.x, start.y);
+                            ctx.lineTo(end.x, end.y);
+                            ctx.stroke();
+                            break;
+                        case 'rectangle':
+                            const width = end.x - start.x;
+                            const height = end.y - start.y;
+                            ctx.strokeRect(start.x, start.y, width, height);
+                            break;
+                        case 'circle':
+                            const radius = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+                            ctx.beginPath();
+                            ctx.arc(start.x, start.y, radius, 0, Math.PI * 2);
+                            ctx.stroke();
+                            break;
+                    }
+                }
+                
+                // Draw text
+                if (annotation.tool === 'text' && annotation.text) {
+                    ctx.font = `${annotation.fontSize * scaleX}px Arial`;
+                    ctx.fillText(annotation.text, scaledPoints[0].x, scaledPoints[0].y);
+                }
+            });
+        }
+        
+        // Export as PDF (simulated)
+        function exportAsPDF() {
+            showNotification('PDF export feature would generate a downloadable PDF file', 'info');
+            addEventToHistory('Exported comparison as PDF');
+        }
+        
+        // Save project
+        function saveProject() {
+            // Create project data
+            const projectData = {
+                beforeImage: comparisonState.beforeImageUrl,
+                afterImage: comparisonState.afterImageUrl,
+                beforeImageName: comparisonState.beforeImageName,
+                afterImageName: comparisonState.afterImageName,
+                mode: comparisonState.mode,
+                zoom: comparisonState.zoom,
+                annotations: comparisonState.annotations,
+                sliderPosition: document.getElementById('sliderPosition').value,
+                fadeOpacity: document.getElementById('fadeOpacity').value,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Convert to JSON
+            const jsonData = JSON.stringify(projectData, null, 2);
+            
+            // Create download link
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `comparison-project-${Date.now()}.json`;
+            link.href = url;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            
+            addEventToHistory('Saved project file');
+            showNotification('Project saved successfully!');
+        }
+        
+        // Load history from localStorage
+        function loadHistory() {
+            const savedComparisons = JSON.parse(localStorage.getItem('comparisons') || '[]');
+            const historyContainer = document.getElementById('historyContainer');
+            
+            // Clear demo items
+            historyContainer.innerHTML = '';
+            
+            // Add saved comparisons to history
+            savedComparisons.forEach((comparison, index) => {
+                const time = new Date(comparison.timestamp).toLocaleDateString() + ' ' + 
+                            new Date(comparison.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.dataset.index = index;
+                
+                item.innerHTML = `
+                    <div><strong>${comparison.beforeImageName || 'Before'} vs ${comparison.afterImageName || 'After'}</strong></div>
+                    <div style="font-size: 0.8rem; color: #666;">Saved ${time} (${comparison.mode} mode)</div>
+                `;
+                
+                historyContainer.appendChild(item);
+            });
+            
+            // Add demo items if no saved comparisons
+            if (savedComparisons.length === 0) {
+                historyContainer.innerHTML = `
+                    <div class="history-item">
+                        <div><strong>Home Renovation</strong> - Living room before and after renovation</div>
+                        <div style="font-size: 0.8rem; color: #666;">Added 2 hours ago</div>
+                    </div>
+                    <div class="history-item">
+                        <div><strong>Website Redesign</strong> - Old vs new homepage design</div>
+                        <div style="font-size: 0.8rem; color: #666;">Added 1 day ago</div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Load from history
+        function loadFromHistory(historyItem) {
+            const index = parseInt(historyItem.dataset.index);
+            const savedComparisons = JSON.parse(localStorage.getItem('comparisons') || '[]');
+            
+            if (index >= 0 && index < savedComparisons.length) {
+                const comparison = savedComparisons[index];
+                
+                // Load comparison data
+                comparisonState.beforeImageUrl = comparison.beforeImage;
+                comparisonState.afterImageUrl = comparison.afterImage;
+                comparisonState.beforeImageName = comparison.beforeImageName;
+                comparisonState.afterImageName = comparison.afterImageName;
+                comparisonState.mode = comparison.mode;
+                comparisonState.zoom = comparison.zoom;
+                comparisonState.annotations = comparison.annotations || [];
+                
+                // Update UI
+                setComparisonMode(comparison.mode);
+                document.getElementById('zoomLevel').textContent = Math.round(comparisonState.zoom * 100) + '%';
+                
+                if (comparison.sliderPosition) {
+                    document.getElementById('sliderPosition').value = comparison.sliderPosition;
+                    document.getElementById('sliderValue').textContent = comparison.sliderPosition + '%';
+                    document.getElementById('sliderPositionDisplay').textContent = comparison.sliderPosition + '%';
+                }
+                
+                if (comparison.fadeOpacity) {
+                    document.getElementById('fadeOpacity').value = comparison.fadeOpacity;
+                    document.getElementById('fadeValue').textContent = comparison.fadeOpacity + '%';
+                    document.getElementById('fadeOpacityDisplay').textContent = comparison.fadeOpacity + '%';
+                }
+                
+                // Load images
+                loadImagesToViewer();
+                
+                // Update annotations
+                redrawAnnotations();
+                updateAnnotationsList();
+                
+                showNotification('Comparison loaded from history');
+            }
+        }
+        
+        // Add to history
+        function addToHistory(title, description) {
+            const historyContainer = document.getElementById('historyContainer');
+            const time = new Date().toLocaleDateString() + ' ' + 
+                        new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            
+            item.innerHTML = `
+                <div><strong>${title}</strong></div>
+                <div style="font-size: 0.8rem; color: #666;">${description} - ${time}</div>
+            `;
+            
+            // Add to top
+            historyContainer.insertBefore(item, historyContainer.firstChild);
+            
+            // Limit to 10 items
+            while (historyContainer.children.length > 10) {
+                historyContainer.removeChild(historyContainer.lastChild);
+            }
+        }
+        
+        // Add event to history
+        function addEventToHistory(event) {
+            // This could be expanded to log all user actions
+            console.log(`Event: ${event} at ${new Date().toISOString()}`);
+        }
+        
+        // Show notification
+        function showNotification(text, type = 'success') {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notification-text');
+            
+            notificationText.textContent = text;
+            
+            // Set color based on type
+            if (type === 'success') {
+                notification.style.background = 'linear-gradient(to right, #00b09b, #96c93d)';
+            } else if (type === 'error') {
+                notification.style.background = 'linear-gradient(to right, #ff416c, #ff4b2b)';
+            } else if (type === 'info') {
+                notification.style.background = 'linear-gradient(to right, #1e3c72, #2a5298)';
+            }
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Touch event handlers for annotations
+        function handleTouchStart(e) {
+            e.preventDefault();
+            startDrawing(e);
+        }
+        
+        function handleTouchMove(e) {
+            e.preventDefault();
+            draw(e);
+        }
+        
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            stopDrawing();
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initComparator);
+    </script>
+</body>
+</html>

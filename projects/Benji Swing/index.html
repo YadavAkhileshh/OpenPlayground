@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Benji Banana Adventure Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0d1a0d;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            display: block;
+            background: linear-gradient(to bottom, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 28px;
+            font-weight: 900;
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.3);
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .ui-visible {
+            opacity: 1;
+        }
+        #menu-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(13, 26, 13, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            color: white;
+            text-align: center;
+            transition: visibility 0s, opacity 0.3s linear;
+        }
+        .hidden-menu {
+            display: none !important;
+        }
+        .btn {
+            background: #ffcc00;
+            color: #4e342e;
+            padding: 18px 50px;
+            border: none;
+            border-radius: 50px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 25px;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 0 #b38f00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            background: #ffe066;
+        }
+        .btn:active {
+            transform: translateY(4px) scale(0.98);
+            box-shadow: 0 2px 0 #b38f00;
+        }
+        .banana-counter {
+            background: rgba(0,0,0,0.4);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="hud" class="ui-overlay">
+        <div class="banana-counter">🍌 <span id="score">0</span></div>
+        <div style="font-size: 14px; opacity: 0.8; margin-left: 10px;">Distance: <span id="distance">0</span>m</div>
+    </div>
+
+    <div id="menu-overlay">
+        <div class="mb-4 text-7xl animate-bounce">🐒</div>
+        <h1 class="text-6xl font-black mb-2 tracking-tighter italic text-yellow-400">BENJI SWING</h1>
+        <p class="text-lg opacity-80 mb-8 max-w-md uppercase font-bold">Tap and Hold to Grapple • Release to Soar</p>
+        
+        <div id="final-stats" class="hidden mb-8 p-6 bg-white/10 rounded-3xl border border-white/20 w-64">
+            <p class="text-3xl font-bold text-red-400 mb-2">OOPS!</p>
+            <p class="text-sm uppercase opacity-60">Final Score</p>
+            <p class="text-4xl font-black mb-4"><span id="last-score">0</span></p>
+        </div>
+        
+        <button id="start-btn" class="btn" onclick="startGame()">Start Adventure</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreElement = document.getElementById('score');
+    const distElement = document.getElementById('distance');
+    const menuOverlay = document.getElementById('menu-overlay');
+    const hud = document.getElementById('hud');
+    const lastScoreElement = document.getElementById('last-score');
+    const finalStats = document.getElementById('final-stats');
+
+    // Game Tuning
+    const GRAVITY = 0.22;
+    const AIR_RESISTANCE = 0.995;
+    const MIN_GRAPPLE_DISTANCE = 50;
+    const MAX_GRAPPLE_DISTANCE = 550;
+
+    // Game State
+    let gameActive = false;
+    let score = 0;
+    let distance = 0;
+    let cameraX = 0;
+    let particles = [];
+    let clouds = [];
+
+    const monkey = {
+        x: 150,
+        y: 300,
+        vx: 6,
+        vy: 0,
+        radius: 20,
+        isGrappled: false,
+        grapplePoint: null,
+        grappleLen: 0,
+        ropeTension: 0,
+        rotation: 0,
+        swingPower: 0
+    };
+
+    let branches = [];
+    let items = [];
+
+    function init() {
+        resize();
+        resetGame();
+        for(let i=0; i<10; i++) spawnCloud(Math.random() * canvas.width);
+    }
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    function resetGame() {
+        score = 0;
+        distance = 0;
+        cameraX = 0;
+        monkey.x = 150;
+        monkey.y = canvas.height / 2;
+        monkey.vx = 7;
+        monkey.vy = 0;
+        monkey.isGrappled = false;
+        monkey.rotation = 0;
+        branches = [];
+        items = [];
+        particles = [];
+        
+        for (let i = 0; i < 8; i++) {
+            spawnBranch(i * 350 + 400);
+        }
+        
+        updateUI();
+    }
+
+    function spawnCloud(x) {
+        clouds.push({
+            x: x,
+            y: Math.random() * (canvas.height * 0.4),
+            size: 50 + Math.random() * 100,
+            speed: 0.1 + Math.random() * 0.3
+        });
+    }
+
+    function spawnBranch(x) {
+        const y = 80 + Math.random() * (canvas.height * 0.3);
+        branches.push({ x, y, width: 90 });
+        
+        if (Math.random() > 0.2) {
+            items.push({
+                x: x + (Math.random() * 200 - 100),
+                y: y + 150 + Math.random() * 200,
+                type: 'banana',
+                collected: false,
+                pulse: 0
+            });
+        }
+    }
+
+    function updateUI() {
+        scoreElement.innerText = score;
+        distElement.innerText = Math.floor(distance / 10);
+    }
+
+    function createParticle(x, y, color, count = 8) {
+        for (let i = 0; i < count; i++) {
+            particles.push({
+                x, y,
+                vx: (Math.random() - 0.5) * 12,
+                vy: (Math.random() - 0.5) * 12,
+                life: 1,
+                size: Math.random() * 6 + 2,
+                color
+            });
+        }
+    }
+
+    function startGame() {
+        // Immediate UI removal
+        menuOverlay.classList.add('hidden-menu');
+        hud.classList.add('ui-visible');
+        
+        resetGame();
+        gameActive = true;
+        requestAnimationFrame(gameLoop);
+    }
+
+    function gameOver() {
+        gameActive = false;
+        lastScoreElement.innerText = score;
+        finalStats.classList.remove('hidden');
+        hud.classList.remove('ui-visible');
+        menuOverlay.classList.remove('hidden-menu');
+    }
+
+    // Input Handling
+    function handleDown() {
+        if (!gameActive) return;
+        
+        let bestBranch = null;
+        let minDist = MAX_GRAPPLE_DISTANCE;
+
+        branches.forEach(b => {
+            const dx = b.x - monkey.x;
+            const dy = b.y - monkey.y;
+            const d = Math.sqrt(dx*dx + dy*dy);
+            if (b.x > monkey.x - 20 && d < minDist && d > MIN_GRAPPLE_DISTANCE) {
+                minDist = d;
+                bestBranch = b;
+            }
+        });
+
+        if (bestBranch) {
+            monkey.isGrappled = true;
+            monkey.grapplePoint = { x: bestBranch.x, y: bestBranch.y };
+            monkey.grappleLen = minDist;
+            monkey.swingPower = 0;
+        }
+    }
+
+    function handleUp() {
+        if(monkey.isGrappled && monkey.vx > 10) {
+            createParticle(monkey.x, monkey.y, '#ffffff', 5);
+        }
+        monkey.isGrappled = false;
+    }
+
+    window.addEventListener('mousedown', (e) => { if(e.button === 0) handleDown(); });
+    window.addEventListener('mouseup', (e) => { if(e.button === 0) handleUp(); });
+    window.addEventListener('touchstart', (e) => { e.preventDefault(); handleDown(); }, {passive: false});
+    window.addEventListener('touchend', (e) => { e.preventDefault(); handleUp(); }, {passive: false});
+
+    function update() {
+        if (!gameActive) return;
+
+        if (monkey.isGrappled) {
+            const dx = monkey.x - monkey.grapplePoint.x;
+            const dy = monkey.y - monkey.grapplePoint.y;
+            const currentDist = Math.sqrt(dx*dx + dy*dy);
+            
+            if (currentDist > monkey.grappleLen) {
+                const angle = Math.atan2(dy, dx);
+                monkey.x = monkey.grapplePoint.x + Math.cos(angle) * monkey.grappleLen;
+                monkey.y = monkey.grapplePoint.y + Math.sin(angle) * monkey.grappleLen;
+                
+                const normalX = Math.cos(angle);
+                const normalY = Math.sin(angle);
+                const dot = monkey.vx * normalX + monkey.vy * normalY;
+                
+                monkey.vx -= dot * normalX * 1.5;
+                monkey.vy -= dot * normalY * 1.5;
+                monkey.vx += 0.2; 
+                monkey.ropeTension = 1;
+            } else {
+                monkey.ropeTension *= 0.9;
+            }
+        } else {
+            monkey.ropeTension *= 0.8;
+        }
+
+        monkey.vy += GRAVITY;
+        monkey.vx *= AIR_RESISTANCE;
+        monkey.vy *= AIR_RESISTANCE;
+        
+        monkey.x += monkey.vx;
+        monkey.y += monkey.vy;
+
+        if (monkey.isGrappled) {
+            const dx = monkey.x - monkey.grapplePoint.x;
+            const dy = monkey.y - monkey.grapplePoint.y;
+            monkey.rotation = Math.atan2(dy, dx) + Math.PI/2;
+        } else {
+            monkey.rotation += monkey.vx * 0.02;
+        }
+
+        cameraX += (monkey.x - 250 - cameraX) * 0.1;
+        distance = Math.max(distance, monkey.x);
+
+        if (branches[branches.length - 1].x < cameraX + canvas.width + 500) {
+            spawnBranch(branches[branches.length - 1].x + 350 + Math.random() * 100);
+        }
+
+        items.forEach(item => {
+            item.pulse += 0.1;
+            if (!item.collected) {
+                const dx = item.x - monkey.x;
+                const dy = item.y - (monkey.y + Math.sin(item.pulse) * 5);
+                if (Math.sqrt(dx*dx + dy*dy) < 45) {
+                    item.collected = true;
+                    score += 10;
+                    createParticle(item.x, item.y, '#ffd700', 12);
+                    updateUI();
+                }
+            }
+        });
+
+        branches = branches.filter(b => b.x > cameraX - 200);
+        items = items.filter(i => i.x > cameraX - 200 && !i.collected);
+        
+        particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.2;
+            p.life -= 0.025;
+        });
+        particles = particles.filter(p => p.life > 0);
+        
+        clouds.forEach(c => {
+            c.x -= c.speed;
+            if (c.x < -200) c.x = canvas.width + 200;
+        });
+
+        if (monkey.y > canvas.height + 100) gameOver();
+        if (monkey.y < -500) { monkey.y = -500; monkey.vy = 0; }
+    }
+
+    function draw() {
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        skyGrad.addColorStop(0, '#4facfe');
+        skyGrad.addColorStop(1, '#00f2fe');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        clouds.forEach(c => {
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, c.size * 0.5, 0, Math.PI * 2);
+            ctx.arc(c.x + c.size * 0.4, c.y + 10, c.size * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        ctx.save();
+        ctx.translate(-cameraX, 0);
+
+        if (monkey.isGrappled) {
+            ctx.shadowBlur = 10 * monkey.ropeTension;
+            ctx.shadowColor = "rgba(0,0,0,0.5)";
+            ctx.beginPath();
+            ctx.moveTo(monkey.x, monkey.y);
+            ctx.lineTo(monkey.grapplePoint.x, monkey.grapplePoint.y);
+            ctx.strokeStyle = '#3e2723';
+            ctx.lineWidth = 3 + (monkey.ropeTension * 2);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            
+            ctx.fillStyle = '#2e7d32';
+            for (let i = 0.2; i < 0.9; i += 0.2) {
+                const lx = monkey.x + (monkey.grapplePoint.x - monkey.x) * i;
+                const ly = monkey.y + (monkey.grapplePoint.y - monkey.y) * i;
+                ctx.save();
+                ctx.translate(lx, ly);
+                ctx.rotate(i * 10);
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 8, 4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        branches.forEach(b => {
+            ctx.fillStyle = '#4e342e';
+            ctx.beginPath();
+            ctx.roundRect(b.x - 50, b.y - 12, 100, 24, 12);
+            ctx.fill();
+            ctx.fillStyle = '#1b5e20';
+            ctx.beginPath();
+            ctx.arc(b.x, b.y - 10, 35, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#2e7d32';
+            ctx.beginPath();
+            ctx.arc(b.x - 20, b.y - 5, 25, 0, Math.PI * 2);
+            ctx.arc(b.x + 20, b.y - 5, 25, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        items.forEach(item => {
+            ctx.save();
+            ctx.translate(item.x, item.y + Math.sin(item.pulse) * 8);
+            ctx.rotate(Math.sin(item.pulse) * 0.2);
+            ctx.font = '36px serif';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "rgba(255,215,0,0.5)";
+            ctx.fillText('🍌', -18, 12);
+            ctx.restore();
+        });
+
+        particles.forEach(p => {
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+
+        ctx.save();
+        ctx.translate(monkey.x, monkey.y);
+        ctx.rotate(monkey.rotation);
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.ellipse(0, 15, 20, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#6d4c41';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 24, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#d7ccc8';
+        ctx.beginPath();
+        ctx.ellipse(10, 0, 14, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#212121';
+        ctx.beginPath();
+        ctx.arc(16, -4, 2.5, 0, Math.PI * 2);
+        ctx.arc(16, 4, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#6d4c41';
+        ctx.beginPath();
+        ctx.arc(0, -18, 8, 0, Math.PI * 2);
+        ctx.arc(0, 18, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#5d4037';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(-20, 0);
+        ctx.bezierCurveTo(-40, -10, -30, -30, -50, -20);
+        ctx.stroke();
+        ctx.restore();
+        ctx.restore();
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        if (gameActive) {
+            requestAnimationFrame(gameLoop);
+        }
+    }
+
+    window.addEventListener('resize', resize);
+    init();
+
+</script>
+</body>
+</html>

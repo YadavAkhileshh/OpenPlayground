@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Archery Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #1a1a1a;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .stats-box {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: auto;
+        }
+        .btn {
+            background: #4f46e5;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: transform 0.1s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        #message-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            display: none;
+            pointer-events: auto;
+            min-width: 250px;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="flex justify-between items-start">
+            <div class="stats-box">
+                <div class="text-xs uppercase opacity-70 mb-1">Total Score</div>
+                <div id="score" class="text-3xl font-bold text-yellow-400">0</div>
+            </div>
+            <div class="stats-box text-right">
+                <div class="text-xs uppercase opacity-70 mb-1">Arrows Left</div>
+                <div id="arrows" class="text-3xl font-bold">10</div>
+            </div>
+        </div>
+
+        <div class="flex justify-center mb-8">
+            <div id="wind-indicator" class="stats-box flex items-center gap-3">
+                <span class="text-xs font-bold uppercase">Wind</span>
+                <div id="wind-arrow" style="transition: transform 0.5s">→</div>
+                <span id="wind-speed" class="font-mono">0.0</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="message-box">
+        <h2 id="msg-title" class="text-2xl font-bold mb-2 text-white">Game Over</h2>
+        <p id="msg-score" class="text-lg mb-6 text-gray-300">Final Score: 0</p>
+        <button class="btn" onclick="resetGame()">Play Again</button>
+    </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const arrowsEl = document.getElementById('arrows');
+    const windArrowEl = document.getElementById('wind-arrow');
+    const windSpeedEl = document.getElementById('wind-speed');
+    const messageBox = document.getElementById('message-box');
+    const msgScore = document.getElementById('msg-score');
+
+    // Game Constants
+    const GRAVITY = 0.15;
+    const ARROW_START_X = 150;
+    const TARGET_RADIUS = 60;
+    
+    // Game State
+    let gameState = {
+        score: 0,
+        arrows: 10,
+        isGameOver: false,
+        dragging: false,
+        dragStart: { x: 0, y: 0 },
+        dragEnd: { x: 0, y: 0 },
+        wind: { x: 0, y: 0 },
+        target: { x: 0, y: 0, dist: 0 },
+        activeArrows: [],
+        lastScore: 0,
+        scorePopup: null
+    };
+
+    function init() {
+        resize();
+        resetTarget();
+        updateWind();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        gameState.target.y = canvas.height * 0.6;
+    }
+
+    function resetTarget() {
+        // Distance varies from 60% to 90% of screen width
+        const minX = canvas.width * 0.5;
+        const maxX = canvas.width - 100;
+        gameState.target.x = minX + Math.random() * (maxX - minX);
+        gameState.target.y = canvas.height * 0.4 + Math.random() * (canvas.height * 0.3);
+    }
+
+    function updateWind() {
+        gameState.wind.x = (Math.random() - 0.5) * 0.05;
+        gameState.wind.y = (Math.random() - 0.5) * 0.05;
+        
+        const angle = Math.atan2(gameState.wind.y, gameState.wind.x);
+        const speed = Math.sqrt(gameState.wind.x**2 + gameState.wind.y**2) * 200;
+        
+        windArrowEl.style.transform = `rotate(${angle}rad)`;
+        windSpeedEl.innerText = speed.toFixed(1);
+    }
+
+    function resetGame() {
+        gameState.score = 0;
+        gameState.arrows = 10;
+        gameState.isGameOver = false;
+        gameState.activeArrows = [];
+        scoreEl.innerText = '0';
+        arrowsEl.innerText = '10';
+        messageBox.style.display = 'none';
+        resetTarget();
+        updateWind();
+    }
+
+    // Input Handling
+    function handleStart(x, y) {
+        if (gameState.isGameOver || gameState.arrows <= 0) return;
+        gameState.dragging = true;
+        gameState.dragStart = { x, y };
+        gameState.dragEnd = { x, y };
+    }
+
+    function handleMove(x, y) {
+        if (gameState.dragging) {
+            gameState.dragEnd = { x, y };
+        }
+    }
+
+    function handleEnd() {
+        if (!gameState.dragging) return;
+        gameState.dragging = false;
+
+        const dx = gameState.dragStart.x - gameState.dragEnd.x;
+        const dy = gameState.dragStart.y - gameState.dragEnd.y;
+        const power = Math.min(Math.sqrt(dx*dx + dy*dy) * 0.15, 25);
+        
+        if (power > 2) {
+            const angle = Math.atan2(dy, dx);
+            fireArrow(power, angle);
+        }
+    }
+
+    canvas.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
+    window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+    window.addEventListener('mouseup', handleEnd);
+
+    canvas.addEventListener('touchstart', e => {
+        const t = e.touches[0];
+        handleStart(t.clientX, t.clientY);
+    });
+    window.addEventListener('touchmove', e => {
+        const t = e.touches[0];
+        handleMove(t.clientX, t.clientY);
+    });
+    window.addEventListener('touchend', handleEnd);
+
+    function fireArrow(power, angle) {
+        gameState.arrows--;
+        arrowsEl.innerText = gameState.arrows;
+        
+        gameState.activeArrows.push({
+            x: ARROW_START_X,
+            y: gameState.dragStart.y,
+            vx: Math.cos(angle) * power,
+            vy: Math.sin(angle) * power,
+            angle: angle,
+            stuck: false,
+            trail: []
+        });
+
+        if (gameState.arrows === 0 && gameState.activeArrows.length === 0) {
+            endGame();
+        }
+    }
+
+    function endGame() {
+        setTimeout(() => {
+            gameState.isGameOver = true;
+            msgScore.innerText = `Final Score: ${gameState.score}`;
+            messageBox.style.display = 'block';
+        }, 1500);
+    }
+
+    function checkCollision(arrow) {
+        if (arrow.stuck) return;
+
+        const tx = gameState.target.x;
+        const ty = gameState.target.y;
+        
+        // Simple distance check to target line
+        if (arrow.x >= tx - 5 && arrow.x <= tx + 15) {
+            const dist = Math.abs(arrow.y - ty);
+            if (dist < TARGET_RADIUS) {
+                arrow.stuck = true;
+                arrow.x = tx; // Snap to target surface
+                
+                // Score calculation
+                let points = 0;
+                if (dist < 10) points = 10;
+                else if (dist < 25) points = 7;
+                else if (dist < 40) points = 5;
+                else points = 2;
+
+                gameState.score += points;
+                scoreEl.innerText = gameState.score;
+                
+                // Visual feedback
+                gameState.scorePopup = {
+                    x: tx,
+                    y: ty - 80,
+                    val: points,
+                    life: 1.0
+                };
+
+                setTimeout(() => {
+                    resetTarget();
+                    updateWind();
+                    if (gameState.arrows === 0) endGame();
+                }, 800);
+            }
+        }
+
+        // Out of bounds
+        if (arrow.y > canvas.height || arrow.x > canvas.width) {
+            arrow.stuck = true; // Stop processing
+            if (gameState.arrows === 0 && gameState.activeArrows.every(a => a.stuck || a.y > canvas.height)) {
+                endGame();
+            }
+            resetTarget();
+            updateWind();
+        }
+    }
+
+    function drawTarget() {
+        const { x, y } = gameState.target;
+        
+        // Stand
+        ctx.strokeStyle = '#4b2c20';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 20, y + 120);
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 20, y + 120);
+        ctx.stroke();
+
+        // Rings
+        const colors = ['#ffffff', '#1a1a1a', '#3b82f6', '#ef4444', '#f59e0b'];
+        const radii = [60, 48, 36, 24, 12];
+        
+        ctx.lineWidth = 2;
+        radii.forEach((r, i) => {
+            ctx.fillStyle = colors[i];
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+            ctx.stroke();
+        });
+    }
+
+    function drawArrow(arrow) {
+        ctx.save();
+        ctx.translate(arrow.x, arrow.y);
+        ctx.rotate(arrow.angle);
+
+        // Shaft
+        ctx.strokeStyle = '#d1d5db';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-40, 0);
+        ctx.lineTo(0, 0);
+        ctx.stroke();
+
+        // Fletching
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.moveTo(-40, 0);
+        ctx.lineTo(-50, -8);
+        ctx.lineTo(-45, 0);
+        ctx.lineTo(-50, 8);
+        ctx.fill();
+
+        // Tip
+        ctx.fillStyle = '#4b5563';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-8, -4);
+        ctx.lineTo(-8, 4);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function drawBow() {
+        if (!gameState.dragging) return;
+
+        const startX = ARROW_START_X;
+        const startY = gameState.dragStart.y;
+        const dx = gameState.dragStart.x - gameState.dragEnd.x;
+        const dy = gameState.dragStart.y - gameState.dragEnd.y;
+        const pull = Math.min(Math.sqrt(dx*dx + dy*dy), 150);
+        const angle = Math.atan2(dy, dx);
+
+        ctx.save();
+        ctx.translate(startX, startY);
+        ctx.rotate(angle);
+
+        // String
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, -60);
+        ctx.lineTo(-pull * 0.5, 0);
+        ctx.lineTo(0, 60);
+        ctx.stroke();
+
+        // Bow body
+        ctx.strokeStyle = '#8b5e3c';
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(40, 0, 80, -Math.PI/2 - 0.5, Math.PI/2 + 0.5);
+        ctx.stroke();
+
+        // Preview Arrow
+        ctx.translate(-pull * 0.5, 0);
+        drawArrow({ x: 0, y: 0, angle: 0 });
+
+        ctx.restore();
+    }
+
+    function gameLoop() {
+        // Background
+        const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        grad.addColorStop(0, '#1e293b');
+        grad.addColorStop(1, '#0f172a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Ground
+        ctx.fillStyle = '#064e3b';
+        ctx.fillRect(0, canvas.height * 0.85, canvas.width, canvas.height * 0.15);
+
+        drawTarget();
+        drawBow();
+
+        // Update & Draw Arrows
+        gameState.activeArrows.forEach((arrow, index) => {
+            if (!arrow.stuck) {
+                arrow.vx += gameState.wind.x;
+                arrow.vy += GRAVITY + gameState.wind.y;
+                arrow.x += arrow.vx;
+                arrow.y += arrow.vy;
+                arrow.angle = Math.atan2(arrow.vy, arrow.vx);
+                
+                checkCollision(arrow);
+            }
+            drawArrow(arrow);
+        });
+
+        // Clean up buried arrows
+        if (gameState.activeArrows.length > 15) gameState.activeArrows.shift();
+
+        // Score popup
+        if (gameState.scorePopup) {
+            ctx.fillStyle = `rgba(250, 204, 21, ${gameState.scorePopup.life})`;
+            ctx.font = 'bold 40px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`+${gameState.scorePopup.val}`, gameState.scorePopup.x, gameState.scorePopup.y);
+            gameState.scorePopup.y -= 1;
+            gameState.scorePopup.life -= 0.02;
+            if (gameState.scorePopup.life <= 0) gameState.scorePopup = null;
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    window.addEventListener('resize', resize);
+    init();
+
+</script>
+</body>
+</html>

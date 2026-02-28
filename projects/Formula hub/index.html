@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Formula Reference</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MathJax for high-quality LaTeX rendering -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .formula-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-item.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .mathjax-container {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center z-10">
+        <div class="flex items-center gap-2">
+            <div class="bg-blue-600 p-2 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+            </div>
+            <h1 class="text-xl font-bold text-slate-800 tracking-tight">FormulaHub <span class="text-sm font-normal text-slate-400">Pro</span></h1>
+        </div>
+        <div class="relative w-full max-w-md ml-4">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </span>
+            <input type="text" id="searchInput" placeholder="Search 100+ formulas..." 
+                class="w-full pl-10 pr-4 py-2 bg-slate-100 border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-full transition-all outline-none text-slate-700">
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-white border-r border-slate-200 flex flex-col overflow-y-auto hidden md:flex">
+            <div class="p-4 space-y-1">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3">Categories</p>
+                <button onclick="filterCategory('All')" class="sidebar-item active w-full text-left px-3 py-2 rounded-md transition-colors font-medium flex items-center gap-3">
+                    <span>🏠</span> All Formulas
+                </button>
+                <button onclick="filterCategory('Mathematics')" class="sidebar-item w-full text-left px-3 py-2 rounded-md transition-colors text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3">
+                    <span>📐</span> Mathematics
+                </button>
+                <button onclick="filterCategory('Physics')" class="sidebar-item w-full text-left px-3 py-2 rounded-md transition-colors text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3">
+                    <span>🍎</span> Physics
+                </button>
+                <button onclick="filterCategory('Chemistry')" class="sidebar-item w-full text-left px-3 py-2 rounded-md transition-colors text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3">
+                    <span>🧪</span> Chemistry
+                </button>
+            </div>
+            
+            <div class="mt-auto p-4 border-t border-slate-100">
+                <div class="bg-blue-50 rounded-xl p-4">
+                    <p class="text-xs text-blue-700 font-semibold mb-1">Study Tip</p>
+                    <p class="text-xs text-blue-600 leading-relaxed italic" id="studyTip">Understand the derivation, don't just memorize the result.</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto p-6 bg-slate-50">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 gap-4">
+                    <div>
+                        <h2 id="currentCategoryTitle" class="text-3xl font-bold text-slate-800">All Formulas</h2>
+                        <p class="text-slate-500 mt-1">Browse 100+ essential scientific and mathematical expressions.</p>
+                    </div>
+                    <div class="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full" id="itemCount">Loading...</div>
+                </div>
+
+                <!-- Grid -->
+                <div id="formulaGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
+                    <!-- Cards will be injected here -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="text-lg">No formulas found matching your search.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Formula Details Modal -->
+    <div id="modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-8 shadow-2xl relative">
+            <button onclick="closeModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div id="modalContent">
+                <!-- Modal content injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden input for clipboard -->
+    <textarea id="copyHelper" class="fixed top-[-1000px]"></textarea>
+
+    <script>
+        const formulas = [
+            // MATHEMATICS - Algebra
+            { id: 1, title: "Quadratic Formula", category: "Mathematics", formula: "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}", description: "Roots of $ax^2 + bx + c = 0$.", tags: ["algebra", "roots"] },
+            { id: 2, title: "Pythagorean Theorem", category: "Mathematics", formula: "a^2 + b^2 = c^2", description: "Relationship between sides of a right triangle.", tags: ["geometry", "triangle"] },
+            { id: 3, title: "Binomial Theorem", category: "Mathematics", formula: "(x+y)^n = \\sum_{k=0}^n \\binom{n}{k} x^{n-k} y^k", description: "Expansion of powers of a binomial.", tags: ["algebra"] },
+            { id: 4, title: "Log Product Rule", category: "Mathematics", formula: "\\log_b(xy) = \\log_b x + \\log_b y", description: "The logarithm of a product is the sum of logarithms.", tags: ["algebra", "log"] },
+            { id: 5, title: "Log Quotient Rule", category: "Mathematics", formula: "\\log_b(\\frac{x}{y}) = \\log_b x - \\log_b y", description: "The logarithm of a quotient is the difference of logarithms.", tags: ["algebra", "log"] },
+            { id: 6, title: "Log Power Rule", category: "Mathematics", formula: "\\log_b(x^k) = k \\log_b x", description: "Exponent within log moves to front.", tags: ["algebra", "log"] },
+            { id: 7, title: "Change of Base", category: "Mathematics", formula: "\\log_b x = \\frac{\\log_d x}{\\log_d b}", description: "Convert logs to any desired base.", tags: ["algebra", "log"] },
+            { id: 8, title: "Arithmetic Sequence", category: "Mathematics", formula: "a_n = a_1 + (n-1)d", description: "The $n$-th term of an arithmetic progression.", tags: ["sequences"] },
+            { id: 9, title: "Arithmetic Sum", category: "Mathematics", formula: "S_n = \\frac{n(a_1 + a_n)}{2}", description: "Sum of the first $n$ terms of arithmetic sequence.", tags: ["sequences"] },
+            { id: 10, title: "Geometric Sequence", category: "Mathematics", formula: "a_n = a_1 r^{n-1}", description: "The $n$-th term of a geometric progression.", tags: ["sequences"] },
+            { id: 11, title: "Geometric Sum (Finite)", category: "Mathematics", formula: "S_n = a_1 \\frac{1-r^n}{1-r}", description: "Sum of finite geometric series.", tags: ["sequences"] },
+            { id: 12, title: "Infinite Geometric Series", category: "Mathematics", formula: "S = \\frac{a_1}{1-r}, |r|<1", description: "Sum of infinite geometric series.", tags: ["sequences"] },
+            { id: 13, title: "Permutations", category: "Mathematics", formula: "P(n, r) = \\frac{n!}{(n-r)!}", description: "Ordered arrangements of objects.", tags: ["probability"] },
+            { id: 14, title: "Combinations", category: "Mathematics", formula: "C(n, r) = \\binom{n}{r} = \\frac{n!}{r!(n-r)!}", description: "Unordered selections of objects.", tags: ["probability"] },
+            { id: 15, title: "Complex Number Polar Form", category: "Mathematics", formula: "z = r(\\cos \\theta + i \\sin \\theta)", description: "Representing complex numbers using magnitude and angle.", tags: ["complex"] },
+            
+            // MATHEMATICS - Calculus
+            { id: 16, title: "Limit Definition", category: "Mathematics", formula: "f'(x) = \\lim_{h \\to 0} \\frac{f(x+h)-f(x)}{h}", description: "The derivative as a limit.", tags: ["calculus", "limits"] },
+            { id: 17, title: "Power Rule", category: "Mathematics", formula: "\\frac{d}{dx} x^n = nx^{n-1}", description: "Differentiating simple power functions.", tags: ["calculus"] },
+            { id: 18, title: "Product Rule", category: "Mathematics", formula: "(uv)' = u'v + uv'", description: "Differentiating product of two functions.", tags: ["calculus"] },
+            { id: 19, title: "Quotient Rule", category: "Mathematics", formula: "(\\frac{u}{v})' = \\frac{u'v - uv'}{v^2}", description: "Differentiating ratio of two functions.", tags: ["calculus"] },
+            { id: 20, title: "Chain Rule", category: "Mathematics", formula: "\\frac{dy}{dx} = \\frac{dy}{du} \\cdot \\frac{du}{dx}", description: "Differentiating composite functions.", tags: ["calculus"] },
+            { id: 21, title: "Integration by Parts", category: "Mathematics", formula: "\\int u \\, dv = uv - \\int v \\, du", description: "Reversing the product rule for integration.", tags: ["calculus"] },
+            { id: 22, title: "Fund. Theorem of Calc (I)", category: "Mathematics", formula: "\\int_a^b f(x)dx = F(b) - F(a)", description: "Linking integrals to antiderivatives.", tags: ["calculus"] },
+            { id: 23, title: "Arc Length", category: "Mathematics", formula: "L = \\int_a^b \\sqrt{1 + [f'(x)]^2} dx", description: "Length of a curve $f(x)$ from $a$ to $b$.", tags: ["calculus"] },
+            { id: 24, title: "Taylor Series", category: "Mathematics", formula: "f(x) = \\sum_{n=0}^\\infty \\frac{f^{(n)}(a)}{n!}(x-a)^n", description: "Approximating functions with polynomials.", tags: ["calculus"] },
+            { id: 25, title: "Euler's Identity", category: "Mathematics", formula: "e^{i\\pi} + 1 = 0", description: "Deep connection in complex analysis.", tags: ["analysis"] },
+            
+            // MATHEMATICS - Trig/Geometry
+            { id: 26, title: "Area of a Circle", category: "Mathematics", formula: "A = \\pi r^2", description: "Total space inside a circle.", tags: ["geometry"] },
+            { id: 27, title: "Circumference", category: "Mathematics", formula: "C = 2\\pi r", description: "Boundary length of a circle.", tags: ["geometry"] },
+            { id: 28, title: "Volume of Sphere", category: "Mathematics", formula: "V = \\frac{4}{3}\\pi r^3", description: "Space occupied by a 3D sphere.", tags: ["geometry"] },
+            { id: 29, title: "Surface Area Sphere", category: "Mathematics", formula: "A = 4\\pi r^2", description: "Outer boundary area of a sphere.", tags: ["geometry"] },
+            { id: 30, title: "Sine Rule", category: "Mathematics", formula: "\\frac{a}{\\sin A} = \\frac{b}{\\sin B}", description: "Ratios in triangles.", tags: ["trig"] },
+            { id: 31, title: "Cosine Rule", category: "Mathematics", formula: "c^2 = a^2 + b^2 - 2ab\\cos C", description: "General triangles.", tags: ["trig"] },
+            { id: 32, title: "Trig Identity (Pyth)", category: "Mathematics", formula: "\\sin^2 \\theta + \\cos^2 \\theta = 1", description: "Fundamental identity.", tags: ["trig"] },
+            { id: 33, title: "Double Angle (Sine)", category: "Mathematics", formula: "\\sin 2\\theta = 2\\sin \\theta \\cos \\theta", description: "Double angle identity for Sine.", tags: ["trig"] },
+            { id: 34, title: "Double Angle (Cos)", category: "Mathematics", formula: "\\cos 2\\theta = \\cos^2 \\theta - \\sin^2 \\theta", description: "Double angle identity for Cosine.", tags: ["trig"] },
+            
+            // PHYSICS - Mechanics
+            { id: 35, title: "Velocity", category: "Physics", formula: "v = \\frac{\\Delta s}{\\Delta t}", description: "Rate of change of position.", tags: ["kinematics"] },
+            { id: 36, title: "Acceleration", category: "Physics", formula: "a = \\frac{\\Delta v}{\\Delta t}", description: "Rate of change of velocity.", tags: ["kinematics"] },
+            { id: 37, title: "Kinematic (no d)", category: "Physics", formula: "v = u + at", description: "Final velocity equation.", tags: ["kinematics"] },
+            { id: 38, title: "Kinematic (no v)", category: "Physics", formula: "s = ut + \\frac{1}{2}at^2", description: "Displacement equation.", tags: ["kinematics"] },
+            { id: 39, title: "Kinematic (no t)", category: "Physics", formula: "v^2 = u^2 + 2as", description: "Velocity squared equation.", tags: ["kinematics"] },
+            { id: 40, title: "Newton's Second Law", category: "Physics", formula: "F = ma", description: "Force equals mass times acceleration.", tags: ["mechanics"] },
+            { id: 41, title: "Weight", category: "Physics", formula: "W = mg", description: "Force due to gravity on a mass.", tags: ["mechanics"] },
+            { id: 42, title: "Kinetic Energy", category: "Physics", formula: "KE = \\frac{1}{2}mv^2", description: "Energy of motion.", tags: ["energy"] },
+            { id: 43, title: "Grav. Pot. Energy", category: "Physics", formula: "PE = mgh", description: "Energy due to height.", tags: ["energy"] },
+            { id: 44, title: "Work Done", category: "Physics", formula: "W = Fd \\cos \\theta", description: "Energy transferred by a force.", tags: ["energy"] },
+            { id: 45, title: "Power", category: "Physics", formula: "P = \\frac{W}{t} = Fv", description: "Rate of doing work.", tags: ["energy"] },
+            { id: 46, title: "Momentum", category: "Physics", formula: "p = mv", description: "Mass in motion.", tags: ["mechanics"] },
+            { id: 47, title: "Impulse", category: "Physics", formula: "J = F \\Delta t = \\Delta p", description: "Change in momentum.", tags: ["mechanics"] },
+            { id: 48, title: "Centripetal Force", category: "Physics", formula: "F_c = \\frac{mv^2}{r}", description: "Force keeping object in circular path.", tags: ["circular"] },
+            { id: 49, title: "Centripetal Accel", category: "Physics", formula: "a_c = \\frac{v^2}{r}", description: "Acceleration in circular motion.", tags: ["circular"] },
+            { id: 50, title: "Torque", category: "Physics", formula: "\\tau = rF \\sin \\theta", description: "Rotational force.", tags: ["mechanics"] },
+            { id: 51, title: "Hooke's Law", category: "Physics", formula: "F = -kx", description: "Force of a spring.", tags: ["mechanics"] },
+            { id: 52, title: "Law of Gravitation", category: "Physics", formula: "F = G \\frac{m_1 m_2}{r^2}", description: "Attraction between two masses.", tags: ["gravity"] },
+            { id: 53, title: "Grav. Field Strength", category: "Physics", formula: "g = \\frac{GM}{r^2}", description: "Acceleration due to gravity.", tags: ["gravity"] },
+            { id: 54, title: "Density", category: "Physics", formula: "\\rho = \\frac{m}{V}", description: "Mass per unit volume.", tags: ["fluids"] },
+            { id: 55, title: "Pressure", category: "Physics", formula: "P = \\frac{F}{A}", description: "Force per unit area.", tags: ["fluids"] },
+            { id: 56, title: "Fluid Pressure", category: "Physics", formula: "P = \\rho gh", description: "Pressure at depth in fluid.", tags: ["fluids"] },
+            
+            // PHYSICS - E&M / Waves
+            { id: 57, title: "Coulomb's Law", category: "Physics", formula: "F = k \\frac{q_1 q_2}{r^2}", description: "Force between electric charges.", tags: ["electricity"] },
+            { id: 58, title: "Electric Field", category: "Physics", formula: "E = \\frac{F}{q}", description: "Force per unit charge.", tags: ["electricity"] },
+            { id: 59, title: "Ohm's Law", category: "Physics", formula: "V = IR", description: "Voltage, current, and resistance.", tags: ["circuits"] },
+            { id: 60, title: "Power (Electric)", category: "Physics", formula: "P = VI = I^2R = \\frac{V^2}{R}", description: "Electric power dissipation.", tags: ["circuits"] },
+            { id: 61, title: "Resistors in Series", category: "Physics", formula: "R_{total} = R_1 + R_2 + ...", description: "Cumulative resistance.", tags: ["circuits"] },
+            { id: 62, title: "Resistors in Parallel", category: "Physics", formula: "\\frac{1}{R_{total}} = \\sum \\frac{1}{R_i}", description: "Reciprocal sum resistance.", tags: ["circuits"] },
+            { id: 63, title: "Capacitance", category: "Physics", formula: "C = \\frac{Q}{V}", description: "Charge stored per volt.", tags: ["circuits"] },
+            { id: 64, title: "Magnetic Force", category: "Physics", formula: "F = qvB \\sin \\theta", description: "Force on moving charge in B-field.", tags: ["magnetism"] },
+            { id: 65, title: "Wave Equation", category: "Physics", formula: "v = f \\lambda", description: "Speed, frequency, and wavelength.", tags: ["waves"] },
+            { id: 66, title: "Refractive Index", category: "Physics", formula: "n = \\frac{c}{v}", description: "Light speed ratio.", tags: ["optics"] },
+            { id: 67, title: "Snell's Law", category: "Physics", formula: "n_1 \\sin \\theta_1 = n_2 \\sin \\theta_2", description: "Refraction of light.", tags: ["optics"] },
+            { id: 68, title: "Lens Formula", category: "Physics", formula: "\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}", description: "Object and image distances.", tags: ["optics"] },
+            { id: 69, title: "Magnification", category: "Physics", formula: "M = -\\frac{v}{u}", description: "Image size ratio.", tags: ["optics"] },
+            { id: 70, title: "Photon Energy", category: "Physics", formula: "E = hf = \\frac{hc}{\\lambda}", description: "Energy of a light particle.", tags: ["quantum"] },
+            { id: 71, title: "Einstein's Energy", category: "Physics", formula: "E = mc^2", description: "Mass-energy equivalence.", tags: ["relativity"] },
+            { id: 72, title: "Lorentz Factor", category: "Physics", formula: "\\gamma = \\frac{1}{\\sqrt{1 - v^2/c^2}}", description: "Time dilation/contraction factor.", tags: ["relativity"] },
+            { id: 73, title: "Schrödinger Eq.", category: "Physics", formula: "i\\hbar \\frac{\\partial}{\\partial t}\\Psi = \\hat{H}\\Psi", description: "Quantum wave mechanics.", tags: ["quantum"] },
+            { id: 74, title: "Uncertainty Principle", category: "Physics", formula: "\\Delta x \\Delta p \\ge \\frac{\\hbar}{2}", description: "Position and momentum limit.", tags: ["quantum"] },
+            
+            // CHEMISTRY - Fundamentals
+            { id: 75, title: "Ideal Gas Law", category: "Chemistry", formula: "PV = nRT", description: "Equation for ideal gases.", tags: ["gas"] },
+            { id: 76, title: "Molarity", category: "Chemistry", formula: "M = \\frac{n}{V}", description: "Moles per liter.", tags: ["solution"] },
+            { id: 77, title: "Molality", category: "Chemistry", formula: "m = \\frac{n}{kg \\, solvent}", description: "Moles per kg solvent.", tags: ["solution"] },
+            { id: 78, title: "pH Equation", category: "Chemistry", formula: "pH = -\\log[H^+]", description: "Acidity measurement.", tags: ["acids"] },
+            { id: 79, title: "pOH Equation", category: "Chemistry", formula: "pOH = -\\log[OH^-]", description: "Basicity measurement.", tags: ["acids"] },
+            { id: 80, title: "pH + pOH", category: "Chemistry", formula: "pH + pOH = 14", description: "Relation at 25°C.", tags: ["acids"] },
+            { id: 81, title: "Henderson-Hasselbalch", category: "Chemistry", formula: "pH = pK_a + \\log\\frac{[A^-]}{[HA]}", description: "Buffer solutions.", tags: ["acids"] },
+            { id: 82, title: "Equilibrium Constant", category: "Chemistry", formula: "K_c = \\frac{[C]^c[D]^d}{[A]^a[B]^b}", description: "Reaction balance.", tags: ["kinetics"] },
+            { id: 83, title: "Gibbs Free Energy", category: "Chemistry", formula: "\\Delta G = \\Delta H - T \\Delta S", description: "Reaction spontaneity.", tags: ["thermo"] },
+            { id: 84, title: "Free Energy & K", category: "Chemistry", formula: "\\Delta G^\\circ = -RT \\ln K", description: "Standard free energy and K.", tags: ["thermo"] },
+            { id: 85, title: "Arrhenius Equation", category: "Chemistry", formula: "k = Ae^{-E_a/RT}", description: "Rate and temperature.", tags: ["kinetics"] },
+            { id: 86, title: "Nernst Equation", category: "Chemistry", formula: "E = E^\\circ - \\frac{0.0592}{n} \\log Q", description: "Cell potential at 25°C.", tags: ["electro"] },
+            { id: 87, title: "Faraday's Law", category: "Chemistry", formula: "m = \\frac{ItM}{nF}", description: "Mass deposited in electrolysis.", tags: ["electro"] },
+            { id: 88, title: "Beer-Lambert Law", category: "Chemistry", formula: "A = \\epsilon c l", description: "Light absorption.", tags: ["spectro"] },
+            { id: 89, title: "Boyle's Law", category: "Chemistry", formula: "P_1V_1 = P_2V_2", description: "Constant temp gas behavior.", tags: ["gas"] },
+            { id: 90, title: "Charles's Law", category: "Chemistry", formula: "\\frac{V_1}{T_1} = \\frac{V_2}{T_2}", description: "Constant pressure gas behavior.", tags: ["gas"] },
+            { id: 91, title: "Gay-Lussac Law", category: "Chemistry", formula: "\\frac{P_1}{T_1} = \\frac{P_2}{T_2}", description: "Constant volume gas behavior.", tags: ["gas"] },
+            { id: 92, title: "Avogadro's Law", category: "Chemistry", formula: "\\frac{V_1}{n_1} = \\frac{V_2}{n_2}", description: "Volume and moles.", tags: ["gas"] },
+            { id: 93, title: "Bragg's Law", category: "Chemistry", formula: "n \\lambda = 2d \\sin \\theta", description: "X-ray diffraction.", tags: ["structure"] },
+            { id: 94, title: "Heat Change", category: "Chemistry", formula: "q = mc \\Delta T", description: "Sensible heat transfer.", tags: ["thermo"] },
+            { id: 95, title: "Enthalpy of Reaction", category: "Chemistry", formula: "\\Delta H = \\sum H_{prod} - \\sum H_{react}", description: "Heat of reaction.", tags: ["thermo"] },
+            { id: 96, title: "RMS Speed of Gas", category: "Chemistry", formula: "v_{rms} = \\sqrt{\\frac{3RT}{M}}", description: "Average particle speed.", tags: ["gas"] },
+            { id: 97, title: "Osmotic Pressure", category: "Chemistry", formula: "\\Pi = iMRT", description: "Colligative property.", tags: ["solution"] },
+            { id: 98, title: "Raoult's Law", category: "Chemistry", formula: "P_{soln} = X_{solv}P^\\circ_{solv}", description: "Vapor pressure.", tags: ["solution"] },
+            { id: 99, title: "Half-Life (1st Order)", category: "Chemistry", formula: "t_{1/2} = \\frac{\\ln 2}{k}", description: "Decay time.", tags: ["kinetics"] },
+            { id: 100, title: "Dilution Formula", category: "Chemistry", formula: "M_1V_1 = M_2V_2", description: "Mixing solutions.", tags: ["solution"] },
+            { id: 101, title: "Specific Gravity", category: "Chemistry", formula: "SG = \\frac{\\rho_{sub}}{\\rho_{water}}", description: "Relative density.", tags: ["matter"] },
+            { id: 102, title: "Avogadro Constant", category: "Chemistry", formula: "N_A = 6.022 \\times 10^{23}", description: "Particles in a mole.", tags: ["constants"] }
+        ];
+
+        let currentFilter = 'All';
+        const searchInput = document.getElementById('searchInput');
+        const formulaGrid = document.getElementById('formulaGrid');
+        const emptyState = document.getElementById('emptyState');
+        const currentCategoryTitle = document.getElementById('currentCategoryTitle');
+        const itemCountLabel = document.getElementById('itemCount');
+        const copyHelper = document.getElementById('copyHelper');
+
+        const tips = [
+            "Check your units twice, calculate once.",
+            "Dimensional analysis prevents 50% of errors.",
+            "Visualizing the problem makes the formula obvious.",
+            "Constants are only constant in specific contexts.",
+            "Math is the tool, science is the goal.",
+            "Always consider significant figures.",
+            "Derivations help you understand 'why', not just 'what'."
+        ];
+
+        function init() {
+            renderFormulas();
+            updateStudyTip();
+            setInterval(updateStudyTip, 8000);
+        }
+
+        function updateStudyTip() {
+            document.getElementById('studyTip').innerText = tips[Math.floor(Math.random() * tips.length)];
+        }
+
+        function renderFormulas() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filtered = formulas.filter(f => {
+                const matchesCategory = currentFilter === 'All' || f.category === currentFilter;
+                const matchesSearch = f.title.toLowerCase().includes(searchTerm) || 
+                                    f.description.toLowerCase().includes(searchTerm) ||
+                                    f.tags.some(t => t.toLowerCase().includes(searchTerm));
+                return matchesCategory && matchesSearch;
+            });
+
+            formulaGrid.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                filtered.forEach(f => {
+                    const card = document.createElement('div');
+                    card.className = "formula-card bg-white p-6 rounded-2xl border border-slate-200 cursor-pointer transition-all duration-300 flex flex-col";
+                    card.onclick = () => showDetails(f.id);
+                    
+                    const catColors = {
+                        'Mathematics': 'bg-blue-100 text-blue-700',
+                        'Physics': 'bg-orange-100 text-orange-700',
+                        'Chemistry': 'bg-emerald-100 text-emerald-700'
+                    };
+
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded ${catColors[f.category]} uppercase tracking-wider">${f.category}</span>
+                            <div class="text-slate-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-md mb-2 leading-tight">${f.title}</h3>
+                        <div class="bg-slate-50 p-4 rounded-xl flex items-center justify-center my-2 min-h-[80px] overflow-hidden">
+                            <div class="text-lg text-slate-800 mathjax-container">
+                                $$ ${f.formula} $$
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-1 mt-auto pt-3">
+                            ${f.tags.map(t => `<span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">#${t}</span>`).join('')}
+                        </div>
+                    `;
+                    formulaGrid.appendChild(card);
+                });
+            }
+
+            itemCountLabel.innerText = `${filtered.length} Formulas Found`;
+            
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
+            }
+        }
+
+        function filterCategory(cat) {
+            currentFilter = cat;
+            currentCategoryTitle.innerText = cat === 'All' ? 'All Formulas' : cat;
+            
+            document.querySelectorAll('.sidebar-item').forEach(btn => {
+                if (btn.innerText.includes(cat)) {
+                    btn.classList.add('active');
+                    btn.classList.remove('text-slate-600', 'hover:bg-slate-50');
+                } else {
+                    btn.classList.remove('active');
+                    btn.classList.add('text-slate-600', 'hover:bg-slate-50');
+                }
+            });
+
+            renderFormulas();
+        }
+
+        function showDetails(id) {
+            const f = formulas.find(item => item.id === id);
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modalContent');
+
+            modalContent.innerHTML = `
+                <div class="text-center">
+                    <span class="inline-block text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-500 mb-4 uppercase tracking-widest">${f.category}</span>
+                    <h2 class="text-2xl font-bold text-slate-900 mb-6">${f.title}</h2>
+                    
+                    <div class="bg-blue-50/50 p-8 rounded-3xl mb-6 shadow-inner overflow-x-auto border border-blue-100">
+                        <div class="text-3xl text-blue-900 py-4">
+                            $$ ${f.formula} $$
+                        </div>
+                    </div>
+                    
+                    <div class="text-left space-y-4">
+                        <h4 class="font-bold text-slate-800 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Key Concept
+                        </h4>
+                        <p class="text-slate-600 leading-relaxed text-sm">${f.description}</p>
+                        
+                        <div class="pt-6 flex flex-col sm:flex-row items-center gap-3">
+                            <button id="copyBtn" class="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-2xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                </svg>
+                                <span>Copy LaTeX</span>
+                            </button>
+                            <button class="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-8 rounded-2xl transition-colors" onclick="closeModal()">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            document.getElementById('copyBtn').onclick = () => copyFormula(f.formula);
+
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
+            }
+        }
+
+        function copyFormula(text) {
+            const btn = document.getElementById('copyBtn');
+            const originalHtml = btn.innerHTML;
+            
+            copyHelper.value = text;
+            copyHelper.select();
+            document.execCommand('copy');
+
+            btn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Copied!</span>
+            `;
+            btn.classList.replace('bg-blue-600', 'bg-emerald-500');
+
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.replace('bg-emerald-500', 'bg-blue-600');
+            }, 2000);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        searchInput.addEventListener('input', renderFormulas);
+        
+        // Handle Escape key for modal
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        window.onload = init;
+    </script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Drop & Merge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --grid-bg: #1e293b;
+            --cell-size: 65px;
+            --grid-gap: 8px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            user-select: none;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(7, var(--cell-size));
+            gap: var(--grid-gap);
+            background: var(--grid-bg);
+            padding: var(--grid-gap);
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .cell {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .number-block {
+            position: absolute;
+            width: var(--cell-size);
+            height: var(--cell-size);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: 800;
+            border-radius: 8px;
+            transition: transform 0.1s ease-out, top 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), left 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        /* Color Coding for Numbers */
+        .n2 { background-color: #ef4444; color: white; }
+        .n4 { background-color: #f97316; color: white; }
+        .n8 { background-color: #f59e0b; color: white; }
+        .n16 { background-color: #10b981; color: white; }
+        .n32 { background-color: #06b6d4; color: white; }
+        .n64 { background-color: #3b82f6; color: white; }
+        .n128 { background-color: #6366f1; color: white; }
+        .n256 { background-color: #8b5cf6; color: white; }
+        .n512 { background-color: #d946ef; color: white; }
+        .n1024 { background-color: #ec4899; color: white; }
+        .n2048 { background-color: #f43f5e; color: white; box-shadow: 0 0 15px #f43f5e; }
+
+        #preview-area {
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .preview-block {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 800;
+            font-size: 20px;
+            opacity: 0.8;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+        }
+
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .btn:hover { background: #2563eb; }
+
+        .pop {
+            animation: popScale 0.2s ease-out;
+        }
+
+        @keyframes popScale {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="stats-bar">
+        <div>SCORE: <span id="score">0</span></div>
+        <div>BEST: <span id="best">0</span></div>
+    </div>
+
+    <div id="preview-area">
+        <div id="next-block" class="preview-block"></div>
+    </div>
+
+    <div id="grid">
+        <!-- Grid backgrounds -->
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+        <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    </div>
+
+    <div class="mt-6 text-center text-slate-400 text-sm">
+        Tap columns to drop. Merge same numbers!
+    </div>
+</div>
+
+<div id="overlay">
+    <h1 class="text-4xl font-bold mb-2">GAME OVER</h1>
+    <p class="text-xl">Final Score: <span id="final-score">0</span></p>
+    <button class="btn" onclick="resetGame()">PLAY AGAIN</button>
+</div>
+
+<script>
+    const ROWS = 7;
+    const COLS = 5;
+    const gridElement = document.getElementById('grid');
+    const scoreElement = document.getElementById('score');
+    const bestElement = document.getElementById('best');
+    const nextBlockElement = document.getElementById('next-block');
+    const overlay = document.getElementById('overlay');
+    const finalScoreElement = document.getElementById('final-score');
+
+    let score = 0;
+    let best = localStorage.getItem('dropBest') || 0;
+    let grid = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+    let nextValue = 2;
+    let isProcessing = false;
+
+    bestElement.innerText = best;
+
+    function init() {
+        generateNext();
+        renderGrid();
+    }
+
+    function generateNext() {
+        const powers = [2, 4, 8, 16, 32, 64];
+        const index = Math.floor(Math.pow(Math.random(), 2) * powers.length);
+        nextValue = powers[index];
+        nextBlockElement.innerText = nextValue;
+        nextBlockElement.className = `preview-block n${nextValue}`;
+    }
+
+    function renderGrid() {
+        const blocks = document.querySelectorAll('.number-block');
+        blocks.forEach(b => b.remove());
+
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                if (grid[r][c]) {
+                    createBlockElement(r, c, grid[r][c]);
+                }
+            }
+        }
+    }
+
+    function createBlockElement(r, c, value) {
+        const div = document.createElement('div');
+        div.className = `number-block n${value} block-${r}-${c}`;
+        div.innerText = value;
+        
+        const gap = 8;
+        const cellSize = 65;
+        div.style.left = `${c * (cellSize + gap) + gap}px`;
+        div.style.top = `${r * (cellSize + gap) + gap}px`;
+        
+        gridElement.appendChild(div);
+        return div;
+    }
+
+    async function handleColumnClick(col) {
+        if (isProcessing) return;
+        
+        let row = -1;
+        for (let r = ROWS - 1; r >= 0; r--) {
+            if (!grid[r][col]) {
+                row = r;
+                break;
+            }
+        }
+
+        if (row === -1) {
+            checkGameOver();
+            return;
+        }
+
+        isProcessing = true;
+        const valueToDrop = nextValue;
+        generateNext();
+
+        const tempBlock = createBlockElement(0, col, valueToDrop);
+        tempBlock.style.top = `-80px`;
+        tempBlock.offsetHeight;
+
+        const gap = 8;
+        const cellSize = 65;
+        tempBlock.style.top = `${row * (cellSize + gap) + gap}px`;
+
+        await new Promise(resolve => setTimeout(resolve, 250));
+        
+        grid[row][col] = valueToDrop;
+        tempBlock.remove();
+        renderGrid();
+
+        await applyMerges(row, col);
+        isProcessing = false;
+        checkGameOver();
+    }
+
+    async function applyMerges(r, c) {
+        let value = grid[r][c];
+        if (!value) return;
+
+        const neighbors = [
+            [r + 1, c], // Down
+            [r, c - 1], // Left
+            [r, c + 1], // Right
+            [r - 1, c]  // Up
+        ];
+
+        let foundMatch = false;
+        let mergeCount = 0;
+
+        for (let [nr, nc] of neighbors) {
+            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && grid[nr][nc] === value) {
+                grid[nr][nc] = null;
+                mergeCount++;
+                foundMatch = true;
+            }
+        }
+
+        if (foundMatch) {
+            // New value is doubled for each neighbor found (usually just 1 neighbor, so *2)
+            // Classic game logic: same numbers merge into one block of the next power
+            // If triple merge, we jump two powers (e.g., 2+2+2 -> 8)
+            let newValue = value * Math.pow(2, mergeCount);
+            grid[r][c] = newValue;
+            score += newValue;
+            updateScore();
+
+            renderGrid();
+            const currentBlock = document.querySelector(`.block-${r}-${c}`);
+            if (currentBlock) currentBlock.classList.add('pop');
+            
+            await new Promise(r => setTimeout(r, 200));
+            
+            // Gravity is crucial: blocks above might fall into the gaps left by merged neighbors
+            await applyGravity();
+            
+            // Important: Recurse because the new doubled block might now match its neighbors
+            // We need to find the current position of our block after gravity
+            let newPos = findValueInGrid(newValue);
+            if (newPos) {
+                await applyMerges(newPos.r, newPos.c);
+            }
+        }
+    }
+
+    function findValueInGrid(val) {
+        for (let r = ROWS-1; r >= 0; r--) {
+            for (let c = 0; c < COLS; c++) {
+                if (grid[r][c] === val) return {r, c};
+            }
+        }
+        return null;
+    }
+
+    async function applyGravity() {
+        let moved = false;
+        for (let c = 0; c < COLS; c++) {
+            for (let r = ROWS - 1; r > 0; r--) {
+                // If current is empty and block above exists
+                if (!grid[r][c] && grid[r-1][c]) {
+                    grid[r][c] = grid[r-1][c];
+                    grid[r-1][c] = null;
+                    moved = true;
+                }
+            }
+        }
+        if (moved) {
+            renderGrid();
+            await new Promise(r => setTimeout(r, 100));
+            // Keep applying until settled
+            await applyGravity();
+        }
+    }
+
+    function updateScore() {
+        scoreElement.innerText = score;
+        if (score > best) {
+            best = score;
+            bestElement.innerText = best;
+            localStorage.setItem('dropBest', best);
+        }
+    }
+
+    function checkGameOver() {
+        for (let c = 0; c < COLS; c++) {
+            if (grid[0][c]) {
+                finalScoreElement.innerText = score;
+                overlay.style.display = 'flex';
+                return;
+            }
+        }
+    }
+
+    function resetGame() {
+        grid = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+        score = 0;
+        updateScore();
+        overlay.style.display = 'none';
+        init();
+    }
+
+    gridElement.addEventListener('pointerdown', (e) => {
+        const rect = gridElement.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const colWidth = rect.width / COLS;
+        const col = Math.floor(x / colWidth);
+        if (col >= 0 && col < COLS) {
+            handleColumnClick(col);
+        }
+    });
+
+    init();
+</script>
+</body>
+</html>

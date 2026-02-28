@@ -176,7 +176,7 @@ const uniqueUsers = document.getElementById('uniqueUsers');
 // Initialize Application
 // ===============================
 
-function init() {
+const init = () => {
     console.log('🚀 Initializing FeedPage Matters...');
     loadThemePreference();
     setupEventListeners();
@@ -200,13 +200,13 @@ function init() {
 // Theme Management
 // ===============================
 
-function loadThemePreference() {
+const loadThemePreference = () => {
     const savedTheme = localStorage.getItem('theme_orange') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     console.log('🌓 Theme loaded:', savedTheme);
 }
 
-function updateThemeToggle(theme) {
+const updateThemeToggle = (theme) => {
     // Note: The feedback.html uses a different theme toggle structure (SVG-based) than index.html
     // If you have a specific slider in your CSS, keep this:
     const slider = document.querySelector('.theme-toggle-slider');
@@ -233,7 +233,7 @@ function updateThemeToggle(theme) {
 // Demo Data Initialization
 // ===============================
 
-function initializeDemoData() {
+const initializeDemoData = () => {
     console.log('📊 Loading demo data...');
     showLoading(true);
 
@@ -267,7 +267,7 @@ function initializeDemoData() {
 // User Management
 // ===============================
 
-function generateUserId() {
+const generateUserId = () => {
     let userId = localStorage.getItem(CONFIG.USER_ID_KEY);
     if (!userId) {
         // Generate a unique user ID
@@ -282,7 +282,7 @@ function generateUserId() {
 // Data Management - GLOBAL SERVER SIMULATION
 // ===============================
 
-async function loadInitialData() {
+const loadInitialData = async () => {
     console.log('📂 Loading initial data...');
     showLoading(true);
 
@@ -313,7 +313,7 @@ async function loadInitialData() {
     }
 }
 
-async function syncWithGlobalServer() {
+const syncWithGlobalServer = async () => {
     try {
         console.log('🌐 Syncing with global server...');
         const response = await fetch(CONFIG.BIN_URL + '/latest', {
@@ -379,7 +379,7 @@ async function syncWithGlobalServer() {
     }
 }
 
-async function postToGlobalServer(feedback) {
+const postToGlobalServer = async (feedback) => {
     try {
         console.log('🌐 Posting to global server...');
 
@@ -423,7 +423,7 @@ async function postToGlobalServer(feedback) {
     }
 }
 
-function loadLocalData() {
+const loadLocalData = () => {
     try {
         const storedData = localStorage.getItem(CONFIG.STORAGE_KEY);
 
@@ -456,7 +456,7 @@ function loadLocalData() {
     }
 }
 
-function saveLocalData() {
+const saveLocalData = () => {
     try {
         localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(state.feedbackData));
         console.log('💾 Saved to local cache:', state.feedbackData.length, 'posts');
@@ -465,7 +465,7 @@ function saveLocalData() {
     }
 }
 
-function loadLikedPosts() {
+const loadLikedPosts = () => {
     const storedLikes = localStorage.getItem(CONFIG.LIKED_POSTS_KEY);
     if (storedLikes) {
         try {
@@ -478,7 +478,7 @@ function loadLikedPosts() {
     }
 }
 
-function saveLikedPosts() {
+const saveLikedPosts = () => {
     try {
         localStorage.setItem(CONFIG.LIKED_POSTS_KEY, JSON.stringify(Array.from(state.likedPosts)));
     } catch (error) {
@@ -491,20 +491,20 @@ function saveLikedPosts() {
 // ===============================
 
 // Rating System
-function setupRatingStars() {
+const setupRatingStars = () => {
     console.log('⭐ Setting up rating stars...');
     ratingStars.forEach(star => {
-        star.addEventListener('click', function () {
+        star.addEventListener('click', () => {
             const value = parseInt(this.getAttribute('data-value'));
             setRating(value);
         });
 
-        star.addEventListener('mouseover', function () {
+        star.addEventListener('mouseover', () => {
             const value = parseInt(this.getAttribute('data-value'));
             highlightStars(value);
         });
 
-        star.addEventListener('mouseout', function () {
+        star.addEventListener('mouseout', () => {
             const currentRating = parseInt(ratingInput.value);
             highlightStars(currentRating);
         });
@@ -513,7 +513,7 @@ function setupRatingStars() {
     highlightStars(0);
 }
 
-function setRating(value) {
+const setRating = (value) => {
     ratingInput.value = value;
     highlightStars(value);
 
@@ -527,7 +527,7 @@ function setRating(value) {
     ratingText.textContent = ratingTexts[value] || 'Select your feeling';
 }
 
-function highlightStars(value) {
+const highlightStars = (value) => {
     ratingStars.forEach((star, index) => {
         const starIcon = star.querySelector('i');
         const starLabel = star.querySelector('.star-label');
@@ -547,9 +547,9 @@ function highlightStars(value) {
 }
 
 // Character Counter
-function setupCharacterCounter() {
+const setupCharacterCounter = () => {
     if (messageInput) {
-        messageInput.addEventListener('input', function () {
+        messageInput.addEventListener('input', () => {
             const length = this.value.length;
             charCount.textContent = length;
 
@@ -567,10 +567,10 @@ function setupCharacterCounter() {
 }
 
 // Event Listeners
-function setupEventListeners() {
+const setupEventListeners = () => {
     // Theme Toggle
     if (themeToggle) {
-        themeToggle.addEventListener('click', function () {
+        themeToggle.addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
 
@@ -618,7 +618,7 @@ function setupEventListeners() {
 
     // View Controls
     viewButtons.forEach(btn => {
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', () => {
             viewButtons.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             state.currentView = this.dataset.view;
@@ -628,7 +628,7 @@ function setupEventListeners() {
 
     // Sort Control
     if (sortFilter) {
-        sortFilter.addEventListener('change', function () {
+        sortFilter.addEventListener('change', () => {
             state.currentSort = this.value;
             state.currentPage = 1;
             renderFeed();
@@ -657,7 +657,7 @@ function setupEventListeners() {
 // Feedback Handling
 // ===============================
 
-async function handleFeedbackSubmit(e) {
+const handleFeedbackSubmit = async (e) => {
     e.preventDefault();
 
     // Get form values
@@ -752,7 +752,7 @@ async function handleFeedbackSubmit(e) {
     }
 }
 
-async function handleFooterFeedbackSubmit(e) {
+const handleFooterFeedbackSubmit = async (e) => {
     e.preventDefault();
 
     let name = document.getElementById('footerName').value.trim() || 'Anonymous';
@@ -804,7 +804,7 @@ async function handleFooterFeedbackSubmit(e) {
     window.notificationManager.success('Thank you for your feedback!');
 }
 
-function clearForm() {
+const clearForm = () => {
     if (feedbackForm) {
         feedbackForm.reset();
         ratingInput.value = '0';
@@ -819,7 +819,7 @@ function clearForm() {
 // Feed Rendering
 // ===============================
 
-function renderFeed() {
+const renderFeed = () => {
     if (!feedGrid) return;
 
     const filteredData = getFilteredData();
@@ -848,7 +848,7 @@ function renderFeed() {
     loadMore.style.display = state.hasMorePosts ? 'block' : 'none';
 }
 
-function getFilteredData() {
+const getFilteredData = () => {
     let data = [...state.feedbackData];
 
     switch (state.currentSort) {
@@ -873,20 +873,20 @@ function getFilteredData() {
     return data;
 }
 
-function calculateTrendingScore(feedback) {
+const calculateTrendingScore = (feedback) => {
     const ageInHours = (Date.now() - feedback.timestamp) / (1000 * 60 * 60);
     const likes = feedback.likes || 0;
     const rating = feedback.rating || 0;
     return (likes * 10 + rating * 5) / Math.max(ageInHours, 1);
 }
 
-function getPaginatedData(data) {
+const getPaginatedData = (data) => {
     const start = (state.currentPage - 1) * CONFIG.POSTS_PER_PAGE;
     const end = start + CONFIG.POSTS_PER_PAGE;
     return data.slice(0, end);
 }
 
-function createPostElement(feedback) {
+const createPostElement = (feedback) => {
     const post = document.createElement('div');
     post.className = 'post-card';
 
@@ -946,7 +946,7 @@ function createPostElement(feedback) {
     return post;
 }
 
-function getStarsHTML(rating) {
+const getStarsHTML = (rating) => {
     let stars = '';
     for (let i = 1; i <= 5; i++) {
         stars += i <= rating ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
@@ -954,7 +954,7 @@ function getStarsHTML(rating) {
     return stars;
 }
 
-function getCategoryEmoji(category) {
+const getCategoryEmoji = (category) => {
     const emojis = {
         'appreciation': '💖',
         'suggestion': '💡',
@@ -970,7 +970,7 @@ function getCategoryEmoji(category) {
 // Trending Section
 // ===============================
 
-function renderTrending() {
+const renderTrending = () => {
     const trendingGrid = document.getElementById('trendingGrid');
     if (!trendingGrid) return;
 
@@ -1032,7 +1032,7 @@ function renderTrending() {
 // Like System
 // ===============================
 
-function handleLike(postId) {
+const handleLike = (postId) => {
     const feedback = state.feedbackData.find(f => f.id === postId);
     if (!feedback) return;
 
@@ -1059,7 +1059,7 @@ function handleLike(postId) {
 // Stats & Updates
 // ===============================
 
-function updateGlobalStats() {
+const updateGlobalStats = () => {
     const totalPostsCount = state.feedbackData.length;
     const totalLikesCount = state.feedbackData.reduce((sum, post) => sum + (post.likes || 0), 0);
 
@@ -1074,11 +1074,11 @@ function updateGlobalStats() {
     if (uniqueUsers) uniqueUsers.textContent = uniqueUsersCount.toLocaleString();
 }
 
-function updateFeedStats(showingCountNum) {
+const updateFeedStats = (showingCountNum) => {
     if (showingCount) showingCount.textContent = showingCountNum;
 }
 
-async function refreshFeed() {
+const refreshFeed = async () => {
     showLoading(true);
 
     try {
@@ -1091,7 +1091,7 @@ async function refreshFeed() {
     }
 }
 
-function loadMorePosts() {
+const loadMorePosts = () => {
     state.currentPage++;
     renderFeed();
 
@@ -1110,7 +1110,7 @@ function loadMorePosts() {
 // UI Utilities
 // ===============================
 
-function showLoading(show) {
+const showLoading = (show) => {
     const loadingState = document.getElementById('loadingState');
     if (loadingState) {
         loadingState.style.display = show ? 'block' : 'none';
@@ -1124,7 +1124,7 @@ function showLoading(show) {
 // Navbar Active Link Management
 // ===============================
 
-function updateActiveNavLink() {
+const updateActiveNavLink = () => {
     // Remove active class from all links first
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => link.classList.remove('active'));
@@ -1136,11 +1136,10 @@ function updateActiveNavLink() {
     let activeLink;
     if (currentPage === 'feedback.html') {
         activeLink = document.querySelector('a[href="feedback.html"]');
-    } else if (currentPage === 'about.html') {
-        activeLink = document.querySelector('a[href="about.html"]');
-    } else if (currentPage === 'bookmarks.html') {
-        activeLink = document.querySelector('a[href="bookmarks.html"]');
-    } else if (window.location.hash === '#projects') {
+   } else if (currentPage === 'about.html') {
+    activeLink = document.querySelector('a[href="pages/about.html"]');
+} else if (currentPage === 'bookmarks.html') {
+    activeLink = document.querySelector('a[href="pages/bookmarks.html"]');} else if (window.location.hash === '#projects') {
         activeLink = document.querySelector('a[href="#projects"]');
     } else if (window.location.hash === '#contribute') {
         activeLink = document.querySelector('a[href="#contribute"]');

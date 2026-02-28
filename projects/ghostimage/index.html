@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GhostImage | Visual Steganography Tool</title>
+    <meta name="description" content="Securely hide images inside other images using advanced LSB steganography.">
+    
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/layout.css">
+    
+    <!-- Component CSS -->
+    <link rel="stylesheet" href="css/components/buttons.css">
+    <link rel="stylesheet" href="css/components/dropzone.css">
+    <link rel="stylesheet" href="css/components/panels.css">
+    <link rel="stylesheet" href="css/components/preview.css">
+    <link rel="stylesheet" href="css/components/notifications.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar / Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-icon">
+                    <div class="ghost-eye left"></div>
+                    <div class="ghost-eye right"></div>
+                </div>
+                <h1>GhostImage</h1>
+            </div>
+            
+            <nav class="main-nav">
+                <button class="nav-btn active" data-view="encode">
+                    <span class="icon">🔒</span>
+                    <span class="label">Encode</span>
+                </button>
+                <button class="nav-btn" data-view="decode">
+                    <span class="icon">🔓</span>
+                    <span class="label">Decode</span>
+                </button>
+                <div class="nav-separator"></div>
+                <button class="nav-btn" id="reset-app">
+                    <span class="icon">🔄</span>
+                    <span class="label">Reset All</span>
+                </button>
+            </nav>
+
+            <div class="status-panel">
+                <div class="status-item">
+                    <span class="label">Status</span>
+                    <span class="value ready" id="app-status">Ready</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Mode</span>
+                    <span class="value" id="mode-indicator">LSB-1</span>
+                </div>
+                <div class="storage-info">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <span class="storage-text">0% Capacity Used</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="workspace">
+            <!-- Encode View -->
+            <section id="view-encode" class="view-panel active">
+                <header class="panel-header">
+                    <h2>Hide Image</h2>
+                    <p>Embed a secret image inside a cover image.</p>
+                </header>
+                
+                <div class="split-view">
+                    <!-- Step 1: Cover Image -->
+                    <div class="stage-card" id="stage-cover">
+                        <div class="card-header">
+                            <span class="step-badge">1</span>
+                            <h3>Cover Image</h3>
+                        </div>
+                        <div class="dropzone" id="dropzone-cover">
+                            <div class="dropzone-content">
+                                <span class="drop-icon">🖼️</span>
+                                <p>Drag & Drop Cover Image</p>
+                                <span class="sub-text">PNG or JPG</span>
+                                <button class="btn-secondary">Browse Files</button>
+                                <input type="file" id="input-cover" accept="image/png, image/jpeg" hidden>
+                            </div>
+                            <div class="preview-container hidden" id="preview-cover-container">
+                                <canvas id="canvas-cover"></canvas>
+                                <div class="image-meta" id="meta-cover"></div>
+                                <button class="btn-icon remove-btn" data-target="cover">×</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Secret Image -->
+                    <div class="stage-card" id="stage-secret">
+                        <div class="card-header">
+                            <span class="step-badge">2</span>
+                            <h3>Secret Image</h3>
+                        </div>
+                        <div class="dropzone" id="dropzone-secret">
+                            <div class="dropzone-content">
+                                <span class="drop-icon">🕵️</span>
+                                <p>Drag & Drop Secret Image</p>
+                                <span class="sub-text">Must be smaller than cover</span>
+                                <button class="btn-secondary">Browse Files</button>
+                                <input type="file" id="input-secret" accept="image/png, image/jpeg" hidden>
+                            </div>
+                            <div class="preview-container hidden" id="preview-secret-container">
+                                <canvas id="canvas-secret"></canvas>
+                                <div class="image-meta" id="meta-secret"></div>
+                                <button class="btn-icon remove-btn" data-target="secret">×</button>
+                            </div>
+                        </div>
+                        <div class="controls-area">
+                            <div class="control-group">
+                                <label>Encryption Strength</label>
+                                <div class="segmented-control">
+                                    <button class="seg-btn active" data-bits="1">1-Bit</button>
+                                    <button class="seg-btn" data-bits="2">2-Bit</button>
+                                    <button class="seg-btn" data-bits="3">3-Bit</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button class="btn-primary large" id="btn-encode" disabled>
+                        <span class="icon">🔒</span> Encode & Download
+                    </button>
+                    <div id="encoding-progress" class="hidden">
+                        <span class="spinner"></span> Processing...
+                    </div>
+                </div>
+            </section>
+
+            <!-- Decode View -->
+            <section id="view-decode" class="view-panel">
+                 <header class="panel-header">
+                    <h2>Reveal Image</h2>
+                    <p>Extract a hidden image from an encoded file.</p>
+                </header>
+
+                <div class="single-stage-view">
+                    <div class="stage-card full-width">
+                         <div class="card-header">
+                            <span class="step-badge">1</span>
+                            <h3>Encoded Image</h3>
+                        </div>
+                        <div class="dropzone large" id="dropzone-decode">
+                             <div class="dropzone-content">
+                                <span class="drop-icon">🧩</span>
+                                <p>Drag & Drop Encoded Image</p>
+                                <span class="sub-text">PNG files only</span>
+                                <button class="btn-secondary">Browse Files</button>
+                                <input type="file" id="input-decode" accept="image/png" hidden>
+                            </div>
+                            <div class="preview-container hidden" id="preview-decode-container">
+                                <canvas id="canvas-decode-source"></canvas>
+                                <div class="image-meta" id="meta-decode"></div>
+                                <button class="btn-icon remove-btn" data-target="decode">×</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="result-area hidden" id="result-decode-area">
+                        <div class="divider">
+                            <span class="icon">⬇️</span>
+                        </div>
+                        <div class="stage-card result-card">
+                             <div class="card-header highlight">
+                                <span class="step-badge success">✓</span>
+                                <h3>Decoded Secret</h3>
+                            </div>
+                            <div class="canvas-wrapper">
+                                <canvas id="canvas-decode-result"></canvas>
+                            </div>
+                            <div class="actions">
+                                <button class="btn-primary" id="btn-download-secret">Download Secret</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-bar" id="decode-actions">
+                    <button class="btn-primary large" id="btn-decode" disabled>
+                        <span class="icon">🔓</span> Reveal Hidden Image
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lunar Gateway · Artemis Mission</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Outfit', 'Segoe UI', sans-serif;
+            background-color: black;
+            color: white;
+        }
+        #mission-header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            background: rgba(0, 10, 20, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid #7a9fbb;
+            border-radius: 60px;
+            padding: 12px 36px;
+            display: flex;
+            gap: 40px;
+            border-left: 5px solid #88ddff;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+        }
+        .mission-stat {
+            display: flex;
+            flex-direction: column;
+        }
+        .stat-small {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #aac9ff;
+            letter-spacing: 1px;
+        }
+        .stat-large {
+            font-size: 1.6rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #ffffff, #aaccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+        }
+        #lunar-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(8, 15, 30, 0.85);
+            backdrop-filter: blur(14px);
+            border: 1px solid #c9a87c;
+            border-radius: 48px;
+            padding: 20px 32px;
+            z-index: 50;
+            border-right: 6px solid #ffcc88;
+            min-width: 260px;
+            box-shadow: 0 15px 35px rgba(80,40,0,0.5);
+        }
+        .orbit-info {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 1rem;
+        }
+        .orbit-label {
+            color: #ddb68a;
+        }
+        .orbit-value {
+            font-weight: 600;
+            color: #ffdba5;
+        }
+        .progress-lunar {
+            width: 100%;
+            height: 8px;
+            background: #332211;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .progress-fill-lunar {
+            width: 73%;
+            height: 8px;
+            background: linear-gradient(90deg, #c49a6c, #f5d0a0);
+            border-radius: 10px;
+        }
+        .earth-moon-tag {
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
+            background: rgba(10, 10, 25, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid #7a9fbb;
+            border-radius: 40px;
+            padding: 12px 28px;
+            z-index: 50;
+            font-size: 0.95rem;
+            border-left: 4px solid #88ddff;
+        }
+        .bottom-crew {
+            position: absolute;
+            bottom: 25px;
+            right: 25px;
+            background: rgba(20, 15, 30, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid #c9a87c;
+            border-radius: 40px;
+            padding: 16px 28px;
+            z-index: 50;
+            text-align: center;
+            border-bottom: 4px solid #ffb86b;
+        }
+        .astronaut-sign {
+            display: flex;
+            gap: 15px;
+            margin-top: 8px;
+            font-size: 1.2rem;
+        }
+        .pulse-moon {
+            width: 14px;
+            height: 14px;
+            background: #ddbb88;
+            border-radius: 50%;
+            box-shadow: 0 0 20px #ffbb66;
+            animation: moon-pulse 2s infinite;
+        }
+        @keyframes moon-pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; background: #ffdd99; }
+            100% { opacity: 0.7; }
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="mission-header">
+        <div class="mission-stat">
+            <span class="stat-small">mission</span>
+            <span class="stat-large">ARTEMIS III</span>
+        </div>
+        <div class="mission-stat">
+            <span class="stat-small">vehicle</span>
+            <span class="stat-large">ORION</span>
+        </div>
+        <div class="mission-stat">
+            <span class="stat-small">distance</span>
+            <span class="stat-large" id="distance-moon">284,000</span><span style="font-size:0.9rem; color:#aac9ff;"> km</span>
+        </div>
+    </div>
+
+    <div id="lunar-panel">
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+            <span class="pulse-moon"></span>
+            <span style="font-weight: 600; font-size: 1.3rem;">🌕 LUNAR GATEWAY</span>
+        </div>
+        <div class="orbit-info">
+            <span class="orbit-label">orbit</span>
+            <span class="orbit-value">NRHO · 9:2 resonance</span>
+        </div>
+        <div class="orbit-info">
+            <span class="orbit-label">perilune</span>
+            <span class="orbit-value">3,400 km</span>
+        </div>
+        <div class="orbit-info">
+            <span class="orbit-label">apolune</span>
+            <span class="orbit-value">71,000 km</span>
+        </div>
+        <div class="progress-lunar">
+            <div class="progress-fill-lunar" style="width:73%;"></div>
+        </div>
+        <div class="orbit-info">
+            <span class="orbit-label">transit progress</span>
+            <span class="orbit-value" id="transit-progress">73%</span>
+        </div>
+        <div style="margin-top: 15px; background:#1a1a2e; border-radius:30px; padding:8px 16px; font-size:0.9rem; border:1px solid #c9a87c;">
+            ⏱️ TLI: 2025-11-16 · ETA: 3d 8h
+        </div>
+    </div>
+
+    <div class="earth-moon-tag">
+        <span style="color:#88ddff;">🌍 EARTH</span> · <span style="color:#ffdba5;">🌕 MOON</span> · transfer trajectory (free return)
+    </div>
+
+    <div class="bottom-crew">
+        <div>👩‍🚀 CREW</div>
+        <div class="astronaut-sign">
+            <span>🇺🇸 M. Collins</span> <span>🇯🇵 Y. Nakamura</span> <span>🇬🇧 A. Shaw</span>
+        </div>
+        <div style="font-size:0.8rem; color:#bbaacc;">mission control: Houston · Tsukuba</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- Scene setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x03030c);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(30, 12, 40);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+        controls.enableZoom = true;
+        controls.maxDistance = 80;
+        controls.minDistance = 20;
+        
+        // --- Lighting ---
+        const ambient = new THREE.AmbientLight(0x404068);
+        scene.add(ambient);
+        
+        const sunLight = new THREE.DirectionalLight(0xffeedd, 1.5);
+        sunLight.position.set(20, 30, 20);
+        scene.add(sunLight);
+        
+        const backLight = new THREE.DirectionalLight(0x446688, 0.3);
+        backLight.position.set(-20, -10, -20);
+        scene.add(backLight);
+        
+        // --- Stars ---
+        const starsGeo = new THREE.BufferGeometry();
+        const starsCount = 5000;
+        const starsPos = new Float32Array(starsCount * 3);
+        for (let i = 0; i < starsCount*3; i+=3) {
+            const r = 150 + Math.random()*100;
+            const theta = Math.random() * Math.PI*2;
+            const phi = Math.acos(2*Math.random()-1);
+            starsPos[i] = Math.sin(phi) * Math.cos(theta) * r;
+            starsPos[i+1] = Math.sin(phi) * Math.sin(theta) * r;
+            starsPos[i+2] = Math.cos(phi) * r;
+        }
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+        const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2 });
+        const stars = new THREE.Points(starsGeo, starsMat);
+        scene.add(stars);
+        
+        // --- Earth ---
+        const texLoader = new THREE.TextureLoader();
+        const earthMap = texLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+        const earthSpec = texLoader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg');
+        const earthNorm = texLoader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg');
+        
+        const earthGeo = new THREE.SphereGeometry(5, 64, 64);
+        const earthMat = new THREE.MeshPhongMaterial({ map: earthMap, specularMap: earthSpec, specular: 0x333333, normalMap: earthNorm });
+        const earth = new THREE.Mesh(earthGeo, earthMat);
+        earth.position.set(-8, 0, 0);
+        scene.add(earth);
+        
+        // Earth clouds
+        const cloudMap = texLoader.load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png');
+        const cloudGeo = new THREE.SphereGeometry(5.03, 64, 64);
+        const cloudMat = new THREE.MeshPhongMaterial({ map: cloudMap, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending });
+        const clouds = new THREE.Mesh(cloudGeo, cloudMat);
+        earth.add(clouds);
+        
+        // Earth label
+        const earthDiv = document.createElement('div');
+        earthDiv.textContent = '🌍 EARTH';
+        earthDiv.style.background = '#1a2a44';
+        earthDiv.style.color = '#88ddff';
+        earthDiv.style.border = '2px solid #2277aa';
+        earthDiv.style.borderRadius = '30px';
+        earthDiv.style.padding = '2px 18px';
+        earthDiv.style.fontWeight = 'bold';
+        const earthLabel = new CSS2DObject(earthDiv);
+        earthLabel.position.set(0, 6.5, 0);
+        earth.add(earthLabel);
+        
+        // --- Moon ---
+        const moonGeo = new THREE.SphereGeometry(1.8, 48, 48);
+        const moonMat = new THREE.MeshStandardMaterial({ color: 0xccccaa, emissive: 0x221100, roughness: 0.8 });
+        const moon = new THREE.Mesh(moonGeo, moonMat);
+        moon.position.set(22, 2, 5);
+        scene.add(moon);
+        
+        // Moon craters texture via normal map? not necessary, but add some variation with a simple bump?
+        // Not loading extra texture to keep it simple.
+        
+        // Moon label
+        const moonDiv = document.createElement('div');
+        moonDiv.textContent = '🌕 MOON';
+        moonDiv.style.background = '#332211';
+        moonDiv.style.color = '#ffdba5';
+        moonDiv.style.border = '2px solid #brown';
+        moonDiv.style.borderRadius = '30px';
+        moonDiv.style.padding = '2px 18px';
+        const moonLabel = new CSS2DObject(moonDiv);
+        moonLabel.position.set(0, 2.8, 0);
+        moon.add(moonLabel);
+        
+        // --- Orion spacecraft ---
+        const orionGroup = new THREE.Group();
+        
+        // Crew module
+        const cmGeo = new THREE.ConeGeometry(0.8, 1.0, 8);
+        const cmMat = new THREE.MeshStandardMaterial({ color: 0xddddff });
+        const cm = new THREE.Mesh(cmGeo, cmMat);
+        cm.rotation.x = Math.PI;
+        cm.position.y = 0.3;
+        orionGroup.add(cm);
+        
+        // Service module
+        const smGeo = new THREE.CylinderGeometry(0.8, 0.8, 1.0, 8);
+        const smMat = new THREE.MeshStandardMaterial({ color: 0xaaaccc });
+        const sm = new THREE.Mesh(smGeo, smMat);
+        sm.position.y = -0.5;
+        orionGroup.add(sm);
+        
+        // Solar panels (two)
+        const panelGeo = new THREE.BoxGeometry(1.8, 0.1, 0.3);
+        const panelMat = new THREE.MeshStandardMaterial({ color: 0x222233 });
+        const leftPanel = new THREE.Mesh(panelGeo, panelMat);
+        leftPanel.position.set(-1.2, -0.2, 0);
+        leftPanel.rotation.z = 0.1;
+        orionGroup.add(leftPanel);
+        
+        const rightPanel = new THREE.Mesh(panelGeo, panelMat);
+        rightPanel.position.set(1.2, -0.2, 0);
+        rightPanel.rotation.z = -0.1;
+        orionGroup.add(rightPanel);
+        
+        scene.add(orionGroup);
+        
+        // Orion label
+        const orionDiv = document.createElement('div');
+        orionDiv.textContent = '🚀 ORION';
+        orionDiv.style.background = '#1a2639';
+        orionDiv.style.color = '#ffaa88';
+        orionDiv.style.border = '2px solid #ffaa33';
+        orionDiv.style.borderRadius = '20px';
+        orionDiv.style.padding = '2px 14px';
+        const orionLabel = new CSS2DObject(orionDiv);
+        orionLabel.position.set(0, 1.8, 0);
+        orionGroup.add(orionLabel);
+        
+        // --- Trajectory (transfer orbit) ---
+        const trajPoints = [];
+        const steps = 200;
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            // Parametric: start near Earth, end near Moon
+            const angle = t * Math.PI * 1.6; // about 288°
+            const r = 6 + 16 * t; // increasing distance
+            const x = -8 + r * Math.cos(angle);
+            const y = 2.5 * Math.sin(angle * 1.5);
+            const z = 5 * Math.sin(angle * 0.8);
+            trajPoints.push(new THREE.Vector3(x, y, z));
+        }
+        
+        const trajGeo = new THREE.BufferGeometry().setFromPoints(trajPoints);
+        const trajMat = new THREE.LineBasicMaterial({ color: 0x88aaff, transparent: true, opacity: 0.3 });
+        const trajLine = new THREE.Line(trajGeo, trajMat);
+        scene.add(trajLine);
+        
+        // --- Animate spacecraft along trajectory ---
+        let progress = 0.45; // between 0 and 1
+        const speed = 0.0008;
+        
+        function updateSpacecraft() {
+            progress += speed;
+            if (progress > 1.0) progress = 0.0;
+            
+            const index = Math.floor(progress * steps);
+            const frac = (progress * steps) - index;
+            
+            if (index < steps) {
+                const p1 = trajPoints[index];
+                const p2 = trajPoints[index+1];
+                const pos = new THREE.Vector3().lerpVectors(p1, p2, frac);
+                orionGroup.position.copy(pos);
+                
+                // Point spacecraft roughly toward destination? Not necessary.
+            }
+            
+            // Update distance display (between Earth and Moon)
+            const distEarth = earth.position.distanceTo(orionGroup.position) * 2.5; // scaling
+            const distMoon = moon.position.distanceTo(orionGroup.position) * 1.8;
+            
+            document.getElementById('distance-moon').innerText = Math.floor(distEarth * 1000).toLocaleString();
+            document.getElementById('transit-progress').innerText = Math.floor(progress * 100) + '%';
+            
+            // Rotate Earth & Moon slowly
+            earth.rotation.y += 0.0005;
+            moon.rotation.y += 0.0002;
+        }
+        
+        // --- Animate ---
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            updateSpacecraft();
+            
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

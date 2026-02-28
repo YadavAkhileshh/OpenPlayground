@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroTunnel - Real-time LBM Wind Tunnel</title>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/controls.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <div id="app-container">
+        <!-- Header / Stats Bar -->
+        <header id="simulation-header">
+            <h1 class="logo">AeroTunnel <span class="version">v1.0</span></h1>
+            <div class="stats-display">
+                <div class="stat-item">
+                    <span class="label">FPS:</span>
+                    <span class="value" id="fps-counter">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Steps/Sec:</span>
+                    <span class="value" id="sps-counter">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Grid:</span>
+                    <span class="value" id="grid-size">0x0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Status:</span>
+                    <span class="value status-active" id="sim-status">Paused</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Visualization Area -->
+        <main id="viewport">
+            <canvas id="simulation-canvas"></canvas>
+
+            <!-- Overlay for interaction hints -->
+            <div id="interaction-overlay">
+                <p>Left Click: Draw Obstacle | Right Click: Erase</p>
+            </div>
+        </main>
+
+        <!-- Control Panel -->
+        <aside id="controls-panel">
+            <div class="control-group">
+                <h3>Fluid Parameters</h3>
+
+                <div class="control-item">
+                    <label for="input-viscosity">Viscosity</label>
+                    <input type="range" id="input-viscosity" min="0.001" max="0.1" step="0.001" value="0.02">
+                    <span class="value-display" id="val-viscosity">0.02</span>
+                </div>
+
+                <div class="control-item">
+                    <label for="input-speed">Inlet Speed</label>
+                    <input type="range" id="input-speed" min="0.0" max="0.2" step="0.005" value="0.1">
+                    <span class="value-display" id="val-speed">0.1</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Simulation Control</h3>
+                <button id="btn-toggle" class="btn primary">Start / Pause</button>
+                <button id="btn-reset" class="btn secondary">Reset Fluid</button>
+                <button id="btn-clear-obstacles" class="btn danger">Clear Obstacles</button>
+            </div>
+
+            <div class="control-group">
+                <h3>Shapes & Presets</h3>
+                <div class="button-grid">
+                    <button id="btn-circle" class="btn secondary">Cylinder</button>
+                    <button id="btn-airfoil" class="btn secondary">Airfoil</button>
+                    <button id="btn-plate" class="btn secondary">Plate</button>
+                    <button id="btn-random" class="btn secondary">Random</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Sensors (Drag/Lift)</h3>
+                <canvas id="drag-graph" width="260" height="60"></canvas>
+                <div class="stat-item">
+                    <span class="label">Drag Coeff:</span>
+                    <span class="value" id="val-drag">0.000</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Lift Coeff:</span>
+                    <span class="value" id="val-lift">0.000</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Visualization</h3>
+                <div class="control-item">
+                    <label for="select-colormap">Color Map</label>
+                    <select id="select-colormap">
+                        <option value="jet">Jet (Rainbow)</option>
+                        <option value="magma">Magma</option>
+                        <option value="grayscale">Grayscale</option>
+                        <option value="velocity">Blue-Red</option>
+                    </select>
+                </div>
+                <div class="control-item">
+                    <label for="input-contrast">Contrast</label>
+                    <input type="range" id="input-contrast" min="0.5" max="5.0" step="0.1" value="1.0">
+                    <span class="value-display" id="val-contrast">1.0</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <h3>Analysis Tools</h3>
+                <div class="control-item">
+                    <label class="toggle-label">
+                        <span>Show Particles</span>
+                        <input type="checkbox" id="chk-particles">
+                    </label>
+                </div>
+                <div class="control-item">
+                    <label class="toggle-label">
+                        <span>Inject Smoke</span>
+                        <input type="checkbox" id="chk-smoke" checked>
+                    </label>
+                </div>
+                <!-- Smoke Dye Tool -->
+                <!-- Probe Tool -->
+                <div class="button-grid">
+                    <button id="btn-probe" class="btn secondary">Mode: Probe</button>
+                    <button id="btn-audio" class="btn secondary">Audio: OFF</button>
+                    <button id="btn-save" class="btn secondary">Save Map</button>
+                    <label class="btn secondary" style="cursor: pointer;">
+                        Load Map <input type="file" id="file-load" style="display: none;" accept=".json">
+                    </label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Custom Airfoil (NACA)</h3>
+                <div class="control-item">
+                    <label>Digits (e.g. 2412): <input type="text" id="input-naca" value="2412"
+                            style="width: 60px; background: transparent; border: 1px solid #30363d; color: #fff; padding: 2px; text-align: center;"></label>
+                </div>
+                <div class="control-item">
+                    <label>Angle: <span id="val-angle">10</span>&deg;</label>
+                    <input type="range" id="input-angle" min="-45" max="45" value="10">
+                </div>
+                <button id="btn-gen-naca" class="btn primary" style="width: 100%">Generate Airfoil</button>
+            </div>
+
+            <div class="control-group">
+                <h3>Debug Info</h3>
+                <div class="debug-console" id="debug-console">
+                    System Ready...
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Modules -->
+    <script type="module" src="js/main.js"></script>
+
+</body>
+
+</html>

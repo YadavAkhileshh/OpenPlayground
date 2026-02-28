@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AcousticArchitect – Ray-Traced Room Acoustics</title>
+  <meta name="description" content="Browser-based acoustic simulation tool. Draw a room, cast rays, hear reverberation." />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/canvas.css" />
+  <link rel="stylesheet" href="css/controls.css" />
+  <link rel="stylesheet" href="css/graph.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── TOP HEADER ───────────────────────────────────────── -->
+    <header id="header">
+      <div id="header-brand">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="10" stroke="#00d4ff" stroke-width="1.5"/>
+          <path d="M4 18 Q11 4 18 18" stroke="#00d4ff" stroke-width="1.5" fill="none"/>
+          <circle cx="11" cy="11" r="2" fill="#00d4ff"/>
+        </svg>
+        <span>AcousticArchitect</span>
+      </div>
+
+      <!-- Toolbar -->
+      <div id="toolbar" role="toolbar" aria-label="Drawing tools">
+        <button class="tool-btn active" data-tool="draw" id="btn-draw" title="Draw Wall (W)">
+          <svg width="18" height="18" viewBox="0 0 18 18"><line x1="2" y1="16" x2="16" y2="2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="2" cy="16" r="2" fill="currentColor"/><circle cx="16" cy="2" r="2" fill="currentColor"/></svg>
+          <span>Draw Wall</span>
+        </button>
+        <button class="tool-btn" data-tool="source" id="btn-source" title="Move Source (S)">
+          <svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M6 6l6 3-6 3V6z" fill="currentColor"/></svg>
+          <span>Source</span>
+        </button>
+        <button class="tool-btn" data-tool="listener" id="btn-listener" title="Move Listener (L)">
+          <svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M7 6c0-1.1.9-2 2-2s2 .9 2 2v4a2 2 0 01-4 0V6z" fill="currentColor"/></svg>
+          <span>Listener</span>
+        </button>
+        <button class="tool-btn" data-tool="erase" id="btn-erase" title="Erase Wall (E)">
+          <svg width="18" height="18" viewBox="0 0 18 18"><rect x="2" y="8" width="14" height="6" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="5" y1="8" x2="3" y2="14" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span>Erase</span>
+        </button>
+        <div class="toolbar-sep"></div>
+        <button class="tool-btn toggle-btn" id="btn-rays" title="Toggle Ray Debug (R)">
+          <svg width="18" height="18" viewBox="0 0 18 18"><circle cx="4" cy="9" r="2" fill="currentColor"/><line x1="6" y1="9" x2="16" y2="3" stroke="currentColor" stroke-width="1" stroke-dasharray="2,2"/><line x1="6" y1="9" x2="16" y2="9" stroke="currentColor" stroke-width="1" stroke-dasharray="2,2"/><line x1="6" y1="9" x2="16" y2="15" stroke="currentColor" stroke-width="1" stroke-dasharray="2,2"/></svg>
+          <span>Show Rays</span>
+        </button>
+        <button class="tool-btn" id="btn-clear" title="Clear All Walls (C)">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path d="M3 3l12 12M3 15L15 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span>Clear</span>
+        </button>
+        <button class="tool-btn" id="btn-preset" title="Load preset room">
+          <svg width="18" height="18" viewBox="0 0 18 18"><rect x="2" y="2" width="14" height="14" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+          <span>Preset Room</span>
+        </button>
+      </div>
+
+      <div id="header-status">
+        <span id="status-rays">Rays: –</span>
+        <span id="status-rt60">RT60: –</span>
+      </div>
+    </header>
+
+    <!-- ── MAIN AREA ─────────────────────────────────────────── -->
+    <main id="main-area">
+
+      <!-- Drawing Canvas -->
+      <div id="canvas-wrap">
+        <canvas id="room-canvas"></canvas>
+        <div id="canvas-hint">Click &amp; drag to draw walls</div>
+      </div>
+
+      <!-- Right Sidebar -->
+      <aside id="sidebar">
+        <section class="panel">
+          <h3 class="panel-title">Simulation</h3>
+
+          <label class="ctrl-label" for="sl-rays">Rays<span class="ctrl-val" id="val-rays">1000</span></label>
+          <input class="slider" type="range" id="sl-rays" min="100" max="3000" value="1000" step="100" />
+
+          <label class="ctrl-label" for="sl-bounces">Max Bounces<span class="ctrl-val" id="val-bounces">8</span></label>
+          <input class="slider" type="range" id="sl-bounces" min="1" max="20" value="8" step="1" />
+
+          <label class="ctrl-label" for="sl-absorb">Absorption<span class="ctrl-val" id="val-absorb">0.30</span></label>
+          <input class="slider" type="range" id="sl-absorb" min="0.01" max="0.99" value="0.3" step="0.01" />
+
+          <label class="ctrl-label" for="sl-speed">Speed of Sound (m/s)<span class="ctrl-val" id="val-speed">343</span></label>
+          <input class="slider" type="range" id="sl-speed" min="200" max="500" value="343" step="1" />
+
+          <label class="ctrl-label" for="sl-scale">Room Scale (px/m)<span class="ctrl-val" id="val-scale">100</span></label>
+          <input class="slider" type="range" id="sl-scale" min="20" max="300" value="100" step="5" />
+        </section>
+
+        <section class="panel">
+          <h3 class="panel-title">Audio</h3>
+          <button class="btn-primary" id="btn-load">📂 Load Audio</button>
+          <input type="file" id="file-audio" accept="audio/*" style="display:none" />
+          <div id="audio-name" class="audio-filename">No file loaded</div>
+          <button class="btn-primary" id="btn-simulate">⚡ Simulate &amp; Play</button>
+          <button class="btn-secondary" id="btn-stop">⏹ Stop</button>
+          <div class="volume-row">
+            <label class="ctrl-label" for="sl-gain">Gain<span class="ctrl-val" id="val-gain">1.0</span></label>
+            <input class="slider" type="range" id="sl-gain" min="0" max="2" value="1" step="0.05" />
+          </div>
+          <div class="volume-row">
+            <label class="ctrl-label" for="sl-wet">Wet Mix<span class="ctrl-val" id="val-wet">1.0</span></label>
+            <input class="slider" type="range" id="sl-wet" min="0" max="1" value="1" step="0.05" />
+          </div>
+        </section>
+
+        <section class="panel">
+          <h3 class="panel-title">Info</h3>
+          <div id="info-grid">
+            <span class="info-key">Walls</span><span class="info-num" id="info-walls">0</span>
+            <span class="info-key">Hits</span><span class="info-num" id="info-hits">0</span>
+            <span class="info-key">IR length</span><span class="info-num" id="info-irlen">–</span>
+            <span class="info-key">RT60</span><span class="info-num" id="info-rt60">–</span>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <!-- ── IR GRAPH ──────────────────────────────────────────── -->
+    <footer id="graph-panel">
+      <div id="graph-header">
+        <span>Impulse Response</span>
+        <span id="graph-subtitle" class="graph-sub">– simulate to generate –</span>
+      </div>
+      <canvas id="ir-canvas"></canvas>
+    </footer>
+
+  </div><!-- /#app -->
+
+  <script src="js/ray-engine.js"></script>
+  <script src="js/impulse-builder.js"></script>
+  <script src="js/convolution-engine.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

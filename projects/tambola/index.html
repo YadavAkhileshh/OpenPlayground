@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Tambola - Premium Digital Housie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+        }
+
+        .number-ball {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .number-ball.called {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            box-shadow: 0 0 15px rgba(37, 99, 235, 0.5);
+            transform: scale(1.1);
+            border: none;
+        }
+
+        .current-ball {
+            font-size: 5rem;
+            font-weight: 800;
+            text-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .tambola-ticket {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 4px;
+            background: #cbd5e1;
+            padding: 8px;
+            border-radius: 8px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .ticket-cell {
+            background: white;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 1.1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .ticket-cell.marked {
+            background: #ef4444;
+            color: white;
+            position: relative;
+        }
+
+        .ticket-cell.marked::after {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            border: 2px solid white;
+            border-radius: 50%;
+        }
+
+        .ticket-cell.empty {
+            background: rgba(255,255,255,0.4);
+            cursor: default;
+        }
+
+        .sidebar-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-500">
+                    PRO TAMBOLA
+                </h1>
+                <p class="text-slate-400">Premium Digital Number Caller</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="resetGame()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition border border-slate-700 text-sm">
+                    <i class="fas fa-redo mr-2"></i> Reset
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left: Controls & Large Display -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="glass-card p-8 flex flex-col items-center justify-center text-center min-h-[400px]">
+                    <span class="text-slate-500 uppercase tracking-widest text-sm font-semibold mb-2">Current Number</span>
+                    <div id="currentNumberDisplay" class="current-ball text-blue-500">--</div>
+                    <div id="numberWords" class="text-slate-400 mt-4 italic h-6">Ready to play</div>
+                    
+                    <div class="mt-10 flex gap-4 w-full">
+                        <button id="drawBtn" onclick="drawNumber()" class="flex-1 py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold text-lg shadow-lg shadow-blue-900/20 transition-all active:scale-95">
+                            DRAW NEXT
+                        </button>
+                        <button id="autoBtn" onclick="toggleAuto()" class="px-6 py-4 bg-slate-800 hover:bg-slate-700 rounded-2xl transition border border-slate-700">
+                            <i id="autoIcon" class="fas fa-play"></i>
+                        </button>
+                    </div>
+
+                    <div class="mt-6 flex items-center gap-3 w-full justify-center">
+                        <i class="fas fa-volume-up text-slate-500"></i>
+                        <input type="range" id="volume" min="0" max="1" step="0.1" value="0.7" class="w-24">
+                        <select id="speed" class="bg-slate-800 border-none rounded-lg text-xs p-1 focus:ring-0">
+                            <option value="5000">Slow</option>
+                            <option value="3000" selected>Medium</option>
+                            <option value="1500">Fast</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div class="glass-card p-6 h-48">
+                    <h3 class="text-sm font-semibold text-slate-400 uppercase mb-4">Last 5 Numbers</h3>
+                    <div id="history" class="flex gap-3 justify-center">
+                        <!-- History balls -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle: Main Board -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="glass-card p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-semibold">Number Board</h2>
+                        <span id="stats" class="text-sm text-slate-400">0/90 Called</span>
+                    </div>
+                    <div id="mainBoard" class="grid grid-cols-10 gap-2 md:gap-3">
+                        <!-- Numbers generated by JS -->
+                    </div>
+                </div>
+
+                <!-- Live Ticket Section (Optional) -->
+                <div class="glass-card p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-semibold">Your Live Ticket</h2>
+                        <button onclick="generateTicket()" class="text-blue-400 text-sm hover:underline">New Ticket</button>
+                    </div>
+                    <div id="ticketContainer">
+                        <!-- Ticket generated by JS -->
+                    </div>
+                    <div id="prizeAlerts" class="mt-4 flex flex-wrap gap-2 justify-center">
+                        <!-- Prize badges -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Celebration Overlay -->
+    <div id="overlay" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-6 text-center">
+        <div class="max-w-md">
+            <h2 id="winTitle" class="text-5xl font-black text-yellow-400 mb-4">TAMBOLA!</h2>
+            <p id="winMessage" class="text-xl text-white mb-8"></p>
+            <button onclick="closeOverlay()" class="px-8 py-3 bg-blue-600 rounded-full font-bold">Awesome!</button>
+        </div>
+    </div>
+
+    <script>
+        let numbers = Array.from({length: 90}, (_, i) => i + 1);
+        let calledNumbers = [];
+        let autoPlayInterval = null;
+        let isAutoPlaying = false;
+
+        const board = document.getElementById('mainBoard');
+        const display = document.getElementById('currentNumberDisplay');
+        const historyContainer = document.getElementById('history');
+        const statsDisplay = document.getElementById('stats');
+        const wordsDisplay = document.getElementById('numberWords');
+
+        // Number words for fun calling
+        const nickNames = {
+            1: "Kelly's Eye", 2: "One Little Duck", 3: "Cup of Tea", 11: "Two Little Legs", 
+            22: "Two Little Ducks", 88: "Two Fat Ladies", 90: "Top of the House",
+            7: "Lucky 7", 10: "A Big Fat Hen", 16: "Sweet 16", 45: "Halfway There"
+        };
+
+        // Initialize Board
+        function initBoard() {
+            board.innerHTML = '';
+            for (let i = 1; i <= 90; i++) {
+                const ball = document.createElement('div');
+                ball.className = 'number-ball';
+                ball.id = `ball-${i}`;
+                ball.textContent = i;
+                board.appendChild(ball);
+            }
+        }
+
+        function drawNumber() {
+            if (numbers.length === 0) {
+                stopAuto();
+                showOverlay("Game Over", "All 90 numbers have been called!");
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * numbers.length);
+            const num = numbers.splice(randomIndex, 1)[0];
+            calledNumbers.push(num);
+
+            updateUI(num);
+            speakNumber(num);
+            checkTicketWins();
+        }
+
+        function updateUI(num) {
+            // Update Main Display
+            display.textContent = num;
+            display.classList.remove('popIn');
+            void display.offsetWidth; // Trigger reflow
+            display.classList.add('popIn');
+
+            // Update Board
+            const ball = document.getElementById(`ball-${num}`);
+            ball.classList.add('called');
+
+            // Update History
+            updateHistory();
+
+            // Update Words
+            wordsDisplay.textContent = nickNames[num] || `Number ${num}`;
+
+            // Update Stats
+            statsDisplay.textContent = `${calledNumbers.length}/90 Called`;
+        }
+
+        function updateHistory() {
+            historyContainer.innerHTML = '';
+            const recent = calledNumbers.slice(-6, -1).reverse();
+            recent.forEach(n => {
+                const hBall = document.createElement('div');
+                hBall.className = 'number-ball scale-90 opacity-60';
+                hBall.textContent = n;
+                historyContainer.appendChild(hBall);
+            });
+        }
+
+        function speakNumber(n) {
+            const synth = window.speechSynthesis;
+            const volume = document.getElementById('volume').value;
+            
+            // Cancel current speech
+            synth.cancel();
+
+            const utter = new SpeechSynthesisUtterance();
+            utter.text = n > 9 ? `Only number ${n.toString().split('').join(' ')} ... ${n}` : `Only number ${n}`;
+            utter.volume = volume;
+            utter.rate = 0.9;
+            synth.speak(utter);
+        }
+
+        function toggleAuto() {
+            if (isAutoPlaying) {
+                stopAuto();
+            } else {
+                startAuto();
+            }
+        }
+
+        function startAuto() {
+            const speed = parseInt(document.getElementById('speed').value);
+            isAutoPlaying = true;
+            document.getElementById('autoIcon').className = 'fas fa-pause';
+            document.getElementById('autoBtn').classList.add('bg-red-600');
+            drawNumber();
+            autoPlayInterval = setInterval(drawNumber, speed);
+        }
+
+        function stopAuto() {
+            isAutoPlaying = false;
+            document.getElementById('autoIcon').className = 'fas fa-play';
+            document.getElementById('autoBtn').classList.remove('bg-red-600');
+            clearInterval(autoPlayInterval);
+        }
+
+        function resetGame() {
+            stopAuto();
+            numbers = Array.from({length: 90}, (_, i) => i + 1);
+            calledNumbers = [];
+            display.textContent = '--';
+            wordsDisplay.textContent = 'Ready to play';
+            initBoard();
+            updateHistory();
+            statsDisplay.textContent = '0/90 Called';
+            generateTicket(); // New ticket on reset
+        }
+
+        // --- Ticket Logic ---
+        let currentTicket = [];
+
+        function generateTicket() {
+            const container = document.getElementById('ticketContainer');
+            const prizeContainer = document.getElementById('prizeAlerts');
+            prizeContainer.innerHTML = '';
+            
+            // Tambola Ticket Generation Logic
+            // 3 rows, 9 columns. Each row has 5 numbers. 
+            // Columns are: 1-9, 10-19... 80-90
+            let ticket = Array(3).fill().map(() => Array(9).fill(0));
+            
+            for(let r=0; r<3; r++) {
+                let positions = [];
+                while(positions.length < 5) {
+                    let p = Math.floor(Math.random() * 9);
+                    if(!positions.includes(p)) positions.push(p);
+                }
+                
+                positions.forEach(col => {
+                    let min = col * 10 + (col === 0 ? 1 : 0);
+                    let max = col * 10 + 9 + (col === 8 ? 1 : 0);
+                    let val = Math.floor(Math.random() * (max - min + 1)) + min;
+                    ticket[r][col] = val;
+                });
+            }
+            
+            currentTicket = ticket;
+            renderTicket(ticket);
+        }
+
+        function renderTicket(ticket) {
+            const container = document.getElementById('ticketContainer');
+            let html = '<div class="tambola-ticket">';
+            
+            ticket.forEach((row, rIdx) => {
+                row.forEach((cell, cIdx) => {
+                    if(cell === 0) {
+                        html += `<div class="ticket-cell empty"></div>`;
+                    } else {
+                        html += `<div class="ticket-cell" id="tcell-${cell}" onclick="toggleMark(${cell})">${cell}</div>`;
+                    }
+                });
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function toggleMark(num) {
+            const cell = document.getElementById(`tcell-${num}`);
+            if(cell) cell.classList.toggle('marked');
+            checkTicketWins();
+        }
+
+        // Automatic win detection
+        const winsClaimed = {
+            earlyFive: false,
+            topLine: false,
+            midLine: false,
+            bottomLine: false,
+            fullHouse: false
+        };
+
+        function checkTicketWins() {
+            const markedCells = Array.from(document.querySelectorAll('.ticket-cell.marked'))
+                                   .map(c => parseInt(c.textContent));
+            
+            // Check if numbers were actually called
+            const validMarks = markedCells.filter(num => calledNumbers.includes(num));
+            
+            const prizeContainer = document.getElementById('prizeAlerts');
+            const alert = (text) => {
+                if(document.getElementById(`prize-${text}`)) return;
+                const badge = document.createElement('span');
+                badge.id = `prize-${text}`;
+                badge.className = "px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/50 rounded-full text-xs font-bold animate-bounce";
+                badge.textContent = text.toUpperCase();
+                prizeContainer.appendChild(badge);
+            };
+
+            // Early Five
+            if(validMarks.length >= 5) alert('Early Five');
+
+            // Lines
+            currentTicket.forEach((row, i) => {
+                const rowNumbers = row.filter(n => n !== 0);
+                const isWin = rowNumbers.every(n => validMarks.includes(n));
+                if(isWin) {
+                    const names = ['Top Line', 'Middle Line', 'Bottom Line'];
+                    alert(names[i]);
+                }
+            });
+
+            // Full House
+            const allNumbers = currentTicket.flat().filter(n => n !== 0);
+            if(allNumbers.every(n => validMarks.includes(n)) && allNumbers.length > 0) {
+                alert('Full House');
+                if(!winsClaimed.fullHouse) {
+                    showOverlay("TAMBOLA!", "Congratulations! You've got a Full House!");
+                    winsClaimed.fullHouse = true;
+                }
+            }
+        }
+
+        function showOverlay(title, msg) {
+            document.getElementById('winTitle').textContent = title;
+            document.getElementById('winMessage').textContent = msg;
+            document.getElementById('overlay').classList.remove('hidden');
+            document.getElementById('overlay').classList.add('flex');
+        }
+
+        function closeOverlay() {
+            document.getElementById('overlay').classList.add('hidden');
+            document.getElementById('overlay').classList.remove('flex');
+        }
+
+        // Start
+        initBoard();
+        generateTicket();
+
+    </script>
+</body>
+</html>

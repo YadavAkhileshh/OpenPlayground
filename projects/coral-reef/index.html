@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐠 The Coral Reef - Marine Ecosystem</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #1a3f5a;
+            background: linear-gradient(145deg, #1f4f6f, #0a2f4a);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Quicksand', sans-serif;
+        }
+        
+        .ocean-lab {
+            width: 1000px;
+            background: #2f6f8f;
+            background: linear-gradient(145deg, #3f7f9f, #1a5f7a);
+            border-radius: 120px 120px 60px 60px;
+            padding: 40px;
+            box-shadow: 0 40px 60px #0a1f2a, inset 0 0 0 15px #7fbfdf, inset 0 0 0 30px #4f9fbf;
+            border: 12px solid #1f6f8f;
+            position: relative;
+        }
+        
+        .reef-canvas {
+            width: 100%;
+            height: 350px;
+            background: #2f8fbf;
+            background: linear-gradient(145deg, #3f9fcf, #1f7faf);
+            border-radius: 60px;
+            border: 8px solid #1f6f8f;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        .coral {
+            position: absolute;
+            bottom: 0;
+            background: #ff7f7f;
+            border-radius: 60px 60px 0 0;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .coral::before, .coral::after {
+            content: "";
+            position: absolute;
+            background: inherit;
+            border-radius: 50%;
+        }
+        
+        .fish {
+            position: absolute;
+            font-size: 30px;
+            filter: drop-shadow(2px 4px 4px #0a2f4a);
+            animation: swim linear infinite;
+        }
+        @keyframes swim {
+            from { left: -50px; }
+            to { left: 110%; }
+        }
+        
+        .ocean-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .ocean-stat {
+            background: #1f6f8f;
+            border-radius: 40px;
+            padding: 20px;
+            text-align: center;
+            border: 6px solid #0f4f6f;
+            color: white;
+        }
+        
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .reef-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .reef-btn {
+            background: #0f4f6f;
+            border: none;
+            color: white;
+            font-size: 24px;
+            padding: 20px;
+            border-radius: 60px;
+            cursor: pointer;
+            border-bottom: 8px solid #0a2f4a;
+            transition: 0.05s linear;
+        }
+        .reef-btn:active {
+            border-bottom-width: 2px;
+            transform: translateY(6px);
+        }
+        
+        .coral-info {
+            background: #1f6f8f;
+            border-radius: 60px;
+            padding: 30px;
+            border: 8px solid #0f4f6f;
+            color: white;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+        
+        .bubble {
+            position: absolute;
+            color: white;
+            font-size: 15px;
+            animation: bubbleUp 3s linear infinite;
+        }
+        @keyframes bubbleUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-300px); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ocean-lab">
+        <div class="reef-canvas" id="reefCanvas">
+            <!-- Coral and fish will be generated -->
+        </div>
+        
+        <div class="ocean-stats">
+            <div class="ocean-stat">
+                <div>🐠 FISH</div>
+                <div class="stat-number" id="fishCount">24</div>
+            </div>
+            <div class="ocean-stat">
+                <div>🪸 CORAL</div>
+                <div class="stat-number" id="coralCount">15</div>
+            </div>
+            <div class="ocean-stat">
+                <div>🌊 TEMP</div>
+                <div class="stat-number" id="waterTemp">26°C</div>
+            </div>
+            <div class="ocean-stat">
+                <div>⚗️ pH</div>
+                <div class="stat-number" id="phLevel">8.2</div>
+            </div>
+        </div>
+        
+        <div class="reef-controls">
+            <button class="reef-btn" id="addFish">🐟 ADD FISH</button>
+            <button class="reef-btn" id="addCoral">🪸 GROW CORAL</button>
+            <button class="reef-btn" id="cleanOcean">🧹 CLEAN</button>
+            <button class="reef-btn" id="warmOcean">🔥 WARM</button>
+            <button class="reef-btn" id="coolOcean">❄️ COOL</button>
+            <button class="reef-btn" id="stormBtn">🌊 STORM</button>
+        </div>
+        
+        <div class="coral-info" id="coralInfo">
+            🐠 Healthy reef ecosystem - 24 fish species, 15 coral colonies
+        </div>
+    </div>
+
+    <script>
+        const reefCanvas = document.getElementById('reefCanvas');
+        const fishCount = document.getElementById('fishCount');
+        const coralCount = document.getElementById('coralCount');
+        const waterTemp = document.getElementById('waterTemp');
+        const phLevel = document.getElementById('phLevel');
+        const coralInfo = document.getElementById('coralInfo');
+        
+        let fish = [];
+        let corals = [];
+        let temp = 26;
+        let ph = 8.2;
+        
+        function createFish() {
+            const fishEl = document.createElement('div');
+            fishEl.className = 'fish';
+            
+            const fishTypes = ['🐠', '🐟', '🐡', '🐋', '🐬', '🦈'];
+            fishEl.textContent = fishTypes[Math.floor(Math.random() * fishTypes.length)];
+            
+            fishEl.style.top = Math.random() * 250 + 'px';
+            fishEl.style.fontSize = (20 + Math.random() * 30) + 'px';
+            fishEl.style.animationDuration = (5 + Math.random() * 10) + 's';
+            fishEl.style.animationDelay = Math.random() * 2 + 's';
+            
+            reefCanvas.appendChild(fishEl);
+            fish.push(fishEl);
+            
+            updateCounts();
+        }
+        
+        function createCoral() {
+            const coral = document.createElement('div');
+            coral.className = 'coral';
+            
+            const width = 20 + Math.random() * 40;
+            const height = 30 + Math.random() * 70;
+            const x = Math.random() * (reefCanvas.offsetWidth - width);
+            
+            coral.style.width = width + 'px';
+            coral.style.height = height + 'px';
+            coral.style.left = x + 'px';
+            coral.style.bottom = '0';
+            
+            // Coral color based on health
+            const health = Math.random();
+            if (health > 0.7) {
+                coral.style.background = '#ffb3b3'; // healthy pink
+            } else if (health > 0.3) {
+                coral.style.background = '#ff7f7f'; // normal
+            } else {
+                coral.style.background = '#bfbfbf'; // bleached
+            }
+            
+            // Add branches
+            coral.style.boxShadow = `
+                ${width * 0.2}px -${height * 0.2}px 0 0 ${coral.style.background},
+                -${width * 0.1}px -${height * 0.3}px 0 0 ${coral.style.background},
+                ${width * 0.3}px -${height * 0.1}px 0 0 ${coral.style.background}
+            `;
+            
+            coral.addEventListener('click', () => {
+                coralInfo.innerHTML = `🪸 This coral colony is ${health > 0.5 ? 'healthy' : 'stressed'}`;
+            });
+            
+            reefCanvas.appendChild(coral);
+            corals.push(coral);
+            
+            updateCounts();
+        }
+        
+        function createBubble() {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = '○';
+            bubble.style.left = Math.random() * 100 + '%';
+            bubble.style.bottom = '0';
+            bubble.style.animationDuration = (2 + Math.random() * 4) + 's';
+            bubble.style.fontSize = (10 + Math.random() * 20) + 'px';
+            
+            reefCanvas.appendChild(bubble);
+            setTimeout(() => bubble.remove(), 3000);
+        }
+        
+        function updateCounts() {
+            fishCount.textContent = fish.length;
+            coralCount.textContent = corals.length;
+            
+            let healthStatus = 'Healthy';
+            if (temp > 30) healthStatus = 'Thermal stress';
+            else if (temp < 20) healthStatus = 'Too cold';
+            else if (ph < 7.8) healthStatus = 'Acidic';
+            
+            coralInfo.innerHTML = `🪸 ${healthStatus} reef - ${fish.length} fish, ${corals.length} coral colonies, ${temp}°C, pH ${ph}`;
+        }
+        
+        function addFish() {
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => createFish(), i * 300);
+            }
+        }
+        
+        function addCoral() {
+            for (let i = 0; i < 2; i++) {
+                setTimeout(() => createCoral(), i * 500);
+            }
+        }
+        
+        function cleanOcean() {
+            // Remove dead coral (bleached)
+            corals = corals.filter(coral => {
+                if (coral.style.background.includes('bfbfbf')) {
+                    coral.remove();
+                    return false;
+                }
+                return true;
+            });
+            
+            ph = 8.2;
+            phLevel.textContent = ph.toFixed(1);
+            updateCounts();
+        }
+        
+        function warmOcean() {
+            temp += 2;
+            waterTemp.textContent = temp + '°C';
+            
+            // Stress corals
+            corals.forEach(coral => {
+                if (temp > 30 && Math.random() > 0.7) {
+                    coral.style.background = '#bfbfbf'; // bleaching
+                }
+            });
+            
+            updateCounts();
+        }
+        
+        function coolOcean() {
+            temp -= 2;
+            waterTemp.textContent = temp + '°C';
+            updateCounts();
+        }
+        
+        function createStorm() {
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const wave = document.createElement('div');
+                    wave.style.position = 'absolute';
+                    wave.style.width = '100%';
+                    wave.style.height = '100%';
+                    wave.style.background = 'rgba(255,255,255,0.3)';
+                    wave.style.top = Math.random() * 100 + '%';
+                    wave.style.animation = 'sway 0.5s';
+                    reefCanvas.appendChild(wave);
+                    
+                    setTimeout(() => wave.remove(), 500);
+                }, i * 100);
+            }
+            
+            // Fish hide
+            fish.forEach(f => f.style.opacity = '0.2');
+            setTimeout(() => fish.forEach(f => f.style.opacity = '1'), 5000);
+            
+            coralInfo.innerHTML = '🌊 Storm passing through the reef...';
+        }
+        
+        document.getElementById('addFish').addEventListener('click', addFish);
+        document.getElementById('addCoral').addEventListener('click', addCoral);
+        document.getElementById('cleanOcean').addEventListener('click', cleanOcean);
+        document.getElementById('warmOcean').addEventListener('click', warmOcean);
+        document.getElementById('coolOcean').addEventListener('click', coolOcean);
+        document.getElementById('stormBtn').addEventListener('click', createStorm);
+        
+        // Initial ecosystem
+        for (let i = 0; i < 5; i++) {
+            setTimeout(() => createCoral(), i * 200);
+        }
+        for (let i = 0; i < 8; i++) {
+            setTimeout(() => createFish(), i * 300);
+        }
+        
+        // Bubbles
+        setInterval(createBubble, 1000);
+        
+        // pH fluctuations
+        setInterval(() => {
+            ph += (Math.random() - 0.5) * 0.2;
+            ph = Math.max(7.6, Math.min(8.4, ph));
+            phLevel.textContent = ph.toFixed(1);
+            updateCounts();
+        }, 10000);
+    </script>
+</body>
+</html>

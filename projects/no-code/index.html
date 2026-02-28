@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No-Code Workflow · Drag & Drop Automation</title>
+    <!-- Font Awesome 6 (free) for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f6f9fc 0%, #e9f2f9 100%);
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        /* main card */
+        .workflow-builder {
+            max-width: 1360px;
+            width: 100%;
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(4px);
+            border-radius: 48px;
+            box-shadow: 0 25px 60px -12px rgba(0,40,70,0.35), 0 8px 20px -8px rgba(0,32,64,0.2);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.7);
+        }
+
+        /* header */
+        .builder-header {
+            padding: 28px 36px;
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(0,50,80,0.1);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-icon {
+            background: #1e3b5c;
+            color: white;
+            width: 52px;
+            height: 52px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 12px 18px -8px rgba(20,60,120,0.4);
+        }
+
+        .logo-text h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: #0c2a41;
+        }
+
+        .logo-text p {
+            color: #2f5e82;
+            font-weight: 400;
+            font-size: 0.95rem;
+            margin-top: 2px;
+        }
+
+        .header-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn {
+            background: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-weight: 550;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 6px 14px rgba(0,30,50,0.08);
+            color: #1a3d5c;
+            cursor: default;
+            transition: 0.15s ease;
+            border: 1px solid rgba(60,110,140,0.2);
+        }
+
+        .btn i {
+            font-size: 1.1rem;
+            color: #2d6e9e;
+        }
+
+        .btn-primary {
+            background: #1a4c74;
+            color: white;
+            border: none;
+            box-shadow: 0 12px 24px -12px #0a3350;
+            cursor: pointer;
+        }
+
+        .btn-primary i {
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0f3d5e;
+            transform: scale(1.02);
+        }
+
+        /* two-column layout */
+        .builder-main {
+            display: flex;
+            flex-direction: row;
+            min-height: 600px;
+            height: 70vh;
+        }
+
+        /* left toolbox (draggable steps) */
+        .toolbox {
+            width: 280px;
+            background: rgba(255,255,255,0.5);
+            backdrop-filter: blur(4px);
+            padding: 28px 18px;
+            border-right: 1px solid rgba(0,60,100,0.1);
+            overflow-y: auto;
+            box-shadow: 8px 0 20px -15px rgba(0,30,50,0.2);
+        }
+
+        .toolbox-title {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #23577b;
+            margin-bottom: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .draggable-item {
+            background: white;
+            padding: 18px 16px;
+            border-radius: 26px;
+            margin-bottom: 14px;
+            box-shadow: 0 8px 16px -12px #0a2f4a;
+            border: 1px solid rgba(60,130,180,0.2);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: grab;
+            transition: 0.15s;
+            user-select: none;
+            font-weight: 500;
+            color: #193f5c;
+        }
+
+        .draggable-item:hover {
+            background: #f4fcff;
+            border-color: #2f8ac0;
+            box-shadow: 0 15px 22px -14px #1b6e9e;
+            transform: translateY(-2px);
+        }
+
+        .draggable-item:active {
+            cursor: grabbing;
+            opacity: 0.8;
+        }
+
+        .item-icon {
+            width: 40px;
+            height: 40px;
+            background: #e7f0f9;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: #1e5780;
+        }
+
+        /* canvas area */
+        .canvas-container {
+            flex: 1;
+            background: rgba(255,255,255,0.3);
+            backdrop-filter: blur(2px);
+            padding: 28px 24px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .canvas-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            color: #174061;
+        }
+
+        .canvas-header h2 {
+            font-size: 1.5rem;
+            font-weight: 520;
+        }
+
+        .zoom-badge {
+            background: rgba(30,80,120,0.15);
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+        }
+
+        /* workflow canvas (drop zone) */
+        .workflow-canvas {
+            min-height: 380px;
+            height: calc(100% - 80px);
+            background: rgba(255,255,255,0.5);
+            border-radius: 48px;
+            border: 3px dashed rgba(60,130,180,0.25);
+            padding: 32px 26px;
+            transition: border 0.2s;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .workflow-canvas.drag-over {
+            border-color: #2b7bb2;
+            background: rgba(225, 245, 255, 0.5);
+        }
+
+        /* step cards inside canvas */
+        .canvas-step {
+            background: white;
+            border-radius: 28px;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 10px 18px -12px #123a54;
+            border-left: 10px solid;
+            border-image: none;
+            animation: fadeIn 0.2s ease;
+            cursor: default;
+            border: 1px solid rgba(0,80,120,0.2);
+            transition: 0.15s;
+        }
+
+        .canvas-step[data-type="trigger"] { border-left-color: #2b7a4b; }
+        .canvas-step[data-type="action"] { border-left-color: #b6573a; }
+        .canvas-step[data-type="condition"] { border-left-color: #b18a2c; }
+        .canvas-step[data-type="delay"] { border-left-color: #4a71a4; }
+
+        .step-icon {
+            width: 48px;
+            height: 48px;
+            background: #ecf3fa;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #173e5f;
+        }
+
+        .step-content {
+            flex: 1;
+            font-weight: 500;
+            color: #0f3149;
+        }
+
+        .step-content .step-desc {
+            font-size: 0.9rem;
+            color: #426f92;
+            margin-top: 4px;
+            font-weight: 400;
+        }
+
+        .step-remove {
+            background: transparent;
+            border: none;
+            font-size: 1.4rem;
+            color: #778e9e;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 30px;
+            transition: 0.1s;
+        }
+
+        .step-remove:hover {
+            background: #f0eef2;
+            color: #b2243a;
+        }
+
+        .empty-canvas-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #407099;
+            opacity: 0.8;
+            font-size: 1.1rem;
+            gap: 18px;
+            text-align: center;
+            padding: 48px 0;
+        }
+
+        .empty-canvas-placeholder i {
+            font-size: 4rem;
+            opacity: 0.5;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* small connector hint */
+        .connector-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            font-size: 1.2rem;
+            color: #2f6490;
+            margin: 4px 0;
+        }
+
+        footer {
+            padding: 20px 36px;
+            background: rgba(255,255,255,0.5);
+            border-top: 1px solid rgba(0,40,70,0.1);
+            font-size: 0.9rem;
+            color: #1f4a6e;
+            display: flex;
+            gap: 32px;
+        }
+
+        footer i {
+            margin-right: 6px;
+        }
+    </style>
+</head>
+<body>
+<div class="workflow-builder">
+    <!-- header -->
+    <div class="builder-header">
+        <div class="logo-area">
+            <div class="logo-icon"><i class="fas fa-diagram-project"></i></div>
+            <div class="logo-text">
+                <h1>flowize · no-code</h1>
+                <p>drag & drop automation designer</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <div class="btn"><i class="fas fa-cloud-save"></i> Draft saved</div>
+            <div class="btn btn-primary" id="publishBtn"><i class="fas fa-play"></i> Publish workflow</div>
+        </div>
+    </div>
+
+    <!-- main area: left toolbox + right canvas -->
+    <div class="builder-main">
+        <!-- toolbox: draggable items -->
+        <div class="toolbox">
+            <div class="toolbox-title"><i class="fas fa-cubes"></i> Components</div>
+            <div class="draggable-item" draggable="true" data-type="trigger" data-label="Schedule trigger" data-desc="Cron / time event" data-icon="calendar">
+                <div class="item-icon"><i class="fas fa-calendar-alt"></i></div>
+                <div>Schedule</div>
+            </div>
+            <div class="draggable-item" draggable="true" data-type="trigger" data-label="Webhook" data-desc="Incoming HTTP call" data-icon="link">
+                <div class="item-icon"><i class="fas fa-link"></i></div>
+                <div>Webhook</div>
+            </div>
+            <div class="draggable-item" draggable="true" data-type="action" data-label="Send email" data-desc="Gmail / SMTP" data-icon="envelope">
+                <div class="item-icon"><i class="fas fa-envelope"></i></div>
+                <div>Send email</div>
+            </div>
+            <div class="draggable-item" draggable="true" data-type="action" data-label="Slack message" data-desc="Post to channel" data-icon="slack">
+                <div class="item-icon"><i class="fab fa-slack"></i></div>
+                <div>Slack</div>
+            </div>
+            <div class="draggable-item" draggable="true" data-type="condition" data-label="Condition" data-desc="If / Else branch" data-icon="code-branch">
+                <div class="item-icon"><i class="fas fa-code-branch"></i></div>
+                <div>Condition</div>
+            </div>
+            <div class="draggable-item" draggable="true" data-type="delay" data-label="Delay" data-desc="Wait 1h" data-icon="hourglass">
+                <div class="item-icon"><i class="fas fa-hourglass-half"></i></div>
+                <div>Delay</div>
+            </div>
+            <div class="draggable-item" draggable="true" data-type="action" data-label="Update database" data-desc="SQL / NoSQL" data-icon="database">
+                <div class="item-icon"><i class="fas fa-database"></i></div>
+                <div>Database</div>
+            </div>
+            <div style="margin-top: 24px; background: #cde2f3; border-radius: 30px; padding: 16px; color:#174b73; font-size:0.9rem">
+                <i class="fas fa-arrows-alt" style="margin-right: 8px;"></i>Drag items into canvas
+            </div>
+        </div>
+
+        <!-- canvas area (drop zone) -->
+        <div class="canvas-container">
+            <div class="canvas-header">
+                <h2><i class="fas fa-pen-ruler" style="margin-right: 10px;"></i>Workflow canvas</h2>
+                <span class="zoom-badge"><i class="fas fa-minus-circle"></i> drag to rearrange</span>
+            </div>
+            <div class="workflow-canvas" id="workflowCanvas" dropzone="move" @dragover.prevent @drop.prevent="handleDrop">
+                <!-- dynamic steps will be injected via js -->
+                <!-- empty placeholder shown by js if no steps -->
+            </div>
+        </div>
+    </div>
+
+    <!-- footer status -->
+    <footer>
+        <span><i class="fas-regular fa-circle-check" style="color: #1a8354;"></i> ready · 2 triggers, 5 actions</span>
+        <span><i class="fas fa-grip-lines-vertical"></i> zoom 100%</span>
+        <span><i class="fas fa-undo-alt"></i> auto-snap enabled</span>
+    </footer>
+</div>
+
+<script>
+    (function() {
+        // ----- DATA & STATE -----
+        let steps = [];  // each step: { id, type, label, desc, icon }
+
+        // prefill with two demo steps to make canvas look alive
+        const demoSteps = [
+            { id: 'step_1', type: 'trigger', label: 'Webhook', desc: 'Incoming HTTP call', icon: 'link' },
+            { id: 'step_2', type: 'action', label: 'Send email', desc: 'Gmail / SMTP', icon: 'envelope' },
+            { id: 'step_3', type: 'condition', label: 'Condition', desc: 'If / Else branch', icon: 'code-branch' },
+        ];
+
+        demoSteps.forEach(s => steps.push(s));
+
+        // ----- DOM elements -----
+        const canvasEl = document.getElementById('workflowCanvas');
+        const publishBtn = document.getElementById('publishBtn');
+
+        // ----- helper: render all steps from steps array to canvas -----
+        function renderCanvas() {
+            if (steps.length === 0) {
+                canvasEl.innerHTML = `<div class="empty-canvas-placeholder">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <div>Drag and drop components here</div>
+                    <span style="font-size:0.9rem; background: rgba(0,0,0,0.02); padding: 8px 20px; border-radius: 40px;">⇩ drop to build automation</span>
+                </div>`;
+                return;
+            }
+
+            let html = '';
+            steps.forEach((step, index) => {
+                const iconMap = {
+                    'calendar': 'fa-calendar-alt',
+                    'link': 'fa-link',
+                    'envelope': 'fa-envelope',
+                    'slack': 'fa-slack',
+                    'code-branch': 'fa-code-branch',
+                    'hourglass': 'fa-hourglass-half',
+                    'database': 'fa-database',
+                };
+                // fallback icon
+                const iconClass = iconMap[step.icon] || 'fa-gear';
+                // type for border color
+                const typeAttr = step.type || 'action';
+
+                html += `
+                    <div class="canvas-step" data-id="${step.id}" data-type="${typeAttr}">
+                        <div class="step-icon"><i class="fas ${iconClass}"></i></div>
+                        <div class="step-content">
+                            <div style="font-weight: 600;">${step.label}</div>
+                            <div class="step-desc">${step.desc}</div>
+                        </div>
+                        <button class="step-remove" data-id="${step.id}" title="Remove step"><i class="fas fa-trash-can"></i></button>
+                    </div>
+                    ${index < steps.length-1 ? '<div class="connector-dots"><i class="fas fa-arrow-down"></i></div>' : ''}
+                `;
+            });
+            canvasEl.innerHTML = html;
+
+            // attach remove listeners
+            document.querySelectorAll('.step-remove').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = btn.getAttribute('data-id');
+                    removeStepById(id);
+                });
+            });
+        }
+
+        // ----- remove step -----
+        function removeStepById(id) {
+            steps = steps.filter(step => step.id !== id);
+            renderCanvas();
+        }
+
+        // ----- add new step from drag data -----
+        function addStepFromDrag(data) {
+            // dataTransfer items from drag
+            const type = data.type || 'action';
+            let label = data.label || 'Component';
+            let desc = data.desc || 'automation step';
+            let icon = data.icon || 'gear';
+
+            // small variations based on type (just for demonstration)
+            if (type === 'trigger' && label === 'Schedule trigger') {
+                label = 'Schedule';
+                desc = 'Cron / time event';
+                icon = 'calendar';
+            } else if (type === 'trigger' && label === 'Webhook') {
+                label = 'Webhook';
+                desc = 'Incoming HTTP';
+                icon = 'link';
+            } else if (type === 'action' && label === 'Send email') {
+                label = 'Send email';
+                desc = 'Gmail / SMTP';
+                icon = 'envelope';
+            } else if (type === 'action' && label === 'Slack message') {
+                label = 'Slack';
+                desc = 'Post to channel';
+                icon = 'slack';
+            } else if (type === 'condition') {
+                label = 'Condition';
+                desc = 'If / Else branch';
+                icon = 'code-branch';
+            } else if (type === 'delay') {
+                label = 'Delay';
+                desc = 'Wait 1h';
+                icon = 'hourglass';
+            } else if (type === 'action' && label === 'Update database') {
+                label = 'Database';
+                desc = 'SQL / NoSQL';
+                icon = 'database';
+            }
+
+            const newStep = {
+                id: 'step_' + Date.now() + '_' + Math.floor(Math.random()*1000),
+                type: type,
+                label: label,
+                desc: desc,
+                icon: icon,
+            };
+            steps.push(newStep);
+            renderCanvas();
+        }
+
+        // ----- drag & drop: prepare data from toolbox items -----
+        function handleDragStart(e) {
+            const item = e.target.closest('.draggable-item');
+            if (!item) return;
+
+            const type = item.getAttribute('data-type') || 'action';
+            const label = item.getAttribute('data-label') || item.innerText.trim();
+            const desc = item.getAttribute('data-desc') || '';
+            const icon = item.getAttribute('data-icon') || 'gear';
+
+            e.dataTransfer.setData('text/plain', JSON.stringify({
+                type: type,
+                label: label,
+                desc: desc,
+                icon: icon
+            }));
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        // ----- dragover / dragleave highlight -----
+        function handleDragOver(e) {
+            e.preventDefault();
+            canvasEl.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            canvasEl.classList.remove('drag-over');
+        }
+
+        // ----- DROP -----
+        function handleDrop(e) {
+            e.preventDefault();
+            canvasEl.classList.remove('drag-over');
+
+            const rawData = e.dataTransfer.getData('text/plain');
+            if (!rawData) return;
+
+            try {
+                const stepData = JSON.parse(rawData);
+                addStepFromDrag(stepData);
+            } catch (err) {
+                console.warn('drop parse error', err);
+            }
+        }
+
+        // ----- disable default dragover for whole container (already done via @dragover.prevent in html attribute? better attach) -----
+        canvasEl.addEventListener('dragover', handleDragOver);
+        canvasEl.addEventListener('dragleave', handleDragLeave);
+        canvasEl.addEventListener('drop', handleDrop);
+
+        // ----- make all draggable items actually draggable -----
+        document.querySelectorAll('.draggable-item').forEach(item => {
+            item.addEventListener('dragstart', handleDragStart);
+            // prevent default browser drag image weirdness (fine)
+            item.setAttribute('draggable', 'true');
+        });
+
+        // ----- initial render -----
+        renderCanvas();
+
+        // ----- publish simulation -----
+        publishBtn.addEventListener('click', () => {
+            if (steps.length === 0) {
+                alert('✨ Canvas is empty — add some steps first.');
+            } else {
+                alert(`🚀 Workflow published with ${steps.length} steps (simulated).`);
+            }
+        });
+
+        // ----- also remove any unwanted default drag behaviors on canvas children (safe) -----
+        window.addEventListener('dragenter', (e) => e.preventDefault());
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', (e) => e.preventDefault());
+
+        // small extra: canvas drop should not navigate etc.
+    })();
+</script>
+
+<!-- ensure that window drop prevents default (redundant but safe) -->
+</body>
+</html>
