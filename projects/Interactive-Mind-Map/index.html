@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Mind Map Creator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/3.5.0/remixicon.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="ri-mind-map"></i> Interactive Mind Map Creator</h1>
+                <p>Create, visualize, and organize your ideas visually</p>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <!-- Control Panel -->
+            <aside class="control-panel">
+                <div class="panel-section">
+                    <h3><i class="ri-settings-3-line"></i> Canvas Controls</h3>
+                    <div class="button-group">
+                        <button id="zoomInBtn" title="Zoom In (Ctrl++)">
+                            <i class="ri-zoom-in-line"></i> Zoom In
+                        </button>
+                        <button id="zoomOutBtn" title="Zoom Out (Ctrl+-)">
+                            <i class="ri-zoom-out-line"></i> Zoom Out
+                        </button>
+                        <button id="resetZoomBtn" title="Reset Zoom">
+                            <i class="ri-zoom-to-fit"></i> Reset
+                        </button>
+                    </div>
+                    <div class="zoom-display">Zoom: <span id="zoomLevel">100</span>%</div>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-layout-grid-fill"></i> Node Actions</h3>
+                    <div class="button-group">
+                        <button id="addNodeBtn" title="Add New Node (Double-click canvas)">
+                            <i class="ri-add-circle-line"></i> Add Node
+                        </button>
+                        <button id="deleteNodeBtn" title="Delete Selected Node (Del)">
+                            <i class="ri-delete-bin-line"></i> Delete
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-palette-line"></i> Node Color</h3>
+                    <div class="color-palette">
+                        <button class="color-btn" data-color="rgb(100, 180, 255)" title="Blue" style="background: rgb(100, 180, 255);"></button>
+                        <button class="color-btn" data-color="rgb(120, 255, 100)" title="Green" style="background: rgb(120, 255, 100);"></button>
+                        <button class="color-btn" data-color="rgb(255, 180, 100)" title="Orange" style="background: rgb(255, 180, 100);"></button>
+                        <button class="color-btn" data-color="rgb(255, 100, 100)" title="Red" style="background: rgb(255, 100, 100);"></button>
+                        <button class="color-btn" data-color="rgb(200, 150, 255)" title="Purple" style="background: rgb(200, 150, 255);"></button>
+                        <button class="color-btn" data-color="rgb(255, 255, 100)" title="Yellow" style="background: rgb(255, 255, 100);"></button>
+                        <button class="color-btn" data-color="rgb(100, 220, 220)" title="Cyan" style="background: rgb(100, 220, 220);"></button>
+                        <button class="color-btn" data-color="rgb(200, 200, 200)" title="Gray" style="background: rgb(200, 200, 200);"></button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-download-2-line"></i> Export & Import</h3>
+                    <div class="button-group">
+                        <button id="exportJsonBtn" title="Export as JSON">
+                            <i class="ri-file-download-line"></i> Export JSON
+                        </button>
+                        <button id="importJsonBtn" title="Import from JSON">
+                            <i class="ri-file-upload-line"></i> Import JSON
+                        </button>
+                        <input type="file" id="fileInput" accept=".json" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-image-download-line"></i> Export as Image</h3>
+                    <div class="button-group">
+                        <button id="exportPngBtn" title="Export as PNG">
+                            <i class="ri-image-line"></i> Export PNG
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-bar-chart-2-line"></i> Statistics</h3>
+                    <div class="stats-display">
+                        <div class="stat-item">
+                            <span>Total Nodes:</span>
+                            <strong id="statsNodes">0</strong>
+                        </div>
+                        <div class="stat-item">
+                            <span>Total Connections:</span>
+                            <strong id="statsConnections">0</strong>
+                        </div>
+                        <div class="stat-item">
+                            <span>Max Depth:</span>
+                            <strong id="statsDepth">0</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-lightbulb-line"></i> Templates</h3>
+                    <select id="templateSelect">
+                        <option value="">-- Select Template --</option>
+                        <option value="brainstorm">Brainstorm</option>
+                        <option value="planning">Project Planning</option>
+                        <option value="learning">Learning Path</option>
+                        <option value="problem">Problem Analysis</option>
+                    </select>
+                </div>
+
+                <div class="panel-section">
+                    <h3><i class="ri-help-line"></i> Help</h3>
+                    <button id="helpBtn" class="secondary-btn">
+                        <i class="ri-question-line"></i> Keyboard Shortcuts
+                    </button>
+                </div>
+
+                <button id="clearAllBtn" class="danger-btn">
+                    <i class="ri-delete-bin-2-line"></i> Clear All
+                </button>
+            </aside>
+
+            <!-- Canvas Area -->
+            <div class="canvas-container">
+                <canvas id="mindmapCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- Node Editor Modal -->
+        <div id="nodeEditorModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Edit Node</h2>
+                    <button class="close-btn" id="closeModalBtn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="nodeTextField">Node Text:</label>
+                        <textarea id="nodeTextField" placeholder="Enter node text..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="nodeColorInput">Node Color:</label>
+                        <input type="color" id="nodeColorInput">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="saveNodeBtn" class="save-btn">Save</button>
+                    <button id="cancelNodeBtn" class="cancel-btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Modal -->
+        <div id="helpModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Keyboard Shortcuts & Help</h2>
+                    <button class="close-btn" id="closeHelpBtn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="help-section">
+                        <h4>Canvas Navigation</h4>
+                        <ul>
+                            <li><kbd>Scroll</kbd> - Zoom in/out</li>
+                            <li><kbd>Right Click + Drag</kbd> - Pan canvas</li>
+                            <li><kbd>Ctrl</kbd> + <kbd>+/-</kbd> - Zoom in/out</li>
+                        </ul>
+                    </div>
+                    <div class="help-section">
+                        <h4>Node Operations</h4>
+                        <ul>
+                            <li><kbd>Double Click</kbd> - Add new node at location</li>
+                            <li><kbd>Click</kbd> - Select node</li>
+                            <li><kbd>Drag</kbd> - Move selected node</li>
+                            <li><kbd>Delete</kbd> - Delete selected node</li>
+                            <li><kbd>Double Click Node</kbd> - Edit node text</li>
+                        </ul>
+                    </div>
+                    <div class="help-section">
+                        <h4>Connections</h4>
+                        <ul>
+                            <li><kbd>Shift + Drag from Node</kbd> - Create connection</li>
+                            <li><kbd>Click Connection</kbd> - Delete connection</li>
+                        </ul>
+                    </div>
+                    <div class="help-section">
+                        <h4>Features</h4>
+                        <ul>
+                            <li>🧠 Drag & drop nodes to rearrange</li>
+                            <li>🔗 Create connections between related ideas</li>
+                            <li>🎨 Color code nodes by category</li>
+                            <li>💾 Export as JSON or PNG</li>
+                            <li>📊 View statistics and tree depth</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="closeHelpConfirmBtn" class="cancel-btn">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="mindmap.js"></script>
+</body>
+</html>
