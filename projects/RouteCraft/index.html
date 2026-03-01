@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RouteCraft - Advanced Route Planner</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-route"></i>
+                <span>RouteCraft</span>
+            </div>
+            <div class="nav-controls">
+                <button id="theme-toggle" class="nav-btn" title="Toggle Dark Mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button id="save-route" class="nav-btn" title="Save Route">
+                    <i class="fas fa-save"></i>
+                </button>
+                <button id="load-route" class="nav-btn" title="Load Route">
+                    <i class="fas fa-folder-open"></i>
+                </button>
+                <button id="export-route" class="nav-btn" title="Export Route">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button id="share-route" class="nav-btn" title="Share Route">
+                    <i class="fas fa-share"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content">
+            <h1><i class="fas fa-map-marked-alt"></i> RouteCraft</h1>
+            <p class="hero-subtitle">Advanced Route Planner for Modern Travelers</p>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-number" id="total-destinations">0</span>
+                    <span class="stat-label">Destinations</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="total-distance">0</span>
+                    <span class="stat-label">km Distance</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="estimated-time">0</span>
+                    <span class="stat-label">hrs Travel</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Search and Input Section -->
+            <section class="search-section">
+                <div class="search-container">
+                    <div class="search-input-group">
+                        <div class="input-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="destination-input" placeholder="Search for destinations (e.g., Paris, Eiffel Tower, 123 Main St)">
+                            <div id="search-suggestions" class="suggestions-dropdown"></div>
+                        </div>
+                        <button id="add-destination" class="btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Add Stop
+                        </button>
+                    </div>
+
+                    <div class="travel-options">
+                        <div class="option-group">
+                            <label for="travel-mode">Travel Mode:</label>
+                            <select id="travel-mode">
+                                <option value="driving">🚗 Driving</option>
+                                <option value="walking">🚶 Walking</option>
+                                <option value="cycling">🚴 Cycling</option>
+                                <option value="transit">🚌 Public Transit</option>
+                            </select>
+                        </div>
+
+                        <div class="option-group">
+                            <label for="avoid-tolls">Avoid Tolls:</label>
+                            <input type="checkbox" id="avoid-tolls">
+                        </div>
+
+                        <div class="option-group">
+                            <label for="avoid-highways">Avoid Highways:</label>
+                            <input type="checkbox" id="avoid-highways">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Route Management Section -->
+            <section class="route-management">
+                <div class="route-header">
+                    <h2><i class="fas fa-list-ol"></i> Your Route</h2>
+                    <div class="route-actions">
+                        <button id="optimize-route" class="btn-secondary">
+                            <i class="fas fa-magic"></i>
+                            Optimize
+                        </button>
+                        <button id="reverse-route" class="btn-secondary">
+                            <i class="fas fa-exchange-alt"></i>
+                            Reverse
+                        </button>
+                        <button id="clear-route" class="btn-danger">
+                            <i class="fas fa-trash"></i>
+                            Clear All
+                        </button>
+                    </div>
+                </div>
+
+                <div class="route-list-container">
+                    <ul id="route-list" class="route-list"></ul>
+                    <div id="empty-route" class="empty-state">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <p>No destinations added yet. Start by searching for places above!</p>
+                    </div>
+                </div>
+
+                <div class="route-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-route"></i>
+                        <div class="stat-info">
+                            <span class="stat-value" id="route-distance">0 km</span>
+                            <span class="stat-label">Total Distance</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-clock"></i>
+                        <div class="stat-info">
+                            <span class="stat-value" id="route-time">0 min</span>
+                            <span class="stat-label">Travel Time</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-gas-pump"></i>
+                        <div class="stat-info">
+                            <span class="stat-value" id="fuel-cost">$0</span>
+                            <span class="stat-label">Est. Fuel Cost</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Map Section -->
+            <section class="map-section">
+                <div class="map-header">
+                    <h2><i class="fas fa-map"></i> Interactive Map</h2>
+                    <div class="map-controls">
+                        <button id="fit-route" class="map-btn" title="Fit to Route">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button id="toggle-traffic" class="map-btn" title="Toggle Traffic">
+                            <i class="fas fa-car"></i>
+                        </button>
+                        <button id="toggle-poi" class="map-btn" title="Toggle Points of Interest">
+                            <i class="fas fa-utensils"></i>
+                        </button>
+                        <select id="map-style" class="map-select">
+                            <option value="streets">Streets</option>
+                            <option value="satellite">Satellite</option>
+                            <option value="terrain">Terrain</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="map" class="map-container"></div>
+                <div id="map-loading" class="map-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Loading map...</span>
+                </div>
+            </section>
+
+            <!-- Route Alternatives Section -->
+            <section class="alternatives-section">
+                <h2><i class="fas fa-random"></i> Route Alternatives</h2>
+                <div id="alternatives-container" class="alternatives-container">
+                    <div class="alternative-option" data-alternative="fastest">
+                        <div class="alternative-header">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Fastest Route</span>
+                        </div>
+                        <div class="alternative-details">
+                            <span id="fastest-time">0 min</span>
+                            <span id="fastest-distance">0 km</span>
+                        </div>
+                    </div>
+                    <div class="alternative-option" data-alternative="shortest">
+                        <div class="alternative-header">
+                            <i class="fas fa-road"></i>
+                            <span>Shortest Route</span>
+                        </div>
+                        <div class="alternative-details">
+                            <span id="shortest-time">0 min</span>
+                            <span id="shortest-distance">0 km</span>
+                        </div>
+                    </div>
+                    <div class="alternative-option" data-alternative="scenic">
+                        <div class="alternative-header">
+                            <i class="fas fa-tree"></i>
+                            <span>Scenic Route</span>
+                        </div>
+                        <div class="alternative-details">
+                            <span id="scenic-time">0 min</span>
+                            <span id="scenic-distance">0 km</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Weather Integration -->
+            <section class="weather-section">
+                <h2><i class="fas fa-cloud-sun"></i> Weather Along Route</h2>
+                <div id="weather-container" class="weather-container">
+                    <div class="weather-loading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Loading weather data...</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Points of Interest -->
+            <section class="poi-section">
+                <h2><i class="fas fa-star"></i> Points of Interest</h2>
+                <div class="poi-controls">
+                    <select id="poi-category" class="poi-select">
+                        <option value="restaurant">🍽️ Restaurants</option>
+                        <option value="hotel">🏨 Hotels</option>
+                        <option value="gas_station">⛽ Gas Stations</option>
+                        <option value="attraction">🎭 Attractions</option>
+                        <option value="shopping">🛍️ Shopping</option>
+                        <option value="parking">🅿️ Parking</option>
+                    </select>
+                    <input type="range" id="poi-radius" min="1" max="50" value="10" class="poi-radius">
+                    <span id="radius-value">10 km</span>
+                </div>
+                <div id="poi-container" class="poi-container">
+                    <div class="poi-loading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Searching for points of interest...</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="save-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Save Route</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="route-name" placeholder="Enter route name" class="modal-input">
+                <textarea id="route-description" placeholder="Add a description (optional)" class="modal-textarea"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button id="save-route-confirm" class="btn-primary">Save</button>
+                <button class="btn-secondary modal-close">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="load-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Load Route</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="saved-routes" class="saved-routes-list">
+                    <!-- Saved routes will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="share-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Share Route</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="share-url" readonly class="modal-input">
+                <button id="copy-share-url" class="btn-primary">Copy Link</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span id="loading-text">Processing...</span>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
