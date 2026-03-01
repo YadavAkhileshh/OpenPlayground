@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Keyword Optimizer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-robot"></i>
+                <span>AI Resume Optimizer</span>
+            </div>
+            <div class="nav-controls">
+                <button id="theme-toggle" class="nav-btn" title="Toggle Theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button id="save-report" class="nav-btn" title="Save Report">
+                    <i class="fas fa-save"></i>
+                </button>
+                <button id="load-report" class="nav-btn" title="Load Report">
+                    <i class="fas fa-folder-open"></i>
+                </button>
+                <button id="export-resume" class="nav-btn" title="Export Resume">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header Section -->
+        <header class="header">
+            <h1><i class="fas fa-magic"></i> AI Resume Keyword Optimizer</h1>
+            <p>Analyze your resume against job descriptions and boost your ATS score with AI-powered suggestions</p>
+        </header>
+
+        <!-- Upload Section -->
+        <section class="upload-section">
+            <div class="section-header">
+                <h2><i class="fas fa-upload"></i> Upload Your Resume</h2>
+                <p>Upload your resume in PDF or text format to get started</p>
+            </div>
+
+            <div class="upload-area" id="upload-area">
+                <div class="upload-content">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <h3>Drag & Drop Your Resume Here</h3>
+                    <p>or <span class="upload-link">browse files</span></p>
+                    <p class="upload-hint">Supports PDF and TXT files (Max 10MB)</p>
+                </div>
+                <input type="file" id="resume-file" accept=".pdf,.txt" hidden>
+            </div>
+
+            <div class="file-info" id="file-info" style="display: none;">
+                <div class="file-details">
+                    <i class="fas fa-file-alt"></i>
+                    <span id="file-name"></span>
+                    <span id="file-size"></span>
+                </div>
+                <button id="remove-file" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Remove
+                </button>
+            </div>
+        </section>
+
+        <!-- Job Description Section -->
+        <section class="job-section">
+            <div class="section-header">
+                <h2><i class="fas fa-briefcase"></i> Job Description Analysis</h2>
+                <p>Paste the job description to analyze keyword matches</p>
+            </div>
+
+            <div class="job-input">
+                <textarea id="job-description" placeholder="Paste the job description here...&#10;&#10;Example: We are looking for a software developer with experience in JavaScript, React, Node.js, and agile methodologies. The ideal candidate should have strong problem-solving skills and experience with REST APIs."></textarea>
+                <div class="job-controls">
+                    <button id="analyze-job" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Analyze Job Description
+                    </button>
+                    <button id="clear-job" class="btn btn-secondary">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ATS Score Section -->
+        <section class="score-section" id="score-section" style="display: none;">
+            <div class="section-header">
+                <h2><i class="fas fa-chart-line"></i> ATS Compatibility Score</h2>
+                <p>Your resume's compatibility with Applicant Tracking Systems</p>
+            </div>
+
+            <div class="score-container">
+                <div class="score-circle">
+                    <div class="score-value" id="ats-score">0</div>
+                    <div class="score-label">ATS Score</div>
+                </div>
+                <div class="score-details">
+                    <div class="score-breakdown">
+                        <div class="score-item">
+                            <span class="score-label">Keyword Match</span>
+                            <div class="score-bar">
+                                <div class="score-fill" id="keyword-score" style="width: 0%"></div>
+                            </div>
+                            <span class="score-percentage" id="keyword-percentage">0%</span>
+                        </div>
+                        <div class="score-item">
+                            <span class="score-label">Skills Alignment</span>
+                            <div class="score-bar">
+                                <div class="score-fill" id="skills-score" style="width: 0%"></div>
+                            </div>
+                            <span class="score-percentage" id="skills-percentage">0%</span>
+                        </div>
+                        <div class="score-item">
+                            <span class="score-label">Format Optimization</span>
+                            <div class="score-bar">
+                                <div class="score-fill" id="format-score" style="width: 0%"></div>
+                            </div>
+                            <span class="score-percentage" id="format-percentage">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Keyword Analysis Section -->
+        <section class="analysis-section" id="analysis-section" style="display: none;">
+            <div class="section-header">
+                <h2><i class="fas fa-search"></i> Keyword Gap Analysis</h2>
+                <p>Missing keywords and skills that could improve your resume</p>
+            </div>
+
+            <div class="analysis-tabs">
+                <button class="tab-btn active" data-tab="missing">Missing Keywords</button>
+                <button class="tab-btn" data-tab="matched">Matched Keywords</button>
+                <button class="tab-btn" data-tab="suggested">Skill Suggestions</button>
+            </div>
+
+            <div class="analysis-content">
+                <div class="tab-content active" id="missing-tab">
+                    <div class="keyword-list" id="missing-keywords">
+                        <!-- Missing keywords will be populated here -->
+                    </div>
+                </div>
+
+                <div class="tab-content" id="matched-tab">
+                    <div class="keyword-list" id="matched-keywords">
+                        <!-- Matched keywords will be populated here -->
+                    </div>
+                </div>
+
+                <div class="tab-content" id="suggested-tab">
+                    <div class="suggestions-list" id="skill-suggestions">
+                        <!-- Skill suggestions will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Resume Editor Section -->
+        <section class="editor-section" id="editor-section" style="display: none;">
+            <div class="section-header">
+                <h2><i class="fas fa-edit"></i> Resume Editor</h2>
+                <p>Edit your resume sections to incorporate suggested keywords</p>
+            </div>
+
+            <div class="editor-tabs">
+                <button class="editor-tab-btn active" data-section="summary">Professional Summary</button>
+                <button class="editor-tab-btn" data-section="experience">Work Experience</button>
+                <button class="editor-tab-btn" data-section="skills">Skills</button>
+                <button class="editor-tab-btn" data-section="education">Education</button>
+            </div>
+
+            <div class="editor-content">
+                <div class="editor-panel active" id="summary-panel">
+                    <div class="editor-header">
+                        <h3>Professional Summary</h3>
+                        <button class="optimize-btn" data-section="summary">
+                            <i class="fas fa-magic"></i> Optimize with AI
+                        </button>
+                    </div>
+                    <textarea id="summary-text" placeholder="Write your professional summary here..."></textarea>
+                </div>
+
+                <div class="editor-panel" id="experience-panel">
+                    <div class="editor-header">
+                        <h3>Work Experience</h3>
+                        <button class="optimize-btn" data-section="experience">
+                            <i class="fas fa-magic"></i> Optimize with AI
+                        </button>
+                    </div>
+                    <textarea id="experience-text" placeholder="Describe your work experience here..."></textarea>
+                </div>
+
+                <div class="editor-panel" id="skills-panel">
+                    <div class="editor-header">
+                        <h3>Skills</h3>
+                        <button class="optimize-btn" data-section="skills">
+                            <i class="fas fa-magic"></i> Optimize with AI
+                        </button>
+                    </div>
+                    <textarea id="skills-text" placeholder="List your skills here..."></textarea>
+                </div>
+
+                <div class="editor-panel" id="education-panel">
+                    <div class="editor-header">
+                        <h3>Education</h3>
+                        <button class="optimize-btn" data-section="education">
+                            <i class="fas fa-magic"></i> Optimize with AI
+                        </button>
+                    </div>
+                    <textarea id="education-text" placeholder="Describe your education here..."></textarea>
+                </div>
+            </div>
+        </section>
+
+        <!-- Improvement Tracker Section -->
+        <section class="tracker-section" id="tracker-section" style="display: none;">
+            <div class="section-header">
+                <h2><i class="fas fa-chart-bar"></i> Improvement Tracker</h2>
+                <p>Track your resume optimization progress over time</p>
+            </div>
+
+            <div class="tracker-content">
+                <div class="tracker-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="best-score">0</div>
+                            <div class="stat-label">Best ATS Score</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-keyboard"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="keywords-added">0</div>
+                            <div class="stat-label">Keywords Added</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="days-active">0</div>
+                            <div class="stat-label">Days Active</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-chart">
+                    <canvas id="progress-chart"></canvas>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modals -->
+    <div id="save-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Save Optimization Report</h3>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="report-name">Report Name</label>
+                    <input type="text" id="report-name" placeholder="Enter report name">
+                </div>
+                <div class="form-group">
+                    <label for="report-description">Description (Optional)</label>
+                    <textarea id="report-description" placeholder="Add notes about this optimization..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-report-confirm" class="btn btn-primary">Save Report</button>
+                <button class="btn btn-secondary modal-close">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="load-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Load Optimization Report</h3>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="saved-reports-list" id="saved-reports-list">
+                    <!-- Saved reports will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="export-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Export Optimized Resume</h3>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <div class="export-option">
+                        <input type="radio" id="export-pdf" name="export-format" value="pdf" checked>
+                        <label for="export-pdf">
+                            <i class="fas fa-file-pdf"></i>
+                            <div>
+                                <strong>PDF Format</strong>
+                                <small>Professional format for job applications</small>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="export-option">
+                        <input type="radio" id="export-docx" name="export-format" value="docx">
+                        <label for="export-docx">
+                            <i class="fas fa-file-word"></i>
+                            <div>
+                                <strong>Word Document</strong>
+                                <small>Editable format for further customization</small>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="export-option">
+                        <input type="radio" id="export-txt" name="export-format" value="txt">
+                        <label for="export-txt">
+                            <i class="fas fa-file-alt"></i>
+                            <div>
+                                <strong>Plain Text</strong>
+                                <small>Simple text format</small>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="export-resume-confirm" class="btn btn-primary">Export Resume</button>
+                <button class="btn btn-secondary modal-close">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="loading-text">Analyzing your resume...</div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

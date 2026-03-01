@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE MAZE DIRECTIVE · Autonomous Pursuit AI</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: radial-gradient(circle at 20% 30%, #0e1a2b, #03070f);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #d0e2ff;
+        }
+
+        .game-wrapper {
+            background: rgba(5, 15, 25, 0.75);
+            backdrop-filter: blur(12px);
+            border: 2px solid #3a6d9c;
+            border-radius: 48px;
+            padding: 30px 40px;
+            box-shadow: 0 25px 50px rgba(0, 15, 40, 0.9), 0 0 0 1px #5f8fd0 inset;
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .maze-container {
+            position: relative;
+        }
+
+        canvas#mazeCanvas {
+            display: block;
+            width: 500px;
+            height: 500px;
+            border-radius: 36px;
+            background: #0b131f;
+            box-shadow: 0 0 0 3px #2f5780, 0 20px 30px -5px black;
+            image-rendering: crisp-edges;
+        }
+
+        .overlay-tag {
+            position: absolute;
+            top: 18px;
+            left: 25px;
+            background: rgba(0, 20, 40, 0.7);
+            backdrop-filter: blur(4px);
+            border: 1px solid #57b0ff;
+            border-radius: 40px;
+            padding: 6px 20px;
+            font-size: 0.9rem;
+            color: #b5e4ff;
+            letter-spacing: 1px;
+            pointer-events: none;
+        }
+
+        .info-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            min-width: 200px;
+        }
+
+        .directive-panel {
+            background: #0f1a28;
+            border-radius: 38px;
+            padding: 25px 25px;
+            border: 1px solid #4f82b0;
+            box-shadow: inset 0 0 15px #142b44, 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .directive-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #b3e0ff, #6fa8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1.5px;
+        }
+
+        .stat-block {
+            display: flex;
+            justify-content: space-between;
+            margin: 12px 0;
+            font-size: 1.2rem;
+            border-bottom: 1px solid #2f4d70;
+            padding-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #a0c2e8;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            color: #e3f2ff;
+            font-weight: 600;
+        }
+
+        .ai-list {
+            margin-top: 15px;
+        }
+
+        .ai-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+            background: #1b2a3b;
+            padding: 6px 15px;
+            border-radius: 40px;
+            border-left: 5px solid #ff4a4a;
+        }
+
+        .ai-item.active {
+            border-left-color: #4aff7a;
+            box-shadow: 0 0 15px #2eff6e;
+        }
+
+        .controls {
+            background: #0f1a28;
+            border-radius: 34px;
+            padding: 20px 22px;
+            border: 1px solid #5f8fd0;
+        }
+
+        .controls kbd {
+            background: #1e3048;
+            border-radius: 12px;
+            padding: 4px 12px;
+            color: #b0dcff;
+            border: 1px solid #3f6d9c;
+            box-shadow: 0 2px 0 #0b1a2a;
+            font-family: monospace;
+            margin: 0 2px;
+        }
+
+        button#restartBtn {
+            background: #2e4b6e;
+            border: none;
+            border-radius: 60px;
+            padding: 16px 28px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #e0f0ff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #12314f, 0 10px 20px black;
+            transition: 0.06s linear;
+            border: 1px solid #7aa5e0;
+            margin-top: 15px;
+        }
+
+        button#restartBtn:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 #12314f, 0 5px 15px black;
+        }
+
+        .status-badge {
+            background: #1b334a;
+            border-radius: 40px;
+            padding: 8px 18px;
+            text-align: center;
+            font-size: 1.1rem;
+            border: 1px solid #4790ff;
+        }
+    </style>
+</head>
+<body>
+<div class="game-wrapper">
+    <div class="maze-container">
+        <canvas id="mazeCanvas" width="500" height="500"></canvas>
+        <div class="overlay-tag">⚡ DIRECTIVE: EVADE AI HUNTERS</div>
+    </div>
+    <div class="info-panel">
+        <div class="directive-panel">
+            <div class="directive-title">🪪 PURSUIT LOG</div>
+            <div class="stat-block">
+                <span class="stat-label">SURVIVAL</span>
+                <span class="stat-value" id="survivalTime">00:00</span>
+            </div>
+            <div class="stat-block">
+                <span class="stat-label">HUNTERS</span>
+                <span class="stat-value" id="hunterCount">3</span>
+            </div>
+            <div class="stat-block">
+                <span class="stat-label">MAZE SIZE</span>
+                <span class="stat-value">15x15</span>
+            </div>
+            <div class="ai-list" id="aiList">
+                <!-- filled by js -->
+            </div>
+        </div>
+        <div class="controls">
+            <div style="margin-bottom:12px;"><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> move</div>
+            <div><kbd>R</kbd> restart</div>
+            <div style="margin-top:15px; font-size:0.9rem;">🤖 Autonomous agents use A* pathfinding</div>
+        </div>
+        <div class="status-badge" id="gameStateDisplay">🏃‍♂️ RUNNING</div>
+        <button id="restartBtn">↻ RESTART</button>
+    </div>
+</div>
+<script>
+    (function() {
+        // ---- CONSTANTS ----
+        const SIZE = 15;               // 15x15 maze
+        const CELL_SIZE = 500 / SIZE;   // 33.33... but we'll draw exactly
+        const WALL = 1;
+        const PATH = 0;
+
+        // colours
+        const COLOR_WALL = '#1a2b3e';
+        const COLOR_PATH = '#182434';
+        const COLOR_PLAYER = '#6ed4ff';
+        const COLOR_AI = '#ff4f75';
+        const COLOR_AI_ACTIVE = '#ff2a55';
+        const COLOR_EXIT = '#f5d742';
+
+        // ---- GAME STATE ----
+        let maze = [];                 // 2D array (SIZE x SIZE)
+        let playerPos = { x: 1, y: 1 };
+        let exitPos = { x: SIZE-2, y: SIZE-2 };
+        let ais = [];                  // array of { x, y, active (bool) }
+        let gameActive = false;
+        let gameWin = false;
+        let gameOver = false;           // caught by AI
+        let startTime = null;
+        let timerInterval = null;
+
+        // DOM
+        const canvas = document.getElementById('mazeCanvas');
+        const ctx = canvas.getContext('2d');
+        const survivalSpan = document.getElementById('survivalTime');
+        const hunterCountSpan = document.getElementById('hunterCount');
+        const gameStateSpan = document.getElementById('gameStateDisplay');
+        const aiListDiv = document.getElementById('aiList');
+        const restartBtn = document.getElementById('restartBtn');
+
+        // ---- MAZE GENERATION (Recursive Backtracking) ----
+        function generateMaze() {
+            // initialize all walls
+            const newMaze = Array(SIZE).fill().map(() => Array(SIZE).fill(WALL));
+
+            function carve(x, y) {
+                newMaze[y][x] = PATH;
+                const dirs = [
+                    [0, -2], [2, 0], [0, 2], [-2, 0]  // up, right, down, left (step 2)
+                ];
+                // random order
+                for (let i = dirs.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [dirs[i], dirs[j]] = [dirs[j], dirs[i]];
+                }
+
+                for (let [dx, dy] of dirs) {
+                    let nx = x + dx;
+                    let ny = y + dy;
+                    if (nx > 0 && nx < SIZE-1 && ny > 0 && ny < SIZE-1 && newMaze[ny][nx] === WALL) {
+                        // carve wall between
+                        newMaze[y + dy/2][x + dx/2] = PATH;
+                        carve(nx, ny);
+                    }
+                }
+            }
+
+            // start from (1,1)
+            carve(1, 1);
+
+            // ensure exit is open (already should be due to generation)
+            // but force exit position to be PATH
+            newMaze[exitPos.y][exitPos.x] = PATH;
+
+            return newMaze;
+        }
+
+        // ----- AI PATHFINDING (A* for each AI) -----
+        function heuristic(a, b) {
+            return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+        }
+
+        function getNeighbors(pos) {
+            const dirs = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+            let neighbors = [];
+            for (let [dx, dy] of dirs) {
+                let nx = pos.x + dx;
+                let ny = pos.y + dy;
+                if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && maze[ny][nx] === PATH) {
+                    neighbors.push({ x: nx, y: ny });
+                }
+            }
+            return neighbors;
+        }
+
+        // A*: returns a path (array of points) from start to goal, or null if no path
+        function aStar(start, goal) {
+            // Using simplified priority queue with array
+            let openSet = [start];
+            let cameFrom = new Map();
+            let gScore = new Map();
+            let fScore = new Map();
+
+            let key = (p) => `${p.x},${p.y}`;
+            gScore.set(key(start), 0);
+            fScore.set(key(start), heuristic(start, goal));
+
+            while (openSet.length > 0) {
+                // find lowest fScore in openSet
+                let current = openSet.reduce((a, b) => fScore.get(key(a)) < fScore.get(key(b)) ? a : b);
+                if (current.x === goal.x && current.y === goal.y) {
+                    // reconstruct path
+                    let path = [current];
+                    while (cameFrom.has(key(current))) {
+                        current = cameFrom.get(key(current));
+                        path.unshift(current);
+                    }
+                    return path;
+                }
+
+                openSet = openSet.filter(p => !(p.x === current.x && p.y === current.y));
+
+                for (let neighbor of getNeighbors(current)) {
+                    let tentativeG = gScore.get(key(current)) + 1;
+                    if (tentativeG < (gScore.get(key(neighbor)) || Infinity)) {
+                        cameFrom.set(key(neighbor), current);
+                        gScore.set(key(neighbor), tentativeG);
+                        fScore.set(key(neighbor), tentativeG + heuristic(neighbor, goal));
+                        if (!openSet.some(p => p.x === neighbor.x && p.y === neighbor.y)) {
+                            openSet.push(neighbor);
+                        }
+                    }
+                }
+            }
+            return null; // no path
+        }
+
+        // move AIs one step toward player (using A*)
+        function moveAIs() {
+            if (!gameActive || gameOver || gameWin) return;
+
+            let newAIs = [];
+            for (let ai of ais) {
+                if (!ai.active) {
+                    newAIs.push({ ...ai }); // keep inactive
+                    continue;
+                }
+
+                let path = aStar({ x: ai.x, y: ai.y }, { x: playerPos.x, y: playerPos.y });
+                if (path && path.length >= 2) {
+                    // move to first step
+                    let next = path[1]; // index 0 is current
+                    ai.x = next.x;
+                    ai.y = next.y;
+                }
+                // else stay (should not happen in connected maze)
+                newAIs.push(ai);
+            }
+            ais = newAIs;
+
+            // check collisions after move
+            for (let ai of ais) {
+                if (ai.active && ai.x === playerPos.x && ai.y === playerPos.y) {
+                    gameActive = false;
+                    gameOver = true;
+                    gameWin = false;
+                    stopTimer();
+                    break;
+                }
+            }
+
+            // check if player reached exit (win)
+            if (gameActive && playerPos.x === exitPos.x && playerPos.y === exitPos.y) {
+                gameActive = false;
+                gameWin = true;
+                gameOver = false;
+                stopTimer();
+            }
+        }
+
+        // ---- TIMER ----
+        function startTimer() {
+            startTime = Date.now();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 100);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function updateTimer() {
+            if (!startTime) return;
+            let elapsed = Math.floor((Date.now() - startTime) / 1000);
+            let mins = Math.floor(elapsed / 60);
+            let secs = elapsed % 60;
+            survivalSpan.innerText = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+        }
+
+        // ---- DRAWING ----
+        function drawMaze() {
+            ctx.clearRect(0, 0, 500, 500);
+
+            // draw cells
+            for (let y = 0; y < SIZE; y++) {
+                for (let x = 0; x < SIZE; x++) {
+                    let cellX = x * CELL_SIZE;
+                    let cellY = y * CELL_SIZE;
+                    if (maze[y][x] === WALL) {
+                        ctx.fillStyle = COLOR_WALL;
+                        ctx.fillRect(cellX, cellY, CELL_SIZE, CELL_SIZE);
+                        // subtle grid
+                        ctx.strokeStyle = '#2e4970';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(cellX, cellY, CELL_SIZE, CELL_SIZE);
+                    } else {
+                        ctx.fillStyle = COLOR_PATH;
+                        ctx.fillRect(cellX, cellY, CELL_SIZE, CELL_SIZE);
+                        ctx.strokeStyle = '#253d5a';
+                        ctx.strokeRect(cellX, cellY, CELL_SIZE, CELL_SIZE);
+                    }
+                }
+            }
+
+            // draw exit (goal)
+            ctx.fillStyle = COLOR_EXIT;
+            ctx.shadowColor = '#f0d050';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(exitPos.x * CELL_SIZE + CELL_SIZE/2, exitPos.y * CELL_SIZE + CELL_SIZE/2, CELL_SIZE*0.3, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // draw AIs
+            for (let ai of ais) {
+                if (!ai.active) continue;
+                ctx.fillStyle = ai.active ? COLOR_AI_ACTIVE : COLOR_AI;
+                ctx.shadowColor = '#ff0066';
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.arc(ai.x * CELL_SIZE + CELL_SIZE/2, ai.y * CELL_SIZE + CELL_SIZE/2, CELL_SIZE*0.25, 0, 2*Math.PI);
+                ctx.fill();
+            }
+
+            // draw player
+            ctx.shadowColor = '#4ae0ff';
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = COLOR_PLAYER;
+            ctx.beginPath();
+            ctx.arc(playerPos.x * CELL_SIZE + CELL_SIZE/2, playerPos.y * CELL_SIZE + CELL_SIZE/2, CELL_SIZE*0.3, 0, 2*Math.PI);
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+
+            // draw game state overlay
+            if (gameOver) {
+                ctx.globalAlpha = 0.5;
+                ctx.fillStyle = '#1a1f33';
+                ctx.fillRect(0, 200, 500, 80);
+                ctx.globalAlpha = 1;
+                ctx.font = 'bold 28px "Inter", sans-serif';
+                ctx.fillStyle = '#ff7a7a';
+                ctx.shadowColor = '#ff0000';
+                ctx.shadowBlur = 20;
+                ctx.fillText('TERMINATED', 120, 260);
+                ctx.shadowBlur = 0;
+            } else if (gameWin) {
+                ctx.globalAlpha = 0.6;
+                ctx.fillStyle = '#1a331a';
+                ctx.fillRect(0, 200, 500, 80);
+                ctx.globalAlpha = 1;
+                ctx.font = 'bold 30px "Inter", sans-serif';
+                ctx.fillStyle = '#a5ffa5';
+                ctx.shadowColor = '#00ff88';
+                ctx.shadowBlur = 20;
+                ctx.fillText('EXTRACTED', 120, 260);
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // update UI (AI list, hunter count, state)
+        function updateUI() {
+            let activeCount = ais.filter(a => a.active).length;
+            hunterCountSpan.innerText = activeCount;
+
+            if (gameWin) gameStateSpan.innerText = '✅ EXTRACTED';
+            else if (gameOver) gameStateSpan.innerText = '💀 TERMINATED';
+            else gameStateSpan.innerText = '🏃‍♂️ RUNNING';
+
+            // AI list
+            aiListDiv.innerHTML = '';
+            ais.forEach((ai, idx) => {
+                let div = document.createElement('div');
+                div.className = `ai-item ${ai.active ? 'active' : ''}`;
+                div.innerHTML = `<span>🤖 HUNTER ${idx+1}</span> <span style="color:${ai.active ? '#9aff9a' : '#aaa'}">${ai.active ? '🟢 ACTIVE' : '⚫ INACTIVE'}</span>`;
+                aiListDiv.appendChild(div);
+            });
+        }
+
+        // restart game
+        function restartGame() {
+            stopTimer();
+            maze = generateMaze();
+
+            // player start (1,1)
+            playerPos = { x: 1, y: 1 };
+            exitPos = { x: SIZE-2, y: SIZE-2 };
+
+            // create 3 AIs, all active initially
+            ais = [
+                { x: SIZE-3, y: 2, active: true },
+                { x: 2, y: SIZE-3, active: true },
+                { x: SIZE-4, y: SIZE-4, active: true },
+                { x: 4, y: 4, active: true }  // fourth hunter for challenge
+            ];
+
+            gameActive = true;
+            gameOver = false;
+            gameWin = false;
+
+            startTimer();
+            drawMaze();
+            updateUI();
+        }
+
+        // move player (dx, dy)
+        function movePlayer(dx, dy) {
+            if (!gameActive || gameOver || gameWin) return false;
+
+            let nx = playerPos.x + dx;
+            let ny = playerPos.y + dy;
+
+            if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && maze[ny][nx] === PATH) {
+                playerPos.x = nx;
+                playerPos.y = ny;
+
+                // move AIs after player move
+                moveAIs();
+
+                drawMaze();
+                updateUI();
+                return true;
+            }
+            return false;
+        }
+
+        // ---- EVENT LISTENERS ----
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (key === 'r') {
+                restartGame();
+                e.preventDefault();
+                return;
+            }
+
+            if (!gameActive || gameOver || gameWin) return;
+
+            // wasd movement
+            if (key === 'w') movePlayer(0, -1);
+            else if (key === 's') movePlayer(0, 1);
+            else if (key === 'a') movePlayer(-1, 0);
+            else if (key === 'd') movePlayer(1, 0);
+            else return;
+
+            e.preventDefault();
+        });
+
+        restartBtn.addEventListener('click', restartGame);
+
+        // disable arrow keys (we use WASD, but prevent arrow just in case)
+        window.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+        }, false);
+
+        // ---- INIT ----
+        restartGame();
+    })();
+</script>
+</body>
+</html>

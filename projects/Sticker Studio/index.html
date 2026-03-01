@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticker Studio Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: #f0f2f5;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            overflow: hidden;
+        }
+        #canvas-area {
+            background-image: 
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        .control-panel {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        canvas {
+            touch-action: none;
+            cursor: crosshair;
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b px-6 py-3 flex justify-between items-center shadow-sm z-10">
+        <div class="flex items-center gap-2">
+            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">S</div>
+            <div>
+                <h1 class="text-lg font-bold text-slate-800 leading-none">Sticker Studio</h1>
+                <p class="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Offline Mode</p>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <button id="btn-clear" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium transition">Reset</button>
+            <button id="btn-export" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-sm shadow-md transition transform active:scale-95 flex items-center gap-2">
+                Download PNG
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-72 bg-white border-r flex flex-col control-panel overflow-y-auto">
+            <div class="p-5 space-y-6">
+                
+                <!-- Step 1: Image -->
+                <section>
+                    <label class="text-xs font-bold text-slate-400 uppercase block mb-3">1. Background Image</label>
+                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:bg-slate-50 hover:border-indigo-400 transition group">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-2 text-slate-400 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            <p class="text-xs text-slate-500">Upload Photo</p>
+                        </div>
+                        <input id="input-file" type="file" class="hidden" accept="image/*" />
+                    </label>
+                </section>
+
+                <!-- Step 2: Drawing -->
+                <section>
+                    <label class="text-xs font-bold text-slate-400 uppercase block mb-3">2. Drawing Tools</label>
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <button id="tool-brush" class="py-2 bg-slate-100 rounded-lg text-xs font-bold text-slate-700 border-2 border-transparent active-tool">Brush</button>
+                        <button id="tool-eraser" class="py-2 bg-slate-100 rounded-lg text-xs font-bold text-slate-700 border-2 border-transparent">Eraser</button>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between mb-1"><span class="text-[10px] font-bold text-slate-500">Size</span><span id="brush-size-val" class="text-[10px] text-slate-400">10px</span></div>
+                            <input type="range" id="input-brush-size" min="1" max="50" value="10" class="w-full accent-indigo-600">
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-2"><span class="text-[10px] font-bold text-slate-500">Color</span></div>
+                            <div class="flex flex-wrap gap-2">
+                                <button class="color-swatch w-6 h-6 rounded-full bg-black border-2 border-white ring-1 ring-slate-200" data-color="#000000"></button>
+                                <button class="color-swatch w-6 h-6 rounded-full bg-red-500" data-color="#ef4444"></button>
+                                <button class="color-swatch w-6 h-6 rounded-full bg-blue-500" data-color="#3b82f6"></button>
+                                <button class="color-swatch w-6 h-6 rounded-full bg-green-500" data-color="#22c55e"></button>
+                                <button class="color-swatch w-6 h-6 rounded-full bg-yellow-400" data-color="#facc15"></button>
+                                <input type="color" id="input-color-custom" class="w-6 h-6 rounded-full overflow-hidden border-0 p-0 cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 3: Text -->
+                <section>
+                    <label class="text-xs font-bold text-slate-400 uppercase block mb-3">3. Add Captions</label>
+                    <input type="text" id="input-text" placeholder="Type something..." class="w-full px-3 py-2 border rounded-lg text-sm mb-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <button id="btn-add-text" class="w-full py-2 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-700 transition">Add Text Layer</button>
+                </section>
+
+                <!-- Step 4: Effects -->
+                <section>
+                    <label class="text-xs font-bold text-slate-400 uppercase block mb-3">4. Sticker Effect</label>
+                    <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                        <span class="text-xs font-bold text-indigo-900">White Outline</span>
+                        <input type="checkbox" id="check-outline" class="w-4 h-4 accent-indigo-600">
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2 italic">Adds a classic die-cut sticker border to your design.</p>
+                </section>
+
+            </div>
+        </aside>
+
+        <!-- Canvas Workspace -->
+        <section id="canvas-area" class="flex-1 relative flex items-center justify-center p-8 overflow-hidden">
+            <div id="canvas-wrapper" class="relative">
+                <canvas id="sticker-canvas" width="600" height="600"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('sticker-canvas');
+        const ctx = canvas.getContext('2d');
+        const fileInput = document.getElementById('input-file');
+        const brushSizeInput = document.getElementById('input-brush-size');
+        const brushSizeVal = document.getElementById('brush-size-val');
+        const colorSwatches = document.querySelectorAll('.color-swatch');
+        const customColorInput = document.getElementById('input-color-custom');
+        const textInput = document.getElementById('input-text');
+        const addTextBtn = document.getElementById('btn-add-text');
+        const outlineCheck = document.getElementById('check-outline');
+        const exportBtn = document.getElementById('btn-export');
+        const clearBtn = document.getElementById('btn-clear');
+        const toolBrush = document.getElementById('tool-brush');
+        const toolEraser = document.getElementById('tool-eraser');
+
+        let isDrawing = false;
+        let currentMode = 'brush';
+        let currentColor = '#000000';
+        let brushSize = 10;
+        let backgroundImage = null;
+        let textLayers = []; // { text, x, y, size, color }
+        
+        // Internal layer for drawings so we can redraw everything
+        const drawingCanvas = document.createElement('canvas');
+        drawingCanvas.width = canvas.width;
+        drawingCanvas.height = canvas.height;
+        const dCtx = drawingCanvas.getContext('2d');
+
+        function init() {
+            render();
+            setupEventListeners();
+        }
+
+        function setupEventListeners() {
+            // Drawing
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            // Touch
+            canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDrawing(e.touches[0]); });
+            canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e.touches[0]); });
+            canvas.addEventListener('touchend', stopDrawing);
+
+            // Image Upload
+            fileInput.addEventListener('change', handleFileUpload);
+
+            // Tools
+            toolBrush.addEventListener('click', () => setMode('brush'));
+            toolEraser.addEventListener('click', () => setMode('eraser'));
+            
+            brushSizeInput.addEventListener('input', (e) => {
+                brushSize = e.target.value;
+                brushSizeVal.innerText = `${brushSize}px`;
+            });
+
+            colorSwatches.forEach(swatch => {
+                swatch.addEventListener('click', () => {
+                    currentColor = swatch.dataset.color;
+                    setMode('brush');
+                });
+            });
+
+            customColorInput.addEventListener('input', (e) => {
+                currentColor = e.target.value;
+                setMode('brush');
+            });
+
+            // Text
+            addTextBtn.addEventListener('click', addTextLayer);
+            
+            // Render options
+            outlineCheck.addEventListener('change', render);
+            clearBtn.addEventListener('click', resetCanvas);
+            exportBtn.addEventListener('click', exportSticker);
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            toolBrush.classList.toggle('bg-indigo-600', mode === 'brush');
+            toolBrush.classList.toggle('text-white', mode === 'brush');
+            toolEraser.classList.toggle('bg-indigo-600', mode === 'eraser');
+            toolEraser.classList.toggle('text-white', mode === 'eraser');
+        }
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    backgroundImage = img;
+                    render();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            dCtx.lineWidth = brushSize;
+            dCtx.lineCap = 'round';
+            dCtx.lineJoin = 'round';
+
+            if (currentMode === 'brush') {
+                dCtx.globalCompositeOperation = 'source-over';
+                dCtx.strokeStyle = currentColor;
+            } else {
+                dCtx.globalCompositeOperation = 'destination-out';
+            }
+
+            if (!this.lastX) { this.lastX = x; this.lastY = y; }
+            
+            dCtx.beginPath();
+            dCtx.moveTo(this.lastX, this.lastY);
+            dCtx.lineTo(x, y);
+            dCtx.stroke();
+
+            this.lastX = x;
+            this.lastY = y;
+            
+            render();
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            this.lastX = null;
+            this.lastY = null;
+        }
+
+        function addTextLayer() {
+            const text = textInput.value.trim();
+            if (!text) return;
+
+            textLayers.push({
+                text: text,
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                size: 40,
+                color: currentColor
+            });
+            textInput.value = '';
+            render();
+        }
+
+        function resetCanvas() {
+            backgroundImage = null;
+            textLayers = [];
+            dCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+            render();
+        }
+
+        function render() {
+            // Clear visible canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Create temporary canvas to compose everything for the "Sticker Effect"
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tCtx = tempCanvas.getContext('2d');
+
+            // 1. Draw Image
+            if (backgroundImage) {
+                const scale = Math.min(canvas.width / backgroundImage.width, canvas.height / backgroundImage.height) * 0.8;
+                const w = backgroundImage.width * scale;
+                const h = backgroundImage.height * scale;
+                tCtx.drawImage(backgroundImage, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+            }
+
+            // 2. Draw Hand Drawing
+            tCtx.drawImage(drawingCanvas, 0, 0);
+
+            // 3. Draw Text
+            textLayers.forEach(layer => {
+                tCtx.font = `bold ${layer.size}px sans-serif`;
+                tCtx.fillStyle = layer.color;
+                tCtx.textAlign = 'center';
+                tCtx.fillText(layer.text, layer.x, layer.y);
+            });
+
+            // 4. Apply Outline Effect if checked
+            if (outlineCheck.checked) {
+                // Create a heavy stroke of the composed image to act as white border
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 15;
+                ctx.lineJoin = 'round';
+                
+                // Draw multiple times to ensure a solid outline (thick stroke of alpha channel)
+                for (let i = 0; i < 8; i++) {
+                    ctx.drawImage(tempCanvas, 0, 0);
+                }
+                
+                // Complex trick: Draw the image itself but using 'source-in' to create a thick silhouette
+                const maskCanvas = document.createElement('canvas');
+                maskCanvas.width = canvas.width;
+                maskCanvas.height = canvas.height;
+                const mCtx = maskCanvas.getContext('2d');
+                
+                mCtx.drawImage(tempCanvas, 0, 0);
+                mCtx.globalCompositeOperation = 'source-in';
+                mCtx.fillStyle = 'white';
+                mCtx.fillRect(0,0,canvas.width, canvas.height);
+
+                // Use the mask to draw shadows and thick borders
+                ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetY = 4;
+                
+                // Draw the white border
+                for(let angle=0; angle<360; angle+=30) {
+                    let rad = angle * Math.PI / 180;
+                    ctx.drawImage(maskCanvas, Math.cos(rad)*8, Math.sin(rad)*8);
+                }
+                
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetY = 0;
+            }
+
+            // Finally draw the original artwork over the border
+            ctx.drawImage(tempCanvas, 0, 0);
+        }
+
+        function exportSticker() {
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'my-sticker.png';
+            link.href = dataUrl;
+            link.click();
+        }
+
+        init();
+    </script>
+</body>
+</html>

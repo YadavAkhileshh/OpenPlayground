@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Velocity · Hover Racing</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Orbitron', 'Arial', sans-serif;
+            background-color: #0a0c14;
+            color: #00ffff;
+        }
+        #race-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            background: rgba(0, 20, 30, 0.8);
+            backdrop-filter: blur(12px);
+            border: 2px solid #00ffff;
+            border-radius: 50px;
+            padding: 12px 32px;
+            display: flex;
+            gap: 40px;
+            border-left: 6px solid #ff00ff;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.4);
+            pointer-events: none;
+        }
+        .race-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .race-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #88ffff;
+            letter-spacing: 2px;
+        }
+        .race-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #ffffff, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #vehicle-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(20, 0, 30, 0.85);
+            backdrop-filter: blur(16px);
+            border: 2px solid #ff00ff;
+            border-radius: 50px;
+            padding: 20px 32px;
+            z-index: 50;
+            border-right: 6px solid #ff88ff;
+            min-width: 280px;
+            box-shadow: 0 15px 35px rgba(255, 0, 255, 0.3);
+        }
+        .vehicle-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 1rem;
+            border-bottom: 1px solid #442266;
+            padding-bottom: 5px;
+        }
+        .vehicle-label {
+            color: #ff88ff;
+        }
+        .vehicle-value {
+            font-weight: 600;
+            color: #ffccff;
+        }
+        .pulse-race {
+            width: 14px;
+            height: 14px;
+            background: #ffff00;
+            border-radius: 50%;
+            box-shadow: 0 0 30px #ffff00;
+            animation: race-pulse 0.8s infinite;
+        }
+        @keyframes race-pulse {
+            0% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.4); background: #ffff88; }
+            100% { opacity: 0.6; transform: scale(1); }
+        }
+        #track-tag {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(0, 20, 30, 0.8);
+            backdrop-filter: blur(8px);
+            border: 2px solid #00ffff;
+            border-radius: 40px;
+            padding: 12px 28px;
+            z-index: 50;
+            border-left: 4px solid #ff00ff;
+            color: #88ffff;
+        }
+        .track-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #ffff00;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 15px #ffff00;
+        }
+        #boost-stats {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(20, 0, 30, 0.85);
+            backdrop-filter: blur(8px);
+            border: 2px solid #ffff00;
+            border-radius: 40px;
+            padding: 16px 28px;
+            z-index: 50;
+            text-align: right;
+            border-bottom: 4px solid #ffff88;
+        }
+        .glow-number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="race-panel">
+        <div class="race-item">
+            <span class="race-label">circuit</span>
+            <span class="race-value">NEO-TOKYO</span>
+        </div>
+        <div class="race-item">
+            <span class="race-label">lap</span>
+            <span class="race-value" id="lap">3/7</span>
+        </div>
+        <div class="race-item">
+            <span class="race-label">position</span>
+            <span class="race-value" id="position">2nd</span>
+        </div>
+    </div>
+
+    <div id="vehicle-panel">
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+            <span class="pulse-race"></span>
+            <span style="font-weight: 600; font-size: 1.3rem;">🏎️ HOVER-X9</span>
+        </div>
+        <div class="vehicle-row">
+            <span class="vehicle-label">speed</span>
+            <span class="vehicle-value" id="speed">487 km/h</span>
+        </div>
+        <div class="vehicle-row">
+            <span class="vehicle-label">boost</span>
+            <span class="vehicle-value" id="boost">87%</span>
+        </div>
+        <div class="vehicle-row">
+            <span class="vehicle-label">energy</span>
+            <span class="vehicle-value" id="energy">94%</span>
+        </div>
+        <div class="vehicle-row">
+            <span class="vehicle-label">temp</span>
+            <span class="vehicle-value" id="temp">68°C</span>
+        </div>
+        <div class="vehicle-row">
+            <span class="vehicle-label">grip</span>
+            <span class="vehicle-value" id="grip">1.24</span>
+        </div>
+    </div>
+
+    <div id="track-tag">
+        <span class="track-icon"></span> <span>boost zone · magnetic strip · 6.2 km</span>
+    </div>
+
+    <div id="boost-stats">
+        <div style="font-size:1rem;">⚡ BOOST PADS</div>
+        <div class="glow-number" id="boost-count">12</div>
+        <div style="font-size:0.8rem;">remaining: 8 · next in 400m</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- Scene setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0c14);
+        scene.fog = new THREE.FogExp2(0x0a0c14, 0.0015);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(20, 15, 35);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = false;
+        document.body.appendChild(renderer.domElement);
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.4;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.minDistance = 15;
+        controls.maxDistance = 80;
+        
+        // --- Lighting ---
+        const ambient = new THREE.AmbientLight(0x203040);
+        scene.add(ambient);
+        
+        // Neon lights
+        const colors = [0x00ffff, 0xff00ff, 0xffff00, 0x00ffaa];
+        for (let i = 0; i < 12; i++) {
+            const light = new THREE.PointLight(colors[Math.floor(Math.random() * colors.length)], 0.8, 30);
+            light.position.set(
+                (Math.random() - 0.5) * 40,
+                5 + Math.random() * 10,
+                (Math.random() - 0.5) * 40
+            );
+            scene.add(light);
+        }
+        
+        // --- Track base (a large circle) ---
+        const trackOuterGeo = new THREE.TorusGeometry(20, 2, 16, 64);
+        const trackOuterMat = new THREE.MeshStandardMaterial({ color: 0x222233, emissive: 0x111122 });
+        const trackOuter = new THREE.Mesh(trackOuterGeo, trackOuterMat);
+        trackOuter.rotation.x = Math.PI / 2;
+        trackOuter.position.y = 0;
+        scene.add(trackOuter);
+        
+        // Inner glow
+        const trackInnerGeo = new THREE.TorusGeometry(20, 0.5, 8, 64);
+        const trackInnerMat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x004466 });
+        const trackInner = new THREE.Mesh(trackInnerGeo, trackInnerMat);
+        trackInner.rotation.x = Math.PI / 2;
+        trackInner.position.y = 0.1;
+        scene.add(trackInner);
+        
+        // Track markers (small lights around the track)
+        for (let i = 0; i < 24; i++) {
+            const angle = (i / 24) * Math.PI * 2;
+            const x = Math.cos(angle) * 20;
+            const z = Math.sin(angle) * 20;
+            
+            const markerGeo = new THREE.BoxGeometry(0.5, 0.2, 1);
+            const markerMat = new THREE.MeshStandardMaterial({ color: 0xff00ff, emissive: 0x440044 });
+            const marker = new THREE.Mesh(markerGeo, markerMat);
+            marker.position.set(x, 0.2, z);
+            marker.rotation.y = angle;
+            scene.add(marker);
+        }
+        
+        // --- Hover vehicles (player and opponents) ---
+        function createHoverVehicle(color, primaryColor) {
+            const group = new THREE.Group();
+            
+            // Body
+            const bodyGeo = new THREE.BoxGeometry(1.2, 0.3, 2.2);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: primaryColor, emissive: 0x221122 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.castShadow = true;
+            group.add(body);
+            
+            // Cockpit
+            const cockpitGeo = new THREE.SphereGeometry(0.4, 6);
+            const cockpitMat = new THREE.MeshStandardMaterial({ color: 0x88aaff, emissive: 0x112233 });
+            const cockpit = new THREE.Mesh(cockpitGeo, cockpitMat);
+            cockpit.position.set(0, 0.3, 0.2);
+            cockpit.scale.set(0.8, 0.5, 0.8);
+            group.add(cockpit);
+            
+            // Engines
+            const engineGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.5, 6);
+            const engineMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, emissive: 0x224466 });
+            const engineLeft = new THREE.Mesh(engineGeo, engineMat);
+            engineLeft.position.set(-0.6, 0.1, -0.8);
+            engineLeft.rotation.x = Math.PI/2;
+            group.add(engineLeft);
+            
+            const engineRight = engineLeft.clone();
+            engineRight.position.set(0.6, 0.1, -0.8);
+            group.add(engineRight);
+            
+            // Glow rings
+            const ringGeo = new THREE.TorusGeometry(0.4, 0.05, 6, 12);
+            const ringMat = new THREE.MeshStandardMaterial({ color: color, emissive: color });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.position.set(0, 0.1, -1.0);
+            ring.rotation.x = Math.PI/2;
+            group.add(ring);
+            
+            return group;
+        }
+        
+        // Player vehicle (cyan)
+        const playerVehicle = createHoverVehicle(0x00ffff, 0x2266aa);
+        playerVehicle.position.set(0, 2, 0);
+        scene.add(playerVehicle);
+        
+        // Opponent vehicles
+        const opponents = [];
+        const oppColors = [0xff00ff, 0xffff00, 0xff6600, 0x00ffaa];
+        for (let i = 0; i < 7; i++) {
+            const angle = (i / 7) * Math.PI * 2;
+            const radius = 20;
+            const opp = createHoverVehicle(oppColors[i % oppColors.length], 0x442266);
+            opp.position.set(
+                Math.cos(angle) * radius,
+                2 + Math.sin(i * 3) * 1,
+                Math.sin(angle) * radius
+            );
+            
+            opp.userData = {
+                angle: angle,
+                radius: radius,
+                speed: 0.005 + Math.random() * 0.005,
+                heightOffset: Math.random() * 2
+            };
+            
+            scene.add(opp);
+            opponents.push(opp);
+        }
+        
+        // Player label
+        const playerDiv = document.createElement('div');
+        playerDiv.textContent = '🚀 PLAYER';
+        playerDiv.style.background = '#001122';
+        playerDiv.style.color = '#00ffff';
+        playerDiv.style.border = '2px solid #00ffff';
+        playerDiv.style.borderRadius = '20px';
+        playerDiv.style.padding = '2px 12px';
+        const playerLabel = new CSS2DObject(playerDiv);
+        playerLabel.position.set(0, 3, 0);
+        playerVehicle.add(playerLabel);
+        
+        // --- Floating energy pickups (boost pads) ---
+        const boosts = [];
+        for (let i = 0; i < 12; i++) {
+            const angle = (i / 12) * Math.PI * 2;
+            const radius = 18;
+            const boostGeo = new THREE.OctahedronGeometry(0.4);
+            const boostMat = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x442200 });
+            const boost = new THREE.Mesh(boostGeo, boostMat);
+            boost.position.set(
+                Math.cos(angle) * radius,
+                1.5,
+                Math.sin(angle) * radius
+            );
+            
+            boost.userData = {
+                angle: angle,
+                radius: radius,
+                baseY: 1.5
+            };
+            
+            scene.add(boost);
+            boosts.push(boost);
+        }
+        
+        // --- Grandstands (simple blocks with lights) ---
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            const radius = 28;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            
+            const standGeo = new THREE.BoxGeometry(4, 2, 4);
+            const standMat = new THREE.MeshStandardMaterial({ color: 0x224466, emissive: 0x112233 });
+            const stand = new THREE.Mesh(standGeo, standMat);
+            stand.position.set(x, 1, z);
+            stand.castShadow = true;
+            scene.add(stand);
+        }
+        
+        // --- Floating billboards ---
+        const billboards = [
+            { text: 'NEON', color: '#00ffff', pos: [10, 8, 15] },
+            { text: 'VELOCITY', color: '#ff00ff', pos: [-12, 7, -12] },
+            { text: 'BOOST', color: '#ffff00', pos: [15, 9, -8] },
+            { text: 'ENERGY', color: '#00ffaa', pos: [-15, 6, 10] }
+        ];
+        
+        billboards.forEach(b => {
+            const div = document.createElement('div');
+            div.textContent = b.text;
+            div.style.color = b.color;
+            div.style.fontSize = '28px';
+            div.style.fontWeight = 'bold';
+            div.style.textShadow = `0 0 20px ${b.color}`;
+            div.style.background = 'rgba(0,0,0,0.5)';
+            div.style.padding = '8px 24px';
+            div.style.borderRadius = '20px';
+            div.style.border = `2px solid ${b.color}`;
+            const label = new CSS2DObject(div);
+            label.position.set(b.pos[0], b.pos[1], b.pos[2]);
+            scene.add(label);
+        });
+        
+        // --- Particle effects (speed lines) ---
+        const particleGeo = new THREE.BufferGeometry();
+        const particleCount = 800;
+        const particlePos = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            particlePos[i*3] = (Math.random() - 0.5) * 60;
+            particlePos[i*3+1] = (Math.random() - 0.5) * 20;
+            particlePos[i*3+2] = (Math.random() - 0.5) * 60;
+        }
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePos, 3));
+        const particleMat = new THREE.PointsMaterial({ color: 0x88aaff, size: 0.1, transparent: true, blending: THREE.AdditiveBlending });
+        const particles = new THREE.Points(particleGeo, particleMat);
+        scene.add(particles);
+        
+        // --- Animate ---
+        let time = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            time += 0.01;
+            
+            // Move opponents around track
+            opponents.forEach((opp, index) => {
+                opp.userData.angle += opp.userData.speed;
+                opp.position.x = Math.cos(opp.userData.angle) * opp.userData.radius;
+                opp.position.z = Math.sin(opp.userData.angle) * opp.userData.radius;
+                opp.position.y = 2 + Math.sin(time * 3 + index) * 1;
+                
+                // Orient vehicle along direction
+                opp.rotation.y = opp.userData.angle + Math.PI/2;
+            });
+            
+            // Rotate player? Keep static for view
+            
+            // Bob boosts
+            boosts.forEach(b => {
+                b.position.y = b.userData.baseY + Math.sin(time * 2 + b.userData.angle) * 0.5;
+            });
+            
+            // Update displays
+            const speedVal = 487 + Math.sin(time * 5) * 10;
+            document.getElementById('speed').innerText = Math.floor(speedVal) + ' km/h';
+            document.getElementById('boost').innerText = (87 + Math.sin(time * 3) * 2).toFixed(0) + '%';
+            document.getElementById('energy').innerText = (94 + Math.sin(time * 4) * 1).toFixed(0) + '%';
+            document.getElementById('temp').innerText = (68 + Math.sin(time * 6) * 2).toFixed(0) + '°C';
+            document.getElementById('grip').innerText = (1.24 + Math.sin(time * 2) * 0.02).toFixed(2);
+            document.getElementById('lap').innerText = '3/' + (7 + Math.floor(Math.sin(time*0.5)*1));
+            document.getElementById('position').innerText = ['1st', '2nd', '3rd', '4th'][Math.floor(Math.sin(time*0.3)*2 + 2)];
+            document.getElementById('boost-count').innerText = 12 + Math.floor(Math.sin(time)*2);
+            
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

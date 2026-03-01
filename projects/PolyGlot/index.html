@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PolyGlot - Global Language Learning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #ffffff;
+            font-family: 'Nunito', sans-serif;
+            color: #4b4b4b;
+        }
+        .sidebar-item:hover {
+            background-color: #e5e5e5;
+        }
+        .sidebar-item.active {
+            background-color: #ddf4ff;
+            color: #1899d6;
+            border: 2px solid #84d8ff;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 0 0 #e5e5e5;
+        }
+        .btn-primary {
+            background-color: #58cc02;
+            box-shadow: 0 4px 0 0 #46a302;
+            transition: all 0.1s;
+        }
+        .btn-primary:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 0 #46a302;
+        }
+        .lesson-card {
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            border: 2px solid #e5e5e5;
+            box-shadow: 0 4px 0 0 #e5e5e5;
+        }
+        .lesson-card:hover {
+            background-color: #f7f7f7;
+            transform: translateY(-2px);
+        }
+        .lesson-card.selected {
+            border-color: #84d8ff;
+            background-color: #ddf4ff;
+            box-shadow: 0 4px 0 0 #84d8ff;
+        }
+        .progress-bar {
+            height: 16px;
+            background-color: #e5e5e5;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #58cc02;
+            transition: width 0.3s ease;
+        }
+        .lang-modal {
+            background: rgba(0,0,0,0.5);
+            display: none;
+        }
+        .lang-modal.active {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <!-- Language Selection Modal -->
+    <div id="lang-modal" class="lang-modal fixed inset-0 z-[100] items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[80vh] flex flex-col p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black">I want to learn...</h2>
+                <button onclick="toggleLangModal()" class="text-gray-400 hover:text-gray-600 font-bold">Close</button>
+            </div>
+            <div id="lang-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4 overflow-y-auto pr-2">
+                <!-- 20+ Languages will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Left Sidebar -->
+    <aside class="w-64 border-r-2 border-gray-200 hidden md:flex flex-col p-4">
+        <div class="px-4 py-6">
+            <h1 class="text-3xl font-extrabold text-[#58cc02] tracking-tight italic">polyglot</h1>
+        </div>
+        
+        <nav class="flex-1 space-y-2">
+            <button class="sidebar-item active w-full flex items-center gap-4 px-4 py-3 rounded-xl font-bold uppercase text-sm tracking-wide transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                Learn
+            </button>
+            <button class="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl font-bold uppercase text-sm tracking-wide text-gray-500 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                Leaderboard
+            </button>
+            <button class="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl font-bold uppercase text-sm tracking-wide text-gray-500 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                Profile
+            </button>
+            <button class="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl font-bold uppercase text-sm tracking-wide text-gray-500 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" /></svg>
+                More
+            </button>
+        </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col items-center overflow-y-auto bg-white">
+        
+        <!-- Top Bar -->
+        <div class="w-full max-w-4xl px-8 py-4 flex justify-between items-center border-b md:border-none sticky top-0 bg-white z-10">
+            <div class="flex items-center gap-4">
+                <div onclick="toggleLangModal()" class="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition">
+                    <span id="current-lang-flag" class="text-xl">🇪🇸</span>
+                    <span id="current-lang-name" class="font-bold uppercase text-xs text-gray-500">Spanish</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-2 text-orange-500 font-bold">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.66 11.5c-.21 0-.41.01-.61.03-.55-.71-1.22-1.35-1.99-1.9-.3-.21-.62-.4-.95-.57.34-.33.64-.71.89-1.13.38-.64.59-1.37.59-2.14 0-1.87-1.24-3.46-2.94-4.01-.29-.09-.59-.14-.9-.14s-.61.05-.9.14c-1.7.55-2.94 2.14-2.94 4.01 0 .77.21 1.5.59 2.14.25.42.55.8.89 1.13-.33.17-.65.36-.95.57-.77.55-1.44 1.19-1.99 1.9-.2-.02-.4-.03-.61-.03-2.49 0-4.5 2.01-4.5 4.5S4.26 21 6.75 21h10.91c2.49 0 4.5-2.01 4.5-4.5s-2.01-4.5-4.5-4.5z"/></svg>
+                    <span id="streak-count">14</span>
+                </div>
+                <div class="flex items-center gap-2 text-blue-400 font-bold">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    <span id="hearts-count">5</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboard" class="w-full max-w-2xl px-8 py-12 flex flex-col items-center space-y-8">
+            <div class="text-center mb-8">
+                <h2 id="section-title" class="text-2xl font-black text-gray-700">Section 1: Basics</h2>
+                <p class="text-gray-400 font-bold uppercase tracking-wide">Course: <span id="course-label">Spanish</span></p>
+            </div>
+
+            <!-- Unit Tree -->
+            <div id="unit-tree" class="flex flex-col items-center gap-12 w-full">
+                <!-- Injected via script -->
+            </div>
+        </div>
+
+        <!-- Lesson View (Hidden by Default) -->
+        <div id="lesson-view" class="hidden fixed inset-0 bg-white z-[150] flex flex-col items-center">
+            <div class="w-full max-w-4xl p-8 flex items-center gap-6">
+                <button onclick="exitLesson()" class="text-gray-400 hover:text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <div class="progress-bar flex-1">
+                    <div id="lesson-progress" class="progress-fill" style="width: 10%;"></div>
+                </div>
+                <div class="flex items-center gap-1 text-red-500 font-bold">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    <span id="lesson-hearts">5</span>
+                </div>
+            </div>
+
+            <div class="flex-1 w-full max-w-2xl px-8 py-4 flex flex-col justify-center">
+                <h2 id="question-text" class="text-3xl font-extrabold text-gray-700 mb-8">Select the correct translation</h2>
+                
+                <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
+                    <!-- Options injected by JS -->
+                </div>
+            </div>
+
+            <!-- Bottom Action Bar -->
+            <div id="action-bar" class="w-full border-t-2 border-gray-100 p-8 flex justify-center">
+                <div class="w-full max-w-4xl flex justify-between items-center">
+                    <div id="feedback-area" class="flex-1"></div>
+                    <button id="check-btn" onclick="checkAnswer()" class="btn-primary text-white px-12 py-3 rounded-2xl font-extrabold uppercase tracking-wider text-sm disabled:opacity-50 disabled:grayscale">Check</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Side Content -->
+    <aside class="w-80 border-l-2 border-gray-200 hidden lg:flex flex-col p-6 space-y-8">
+        <section class="p-6 rounded-2xl border-2 border-gray-200">
+            <h3 class="text-lg font-black mb-4">Daily Quests</h3>
+            <div id="quest-list" class="space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-yellow-400 rounded-lg flex items-center justify-center text-white font-black">XP</div>
+                    <div class="flex-1">
+                        <p class="text-sm font-bold">Earn 20 XP</p>
+                        <div class="w-full h-2 bg-gray-100 rounded-full mt-1"><div class="h-full bg-yellow-400 rounded-full w-[60%]"></div></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </aside>
+
+    <script>
+        const allLanguages = [
+            { name: 'Spanish', flag: '🇪🇸', id: 'es', basic: 'Hola', boy: 'El niño', bread: 'Pan' },
+            { name: 'French', flag: '🇫🇷', id: 'fr', basic: 'Bonjour', boy: 'Le garçon', bread: 'Pain' },
+            { name: 'German', flag: '🇩🇪', id: 'de', basic: 'Hallo', boy: 'Der Junge', bread: 'Brot' },
+            { name: 'Italian', flag: '🇮🇹', id: 'it', basic: 'Ciao', boy: 'Il ragazzo', bread: 'Pane' },
+            { name: 'Japanese', flag: '🇯🇵', id: 'ja', basic: 'こんにちは', boy: '男の子', bread: 'パン' },
+            { name: 'Chinese', flag: '🇨🇳', id: 'zh', basic: '你好', boy: '男孩', bread: '面包' },
+            { name: 'Korean', flag: '🇰🇷', id: 'ko', basic: '안녕하세요', boy: '소년', bread: '빵' },
+            { name: 'Portuguese', flag: '🇵🇹', id: 'pt', basic: 'Olá', boy: 'O menino', bread: 'Pão' },
+            { name: 'Russian', flag: '🇷🇺', id: 'ru', basic: 'Привет', boy: 'Мальчик', bread: 'Хлеб' },
+            { name: 'Arabic', flag: '🇸🇦', id: 'ar', basic: 'مرحبا', boy: 'الولد', bread: 'خبز' },
+            { name: 'Dutch', flag: '🇳🇱', id: 'nl', basic: 'Hallo', boy: 'De jongen', bread: 'Brood' },
+            { name: 'Greek', flag: '🇬🇷', id: 'el', basic: 'Γεια σας', boy: 'Το αγόρι', bread: 'Ψωμί' },
+            { name: 'Hindi', flag: '🇮🇳', id: 'hi', basic: 'नमस्ते', boy: 'लड़का', bread: 'रोटी' },
+            { name: 'Turkish', flag: '🇹🇷', id: 'tr', basic: 'Merhaba', boy: 'Oğlan', bread: 'Ekmek' },
+            { name: 'Swedish', flag: '🇸🇪', id: 'sv', basic: 'Hej', boy: 'Pojken', bread: 'Bröd' },
+            { name: 'Vietnamese', flag: '🇻🇳', id: 'vi', basic: 'Xin chào', boy: 'Cậu bé', bread: 'Bánh mì' },
+            { name: 'Thai', flag: '🇹🇭', id: 'th', basic: 'สวัสดี', boy: 'เด็กชาย', bread: 'ขนมปัง' },
+            { name: 'Polish', flag: '🇵🇱', id: 'pl', basic: 'Cześć', boy: 'Chłopiec', bread: 'Chleb' },
+            { name: 'Norwegian', flag: '🇳🇴', id: 'no', basic: 'Hei', boy: 'Gutten', bread: 'Brød' },
+            { name: 'Finnish', flag: '🇫🇮', id: 'fi', basic: 'Hei', boy: 'Poika', bread: 'Leipä' }
+        ];
+
+        let state = {
+            currentLang: allLanguages[0],
+            hearts: 5,
+            streak: 14,
+            xp: 0,
+            inLesson: false,
+            currentStep: 0,
+            selectedOption: null,
+            isAnswerChecked: false,
+            lessonData: []
+        };
+
+        function toggleLangModal() {
+            document.getElementById('lang-modal').classList.toggle('active');
+        }
+
+        function setLanguage(langId) {
+            const lang = allLanguages.find(l => l.id === langId);
+            state.currentLang = lang;
+            document.getElementById('current-lang-flag').innerText = lang.flag;
+            document.getElementById('current-lang-name').innerText = lang.name;
+            document.getElementById('course-label').innerText = lang.name;
+            toggleLangModal();
+            renderUnitTree();
+        }
+
+        function renderLangGrid() {
+            const grid = document.getElementById('lang-grid');
+            grid.innerHTML = allLanguages.map(l => `
+                <div onclick="setLanguage('${l.id}')" class="flex flex-col items-center p-4 border-2 border-gray-100 rounded-2xl cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition">
+                    <span class="text-4xl mb-2">${l.flag}</span>
+                    <span class="font-bold text-sm text-gray-600">${l.name}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderUnitTree() {
+            const tree = document.getElementById('unit-tree');
+            tree.innerHTML = `
+                <div onclick="startLesson()" class="w-24 h-24 bg-[#58cc02] rounded-full flex items-center justify-center cursor-pointer transform hover:scale-105 transition active:translate-y-2 border-b-8 border-[#46a302] relative group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    <div class="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap font-bold">Start: Basics</div>
+                </div>
+                <div class="flex gap-16">
+                    ${[1, 2].map(() => `<div class="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center opacity-50 grayscale cursor-not-allowed border-b-8 border-gray-300"><svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg></div>`).join('')}
+                </div>
+                <div class="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center opacity-50 grayscale cursor-not-allowed border-b-8 border-gray-300"><svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg></div>
+            `;
+        }
+
+        function generateLesson() {
+            const lang = state.currentLang;
+            return [
+                {
+                    question: `Translate: "The boy"`,
+                    options: [
+                        { text: lang.boy, correct: true, img: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=120' },
+                        { text: 'Wrong 1', correct: false, img: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=120' },
+                        { text: 'Wrong 2', correct: false, img: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=120' }
+                    ]
+                },
+                {
+                    question: `Translate: "Bread"`,
+                    options: [
+                        { text: 'Water', correct: false, img: 'https://images.unsplash.com/photo-1548964856-ac52127e4782?w=120' },
+                        { text: lang.bread, correct: true, img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=120' },
+                        { text: 'Apple', correct: false, img: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=120' }
+                    ]
+                },
+                {
+                    question: `How do you say "Hello" in ${lang.name}?`,
+                    options: [
+                        { text: lang.basic, correct: true, img: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=120' },
+                        { text: 'Goodbye', correct: false, img: 'https://images.unsplash.com/photo-1516733968668-dbdce39c46ef?w=120' },
+                        { text: 'Please', correct: false, img: 'https://images.unsplash.com/photo-1484820540004-14229fe36ca4?w=120' }
+                    ]
+                }
+            ];
+        }
+
+        function startLesson() {
+            state.lessonData = generateLesson();
+            state.currentStep = 0;
+            state.inLesson = true;
+            state.hearts = 5;
+            document.getElementById('lesson-view').classList.remove('hidden');
+            loadStep();
+        }
+
+        function loadStep() {
+            const step = state.lessonData[state.currentStep];
+            state.isAnswerChecked = false;
+            state.selectedOption = null;
+            
+            document.getElementById('question-text').innerText = step.question;
+            document.getElementById('lesson-hearts').innerText = state.hearts;
+            
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = step.options.map((opt, idx) => `
+                <div class="lesson-card flex flex-col items-center p-4 rounded-2xl bg-white" onclick="selectOption(${idx}, this)">
+                    <img src="${opt.img}" class="w-32 h-32 object-cover rounded-xl mb-4 pointer-events-none">
+                    <span class="font-bold text-lg">${opt.text}</span>
+                </div>
+            `).join('');
+
+            const progress = (state.currentStep / state.lessonData.length) * 100;
+            document.getElementById('lesson-progress').style.width = `${progress}%`;
+            
+            document.getElementById('check-btn').innerText = 'Check';
+            document.getElementById('check-btn').disabled = true;
+            document.getElementById('feedback-area').innerHTML = '';
+            document.getElementById('action-bar').className = 'w-full border-t-2 border-gray-100 p-8 flex justify-center';
+        }
+
+        function selectOption(idx, el) {
+            if (state.isAnswerChecked) return;
+            document.querySelectorAll('.lesson-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            state.selectedOption = state.lessonData[state.currentStep].options[idx];
+            document.getElementById('check-btn').disabled = false;
+        }
+
+        function checkAnswer() {
+            if (state.isAnswerChecked) {
+                nextStep();
+                return;
+            }
+
+            state.isAnswerChecked = true;
+            const isCorrect = state.selectedOption.correct;
+            const feedback = document.getElementById('feedback-area');
+            const actionBar = document.getElementById('action-bar');
+            const btn = document.getElementById('check-btn');
+
+            if (isCorrect) {
+                actionBar.classList.add('bg-green-100', 'border-green-200');
+                feedback.innerHTML = `<div class="flex items-center gap-4 text-green-700 font-black"><p class="text-xl">Awesome!</p></div>`;
+                btn.innerText = 'Continue';
+            } else {
+                state.hearts--;
+                actionBar.classList.add('bg-red-100', 'border-red-200');
+                const correct = state.lessonData[state.currentStep].options.find(o => o.correct).text;
+                feedback.innerHTML = `<div class="text-red-700 font-black"><p class="text-xl">Incorrect</p><p class="text-sm">Correct: ${correct}</p></div>`;
+                btn.innerText = 'Got it';
+                if (state.hearts <= 0) {
+                    btn.innerText = 'Try Again Later';
+                    btn.onclick = () => location.reload();
+                }
+            }
+        }
+
+        function nextStep() {
+            state.currentStep++;
+            if (state.currentStep < state.lessonData.length) {
+                loadStep();
+            } else {
+                completeLesson();
+            }
+        }
+
+        function completeLesson() {
+            document.getElementById('lesson-progress').style.width = '100%';
+            document.getElementById('feedback-area').innerHTML = `<p class="text-2xl font-black text-blue-600">Perfect Lesson! +15 XP</p>`;
+            const btn = document.getElementById('check-btn');
+            btn.innerText = 'Finish';
+            btn.onclick = () => location.reload();
+        }
+
+        function exitLesson() {
+            if (confirm('Are you sure? Progress will be lost.')) {
+                location.reload();
+            }
+        }
+
+        window.onload = () => {
+            renderLangGrid();
+            renderUnitTree();
+        };
+    </script>
+</body>
+</html>

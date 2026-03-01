@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛗 Elevator Control System FSM</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #2a3a4a 0%, #1a2a3a 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .elevator-card {
+            background: #3a4a5a;
+            background: linear-gradient(145deg, #4a5a6a, #2a3a48);
+            border-radius: 3rem;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 40px 60px #000000cc, inset 0 2px 20px #b0d0ff;
+            border: 6px solid #7a8a9a;
+            max-width: 1200px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            margin: 0 0 1.5rem 0;
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: #d0e4ff;
+            text-shadow: 0 5px 0 #3a5a7a, 0 10px 20px black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        h1 span {
+            font-size: 3rem;
+            filter: drop-shadow(0 4px 2px #1a3a5a);
+        }
+        .elevator-layout {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+        }
+        /* Elevator shaft */
+        .shaft-panel {
+            background: #1e2b38;
+            border-radius: 2.5rem;
+            padding: 1.5rem;
+            box-shadow: inset 0 -5px 10px #0a121c, 0 25px 35px black;
+            border: 4px solid #8a9aac;
+            flex: 1;
+            min-width: 300px;
+        }
+        .building {
+            display: flex;
+            flex-direction: column-reverse;
+            height: 500px;
+            background: #2a3c4e;
+            border-radius: 2rem;
+            padding: 1rem;
+            border: 4px solid #6b7f94;
+            position: relative;
+        }
+        .floor {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #5a6f84;
+            padding: 0 1rem;
+            color: #c0d4f0;
+            font-weight: 600;
+            position: relative;
+        }
+        .floor:last-child {
+            border-bottom: none;
+        }
+        .floor-number {
+            background: #3a5068;
+            padding: 0.3rem 0.8rem;
+            border-radius: 1rem;
+            font-size: 0.9rem;
+            border: 2px solid #8fa5c0;
+        }
+        .floor-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4a6078;
+            border: 2px solid #a0b8d0;
+        }
+        .floor-indicator.active {
+            background: #ffd966;
+            border-color: #fff2b5;
+            box-shadow: 0 0 20px #ffaa33;
+        }
+        .elevator-car {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: #c9dff2;
+            border: 4px solid #ffb347;
+            border-radius: 1rem;
+            right: 20px;
+            transition: bottom 0.5s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 0 20px #aad0ff;
+        }
+        .door-status {
+            position: absolute;
+            left: 20px;
+            background: #1e2f40;
+            padding: 0.3rem 0.8rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            border: 2px solid #ffb85c;
+        }
+        .control-panel {
+            background: #2a3f54;
+            border-radius: 2.5rem;
+            padding: 2rem 1.5rem;
+            border: 4px solid #ffb85c;
+            flex: 1;
+            min-width: 300px;
+        }
+        .elevator-display {
+            background: #1a2a36;
+            border-radius: 2rem;
+            padding: 1.5rem;
+            text-align: center;
+            border: 4px solid #7aa5c2;
+            margin-bottom: 1.5rem;
+        }
+        .current-floor {
+            font-size: 4rem;
+            font-weight: 800;
+            color: #ffd966;
+            text-shadow: 0 4px 0 #b45300;
+            line-height: 1;
+        }
+        .current-state {
+            font-size: 1.5rem;
+            color: #b0e0ff;
+            background: #1a3a4a;
+            padding: 0.5rem;
+            border-radius: 2rem;
+            margin-top: 0.5rem;
+        }
+        .door-indicator {
+            font-size: 1.2rem;
+            color: #ffb89a;
+            margin-top: 0.5rem;
+        }
+        .floor-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        .floor-btn {
+            background: #3a5a78;
+            border: none;
+            border-radius: 2rem;
+            padding: 1.2rem 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #e0f0ff;
+            box-shadow: 0 6px 0 #1a2a3a, 0 8px 15px black;
+            cursor: pointer;
+            transition: 0.05s linear;
+            border: 3px solid #b0c8e0;
+        }
+        .floor-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 1px 0 #1a2a3a, 0 8px 15px black;
+        }
+        .floor-btn:disabled {
+            opacity: 0.4;
+            transform: translateY(3px);
+            box-shadow: 0 3px 0 #1a2a3a;
+            pointer-events: none;
+        }
+        .floor-btn.active {
+            background: #ffaa33;
+            color: #1a2a3a;
+            border-color: #fff2b5;
+        }
+        .control-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .elevator-btn {
+            background: #4a6a88;
+            border: none;
+            border-radius: 2rem;
+            padding: 1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #e8f0ff;
+            box-shadow: 0 5px 0 #1e3a52, 0 5px 15px black;
+            cursor: pointer;
+            border: 2px solid #ffb85c;
+        }
+        .elevator-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #1e3a52;
+        }
+        .elevator-btn.danger {
+            background: #b54a4a;
+            border-color: #ffb8b8;
+        }
+        .request-list {
+            background: #1e3142;
+            border-radius: 1.5rem;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border: 2px solid #7a9ac0;
+        }
+        .request-title {
+            color: #ffd58c;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .request-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .request-badge {
+            background: #3a5f80;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            color: white;
+            font-weight: 600;
+            border: 2px solid #ffb347;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            color: #d0e4ff;
+            background: #1a2a3ab0;
+            padding: 0.8rem;
+            border-radius: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="elevator-card">
+        <h1>
+            <span>🛗</span> ELEVATOR CONTROL FSM <span>⬆️⬇️</span>
+        </h1>
+        
+        <div class="elevator-layout">
+            <!-- Elevator shaft visualization -->
+            <div class="shaft-panel">
+                <div class="building" id="building">
+                    <!-- Floors will be generated by JS -->
+                </div>
+            </div>
+            
+            <!-- Control panel -->
+            <div class="control-panel">
+                <div class="elevator-display">
+                    <div class="current-floor" id="currentFloorDisplay">1</div>
+                    <div class="current-state" id="currentStateDisplay">IDLE</div>
+                    <div class="door-indicator" id="doorIndicator">🚪 DOORS: CLOSED</div>
+                </div>
+                
+                <div class="floor-buttons" id="floorButtons">
+                    <!-- Floor buttons will be generated -->
+                </div>
+                
+                <div class="control-buttons">
+                    <button class="elevator-btn" id="btnOpenDoor">🚪 OPEN</button>
+                    <button class="elevator-btn" id="btnCloseDoor">🚪 CLOSE</button>
+                    <button class="elevator-btn" id="btnEmergency">🚨 EMERGENCY</button>
+                    <button class="elevator-btn danger" id="btnReset">🔄 RESET</button>
+                </div>
+                
+                <div class="request-list">
+                    <div class="request-title">⏱️ PENDING REQUESTS:</div>
+                    <div class="request-items" id="pendingRequests">
+                        <span class="request-badge">None</span>
+                    </div>
+                </div>
+                
+                <div style="margin-top:1rem; background:#1a2f40; padding:0.8rem; border-radius:1.5rem; color:#b0d0ff; font-size:0.8rem;">
+                    <strong>FSM:</strong> IDLE → MOVING → (arrive) → DOOR_OPEN → DOOR_CLOSING → IDLE/MOVING
+                </div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <span>⏹️ IDLE</span>
+            <span>⬆️ MOVING_UP</span>
+            <span>⬇️ MOVING_DOWN</span>
+            <span>🚪 DOOR_OPEN</span>
+            <span>⏱️ DOOR_CLOSING</span>
+            <span>🚨 EMERGENCY</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- ELEVATOR FSM ----------
+            const ElevatorFSM = {
+                states: {
+                    IDLE: 'IDLE',
+                    MOVING_UP: 'MOVING_UP',
+                    MOVING_DOWN: 'MOVING_DOWN',
+                    DOOR_OPEN: 'DOOR_OPEN',
+                    DOOR_CLOSING: 'DOOR_CLOSING',
+                    EMERGENCY: 'EMERGENCY'
+                },
+                
+                current: 'IDLE',
+                currentFloor: 1,
+                targetFloor: null,
+                doorOpen: false,
+                
+                // Building configuration
+                totalFloors: 10,
+                
+                // Request queues
+                requests: [], // floors to visit in order
+                
+                // Timer for movement simulation
+                moveTimer: null,
+                doorTimer: null,
+                
+                // Transition table
+                transitions: {
+                    'IDLE_FLOOR_REQUEST': 'MOVING_UP', // direction determined later
+                    'IDLE_OPEN_DOOR': 'DOOR_OPEN',
+                    'IDLE_EMERGENCY': 'EMERGENCY',
+                    
+                    'MOVING_UP_ARRIVE': 'DOOR_OPEN',
+                    'MOVING_UP_FLOOR_REQUEST': 'MOVING_UP', // add to queue
+                    'MOVING_UP_EMERGENCY': 'EMERGENCY',
+                    
+                    'MOVING_DOWN_ARRIVE': 'DOOR_OPEN',
+                    'MOVING_DOWN_FLOOR_REQUEST': 'MOVING_DOWN',
+                    'MOVING_DOWN_EMERGENCY': 'EMERGENCY',
+                    
+                    'DOOR_OPEN_CLOSE_DOOR': 'DOOR_CLOSING',
+                    'DOOR_OPEN_OPEN_DOOR': 'DOOR_OPEN', // already open
+                    'DOOR_OPEN_FLOOR_REQUEST': 'DOOR_OPEN', // add to queue
+                    'DOOR_OPEN_EMERGENCY': 'EMERGENCY',
+                    
+                    'DOOR_CLOSING_DOOR_CLOSED': 'IDLE',
+                    'DOOR_CLOSING_OPEN_DOOR': 'DOOR_OPEN', // reopen
+                    'DOOR_CLOSING_EMERGENCY': 'EMERGENCY',
+                    
+                    'EMERGENCY_RESET': 'IDLE'
+                },
+                
+                dispatch(event, data = null) {
+                    const from = this.current;
+                    const key = `${from}_${event}`;
+                    
+                    if (this.transitions.hasOwnProperty(key)) {
+                        return this.transitions[key];
+                    }
+                    return from;
+                },
+                
+                send(event, data = null) {
+                    const before = this.current;
+                    const after = this.dispatch(event, data);
+                    const changed = before !== after;
+                    
+                    this.current = after;
+                    
+                    return { changed, from: before, to: after };
+                },
+                
+                // Request a floor
+                requestFloor(floor) {
+                    if (floor < 1 || floor > this.totalFloors) return false;
+                    if (floor === this.currentFloor && this.doorOpen) return false; // already here
+                    
+                    // Add to queue if not already present
+                    if (!this.requests.includes(floor)) {
+                        this.requests.push(floor);
+                        // Sort requests based on direction logic (simplified - just add)
+                    }
+                    
+                    // If idle, start moving
+                    if (this.current === 'IDLE') {
+                        this.processNextRequest();
+                    }
+                    
+                    return true;
+                },
+                
+                // Process next request
+                processNextRequest() {
+                    if (this.requests.length === 0) {
+                        if (this.current !== 'EMERGENCY') {
+                            this.send('IDLE'); // ensure idle
+                        }
+                        return;
+                    }
+                    
+                    // Get next target
+                    this.targetFloor = this.requests[0];
+                    
+                    // Determine direction
+                    if (this.targetFloor > this.currentFloor) {
+                        this.send('FLOOR_REQUEST');
+                        this.current = 'MOVING_UP';
+                        this.startMoving();
+                    } else if (this.targetFloor < this.currentFloor) {
+                        this.send('FLOOR_REQUEST');
+                        this.current = 'MOVING_DOWN';
+                        this.startMoving();
+                    } else {
+                        // Already at target floor
+                        this.requests.shift(); // remove request
+                        this.arriveAtFloor();
+                    }
+                },
+                
+                // Start moving simulation
+                startMoving() {
+                    if (this.moveTimer) clearInterval(this.moveTimer);
+                    
+                    this.moveTimer = setInterval(() => {
+                        if (this.current === 'MOVING_UP') {
+                            this.currentFloor++;
+                        } else if (this.current === 'MOVING_DOWN') {
+                            this.currentFloor--;
+                        } else {
+                            // Stop moving if state changed
+                            clearInterval(this.moveTimer);
+                            this.moveTimer = null;
+                            return;
+                        }
+                        
+                        // Check if reached target
+                        if (this.currentFloor === this.targetFloor) {
+                            clearInterval(this.moveTimer);
+                            this.moveTimer = null;
+                            this.arriveAtFloor();
+                        }
+                        
+                        updateUI();
+                    }, 500); // move every 500ms
+                },
+                
+                // Arrive at floor
+                arriveAtFloor() {
+                    // Remove this floor from requests
+                    const index = this.requests.indexOf(this.currentFloor);
+                    if (index !== -1) this.requests.splice(index, 1);
+                    
+                    this.send('ARRIVE');
+                    this.current = 'DOOR_OPEN';
+                    this.doorOpen = true;
+                    
+                    // Auto-close door after 3 seconds
+                    if (this.doorTimer) clearInterval(this.doorTimer);
+                    this.doorTimer = setTimeout(() => {
+                        if (this.current === 'DOOR_OPEN') {
+                            this.closeDoor();
+                        }
+                    }, 3000);
+                    
+                    updateUI();
+                },
+                
+                // Open door
+                openDoor() {
+                    if (this.current === 'IDLE' || this.current === 'DOOR_CLOSING') {
+                        this.send('OPEN_DOOR');
+                        this.current = 'DOOR_OPEN';
+                        this.doorOpen = true;
+                        
+                        // Clear any closing timer
+                        if (this.doorTimer) {
+                            clearTimeout(this.doorTimer);
+                            this.doorTimer = null;
+                        }
+                        
+                        // Auto-close after 3 seconds
+                        this.doorTimer = setTimeout(() => {
+                            if (this.current === 'DOOR_OPEN') {
+                                this.closeDoor();
+                            }
+                        }, 3000);
+                        
+                        updateUI();
+                    }
+                },
+                
+                // Close door
+                closeDoor() {
+                    if (this.current === 'DOOR_OPEN') {
+                        this.send('CLOSE_DOOR');
+                        this.current = 'DOOR_CLOSING';
+                        this.doorOpen = false;
+                        
+                        // Clear auto-close timer
+                        if (this.doorTimer) {
+                            clearTimeout(this.doorTimer);
+                            this.doorTimer = null;
+                        }
+                        
+                        // Door closed after short delay
+                        setTimeout(() => {
+                            if (this.current === 'DOOR_CLOSING') {
+                                this.send('DOOR_CLOSED');
+                                this.current = 'IDLE';
+                                
+                                // Process next request
+                                this.processNextRequest();
+                                
+                                updateUI();
+                            }
+                        }, 500);
+                        
+                        updateUI();
+                    }
+                },
+                
+                // Emergency
+                emergency() {
+                    this.send('EMERGENCY');
+                    this.current = 'EMERGENCY';
+                    
+                    // Stop all movement
+                    if (this.moveTimer) {
+                        clearInterval(this.moveTimer);
+                        this.moveTimer = null;
+                    }
+                    if (this.doorTimer) {
+                        clearTimeout(this.doorTimer);
+                        this.doorTimer = null;
+                    }
+                    
+                    // Doors open in emergency
+                    this.doorOpen = true;
+                    
+                    updateUI();
+                },
+                
+                // Reset from emergency
+                reset() {
+                    this.send('RESET');
+                    this.current = 'IDLE';
+                    this.doorOpen = false;
+                    this.requests = [];
+                    this.targetFloor = null;
+                    this.currentFloor = 1;
+                    
+                    if (this.moveTimer) {
+                        clearInterval(this.moveTimer);
+                        this.moveTimer = null;
+                    }
+                    if (this.doorTimer) {
+                        clearTimeout(this.doorTimer);
+                        this.doorTimer = null;
+                    }
+                    
+                    updateUI();
+                }
+            };
+
+            // ---------- DOM Elements ----------
+            const building = document.getElementById('building');
+            const currentFloorDisplay = document.getElementById('currentFloorDisplay');
+            const currentStateDisplay = document.getElementById('currentStateDisplay');
+            const doorIndicator = document.getElementById('doorIndicator');
+            const floorButtons = document.getElementById('floorButtons');
+            const pendingRequests = document.getElementById('pendingRequests');
+            
+            const btnOpenDoor = document.getElementById('btnOpenDoor');
+            const btnCloseDoor = document.getElementById('btnCloseDoor');
+            const btnEmergency = document.getElementById('btnEmergency');
+            const btnReset = document.getElementById('btnReset');
+            
+            // Build floor UI
+            function buildFloors() {
+                building.innerHTML = '';
+                for (let i = ElevatorFSM.totalFloors; i >= 1; i--) {
+                    const floor = document.createElement('div');
+                    floor.className = 'floor';
+                    floor.id = `floor-${i}`;
+                    floor.innerHTML = `
+                        <span class="floor-number">FLOOR ${i}</span>
+                        <span class="door-status" id="door-${i}"></span>
+                        <span class="floor-indicator" id="indicator-${i}"></span>
+                    `;
+                    building.appendChild(floor);
+                }
+                
+                // Add elevator car
+                const elevatorCar = document.createElement('div');
+                elevatorCar.className = 'elevator-car';
+                elevatorCar.id = 'elevatorCar';
+                elevatorCar.innerText = '🛗';
+                building.appendChild(elevatorCar);
+            }
+            
+            // Build floor buttons
+            function buildFloorButtons() {
+                floorButtons.innerHTML = '';
+                for (let i = 1; i <= ElevatorFSM.totalFloors; i++) {
+                    const btn = document.createElement('button');
+                    btn.className = 'floor-btn';
+                    btn.id = `floor-btn-${i}`;
+                    btn.innerText = i;
+                    btn.addEventListener('click', () => handleFloorRequest(i));
+                    floorButtons.appendChild(btn);
+                }
+            }
+            
+            // Update elevator position
+            function updateElevatorPosition() {
+                const car = document.getElementById('elevatorCar');
+                if (!car) return;
+                
+                const floorHeight = 500 / ElevatorFSM.totalFloors; // pixels per floor
+                const bottomPosition = (ElevatorFSM.currentFloor - 1) * floorHeight;
+                car.style.bottom = bottomPosition + 'px';
+                
+                // Update floor indicators
+                for (let i = 1; i <= ElevatorFSM.totalFloors; i++) {
+                    const indicator = document.getElementById(`indicator-${i}`);
+                    if (indicator) {
+                        if (i === ElevatorFSM.currentFloor) {
+                            indicator.classList.add('active');
+                        } else {
+                            indicator.classList.remove('active');
+                        }
+                    }
+                }
+                
+                // Update door status indicators
+                for (let i = 1; i <= ElevatorFSM.totalFloors; i++) {
+                    const doorSpan = document.getElementById(`door-${i}`);
+                    if (doorSpan) {
+                        if (i === ElevatorFSM.currentFloor) {
+                            doorSpan.innerText = ElevatorFSM.doorOpen ? '🚪 OPEN' : '🚪 CLOSED';
+                        } else {
+                            doorSpan.innerText = '';
+                        }
+                    }
+                }
+            }
+            
+            // Update UI
+            function updateUI() {
+                // Update displays
+                currentFloorDisplay.innerText = ElevatorFSM.currentFloor;
+                currentStateDisplay.innerText = ElevatorFSM.current;
+                doorIndicator.innerText = `🚪 DOORS: ${ElevatorFSM.doorOpen ? 'OPEN' : 'CLOSED'}`;
+                
+                // Update pending requests
+                if (ElevatorFSM.requests.length > 0) {
+                    pendingRequests.innerHTML = ElevatorFSM.requests
+                        .map(f => `<span class="request-badge">Floor ${f}</span>`)
+                        .join('');
+                } else {
+                    pendingRequests.innerHTML = '<span class="request-badge">None</span>';
+                }
+                
+                // Update floor buttons active state
+                for (let i = 1; i <= ElevatorFSM.totalFloors; i++) {
+                    const btn = document.getElementById(`floor-btn-${i}`);
+                    if (btn) {
+                        if (ElevatorFSM.requests.includes(i)) {
+                            btn.classList.add('active');
+                        } else {
+                            btn.classList.remove('active');
+                        }
+                        
+                        // Disable if emergency
+                        btn.disabled = ElevatorFSM.current === 'EMERGENCY';
+                    }
+                }
+                
+                // Update control buttons
+                btnOpenDoor.disabled = ElevatorFSM.current === 'EMERGENCY' || 
+                                      (ElevatorFSM.current !== 'IDLE' && 
+                                       ElevatorFSM.current !== 'DOOR_CLOSING');
+                btnCloseDoor.disabled = ElevatorFSM.current === 'EMERGENCY' || 
+                                       ElevatorFSM.current !== 'DOOR_OPEN';
+                btnEmergency.disabled = ElevatorFSM.current === 'EMERGENCY';
+                
+                // Update elevator position
+                updateElevatorPosition();
+            }
+            
+            // Event handlers
+            function handleFloorRequest(floor) {
+                ElevatorFSM.requestFloor(floor);
+                updateUI();
+            }
+            
+            function handleOpenDoor() {
+                ElevatorFSM.openDoor();
+                updateUI();
+            }
+            
+            function handleCloseDoor() {
+                ElevatorFSM.closeDoor();
+                updateUI();
+            }
+            
+            function handleEmergency() {
+                ElevatorFSM.emergency();
+                updateUI();
+            }
+            
+            function handleReset() {
+                ElevatorFSM.reset();
+                updateUI();
+            }
+            
+            // Initialize
+            function init() {
+                buildFloors();
+                buildFloorButtons();
+                ElevatorFSM.reset(); // sets to floor 1, idle
+                updateUI();
+                
+                btnOpenDoor.addEventListener('click', handleOpenDoor);
+                btnCloseDoor.addEventListener('click', handleCloseDoor);
+                btnEmergency.addEventListener('click', handleEmergency);
+                btnReset.addEventListener('click', handleReset);
+            }
+            
+            init();
+        })();
+    </script>
+</body>
+</html>
