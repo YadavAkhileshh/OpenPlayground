@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberCore · Data Center</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            background-color: #0a0c14;
+            color: #00ffaa;
+        }
+        #server-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            background: rgba(0, 20, 20, 0.8);
+            backdrop-filter: blur(12px);
+            border: 2px solid #00ffaa;
+            border-radius: 40px;
+            padding: 12px 32px;
+            display: flex;
+            gap: 40px;
+            border-left: 6px solid #00ffff;
+            box-shadow: 0 0 40px rgba(0, 255, 170, 0.3);
+            pointer-events: none;
+        }
+        .server-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .server-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #88ffaa;
+            letter-spacing: 2px;
+        }
+        .server-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #ffffff, #00ffaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #network-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 20, 20, 0.85);
+            backdrop-filter: blur(16px);
+            border: 2px solid #00ffaa;
+            border-radius: 40px;
+            padding: 20px 32px;
+            z-index: 50;
+            border-right: 6px solid #00ffff;
+            min-width: 280px;
+            box-shadow: 0 15px 35px rgba(0, 100, 100, 0.6);
+        }
+        .network-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 1rem;
+            border-bottom: 1px solid #00aa88;
+            padding-bottom: 5px;
+        }
+        .network-label {
+            color: #88ffaa;
+        }
+        .network-value {
+            font-weight: 600;
+            color: #00ffaa;
+        }
+        .pulse-data {
+            width: 14px;
+            height: 14px;
+            background: #00ffaa;
+            border-radius: 50%;
+            box-shadow: 0 0 30px #00ffaa;
+            animation: data-pulse 1.2s infinite;
+        }
+        @keyframes data-pulse {
+            0% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.4); background: #88ffaa; }
+            100% { opacity: 0.6; transform: scale(1); }
+        }
+        #cooling-tag {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(0, 20, 20, 0.8);
+            backdrop-filter: blur(8px);
+            border: 2px solid #00aaff;
+            border-radius: 40px;
+            padding: 12px 28px;
+            z-index: 50;
+            border-left: 4px solid #00ffff;
+            color: #88ffff;
+        }
+        .cool-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #00ffff;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 15px #00ffff;
+        }
+        #hologram-stats {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0, 20, 20, 0.85);
+            backdrop-filter: blur(8px);
+            border: 2px solid #ffaa00;
+            border-radius: 40px;
+            padding: 16px 28px;
+            z-index: 50;
+            text-align: right;
+            border-bottom: 4px solid #ffcc00;
+        }
+        .glow-number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff, #ffaa00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(0,255,170,0.3);
+            animation: scan 4s linear infinite;
+            z-index: 100;
+            pointer-events: none;
+        }
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="scanline"></div>
+    
+    <div id="server-panel">
+        <div class="server-item">
+            <span class="server-label">cluster</span>
+            <span class="server-value">NEXUS-7</span>
+        </div>
+        <div class="server-item">
+            <span class="server-label">load</span>
+            <span class="server-value" id="cpu-load">78%</span>
+        </div>
+        <div class="server-item">
+            <span class="server-label">temp</span>
+            <span class="server-value" id="temp-server">42°C</span>
+        </div>
+    </div>
+
+    <div id="network-panel">
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+            <span class="pulse-data"></span>
+            <span style="font-weight: 600; font-size: 1.3rem;">🌐 NETWORK</span>
+        </div>
+        <div class="network-row">
+            <span class="network-label">throughput</span>
+            <span class="network-value" id="throughput">4.7 Tb/s</span>
+        </div>
+        <div class="network-row">
+            <span class="network-label">packets</span>
+            <span class="network-value" id="packets">2.3M/s</span>
+        </div>
+        <div class="network-row">
+            <span class="network-label">connections</span>
+            <span class="network-value" id="connections">1,847</span>
+        </div>
+        <div class="network-row">
+            <span class="network-label">latency</span>
+            <span class="network-value" id="latency">3.2ms</span>
+        </div>
+        <div class="network-row">
+            <span class="network-label">encryption</span>
+            <span class="network-value">AES-256</span>
+        </div>
+    </div>
+
+    <div id="cooling-tag">
+        <span class="cool-icon"></span> <span>liquid cooling · 18°C inlet · 22°C outlet</span>
+    </div>
+
+    <div id="hologram-stats">
+        <div style="font-size:1rem;">📊 QUANTUM CORE</div>
+        <div class="glow-number" id="qubits">128<span style="font-size:1rem;"> qubits</span></div>
+        <div style="font-size:0.8rem;">coherence · 87% · error rate 0.02%</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- Scene setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0c14);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(15, 10, 25);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.8;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.minDistance = 10;
+        controls.maxDistance = 50;
+        
+        // --- Lighting ---
+        const ambient = new THREE.AmbientLight(0x203040);
+        scene.add(ambient);
+        
+        // Neon lights
+        const colors = [0x00ffaa, 0x00aaff, 0xff00aa, 0xaaff00];
+        for (let i = 0; i < 8; i++) {
+            const light = new THREE.PointLight(colors[Math.floor(Math.random() * colors.length)], 0.8, 30);
+            light.position.set(
+                (Math.random() - 0.5) * 20,
+                5 + Math.random() * 10,
+                (Math.random() - 0.5) * 20
+            );
+            scene.add(light);
+        }
+        
+        // --- Floor grid (cyber) ---
+        const gridHelper = new THREE.GridHelper(40, 20, 0x00ffaa, 0x004422);
+        gridHelper.position.y = -0.5;
+        scene.add(gridHelper);
+        
+        // --- Server racks ---
+        function createServerRack(x, z, color) {
+            const group = new THREE.Group();
+            
+            // Main cabinet
+            const cabinetGeo = new THREE.BoxGeometry(2, 4, 2);
+            const cabinetMat = new THREE.MeshStandardMaterial({ color: 0x222233, emissive: 0x111122 });
+            const cabinet = new THREE.Mesh(cabinetGeo, cabinetMat);
+            cabinet.position.y = 2;
+            cabinet.castShadow = true;
+            cabinet.receiveShadow = true;
+            group.add(cabinet);
+            
+            // Blinking lights
+            const lightGeo = new THREE.SphereGeometry(0.1);
+            const lightMat = new THREE.MeshStandardMaterial({ color: color, emissive: color });
+            for (let i = 0; i < 4; i++) {
+                const light = new THREE.Mesh(lightGeo, lightMat);
+                light.position.set(0.8, 0.5 + i, 1.1);
+                group.add(light);
+            }
+            
+            // Front grille
+            const grilleGeo = new THREE.BoxGeometry(1.8, 3.5, 0.1);
+            const grilleMat = new THREE.MeshStandardMaterial({ color: 0x111122 });
+            const grille = new THREE.Mesh(grilleGeo, grilleMat);
+            grille.position.set(0, 2, 1.1);
+            group.add(grille);
+            
+            group.position.set(x, -0.5, z);
+            return group;
+        }
+        
+        // Place racks in grid
+        for (let i = 0; i < 5; i++) {
+            for (let j = 0; j < 3; j++) {
+                const x = (i - 2) * 4;
+                const z = (j - 1) * 5;
+                const colors = [0xff00aa, 0x00ffaa, 0x00aaff];
+                const rack = createServerRack(x, z, colors[Math.floor(Math.random() * colors.length)]);
+                scene.add(rack);
+            }
+        }
+        
+        // --- Central quantum core (glowing sphere) ---
+        const coreGeo = new THREE.SphereGeometry(1.5, 32, 32);
+        const coreMat = new THREE.MeshStandardMaterial({ color: 0x00aaff, emissive: 0x004466 });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        core.position.set(0, 2, 0);
+        core.castShadow = true;
+        scene.add(core);
+        
+        // Core rings
+        const ringGeo = new THREE.TorusGeometry(2.2, 0.05, 8, 32);
+        const ringMat = new THREE.MeshStandardMaterial({ color: 0x00ffaa, emissive: 0x004422 });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        ring.rotation.z = Math.PI / 4;
+        ring.position.y = 2;
+        scene.add(ring);
+        
+        const ring2 = ring.clone();
+        ring2.rotation.x = Math.PI / 2;
+        ring2.rotation.z = -Math.PI / 4;
+        ring2.scale.set(1.2, 1.2, 1.2);
+        scene.add(ring2);
+        
+        // Core label
+        const coreDiv = document.createElement('div');
+        coreDiv.textContent = '⚛️ QUANTUM CORE';
+        coreDiv.style.background = '#001122';
+        coreDiv.style.color = '#00ffff';
+        coreDiv.style.border = '2px solid #00ffaa';
+        coreDiv.style.borderRadius = '30px';
+        coreDiv.style.padding = '4px 16px';
+        const coreLabel = new CSS2DObject(coreDiv);
+        coreLabel.position.set(0, 4, 0);
+        scene.add(coreLabel);
+        
+        // --- Holographic displays (floating panels) ---
+        function createHoloDisplay(x, y, z, text) {
+            const group = new THREE.Group();
+            
+            const panelGeo = new THREE.BoxGeometry(2, 1.5, 0.2);
+            const panelMat = new THREE.MeshStandardMaterial({ color: 0x00aaff, emissive: 0x004466, transparent: true, opacity: 0.4 });
+            const panel = new THREE.Mesh(panelGeo, panelMat);
+            panel.castShadow = true;
+            group.add(panel);
+            
+            // Content (CSS2D)
+            const div = document.createElement('div');
+            div.textContent = text;
+            div.style.color = '#00ffaa';
+            div.style.fontSize = '24px';
+            div.style.fontWeight = 'bold';
+            div.style.textShadow = '0 0 20px #00ffaa';
+            div.style.background = 'rgba(0,0,0,0.5)';
+            div.style.padding = '10px';
+            div.style.borderRadius = '10px';
+            const label = new CSS2DObject(div);
+            label.position.set(0, 0, 0.2);
+            group.add(label);
+            
+            group.position.set(x, y, z);
+            return group;
+        }
+        
+        const holo1 = createHoloDisplay(5, 6, -3, 'CPU 78%');
+        scene.add(holo1);
+        const holo2 = createHoloDisplay(-4, 5, 5, 'NET 4.7T');
+        scene.add(holo2);
+        const holo3 = createHoloDisplay(3, 7, 7, 'TEMP 42°C');
+        scene.add(holo3);
+        
+        // --- Floating data particles (representing network traffic) ---
+        const dataParticlesGeo = new THREE.BufferGeometry();
+        const particleCount = 800;
+        const particlePos = new Float32Array(particleCount * 3);
+        const particleColors = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            particlePos[i*3] = (Math.random() - 0.5) * 30;
+            particlePos[i*3+1] = (Math.random() - 0.5) * 15;
+            particlePos[i*3+2] = (Math.random() - 0.5) * 30;
+            
+            particleColors[i*3] = 0.2 + Math.random() * 0.8;
+            particleColors[i*3+1] = 0.6 + Math.random() * 0.4;
+            particleColors[i*3+2] = 0.2 + Math.random() * 0.8;
+        }
+        dataParticlesGeo.setAttribute('position', new THREE.BufferAttribute(particlePos, 3));
+        dataParticlesGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+        const particleMat = new THREE.PointsMaterial({ size: 0.1, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending });
+        const particles = new THREE.Points(dataParticlesGeo, particleMat);
+        scene.add(particles);
+        
+        // --- Data cables (lines between racks) ---
+        const cableMaterial = new THREE.LineBasicMaterial({ color: 0x00ffaa });
+        for (let i = 0; i < 20; i++) {
+            const points = [];
+            points.push(new THREE.Vector3(
+                (Math.random() - 0.5) * 15,
+                0.5 + Math.random() * 3,
+                (Math.random() - 0.5) * 15
+            ));
+            points.push(new THREE.Vector3(
+                (Math.random() - 0.5) * 15,
+                0.5 + Math.random() * 3,
+                (Math.random() - 0.5) * 15
+            ));
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geo, cableMaterial);
+            scene.add(line);
+        }
+        
+        // --- Cooling mist (particles) ---
+        const mistGeo = new THREE.BufferGeometry();
+        const mistCount = 400;
+        const mistPos = new Float32Array(mistCount * 3);
+        for (let i = 0; i < mistCount; i++) {
+            mistPos[i*3] = (Math.random() - 0.5) * 30;
+            mistPos[i*3+1] = Math.random() * 8;
+            mistPos[i*3+2] = (Math.random() - 0.5) * 30;
+        }
+        mistGeo.setAttribute('position', new THREE.BufferAttribute(mistPos, 3));
+        const mistMat = new THREE.PointsMaterial({ color: 0x88aaff, size: 0.2, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending });
+        const mist = new THREE.Points(mistGeo, mistMat);
+        scene.add(mist);
+        
+        // --- Animate ---
+        let time = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            time += 0.01;
+            
+            // Rotate core rings
+            ring.rotation.y += 0.01;
+            ring2.rotation.y -= 0.015;
+            
+            // Float particles
+            const positions = particles.geometry.attributes.position.array;
+            for (let i = 0; i < positions.length; i+=3) {
+                positions[i] += Math.sin(time + i) * 0.002;
+                positions[i+1] += Math.cos(time + i) * 0.002;
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+            
+            // Update displays
+            const cpu = 78 + Math.sin(time * 2) * 5;
+            document.getElementById('cpu-load').innerText = Math.floor(cpu) + '%';
+            document.getElementById('temp-server').innerText = (42 + Math.sin(time * 3) * 2).toFixed(0) + '°C';
+            document.getElementById('throughput').innerText = (4.7 + Math.sin(time * 4) * 0.3).toFixed(1) + ' Tb/s';
+            document.getElementById('packets').innerText = (2.3 + Math.sin(time * 5) * 0.2).toFixed(1) + 'M/s';
+            document.getElementById('connections').innerText = 1847 + Math.floor(Math.sin(time * 6) * 50);
+            document.getElementById('latency').innerText = (3.2 + Math.sin(time * 7) * 0.2).toFixed(1) + 'ms';
+            document.getElementById('qubits').innerHTML = (128 + Math.floor(Math.sin(time * 2) * 2)) + '<span style="font-size:1rem;"> qubits</span>';
+            
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

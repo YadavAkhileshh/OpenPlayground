@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Table Tennis Pro - Enhanced AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .interactive { pointer-events: auto; }
+        canvas { display: block; }
+        .score-board {
+            font-family: 'Monaco', monospace;
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer" class="flex flex-col items-center justify-between p-6">
+        <!-- Score and Header -->
+        <div class="w-full flex justify-between items-start px-10 pt-4">
+            <div class="text-white text-center">
+                <p class="text-xs uppercase tracking-widest text-slate-400">Player 1</p>
+                <h2 id="score-p1" class="text-5xl font-bold score-board">0</h2>
+            </div>
+            <div class="text-center">
+                <h1 class="text-2xl font-black text-sky-400 italic">TABLE TENNIS PRO</h1>
+                <div id="game-status" class="text-white text-sm bg-slate-800/80 px-4 py-1 rounded-full mt-2">Waiting to Serve</div>
+            </div>
+            <div class="text-white text-center">
+                <p class="text-xs uppercase tracking-widest text-slate-400" id="p2-label">Elite Bot</p>
+                <h2 id="score-p2" class="text-5xl font-bold score-board">0</h2>
+            </div>
+        </div>
+
+        <!-- Start/Settings Menu -->
+        <div id="menu" class="interactive bg-slate-900/90 p-8 rounded-3xl border border-slate-700 shadow-2xl text-center max-w-sm">
+            <h2 class="text-3xl font-bold text-white mb-2">Game Setup</h2>
+            <p class="text-slate-400 text-sm mb-6">AI now predicts ball trajectory!</p>
+            
+            <div class="space-y-4 mb-8">
+                <button onclick="startGame('bot')" class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-bold transition flex items-center justify-center gap-2">
+                    <span>Play vs Predictive AI</span>
+                </button>
+                <button onclick="startGame('multi')" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition flex items-center justify-center gap-2">
+                    <span>Local Multiplayer</span>
+                </button>
+            </div>
+
+            <div class="text-slate-400 text-xs text-left space-y-2">
+                <p><strong>P1:</strong> Mouse Move / Arrows</p>
+                <p><strong>P2 (Multi):</strong> A / D Keys</p>
+                <p><strong>Space:</strong> Serve Ball</p>
+            </div>
+        </div>
+
+        <!-- Win/Loss Message -->
+        <div id="result-overlay" class="hidden flex flex-col items-center">
+             <h2 id="result-text" class="text-6xl font-black text-white mb-8 italic">PLAYER 1 WINS!</h2>
+             <button onclick="location.reload()" class="interactive px-10 py-4 bg-white text-black font-bold rounded-full hover:bg-sky-400 transition uppercase">Rematch</button>
+        </div>
+
+        <div class="pb-4 text-slate-500 text-[10px] uppercase tracking-tighter">Advanced AI Trajectory Prediction Enabled</div>
+    </div>
+
+    <script>
+        let scene, camera, renderer, ball, paddle1, paddle2, table;
+        let ballVelocity = new THREE.Vector3(0, 0, 0);
+        let score = { p1: 0, p2: 0 };
+        let gameActive = false;
+        let isMultiplayer = false;
+        let serveSide = 1;
+        
+        // AI Tracking variables
+        let aiTargetX = 0;
+        let aiReactionTimer = 0;
+
+        const TABLE_WIDTH = 10;
+        const TABLE_LENGTH = 18;
+        const PADDLE_WIDTH = 2.2;
+        const PADDLE_SPEED = 0.25;
+        const BALL_START_SPEED = 0.18;
+
+        const keys = {};
+        const mouse = new THREE.Vector2();
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0f1a);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 8, 14);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const spotLight = new THREE.SpotLight(0xffffff, 1.2);
+            spotLight.position.set(0, 20, 0);
+            spotLight.castShadow = true;
+            spotLight.shadow.mapSize.width = 1024;
+            spotLight.shadow.mapSize.height = 1024;
+            scene.add(spotLight);
+
+            const tableGeo = new THREE.BoxGeometry(TABLE_WIDTH, 0.5, TABLE_LENGTH);
+            const tableMat = new THREE.MeshPhongMaterial({ color: 0x1e3a8a, shininess: 100 });
+            table = new THREE.Mesh(tableGeo, tableMat);
+            table.receiveShadow = true;
+            scene.add(table);
+
+            const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const centerLine = new THREE.Mesh(new THREE.PlaneGeometry(0.1, TABLE_LENGTH), lineMat);
+            centerLine.rotation.x = -Math.PI / 2;
+            centerLine.position.y = 0.26;
+            scene.add(centerLine);
+
+            const net = new THREE.Mesh(new THREE.BoxGeometry(TABLE_WIDTH + 0.5, 1, 0.1), new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 }));
+            net.position.y = 0.75;
+            scene.add(net);
+
+            ball = new THREE.Mesh(new THREE.SphereGeometry(0.2, 32, 32), new THREE.MeshPhongMaterial({ color: 0xffaa00, emissive: 0xffaa00, emissiveIntensity: 0.2 }));
+            ball.castShadow = true;
+            ball.position.set(0, 1, 0);
+            scene.add(ball);
+
+            const paddleGeo = new THREE.BoxGeometry(PADDLE_WIDTH, 0.4, 0.8);
+            paddle1 = new THREE.Mesh(paddleGeo, new THREE.MeshPhongMaterial({ color: 0xef4444 }));
+            paddle1.position.set(0, 0.4, 8.5);
+            paddle1.castShadow = true;
+            scene.add(paddle1);
+
+            paddle2 = new THREE.Mesh(paddleGeo, new THREE.MeshPhongMaterial({ color: 0x3b82f6 }));
+            paddle2.position.set(0, 0.4, -8.5);
+            paddle2.castShadow = true;
+            scene.add(paddle2);
+
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshPhongMaterial({ color: 0x050505 }));
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('keydown', e => { 
+                keys[e.code] = true; 
+                if(e.code === 'Space' && !gameActive) serveBall();
+            });
+            window.addEventListener('keyup', e => keys[e.code] = false);
+            window.addEventListener('mousemove', e => {
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            });
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function startGame(mode) {
+            isMultiplayer = mode === 'multi';
+            document.getElementById('menu').classList.add('hidden');
+            document.getElementById('p2-label').innerText = isMultiplayer ? "Player 2" : "Predictive AI";
+            resetBall();
+        }
+
+        function resetBall() {
+            gameActive = false;
+            ball.position.set(0, 1, (TABLE_LENGTH/2 - 1) * serveSide);
+            ballVelocity.set(0, 0, 0);
+            aiTargetX = 0;
+            document.getElementById('game-status').innerText = "Press Space to Serve";
+        }
+
+        function serveBall() {
+            gameActive = true;
+            const zDir = -serveSide;
+            ballVelocity.set((Math.random() - 0.5) * 0.15, 0.15, zDir * BALL_START_SPEED);
+            document.getElementById('game-status').innerText = "In Play";
+        }
+
+        function predictAILanding() {
+            // Simple linear prediction of where the ball will be when Z = -8.5
+            if (ballVelocity.z >= 0) {
+                // Ball is moving away from AI, return to center
+                return 0;
+            }
+            
+            const distZ = Math.abs(ball.position.z - (-8.5));
+            const timeToReach = distZ / Math.abs(ballVelocity.z);
+            let predictedX = ball.position.x + (ballVelocity.x * timeToReach);
+            
+            // Account for wall bounces if we added walls, but here just clamp to table
+            return THREE.MathUtils.clamp(predictedX, -TABLE_WIDTH/2 + 0.5, TABLE_WIDTH/2 - 0.5);
+        }
+
+        function update() {
+            // P1 Movement
+            if (keys['ArrowLeft']) paddle1.position.x -= PADDLE_SPEED;
+            if (keys['ArrowRight']) paddle1.position.x += PADDLE_SPEED;
+            if (!keys['ArrowLeft'] && !keys['ArrowRight']) {
+                paddle1.position.x = THREE.MathUtils.lerp(paddle1.position.x, mouse.x * (TABLE_WIDTH / 2), 0.25);
+            }
+
+            // P2 / AI Movement
+            if (isMultiplayer) {
+                if (keys['KeyA']) paddle2.position.x -= PADDLE_SPEED;
+                if (keys['KeyD']) paddle2.position.x += PADDLE_SPEED;
+            } else {
+                // Advanced AI Logic
+                aiReactionTimer++;
+                if (aiReactionTimer % 10 === 0) { // Update prediction every 10 frames for "human" delay
+                    aiTargetX = predictAILanding();
+                }
+                
+                const currentX = paddle2.position.x;
+                const distToTarget = aiTargetX - currentX;
+                const aiSpeed = 0.18; // Elite speed
+
+                if (Math.abs(distToTarget) > 0.1) {
+                    paddle2.position.x += Math.sign(distToTarget) * aiSpeed;
+                }
+            }
+
+            // Constraints
+            paddle1.position.x = THREE.MathUtils.clamp(paddle1.position.x, -TABLE_WIDTH/2 + 1, TABLE_WIDTH/2 - 1);
+            paddle2.position.x = THREE.MathUtils.clamp(paddle2.position.x, -TABLE_WIDTH/2 + 1, TABLE_WIDTH/2 - 1);
+
+            if (gameActive) {
+                ball.position.add(ballVelocity);
+                ballVelocity.y -= 0.006; // Gravity
+
+                // Table bounce
+                if (ball.position.y <= 0.4 && Math.abs(ball.position.x) < TABLE_WIDTH/2 && Math.abs(ball.position.z) < TABLE_LENGTH/2) {
+                    ball.position.y = 0.4;
+                    ballVelocity.y *= -0.95; // Energy loss
+                }
+
+                checkCollision(paddle1, 1);
+                checkCollision(paddle2, -1);
+
+                // Scoring
+                if (ball.position.z > 10) scorePoint('p2');
+                else if (ball.position.z < -10) scorePoint('p1');
+                else if (ball.position.y < -4) scorePoint(ball.position.z > 0 ? 'p2' : 'p1');
+            }
+        }
+
+        function checkCollision(paddle, side) {
+            const paddleBox = new THREE.Box3().setFromObject(paddle);
+            const ballBox = new THREE.Box3().setFromObject(ball);
+
+            if (paddleBox.intersectsBox(ballBox)) {
+                // Reverse Z and increase speed
+                ballVelocity.z *= -1.15;
+                ballVelocity.y = 0.18;
+                
+                // Transfer momentum from paddle movement to ball X
+                const impactFactor = (ball.position.x - paddle.position.x) / (PADDLE_WIDTH / 2);
+                ballVelocity.x = impactFactor * 0.2;
+                
+                // Prevent multi-collision
+                ball.position.z = side * (Math.abs(paddle.position.z) - 0.6);
+            }
+        }
+
+        function scorePoint(winner) {
+            score[winner]++;
+            document.getElementById(`score-${winner}`).innerText = score[winner];
+            serveSide = winner === 'p1' ? 1 : -1;
+            
+            if (score[winner] >= 11) {
+                endGame(winner);
+            } else {
+                resetBall();
+            }
+        }
+
+        function endGame(winner) {
+            gameActive = false;
+            const text = winner === 'p1' ? "YOU WIN!" : (isMultiplayer ? "P2 WINS!" : "AI WINS!");
+            document.getElementById('result-text').innerText = text;
+            document.getElementById('result-overlay').classList.remove('hidden');
+            document.getElementById('game-status').classList.add('hidden');
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+            renderer.render(scene, camera);
+        }
+
+        window.onload = () => {
+            init();
+            animate();
+        };
+    </script>
+</body>
+</html>

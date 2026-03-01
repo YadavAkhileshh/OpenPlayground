@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>Impossible Dodger PRO</title>
+
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+:root {
+  --bg1: #0f2027;
+  --bg2: #203a43;
+  --bg3: #2c5364;
+  --game-bg: #111;
+  --player: #00ff88;
+  --enemy: #ff3b3b;
+  --text: white;
+  --glow: #00f7ff;
+}
+
+body.light {
+  --bg1: #e0eafc;
+  --bg2: #cfdef3;
+  --bg3: #ffffff;
+  --game-bg: #f4f4f4;
+  --player: #0077ff;
+  --enemy: #ff0055;
+  --text: #111;
+  --glow: #0077ff;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  color: var(--text);
+  background: linear-gradient(-45deg, var(--bg1), var(--bg2), var(--bg3), var(--bg1));
+  background-size: 400% 400%;
+  animation: gradientMove 15s ease infinite;
+  overflow-x: hidden;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* 🌌 Parallax stars */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 200%;
+  background-image: radial-gradient(white 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.08;
+  animation: starMove 80s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes starMove {
+  from { transform: translate(0,0); }
+  to { transform: translate(-500px,-500px); }
+}
+
+/* Game container */
+.game {
+  width: 600px;
+  height: 400px;
+  margin: 20px auto;
+  background: var(--game-bg);
+  border: 2px solid var(--glow);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 20px var(--glow);
+  transition: box-shadow 0.5s ease;
+}
+
+.game:hover {
+  box-shadow: 0 0 35px var(--glow);
+}
+
+/* Screen shake */
+.shake { animation: shake 0.3s; }
+@keyframes shake {
+  0% { transform: translate(0,0); }
+  25% { transform: translate(-5px,5px); }
+  50% { transform: translate(5px,-5px); }
+  75% { transform: translate(-5px,5px); }
+  100% { transform: translate(0,0); }
+}
+
+/* Player */
+.player {
+  width: 30px;
+  height: 30px;
+  background: var(--player);
+  position: absolute;
+  border-radius: 6px;
+  box-shadow: 0 0 12px var(--player);
+}
+
+.glowBurst { animation: glowPop 0.3s ease-out; }
+@keyframes glowPop {
+  0% { box-shadow: 0 0 5px var(--player); }
+  50% { box-shadow: 0 0 35px var(--player); }
+  100% { box-shadow: 0 0 10px var(--player); }
+}
+
+/* Enemy */
+.enemy {
+  width: 30px;
+  height: 30px;
+  background: var(--enemy);
+  position: absolute;
+  border-radius: 6px;
+  box-shadow: 0 0 10px var(--enemy);
+  animation: enemyAppear 0.25s ease-out;
+}
+
+@keyframes enemyAppear {
+  from { transform: scale(0.3); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Trail */
+.trail {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: var(--player);
+  opacity: 0.15;
+  border-radius: 6px;
+  animation: trailFade 0.4s linear forwards;
+}
+
+@keyframes trailFade {
+  to { opacity: 0; transform: scale(0.7); }
+}
+
+/* Buttons */
+button {
+  padding: 10px 20px;
+  margin: 10px;
+  font-size: 15px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  color: white;
+  background: linear-gradient(45deg, #00c6ff, #0072ff);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 0 15px #00c6ff;
+}
+
+button:active {
+  transform: scale(0.95);
+}
+</style>
+</head>
+
+<body>
+<h1>⚡ IMPOSSIBLE DODGER PRO</h1>
+<p>Arrow Keys to Move | P to Pause</p>
+<div id="root"></div>
+
+<script type="text/babel">
+function Game() {
+  const gameWidth = 600;
+  const gameHeight = 400;
+
+  const [player, setPlayer] = React.useState({ x: 50, y: 180 });
+  const [enemies, setEnemies] = React.useState([]);
+  const [trail, setTrail] = React.useState([]);
+  const [speed, setSpeed] = React.useState(2);
+  const [score, setScore] = React.useState(0);
+  const [gameOver, setGameOver] = React.useState(false);
+  const [paused, setPaused] = React.useState(false);
+  const [dark, setDark] = React.useState(true);
+  const [shake, setShake] = React.useState(false);
+  const [glow, setGlow] = React.useState(false);
+
+  React.useEffect(() => {
+    document.body.className = dark ? "" : "light";
+  }, [dark]);
+
+  React.useEffect(() => {
+    const handleKey = (e) => {
+      if (gameOver) return;
+
+      if (e.key === "p") {
+        setPaused(p => !p);
+        return;
+      }
+
+      if (paused) return;
+
+      setPlayer(p => {
+        let { x, y } = p;
+        if (e.key === "ArrowUp") y -= 15;
+        if (e.key === "ArrowDown") y += 15;
+        if (e.key === "ArrowLeft") x -= 15;
+        if (e.key === "ArrowRight") x += 15;
+
+        setGlow(true);
+        setTimeout(() => setGlow(false), 200);
+        setTrail(t => [...t, { ...p, id: Date.now() }]);
+
+        return {
+          x: Math.max(0, Math.min(gameWidth - 30, x)),
+          y: Math.max(0, Math.min(gameHeight - 30, y))
+        };
+      });
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [gameOver, paused]);
+
+  React.useEffect(() => {
+    const t = setInterval(() => setTrail(tr => tr.slice(-6)), 100);
+    return () => clearInterval(t);
+  }, []);
+
+  React.useEffect(() => {
+    if (gameOver || paused) return;
+
+    const interval = setInterval(() => {
+      if (Math.random() < 0.04 + score / 5000) {
+        setEnemies(e => [...e, { x: gameWidth, y: Math.random() * (gameHeight - 30) }]);
+      }
+
+      setEnemies(e => e.map(en => ({ ...en, x: en.x - speed })).filter(en => en.x > -30));
+
+      if (score % 500 === 0) setSpeed(s => s + 0.5);
+      setScore(s => s + 1);
+    }, 20);
+
+    return () => clearInterval(interval);
+  }, [speed, gameOver, paused, score]);
+
+  React.useEffect(() => {
+    enemies.forEach(en => {
+      if (
+        player.x < en.x + 30 &&
+        player.x + 30 > en.x &&
+        player.y < en.y + 30 &&
+        player.y + 30 > en.y
+      ) {
+        setShake(true);
+        setTimeout(() => setShake(false), 300);
+        setGameOver(true);
+      }
+    });
+  }, [enemies, player]);
+
+  const restart = () => {
+    setPlayer({ x: 50, y: 180 });
+    setEnemies([]);
+    setSpeed(2);
+    setScore(0);
+    setGameOver(false);
+  };
+
+  return (
+    <div>
+      <h2>Score: {score}</h2>
+      {gameOver && <h2>💀 GAME OVER</h2>}
+      {paused && !gameOver && <h2>⏸ PAUSED</h2>}
+
+      <div className={`game ${shake ? "shake" : ""}`}>
+        {trail.map(t => <div key={t.id} className="trail" style={{ left: t.x, top: t.y }}></div>)}
+        <div className={`player ${glow ? "glowBurst" : ""}`} style={{ left: player.x, top: player.y }}></div>
+        {enemies.map((en, i) => (
+          <div key={i} className="enemy" style={{ left: en.x, top: en.y }}></div>
+        ))}
+      </div>
+
+      <button onClick={() => setDark(d => !d)}>Toggle Theme 🌗</button>
+      <button onClick={() => setPaused(p => !p)}>Pause ⏸</button>
+      {gameOver && <button onClick={restart}>Restart 🔥</button>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Game />);
+</script>
+</body>
+</html>

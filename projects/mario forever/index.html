@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🕹️ Mario Forever - PROFESSIONAL</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Arial Black', Arial, sans-serif;
+      background: linear-gradient(45deg, #87CEEB, #98D8E8, #E0F6FF);
+      color: #333; overflow-x: hidden; height: 100vh;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; padding: 20px;
+    }
+    .screen { 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
+    }
+    .screen.hidden { display: none !important; }
+    .title { font-size: 4.5em; color: #FFD700; text-shadow: 0 0 30px #FF4500; margin-bottom: 60px; animation: glow 2s infinite; }
+    @keyframes glow { 0%,100%{text-shadow:0 0 20px #FF4500;} 50%{text-shadow:0 0 50px #FFD700;} }
+    .level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; max-width: 1000px; padding: 20px; }
+    .level-btn { 
+      width: 160px; height: 120px; border: none; border-radius: 20px; 
+      font-size: 22px; font-weight: bold; cursor: pointer; color: white;
+      transition: all 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .level-btn:hover { transform: scale(1.1); box-shadow: 0 20px 50px rgba(0,0,0,0.7); }
+    .play-btn { padding: 25px 60px; font-size: 32px; border-radius: 40px; border: none; cursor: pointer; margin: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); background: linear-gradient(45deg,#FF4500,#FF6347); color: white; }
+    .game-container { width: 100%; max-width: 1100px; margin: 0 auto; }
+    canvas { border: 6px solid #333; border-radius: 25px; box-shadow: 0 25px 70px rgba(0,0,0,0.6); display: none; width: 100%; height: auto; }
+    .ui { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); padding: 25px 50px; border-radius: 25px; color: white; font-size: 22px; display: flex; gap: 40px; z-index: 100; }
+    .controls { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.95); padding: 20px 40px; border-radius: 25px; font-size: 18px; text-align: center; }
+    .game-over { 
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); 
+      background: linear-gradient(45deg, rgba(0,0,0,0.95), rgba(139,0,0,0.9)); 
+      color: white; padding: 60px; border-radius: 30px; text-align: center; 
+      display: none; z-index: 2000; border: 5px solid #FFD700; 
+      box-shadow: 0 30px 100px rgba(255,69,0,0.6); 
+    }
+  </style>
+</head>
+<body>
+  <!-- START SCREEN -->
+  <div id="startScreen" class="screen">
+    <h1 class="title">🌟 MARIO FOREVER 🌟</h1>
+    <button class="play-btn" onclick="showLevels()">🎮 START ADVENTURE</button>
+  </div>
+
+  <!-- 10 LEVELS SCREEN -->
+  <div id="levelsScreen" class="screen hidden">
+    <h1 style="color:#FFD700;font-size:3em;margin-bottom:30px;">🏰 SELECT LEVEL</h1>
+    <div class="level-grid">
+      <button class="level-btn" style="background:#4CAF50;" onclick="loadLevel(0)">1<br>CLASSIC</button>
+      <button class="level-btn" style="background:#FF9800;" onclick="loadLevel(1)">2<br>DESERT</button>
+      <button class="level-btn" style="background:#2196F3;" onclick="loadLevel(2)">3<br>OCEAN</button>
+      <button class="level-btn" style="background:#9C27B0;" onclick="loadLevel(3)">4<br>NIGHT</button>
+      <button class="level-btn" style="background:#8BC34A;" onclick="loadLevel(4)">5<br>JUNGLE</button>
+      <button class="level-btn" style="background:#00BCD4;" onclick="loadLevel(5)">6<br>ICE</button>
+      <button class="level-btn" style="background:#F44336;" onclick="loadLevel(6)">7<br>LAVA</button>
+      <button class="level-btn" style="background:#FFC107;" onclick="loadLevel(7)">8<br>SKY</button>
+      <button class="level-btn" style="background:#673AB7;" onclick="loadLevel(8)">9<br>GHOST</button>
+      <button class="level-btn" style="background:#FF5722;" onclick="loadLevel(9)">10<br>FINAL</button>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div class="game-container">
+    <div class="ui" id="ui" style="display:none;">
+      <div>⭐ <span id="score">0</span></div>
+      <div>❤️ <span id="lives">3</span></div>
+      <div>🌍 Level <span id="levelNum">1</span></div>
+    </div>
+    <canvas id="gameCanvas" width="1100" height="700"></canvas>
+    <div class="controls" id="controls" style="display:none;">
+      🎮 A/D=Move | SHIFT=Run | W/Space=Jump | Click Canvas!
+    </div>
+  </div>
+
+  <!-- GAME OVER SCREEN - FIXED! -->
+  <div class="game-over" id="gameOver">
+    <h2 id="gameOverTitle" style="font-size:3em;margin-bottom:20px;">💀 GAME OVER</h2>
+    <p id="finalScore" style="font-size:24px;margin-bottom:30px;">Score: 0</p>
+    <button onclick="restartGame()" style="padding:20px 40px;font-size:24px;background:#4CAF50;color:white;border:none;border-radius:20px;margin:10px;cursor:pointer;">🔄 RESTART LEVEL</button>
+    <button onclick="showLevels()" style="padding:20px 40px;font-size:24px;background:#FF9800;color:white;border:none;border-radius:20px;margin:10px;cursor:pointer;">🏰 LEVEL SELECT</button>
+  </div>
+
+  <script>
+    const LEVEL_DATA = [
+      {name:'CLASSIC', bg:'#87CEEB', ground:'#8B4513', bossColor:'#8B0000', enemyColor:'#8B4513'},
+      {name:'DESERT', bg:'#F4A460', ground:'#CD853F', bossColor:'#D2691E', enemyColor:'#A0522D'},
+      {name:'OCEAN', bg:'#4682B4', ground:'#228B22', bossColor:'#006994', enemyColor:'#1E90FF'},
+      {name:'NIGHT', bg:'#1a1a2e', ground:'#4A4A4A', bossColor:'#2F4F4F', enemyColor:'#696969'},
+      {name:'JUNGLE', bg:'#228B22', ground:'#8B4513', bossColor:'#654321', enemyColor:'#228B22'},
+      {name:'ICE', bg:'#ADD8E6', ground:'#4682B4', bossColor:'#4682B4', enemyColor:'#B0E0E6'},
+      {name:'LAVA', bg:'#FF4500', ground:'#FF8C00', bossColor:'#B22222', enemyColor:'#DC143C'},
+      {name:'SKY', bg:'#87CEEB', ground:'#87CEFA', bossColor:'#4682B4', enemyColor:'#4169E1'},
+      {name:'GHOST', bg:'#4B0082', ground:'#800080', bossColor:'#9370DB', enemyColor:'#BA55D3'},
+      {name:'FINAL', bg:'#FFEBCD', ground:'#D2691E', bossColor:'#FF4444', enemyColor:'#FF0000'} // FIXED BROWN!
+    ];
+
+    let currentLevel = 0, player = {}, objects = [], gameRunning = false, keys = {}, gameState = 'menu';
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function showLevels() {
+      hideAllScreens();
+      document.getElementById('levelsScreen').classList.remove('hidden');
+    }
+
+    function hideAllScreens() {
+      document.querySelectorAll('.screen, .game-over').forEach(s => s.classList.add('hidden'));
+      document.getElementById('gameOver').style.display = 'none';
+    }
+
+    function loadLevel(level) {
+      currentLevel = level;
+      const levelData = LEVEL_DATA[level];
+      
+      hideAllScreens();
+      gameState = 'playing';
+      
+      document.body.style.background = levelData.bg;
+      document.getElementById('ui').style.display = 'flex';
+      document.getElementById('controls').style.display = 'block';
+      canvas.style.display = 'block';
+      document.getElementById('levelNum').textContent = level + 1;
+      
+      // Reset player
+      player = {x:100,y:400,w:40,h:50,vx:0,vy:0,onGround:false,lives:3,score:0};
+      
+      // Level objects
+      objects = [
+        {x:0,y:550,w:400,h:50,type:'ground'}, {x:500,y:550,w:300,h:50,type:'ground'},
+        {x:900,y:550,w:400,h:50,type:'ground'}, {x:1400,y:550,w:500,h:50,type:'ground'},
+        {x:2000,y:550,w:400,h:50,type:'ground'}, {x:2600,y:550,w:400,h:50,type:'ground'},
+        {x:150,y:450,w:150,h:20,type:'platform'}, {x:700,y:420,w:180,h:20,type:'platform'},
+        {x:170,y:420,w:20,h:20,type:'coin'}, {x:800,y:390,w:20,h:20,type:'coin'},
+        {x:300,y:520,w:32,h:32,type:'enemy',vx:1}, {x:1200,y:520,w:32,h:32,type:'enemy',vx:-1},
+        {x:3200,y:300,w:180,h:level===9?320:280,type:level===9?'monster':'boss'},
+        {x:3150,y:520,w:250,h:80,type:'ground'}
+      ];
+      
+      gameRunning = true;
+      canvas.focus();
+    }
+
+    function restartGame() {
+      loadLevel(currentLevel); // Restart same level
+    }
+
+    function gameOver(isWin) {
+      gameRunning = false;
+      gameState = 'gameOver';
+      
+      const levelData = LEVEL_DATA[currentLevel];
+      const title = isWin ? (currentLevel === 9 ? '👹 MONSTER DEFEATED!' : '🏆 LEVEL COMPLETE!') : '💀 GAME OVER';
+      const message = isWin ? `Level ${currentLevel+1} Complete!` : `Level ${currentLevel+1} Failed`;
+      
+      document.getElementById('gameOverTitle').textContent = title;
+      document.getElementById('finalScore').textContent = `${message} - Score: ${player.score}`;
+      document.getElementById('gameOver').style.display = 'block';
+    }
+
+    function collides(a, b) {
+      return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    function updatePlayer() {
+      const p = player;
+      const speed = keys['ShiftLeft'] ? 6 : 4;
+      
+      p.vx = 0;
+      if(keys['ArrowLeft'] || keys['KeyA']) p.vx = -speed;
+      if(keys['ArrowRight'] || keys['KeyD']) p.vx = speed;
+      if((keys['ArrowUp'] || keys['KeyW'] || keys['Space']) && p.onGround) p.vy = -15;
+      
+      p.vy += 0.8;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.onGround = false;
+
+      // Collisions
+      for(let i = objects.length - 1; i >= 0; i--) {
+        const obj = objects[i];
+        if(collides(p, obj)) {
+          if(['ground','platform'].includes(obj.type)) {
+            if(p.vy > 0 && p.y < obj.y) {
+              p.y = obj.y - p.h; p.vy = 0; p.onGround = true;
+            }
+          }
+          if(obj.type === 'coin') {
+            objects.splice(i, 1); p.score += 200;
+          }
+          if(obj.type === 'enemy') {
+            if(p.vy > 0 && p.y < obj.y - 10) {
+              objects.splice(i, 1); p.score += 100; p.vy = -12;
+            } else {
+              p.lives--;
+              if(p.lives <= 0) gameOver(false);
+              else { p.x = 100; p.y = 400; }
+            }
+          }
+          if(obj.type === 'boss' || obj.type === 'monster') {
+            gameOver(true); // WIN!
+          }
+        }
+      }
+
+      if(p.y > 700) {
+        p.lives--;
+        if(p.lives <= 0) gameOver(false);
+        else { p.x = 100; p.y = 400; }
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if(gameState !== 'playing') return;
+      
+      const camX = Math.max(0, Math.min(player.x - 550, 3400 - 1100));
+      const levelData = LEVEL_DATA[currentLevel];
+      
+      // Background
+      ctx.fillStyle = levelData.bg; ctx.fillRect(0, 0, canvas.width, 450);
+      ctx.fillStyle = levelData.ground; ctx.fillRect(0, 450, canvas.width, 250);
+
+      // Objects
+      [player, ...objects].forEach(obj => {
+        ctx.save();
+        ctx.translate(obj.x - camX, obj.y);
+        
+        if(obj === player) {
+          // Mario
+          ctx.fillStyle = '#C41E3A'; ctx.fillRect(5, 0, 30, 15);
+          ctx.fillStyle = '#FDBCB4'; ctx.fillRect(8, 5, 24, 18);
+          ctx.fillStyle = '#FFF'; ctx.fillRect(12, 9, 5, 5); ctx.fillRect(23, 9, 5, 5);
+          ctx.fillStyle = '#000'; ctx.fillRect(14, 10, 3, 3); ctx.fillRect(25, 10, 3, 3);
+          ctx.fillStyle = '#4169E1'; ctx.fillRect(2, 23, 36, 27);
+        }
+        else if(['ground','platform'].includes(obj.type)) {
+          ctx.fillStyle = levelData.ground; ctx.fillRect(0, 0, obj.w, obj.h);
+          ctx.fillStyle = '#654321'; for(let x=0; x<obj.w; x+=10) ctx.fillRect(x, 0, 5, obj.h);
+        }
+        else if(obj.type === 'coin') {
+          ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.arc(10, 10, 10, 0, Math.PI*2); ctx.fill();
+        }
+        else if(obj.type === 'enemy') {
+          ctx.fillStyle = levelData.enemyColor;
+          ctx.fillRect(0, 0, 32, 28); ctx.fillRect(5, 24, 22, 6);
+          ctx.fillStyle = '#FFF'; ctx.fillRect(10, 6, 4, 4); ctx.fillRect(18, 6, 4, 4);
+        }
+        else if(obj.type === 'boss') {
+          ctx.fillStyle = levelData.bossColor; ctx.fillRect(0, 0, obj.w, obj.h);
+          ctx.fillStyle = '#FFD700'; ctx.font = 'bold 28px Arial'; ctx.textAlign = 'center';
+          ctx.fillText('🏰 BOSS', obj.w/2, obj.h/2);
+        }
+        else if(obj.type === 'monster') {
+          ctx.fillStyle = '#4A4A4A'; ctx.fillRect(0, 0, obj.w, obj.h);
+          ctx.fillStyle = levelData.bossColor; ctx.fillRect(20, 20, 140, 100);
+          ctx.fillStyle = '#FFFF00'; ctx.beginPath(); ctx.arc(65, 65, 35, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = '#FFD700'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center';
+          ctx.fillText('👹 MONSTER', obj.w/2, obj.h-30);
+        }
+        ctx.restore();
+      });
+    }
+
+    function updateUI() {
+      document.getElementById('score').textContent = player.score;
+      document.getElementById('lives').textContent = player.lives || 0;
+    }
+
+    // Events
+    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keyup', e => keys[e.code] = false);
+    canvas.addEventListener('click', () => canvas.focus());
+
+    function gameLoop() {
+      if(gameState === 'playing' && gameRunning) updatePlayer();
+      render();
+      if(gameState === 'playing') updateUI();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>
