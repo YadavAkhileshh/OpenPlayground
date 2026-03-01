@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coral Garden · Reef Ecosystem</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Poppins', 'Arial', sans-serif;
+            background-color: #0a2a3a;
+            color: #e0f0ff;
+        }
+        #reef-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            background: rgba(0, 40, 50, 0.8);
+            backdrop-filter: blur(12px);
+            border: 2px solid #3ac0d0;
+            border-radius: 50px;
+            padding: 12px 32px;
+            display: flex;
+            gap: 40px;
+            border-left: 6px solid #5ae0ff;
+            box-shadow: 0 0 40px rgba(90, 200, 255, 0.3);
+            pointer-events: none;
+        }
+        .reef-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .reef-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #9ae0ff;
+            letter-spacing: 2px;
+        }
+        .reef-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #ffffff, #9ae0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #marine-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 40, 50, 0.85);
+            backdrop-filter: blur(16px);
+            border: 2px solid #3ac0d0;
+            border-radius: 50px;
+            padding: 20px 32px;
+            z-index: 50;
+            border-right: 6px solid #5ae0ff;
+            min-width: 280px;
+            box-shadow: 0 15px 35px rgba(0, 80, 100, 0.6);
+        }
+        .marine-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 1rem;
+            border-bottom: 1px solid #1a6a7a;
+            padding-bottom: 5px;
+        }
+        .marine-label {
+            color: #9ae0ff;
+        }
+        .marine-value {
+            font-weight: 600;
+            color: #e0f0ff;
+        }
+        .pulse-reef {
+            width: 14px;
+            height: 14px;
+            background: #5ae0ff;
+            border-radius: 50%;
+            box-shadow: 0 0 30px #5ae0ff;
+            animation: reef-pulse 2.2s infinite;
+        }
+        @keyframes reef-pulse {
+            0% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.4); background: #9ae0ff; }
+            100% { opacity: 0.6; transform: scale(1); }
+        }
+        #environment-tag {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(0, 40, 50, 0.8);
+            backdrop-filter: blur(8px);
+            border: 2px solid #3ac0d0;
+            border-radius: 40px;
+            padding: 12px 28px;
+            z-index: 50;
+            border-left: 4px solid #5ae0ff;
+            color: #e0f0ff;
+        }
+        .reef-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #5ae0ff;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 15px #5ae0ff;
+        }
+        #water-stats {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0, 40, 50, 0.85);
+            backdrop-filter: blur(8px);
+            border: 2px solid #ffaa44;
+            border-radius: 40px;
+            padding: 16px 28px;
+            z-index: 50;
+            text-align: right;
+            border-bottom: 4px solid #ffcc66;
+        }
+        .glow-number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff, #ffcc66);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="reef-panel">
+        <div class="reef-item">
+            <span class="reef-label">reef</span>
+            <span class="reef-value">GREAT BARRIER</span>
+        </div>
+        <div class="reef-item">
+            <span class="reef-label">temp</span>
+            <span class="reef-value" id="water-temp">26°C</span>
+        </div>
+        <div class="reef-item">
+            <span class="reef-label">visibility</span>
+            <span class="reef-value" id="visibility">28m</span>
+        </div>
+    </div>
+
+    <div id="marine-panel">
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+            <span class="pulse-reef"></span>
+            <span style="font-weight: 600; font-size: 1.3rem;">🐠 MARINE LIFE</span>
+        </div>
+        <div class="marine-row">
+            <span class="marine-label">coral species</span>
+            <span class="marine-value" id="coral-species">147</span>
+        </div>
+        <div class="marine-row">
+            <span class="marine-label">fish count</span>
+            <span class="marine-value" id="fish-count">2,847</span>
+        </div>
+        <div class="marine-row">
+            <span class="marine-label">turtles</span>
+            <span class="marine-value" id="turtles">23</span>
+        </div>
+        <div class="marine-row">
+            <span class="marine-label">rays</span>
+            <span class="marine-value" id="rays">12</span>
+        </div>
+        <div class="marine-row">
+            <span class="marine-label">sharks</span>
+            <span class="marine-value" id="sharks">5</span>
+        </div>
+    </div>
+
+    <div id="environment-tag">
+        <span class="reef-icon"></span> <span>sunlight · gentle current · 18m depth</span>
+    </div>
+
+    <div id="water-stats">
+        <div style="font-size:1rem;">💧 WATER QUALITY</div>
+        <div class="glow-number" id="ph">pH 8.2</div>
+        <div style="font-size:0.8rem;">salinity 35ppt · O₂ 6.4mg/l</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- Scene setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a4a6a);
+        scene.fog = new THREE.FogExp2(0x1a4a6a, 0.008);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(15, 8, 25);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = false;
+        document.body.appendChild(renderer.domElement);
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.3;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.minDistance = 10;
+        controls.maxDistance = 60;
+        
+        // --- Lighting (underwater, caustic-like) ---
+        const ambient = new THREE.AmbientLight(0x204060);
+        scene.add(ambient);
+        
+        const sunLight = new THREE.DirectionalLight(0xcce0ff, 1.2);
+        sunLight.position.set(20, 30, 15);
+        scene.add(sunLight);
+        
+        // Additional colored lights for reef effect
+        const colors = [0x3ac0d0, 0xffaa88, 0x88dd88, 0xff88aa];
+        for (let i = 0; i < 6; i++) {
+            const light = new THREE.PointLight(colors[Math.floor(Math.random() * colors.length)], 0.6, 20);
+            light.position.set(
+                (Math.random() - 0.5) * 20,
+                5 + Math.random() * 8,
+                (Math.random() - 0.5) * 20
+            );
+            scene.add(light);
+        }
+        
+        // --- Sand ground ---
+        const sandGeo = new THREE.CircleGeometry(50, 32);
+        const sandMat = new THREE.MeshStandardMaterial({ color: 0xddbb88, roughness: 0.7 });
+        const sand = new THREE.Mesh(sandGeo, sandMat);
+        sand.rotation.x = -Math.PI / 2;
+        sand.position.y = -1;
+        sand.receiveShadow = true;
+        scene.add(sand);
+        
+        // --- Coral formations ---
+        function createCoral(x, z, size, color) {
+            const group = new THREE.Group();
+            
+            // Base
+            const baseGeo = new THREE.CylinderGeometry(0.5 * size, 0.7 * size, 0.8 * size, 5);
+            const baseMat = new THREE.MeshStandardMaterial({ color: color, emissive: 0x221100 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = 0.4 * size;
+            base.castShadow = true;
+            base.receiveShadow = true;
+            group.add(base);
+            
+            // Branches
+            for (let i = 0; i < 4; i++) {
+                const branchGeo = new THREE.CylinderGeometry(0.2 * size, 0.3 * size, 1.2 * size, 4);
+                const branch = new THREE.Mesh(branchGeo, baseMat);
+                branch.position.set(
+                    Math.cos(i * 1.57) * 0.8 * size,
+                    0.8 * size,
+                    Math.sin(i * 1.57) * 0.8 * size
+                );
+                branch.rotation.z = 0.2;
+                branch.castShadow = true;
+                group.add(branch);
+            }
+            
+            group.position.set(x, -1, z);
+            return group;
+        }
+        
+        // Place corals in a garden
+        const coralColors = [0xff88aa, 0xaa88ff, 0x88aaff, 0xffaa88, 0xaaff88];
+        for (let i = 0; i < 30; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 5 + Math.random() * 12;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const size = 0.6 + Math.random() * 0.8;
+            const color = coralColors[Math.floor(Math.random() * coralColors.length)];
+            const coral = createCoral(x, z, size, color);
+            scene.add(coral);
+        }
+        
+        // --- Anemones (simplified) ---
+        for (let i = 0; i < 15; i++) {
+            const x = (Math.random() - 0.5) * 20;
+            const z = (Math.random() - 0.5) * 20;
+            
+            const anemoneGroup = new THREE.Group();
+            anemoneGroup.position.set(x, -1, z);
+            
+            const stemGeo = new THREE.ConeGeometry(0.3, 1.0, 5);
+            const stemMat = new THREE.MeshStandardMaterial({ color: 0xff88aa });
+            const stem = new THREE.Mesh(stemGeo, stemMat);
+            stem.position.y = 0.5;
+            stem.castShadow = true;
+            anemoneGroup.add(stem);
+            
+            const tentacleMat = new THREE.MeshStandardMaterial({ color: 0xffaa88 });
+            for (let j = 0; j < 6; j++) {
+                const tentGeo = new THREE.ConeGeometry(0.1, 0.6, 4);
+                const tent = new THREE.Mesh(tentGeo, tentMat);
+                tent.position.set(
+                    Math.cos(j * 1.0) * 0.4,
+                    1.0,
+                    Math.sin(j * 1.0) * 0.4
+                );
+                tent.rotation.x = 0.3;
+                anemoneGroup.add(tent);
+            }
+            
+            scene.add(anemoneGroup);
+        }
+        
+        // --- Fish (small colored particles with motion) ---
+        const fish = [];
+        const fishCount = 80;
+        
+        function createFish(color) {
+            const group = new THREE.Group();
+            
+            const bodyGeo = new THREE.ConeGeometry(0.15, 0.3, 4);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: color });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.rotation.x = Math.PI/2;
+            body.castShadow = true;
+            group.add(body);
+            
+            return group;
+        }
+        
+        for (let i = 0; i < fishCount; i++) {
+            const colors = [0xffaa44, 0x44aaff, 0xff44aa, 0xaaff44, 0xaa44ff];
+            const fishColor = colors[Math.floor(Math.random() * colors.length)];
+            const fishObj = createFish(fishColor);
+            
+            fishObj.position.set(
+                (Math.random() - 0.5) * 30,
+                2 + Math.random() * 8,
+                (Math.random() - 0.5) * 30
+            );
+            
+            fishObj.userData = {
+                angle: Math.random() * Math.PI * 2,
+                speed: 0.01 + Math.random() * 0.02,
+                radius: 2 + Math.random() * 5,
+                height: fishObj.position.y,
+                phase: Math.random() * Math.PI * 2
+            };
+            
+            scene.add(fishObj);
+            fish.push(fishObj);
+        }
+        
+        // --- Sea turtles (simplified) ---
+        for (let i = 0; i < 3; i++) {
+            const turtleGroup = new THREE.Group();
+            
+            const bodyGeo = new THREE.SphereGeometry(0.5, 6);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6b8e4a });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.scale.set(1.2, 0.4, 0.8);
+            body.castShadow = true;
+            turtleGroup.add(body);
+            
+            turtleGroup.position.set(
+                (Math.random() - 0.5) * 15,
+                3,
+                (Math.random() - 0.5) * 15
+            );
+            
+            scene.add(turtleGroup);
+            
+            // Turtle label
+            const turtleDiv = document.createElement('div');
+            turtleDiv.textContent = '🐢 sea turtle';
+            turtleDiv.style.background = '#1a4a3a';
+            turtleDiv.style.color = '#aaffaa';
+            turtleDiv.style.borderRadius = '20px';
+            turtleDiv.style.padding = '2px 10px';
+            turtleDiv.style.fontSize = '10px';
+            const turtleLabel = new CSS2DObject(turtleDiv);
+            turtleLabel.position.copy(turtleGroup.position.clone().add(new THREE.Vector3(0, 1, 0)));
+            scene.add(turtleLabel);
+        }
+        
+        // --- Bubbles (particle system) ---
+        const bubbleGeo = new THREE.BufferGeometry();
+        const bubbleCount = 400;
+        const bubblePos = new Float32Array(bubbleCount * 3);
+        const bubbleSpeed = [];
+        for (let i = 0; i < bubbleCount; i++) {
+            bubblePos[i*3] = (Math.random() - 0.5) * 40;
+            bubblePos[i*3+1] = Math.random() * 20;
+            bubblePos[i*3+2] = (Math.random() - 0.5) * 40;
+            bubbleSpeed.push(0.01 + Math.random() * 0.02);
+        }
+        bubbleGeo.setAttribute('position', new THREE.BufferAttribute(bubblePos, 3));
+        const bubbleMat = new THREE.PointsMaterial({ color: 0xaaccff, size: 0.1, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+        const bubbles = new THREE.Points(bubbleGeo, bubbleMat);
+        scene.add(bubbles);
+        
+        // --- Animate ---
+        let time = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            time += 0.01;
+            
+            // Fish movement
+            fish.forEach(f => {
+                const data = f.userData;
+                data.angle += data.speed;
+                
+                f.position.x += Math.cos(data.angle) * 0.03;
+                f.position.z += Math.sin(data.angle) * 0.03;
+                
+                // Keep within bounds
+                if (Math.abs(f.position.x) > 20) f.position.x *= -0.9;
+                if (Math.abs(f.position.z) > 20) f.position.z *= -0.9;
+                
+                // Bobbing
+                f.position.y = data.height + Math.sin(time * 2 + data.phase) * 0.3;
+                
+                // Orientation
+                f.rotation.y = data.angle;
+            });
+            
+            // Bubbles rise
+            const bubblePositions = bubbles.geometry.attributes.position.array;
+            for (let i = 1; i < bubblePositions.length; i += 3) {
+                bubblePositions[i] += bubbleSpeed[Math.floor(i/3)] * 0.5;
+                if (bubblePositions[i] > 20) {
+                    bubblePositions[i] = 0;
+                    bubblePositions[i-1] = (Math.random() - 0.5) * 40;
+                    bubblePositions[i+1] = (Math.random() - 0.5) * 40;
+                }
+            }
+            bubbles.geometry.attributes.position.needsUpdate = true;
+            
+            // Update displays
+            document.getElementById('water-temp').innerText = (26 + Math.sin(time*0.5)*0.5).toFixed(1) + '°C';
+            document.getElementById('visibility').innerText = (28 + Math.sin(time*0.3)*2).toFixed(0) + 'm';
+            document.getElementById('coral-species').innerText = 147 + Math.floor(Math.sin(time)*3);
+            document.getElementById('fish-count').innerText = 2847 + Math.floor(Math.sin(time*2)*50);
+            document.getElementById('turtles').innerText = 23 + Math.floor(Math.sin(time)*2);
+            document.getElementById('rays').innerText = 12 + Math.floor(Math.sin(time*1.5)*1);
+            document.getElementById('sharks').innerText = 5 + Math.floor(Math.sin(time*2)*1);
+            document.getElementById('ph').innerText = 'pH ' + (8.2 + Math.sin(time*0.8)*0.1).toFixed(1);
+            
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

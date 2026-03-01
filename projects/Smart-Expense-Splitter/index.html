@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Expense Splitter - Split Bills Intelligently</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-calculator"></i>
+                <span>Smart Expense Splitter</span>
+            </div>
+            <div class="nav-controls">
+                <button id="theme-toggle" class="nav-btn" title="Toggle Dark Mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button id="save-expenses" class="nav-btn" title="Save Expenses">
+                    <i class="fas fa-save"></i>
+                </button>
+                <button id="load-expenses" class="nav-btn" title="Load Expenses">
+                    <i class="fas fa-folder-open"></i>
+                </button>
+                <button id="export-expenses" class="nav-btn" title="Export">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button id="analytics-toggle" class="nav-btn" title="Analytics Dashboard">
+                    <i class="fas fa-chart-bar"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Group Setup Section -->
+            <section class="group-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-users"></i> Group Setup</h2>
+                    <div class="currency-selector">
+                        <label for="currency">Currency:</label>
+                        <select id="currency">
+                            <option value="USD">USD ($)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="GBP">GBP (£)</option>
+                            <option value="JPY">JPY (¥)</option>
+                            <option value="INR">INR (₹)</option>
+                            <option value="CAD">CAD (C$)</option>
+                            <option value="AUD">AUD (A$)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="group-members">
+                    <div class="member-input">
+                        <input type="text" id="member-name" placeholder="Enter member name" maxlength="50">
+                        <button id="add-member" class="btn-primary">
+                            <i class="fas fa-plus"></i> Add Member
+                        </button>
+                    </div>
+                    <div id="members-list" class="members-list">
+                        <!-- Members will be populated here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Expense Entry Section -->
+            <section class="expense-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-receipt"></i> Add Expense</h2>
+                </div>
+
+                <div class="expense-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expense-description">Description:</label>
+                            <input type="text" id="expense-description" placeholder="e.g., Dinner at Restaurant" maxlength="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-amount">Amount:</label>
+                            <input type="number" id="expense-amount" placeholder="0.00" min="0.01" step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expense-paid-by">Paid by:</label>
+                            <select id="expense-paid-by">
+                                <option value="">Select payer</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-category">Category:</label>
+                            <select id="expense-category">
+                                <option value="food">🍽️ Food & Dining</option>
+                                <option value="transport">🚗 Transportation</option>
+                                <option value="accommodation">🏨 Accommodation</option>
+                                <option value="entertainment">🎭 Entertainment</option>
+                                <option value="shopping">🛍️ Shopping</option>
+                                <option value="utilities">⚡ Utilities</option>
+                                <option value="other">📦 Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="split-method">Split Method:</label>
+                            <select id="split-method">
+                                <option value="equal">Equal Split</option>
+                                <option value="unequal">Unequal Split</option>
+                                <option value="percentage">Percentage Split</option>
+                                <option value="exact">Exact Amounts</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-date">Date:</label>
+                            <input type="date" id="expense-date">
+                        </div>
+                    </div>
+
+                    <div id="split-options" class="split-options">
+                        <!-- Dynamic split options will appear here -->
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="add-expense" class="btn-primary">
+                            <i class="fas fa-plus"></i> Add Expense
+                        </button>
+                        <button id="clear-expense-form" class="btn-secondary">
+                            <i class="fas fa-eraser"></i> Clear
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Expenses List Section -->
+            <section class="expenses-list-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-list"></i> Expenses</h2>
+                    <div class="expenses-filters">
+                        <select id="filter-category">
+                            <option value="all">All Categories</option>
+                            <option value="food">Food & Dining</option>
+                            <option value="transport">Transportation</option>
+                            <option value="accommodation">Accommodation</option>
+                            <option value="entertainment">Entertainment</option>
+                            <option value="shopping">Shopping</option>
+                            <option value="utilities">Utilities</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <input type="date" id="filter-date">
+                        <button id="clear-filters" class="btn-secondary">Clear Filters</button>
+                    </div>
+                </div>
+
+                <div id="expenses-list" class="expenses-list">
+                    <!-- Expenses will be populated here -->
+                </div>
+
+                <div class="expenses-summary">
+                    <div class="summary-card">
+                        <i class="fas fa-dollar-sign"></i>
+                        <div class="summary-info">
+                            <span class="summary-value" id="total-expenses">$0.00</span>
+                            <span class="summary-label">Total Expenses</span>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <i class="fas fa-users"></i>
+                        <div class="summary-info">
+                            <span class="summary-value" id="per-person-average">$0.00</span>
+                            <span class="summary-label">Per Person</span>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <i class="fas fa-receipt"></i>
+                        <div class="summary-info">
+                            <span class="summary-value" id="total-expenses-count">0</span>
+                            <span class="summary-label">Total Items</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settlement Section -->
+            <section class="settlement-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-balance-scale"></i> Settlement</h2>
+                    <button id="calculate-settlement" class="btn-primary">
+                        <i class="fas fa-calculator"></i> Calculate Settlement
+                    </button>
+                </div>
+
+                <div id="settlement-results" class="settlement-results">
+                    <!-- Settlement results will appear here -->
+                </div>
+
+                <div class="settlement-actions">
+                    <button id="minimize-transactions" class="btn-secondary">
+                        <i class="fas fa-compress"></i> Minimize Transactions
+                    </button>
+                    <button id="settlement-reminder" class="btn-secondary">
+                        <i class="fas fa-bell"></i> Set Reminder
+                    </button>
+                </div>
+            </section>
+
+            <!-- Tax & Tip Calculator -->
+            <section class="tax-tip-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-percent"></i> Tax & Tip Calculator</h2>
+                </div>
+
+                <div class="tax-tip-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="subtotal">Subtotal:</label>
+                            <input type="number" id="subtotal" placeholder="0.00" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label for="tax-rate">Tax Rate (%):</label>
+                            <input type="number" id="tax-rate" placeholder="8.25" min="0" max="100" step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tip-percentage">Tip (%):</label>
+                            <input type="number" id="tip-percentage" placeholder="15" min="0" max="100" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label for="tip-amount">Tip Amount:</label>
+                            <input type="number" id="tip-amount" placeholder="0.00" min="0" step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="tax-tip-results">
+                        <div class="result-item">
+                            <span class="result-label">Tax Amount:</span>
+                            <span class="result-value" id="tax-amount">$0.00</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Tip Amount:</span>
+                            <span class="result-value" id="calculated-tip">$0.00</span>
+                        </div>
+                        <div class="result-item total">
+                            <span class="result-label">Grand Total:</span>
+                            <span class="result-value" id="grand-total">$0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="calculate-tax-tip" class="btn-primary">
+                            <i class="fas fa-calculator"></i> Calculate
+                        </button>
+                        <button id="add-tax-tip-expense" class="btn-secondary">
+                            <i class="fas fa-plus"></i> Add as Expense
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Analytics Dashboard (Hidden by default) -->
+        <div id="analytics-dashboard" class="analytics-dashboard hidden">
+            <div class="analytics-header">
+                <h2><i class="fas fa-chart-bar"></i> Expense Analytics</h2>
+                <button id="close-analytics" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="analytics-content">
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h3>Spending by Category</h3>
+                        <canvas id="category-chart"></canvas>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Daily Spending Trend</h3>
+                        <canvas id="trend-chart"></canvas>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Member Contributions</h3>
+                        <canvas id="member-chart"></canvas>
+                    </div>
+                    <div class="analytics-card">
+                        <h3>Settlement Summary</h3>
+                        <div id="settlement-summary" class="settlement-summary">
+                            <!-- Settlement summary will appear here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="save-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Save Expenses</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="expense-group-name" placeholder="Enter group name" class="modal-input">
+                <textarea id="expense-group-description" placeholder="Add a description (optional)" class="modal-textarea"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button id="save-expenses-confirm" class="btn-primary">Save</button>
+                <button class="btn-secondary modal-close">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="load-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Load Expenses</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="saved-expenses-list" class="saved-expenses-list">
+                    <!-- Saved expense groups will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="export-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Export Expenses</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="export-options">
+                    <button id="export-pdf" class="export-btn">
+                        <i class="fas fa-file-pdf"></i> Export as PDF
+                    </button>
+                    <button id="export-csv" class="export-btn">
+                        <i class="fas fa-file-csv"></i> Export as CSV
+                    </button>
+                    <button id="export-json" class="export-btn">
+                        <i class="fas fa-file-code"></i> Export as JSON
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span id="loading-text">Processing...</span>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

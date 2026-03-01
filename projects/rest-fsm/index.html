@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍽️ Restaurant Order System FSM</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #2a2a1a 0%, #3a3a2a 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .restaurant-card {
+            background: #4a3a2a;
+            background: linear-gradient(145deg, #5a4a3a, #3a2a1a);
+            border-radius: 3rem;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 40px 60px #000000cc, inset 0 2px 20px #ffd28f;
+            border: 6px solid #c9a87c;
+            max-width: 1300px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            margin: 0 0 1.5rem 0;
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: #ffdead;
+            text-shadow: 0 5px 0 #8b5a2b, 0 10px 20px black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        h1 span {
+            font-size: 3rem;
+            filter: drop-shadow(0 4px 2px #5a3a1a);
+        }
+        .restaurant-layout {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+        }
+        /* Restaurant floor plan */
+        .dining-panel {
+            background: #2a2a1a;
+            border-radius: 2.5rem;
+            padding: 1.5rem;
+            box-shadow: inset 0 -5px 10px #1a1a0a, 0 25px 35px black;
+            border: 4px solid #b89a7a;
+            flex: 1;
+            min-width: 400px;
+        }
+        .tables-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .table-card {
+            background: #5a4a3a;
+            border-radius: 2rem;
+            padding: 1.5rem 1rem;
+            border: 4px solid #b89a7a;
+            box-shadow: 0 10px 0 #2a1a0a;
+            transition: 0.1s;
+            cursor: pointer;
+        }
+        .table-card:hover {
+            transform: translateY(-2px);
+            border-color: #ffb85c;
+        }
+        .table-card.active {
+            border-color: #ffaa33;
+            box-shadow: 0 0 30px #ffaa33;
+            background: #6b5a4a;
+        }
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #ffd89c;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .table-number {
+            font-size: 1.5rem;
+            background: #2a1a1a;
+            padding: 0.3rem 1rem;
+            border-radius: 2rem;
+        }
+        .table-status {
+            font-size: 0.9rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 1rem;
+            background: #2a3a2a;
+        }
+        .table-status.available { background: #2a5a2a; color: #b8ffb8; }
+        .table-status.occupied { background: #5a4a2a; color: #ffd966; }
+        .table-status.ordering { background: #5a3a5a; color: #d8b8ff; }
+        .table-status.served { background: #2a5a5a; color: #b8ffff; }
+        .order-items {
+            color: #e0c8a8;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        .order-total {
+            color: #ffd700;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        
+        /* Kitchen panel */
+        .kitchen-panel {
+            background: #3a3a2a;
+            border-radius: 2.5rem;
+            padding: 2rem 1.5rem;
+            border: 4px solid #ffb85c;
+            flex: 1;
+            min-width: 350px;
+        }
+        .kitchen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .kitchen-title {
+            font-size: 1.8rem;
+            color: #ffd89c;
+        }
+        .kitchen-status {
+            background: #5a4a3a;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            color: #b8ffb8;
+            font-weight: 600;
+        }
+        .order-queue {
+            background: #2a2a1a;
+            border-radius: 2rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .queue-item {
+            background: #4a3a2a;
+            border-radius: 1.5rem;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            border-left: 6px solid #ffaa33;
+            color: #ffe4b8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .queue-item.cooking {
+            border-left-color: #ff6b6b;
+        }
+        .queue-item.ready {
+            border-left-color: #6bff6b;
+        }
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.8rem;
+            margin: 1.5rem 0;
+        }
+        .menu-item {
+            background: #5a4a3a;
+            border-radius: 1.5rem;
+            padding: 1rem 0.5rem;
+            text-align: center;
+            color: #ffd89c;
+            font-weight: 600;
+            border: 2px solid #b89a7a;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .menu-item:hover {
+            background: #6b5a4a;
+            border-color: #ffaa33;
+            transform: scale(1.02);
+        }
+        .menu-item:active {
+            transform: scale(0.98);
+        }
+        .payment-section {
+            background: #2a2a1a;
+            border-radius: 1.5rem;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border: 2px solid #ffb85c;
+        }
+        .payment-total {
+            font-size: 1.5rem;
+            color: #ffd700;
+            text-align: center;
+            margin: 0.5rem 0;
+        }
+        .payment-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin-top: 1rem;
+        }
+        .restaurant-btn {
+            background: #5a4a3a;
+            border: none;
+            border-radius: 2rem;
+            padding: 0.8rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffe4b8;
+            box-shadow: 0 4px 0 #2a1a0a;
+            cursor: pointer;
+            border: 2px solid #b89a7a;
+            transition: 0.05s;
+        }
+        .restaurant-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #2a1a0a;
+        }
+        .restaurant-btn.pay {
+            background: #2a5a2a;
+            border-color: #b8ffb8;
+        }
+        .restaurant-btn.cancel {
+            background: #5a2a2a;
+            border-color: #ffb8b8;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            color: #ffd89c;
+            background: #2a2a1ab0;
+            padding: 0.8rem;
+            border-radius: 3rem;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="restaurant-card">
+        <h1>
+            <span>🍽️</span> RESTAURANT ORDER FSM <span>👨‍🍳</span>
+        </h1>
+        
+        <div class="restaurant-layout">
+            <!-- Dining area -->
+            <div class="dining-panel">
+                <div style="color:#ffd89c; font-size:1.5rem; margin-bottom:1rem;">🪑 DINING TABLES</div>
+                <div class="tables-grid" id="tablesGrid">
+                    <!-- Tables will be generated by JS -->
+                </div>
+                <div style="background:#2a1a1a; border-radius:1.5rem; padding:1rem; color:#ffd89c;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>💰 TODAY'S REVENUE:</span>
+                        <span id="totalRevenue">$0.00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kitchen & Order panel -->
+            <div class="kitchen-panel">
+                <div class="kitchen-header">
+                    <span class="kitchen-title">👨‍🍳 KITCHEN</span>
+                    <span class="kitchen-status" id="kitchenStatus">IDLE</span>
+                </div>
+                
+                <div class="order-queue" id="orderQueue">
+                    <div style="color:#b89a7a; text-align:center;">No active orders</div>
+                </div>
+                
+                <div style="color:#ffd89c; font-weight:600; margin-bottom:0.5rem;">📋 MENU</div>
+                <div class="menu-grid" id="menuGrid">
+                    <!-- Menu items will be generated -->
+                </div>
+                
+                <div class="payment-section" id="paymentSection">
+                    <div style="color:#ffd89c; text-align:center;">SELECT A TABLE TO START</div>
+                </div>
+                
+                <div style="margin-top:1rem; background:#2a1a1a; padding:0.8rem; border-radius:1.5rem; color:#b89a7a; font-size:0.8rem;">
+                    <strong>FSM:</strong> AVAILABLE → ORDERING → COOKING → READY → SERVED → PAYMENT → COMPLETED
+                </div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <span>🟢 AVAILABLE</span>
+            <span>🟡 ORDERING</span>
+            <span>🔵 COOKING</span>
+            <span>🟠 READY</span>
+            <span>⚪ SERVED</span>
+            <span>💰 PAYMENT</span>
+            <span>✅ COMPLETED</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- RESTAURANT ORDER FSM ----------
+            const RestaurantFSM = {
+                states: {
+                    AVAILABLE: 'AVAILABLE',
+                    ORDERING: 'ORDERING',
+                    COOKING: 'COOKING',
+                    READY: 'READY',
+                    SERVED: 'SERVED',
+                    PAYMENT: 'PAYMENT',
+                    COMPLETED: 'COMPLETED'
+                },
+                
+                // Tables data
+                tables: [
+                    { id: 1, state: 'AVAILABLE', order: [], total: 0, customer: null },
+                    { id: 2, state: 'AVAILABLE', order: [], total: 0, customer: null },
+                    { id: 3, state: 'AVAILABLE', order: [], total: 0, customer: null },
+                    { id: 4, state: 'AVAILABLE', order: [], total: 0, customer: null },
+                    { id: 5, state: 'AVAILABLE', order: [], total: 0, customer: null },
+                    { id: 6, state: 'AVAILABLE', order: [], total: 0, customer: null }
+                ],
+                
+                // Kitchen queue (orders waiting to be cooked)
+                kitchenQueue: [], // { tableId, items, total }
+                
+                // Currently selected table
+                selectedTable: null,
+                
+                // Revenue tracking
+                totalRevenue: 0,
+                
+                // Menu items
+                menu: [
+                    { id: 'burger', name: '🍔 Burger', price: 12.99 },
+                    { id: 'pizza', name: '🍕 Pizza', price: 14.99 },
+                    { id: 'pasta', name: '🍝 Pasta', price: 11.99 },
+                    { id: 'salad', name: '🥗 Salad', price: 8.99 },
+                    { id: 'steak', name: '🥩 Steak', price: 24.99 },
+                    { id: 'fish', name: '🐟 Fish', price: 18.99 },
+                    { id: 'soup', name: '🥣 Soup', price: 6.99 },
+                    { id: 'dessert', name: '🍰 Dessert', price: 7.99 }
+                ],
+                
+                // Transition table
+                transitions: {
+                    'AVAILABLE_SEAT': 'ORDERING',
+                    'AVAILABLE_PAYMENT': 'AVAILABLE', // invalid
+                    
+                    'ORDERING_ADD_ITEM': 'ORDERING',
+                    'ORDERING_PLACE_ORDER': 'COOKING',
+                    'ORDERING_CANCEL': 'AVAILABLE',
+                    
+                    'COOKING_COOK_COMPLETE': 'READY',
+                    'COOKING_ADD_ITEM': 'COOKING', // can add more while cooking
+                    
+                    'READY_SERVE': 'SERVED',
+                    
+                    'SERVED_REQUEST_PAYMENT': 'PAYMENT',
+                    
+                    'PAYMENT_PROCESS': 'COMPLETED',
+                    'PAYMENT_CANCEL': 'SERVED', // back to served
+                    
+                    'COMPLETED_NEW_ORDER': 'AVAILABLE'
+                },
+                
+                dispatch(tableState, event) {
+                    const key = `${tableState}_${event}`;
+                    if (this.transitions.hasOwnProperty(key)) {
+                        return this.transitions[key];
+                    }
+                    return tableState;
+                },
+                
+                // Table operations
+                selectTable(tableId) {
+                    this.selectedTable = tableId;
+                },
+                
+                seatCustomer(tableId) {
+                    const table = this.getTable(tableId);
+                    if (table && table.state === 'AVAILABLE') {
+                        table.state = 'ORDERING';
+                        table.order = [];
+                        table.total = 0;
+                        return true;
+                    }
+                    return false;
+                },
+                
+                addItemToOrder(tableId, menuItem) {
+                    const table = this.getTable(tableId);
+                    if (table && (table.state === 'ORDERING' || table.state === 'COOKING')) {
+                        table.order.push(menuItem);
+                        table.total += menuItem.price;
+                        return true;
+                    }
+                    return false;
+                },
+                
+                placeOrder(tableId) {
+                    const table = this.getTable(tableId);
+                    if (table && table.state === 'ORDERING' && table.order.length > 0) {
+                        table.state = 'COOKING';
+                        
+                        // Add to kitchen queue
+                        this.kitchenQueue.push({
+                            tableId: tableId,
+                            items: [...table.order],
+                            total: table.total,
+                            status: 'pending'
+                        });
+                        
+                        // Start cooking simulation
+                        this.processKitchen();
+                        return true;
+                    }
+                    return false;
+                },
+                
+                // Kitchen processing
+                processKitchen() {
+                    if (this.kitchenQueue.length === 0) {
+                        document.getElementById('kitchenStatus').innerText = 'IDLE';
+                        return;
+                    }
+                    
+                    document.getElementById('kitchenStatus').innerText = 'COOKING';
+                    
+                    // Process first order in queue
+                    const order = this.kitchenQueue[0];
+                    if (order.status === 'pending') {
+                        order.status = 'cooking';
+                        
+                        // Simulate cooking time
+                        setTimeout(() => {
+                            order.status = 'ready';
+                            
+                            // Update table state
+                            const table = this.getTable(order.tableId);
+                            if (table && table.state === 'COOKING') {
+                                table.state = 'READY';
+                            }
+                            
+                            // Remove from queue
+                            this.kitchenQueue.shift();
+                            
+                            // Process next order
+                            this.processKitchen();
+                            updateUI();
+                        }, 3000);
+                    }
+                },
+                
+                serveOrder(tableId) {
+                    const table = this.getTable(tableId);
+                    if (table && table.state === 'READY') {
+                        table.state = 'SERVED';
+                        return true;
+                    }
+                    return false;
+                },
+                
+                requestPayment(tableId) {
+                    const table = this.getTable(tableId);
+                    if (table && table.state === 'SERVED') {
+                        table.state = 'PAYMENT';
+                        return true;
+                    }
+                    return false;
+                },
+                
+                processPayment(tableId, paymentMethod) {
+                    const table = this.getTable(tableId);
+                    if (table && table.state === 'PAYMENT') {
+                        // Add to revenue
+                        this.totalRevenue += table.total;
+                        
+                        table.state = 'COMPLETED';
+                        
+                        // Auto-reset after 2 seconds
+                        setTimeout(() => {
+                            table.state = 'AVAILABLE';
+                            table.order = [];
+                            table.total = 0;
+                            updateUI();
+                        }, 2000);
+                        
+                        return true;
+                    }
+                    return false;
+                },
+                
+                cancelOrder(tableId) {
+                    const table = this.getTable(tableId);
+                    if (table && table.state === 'ORDERING') {
+                        table.state = 'AVAILABLE';
+                        table.order = [];
+                        table.total = 0;
+                        return true;
+                    }
+                    if (table && table.state === 'PAYMENT') {
+                        table.state = 'SERVED';
+                        return true;
+                    }
+                    return false;
+                },
+                
+                getTable(id) {
+                    return this.tables.find(t => t.id === id);
+                },
+                
+                formatMoney(amount) {
+                    return '$' + amount.toFixed(2);
+                }
+            };
+
+            // ---------- DOM Elements ----------
+            const tablesGrid = document.getElementById('tablesGrid');
+            const orderQueue = document.getElementById('orderQueue');
+            const menuGrid = document.getElementById('menuGrid');
+            const paymentSection = document.getElementById('paymentSection');
+            const kitchenStatus = document.getElementById('kitchenStatus');
+            const totalRevenue = document.getElementById('totalRevenue');
+            
+            // Build tables UI
+            function buildTables() {
+                tablesGrid.innerHTML = '';
+                RestaurantFSM.tables.forEach(table => {
+                    const tableCard = document.createElement('div');
+                    tableCard.className = `table-card ${table.id === RestaurantFSM.selectedTable ? 'active' : ''}`;
+                    tableCard.id = `table-${table.id}`;
+                    
+                    let statusClass = '';
+                    switch(table.state) {
+                        case 'AVAILABLE': statusClass = 'available'; break;
+                        case 'ORDERING': statusClass = 'ordering'; break;
+                        case 'COOKING': statusClass = 'occupied'; break;
+                        case 'READY': statusClass = 'occupied'; break;
+                        case 'SERVED': statusClass = 'served'; break;
+                        case 'PAYMENT': statusClass = 'occupied'; break;
+                        case 'COMPLETED': statusClass = 'available'; break;
+                    }
+                    
+                    let orderSummary = '';
+                    if (table.order.length > 0) {
+                        orderSummary = table.order.slice(0, 2).map(item => item.name).join(', ');
+                        if (table.order.length > 2) orderSummary += '...';
+                    }
+                    
+                    tableCard.innerHTML = `
+                        <div class="table-header">
+                            <span class="table-number">Table ${table.id}</span>
+                            <span class="table-status ${statusClass}">${table.state}</span>
+                        </div>
+                        <div class="order-items">${orderSummary || 'No items'}</div>
+                        <div class="order-total">${table.total > 0 ? RestaurantFSM.formatMoney(table.total) : ''}</div>
+                    `;
+                    
+                    tableCard.addEventListener('click', () => handleTableSelect(table.id));
+                    tablesGrid.appendChild(tableCard);
+                });
+            }
+            
+            // Build menu UI
+            function buildMenu() {
+                menuGrid.innerHTML = '';
+                RestaurantFSM.menu.forEach(item => {
+                    const menuItem = document.createElement('div');
+                    menuItem.className = 'menu-item';
+                    menuItem.innerHTML = `${item.name}<br><span style="font-size:0.8rem;">${RestaurantFSM.formatMoney(item.price)}</span>`;
+                    menuItem.addEventListener('click', () => handleAddMenuItem(item));
+                    menuGrid.appendChild(menuItem);
+                });
+            }
+            
+            // Update kitchen queue display
+            function updateKitchenQueue() {
+                if (RestaurantFSM.kitchenQueue.length === 0) {
+                    orderQueue.innerHTML = '<div style="color:#b89a7a; text-align:center;">No active orders</div>';
+                    return;
+                }
+                
+                orderQueue.innerHTML = '';
+                RestaurantFSM.kitchenQueue.forEach(order => {
+                    const queueItem = document.createElement('div');
+                    queueItem.className = `queue-item ${order.status}`;
+                    queueItem.innerHTML = `
+                        <div>
+                            <strong>Table ${order.tableId}</strong><br>
+                            <span style="font-size:0.8rem;">${order.items.length} items</span>
+                        </div>
+                        <div style="text-align:right;">
+                            ${RestaurantFSM.formatMoney(order.total)}<br>
+                            <span style="font-size:0.7rem;">${order.status}</span>
+                        </div>
+                    `;
+                    orderQueue.appendChild(queueItem);
+                });
+            }
+            
+            // Update payment section
+            function updatePaymentSection() {
+                const selected = RestaurantFSM.selectedTable;
+                if (!selected) {
+                    paymentSection.innerHTML = '<div style="color:#ffd89c; text-align:center;">SELECT A TABLE TO START</div>';
+                    return;
+                }
+                
+                const table = RestaurantFSM.getTable(selected);
+                if (!table) return;
+                
+                let actions = '';
+                
+                switch(table.state) {
+                    case 'AVAILABLE':
+                        actions = `
+                            <button class="restaurant-btn" id="seatCustomerBtn">🪑 Seat Customer</button>
+                        `;
+                        break;
+                    case 'ORDERING':
+                        actions = `
+                            <div style="color:#ffd89c; margin-bottom:0.5rem;">Current total: ${RestaurantFSM.formatMoney(table.total)}</div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                                <button class="restaurant-btn" id="placeOrderBtn">📝 Place Order</button>
+                                <button class="restaurant-btn cancel" id="cancelOrderBtn">❌ Cancel</button>
+                            </div>
+                        `;
+                        break;
+                    case 'COOKING':
+                        actions = `
+                            <div style="color:#ffd89c;">⏳ Cooking in progress...</div>
+                            <button class="restaurant-btn" id="addMoreItemsBtn">➕ Add More Items</button>
+                        `;
+                        break;
+                    case 'READY':
+                        actions = `
+                            <button class="restaurant-btn" id="serveOrderBtn">🍽️ Serve Order</button>
+                        `;
+                        break;
+                    case 'SERVED':
+                        actions = `
+                            <button class="restaurant-btn" id="requestPaymentBtn">💰 Request Payment</button>
+                        `;
+                        break;
+                    case 'PAYMENT':
+                        actions = `
+                            <div style="color:#ffd89c; margin-bottom:0.5rem;">Total: ${RestaurantFSM.formatMoney(table.total)}</div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                                <button class="restaurant-btn pay" id="processCashBtn">💵 Cash</button>
+                                <button class="restaurant-btn pay" id="processCardBtn">💳 Card</button>
+                                <button class="restaurant-btn cancel" id="cancelPaymentBtn">❌ Cancel</button>
+                            </div>
+                        `;
+                        break;
+                    case 'COMPLETED':
+                        actions = `
+                            <div style="color:#b8ffb8;">✅ Payment complete! Table will reset...</div>
+                        `;
+                        break;
+                }
+                
+                paymentSection.innerHTML = `
+                    <div style="color:#ffd89c; font-weight:600; margin-bottom:0.5rem;">Table ${table.id} - ${table.state}</div>
+                    <div class="payment-total">${RestaurantFSM.formatMoney(table.total)}</div>
+                    <div class="payment-buttons">
+                        ${actions}
+                    </div>
+                `;
+                
+                // Add event listeners for dynamic buttons
+                if (table.state === 'AVAILABLE') {
+                    document.getElementById('seatCustomerBtn')?.addEventListener('click', () => handleSeatCustomer(selected));
+                } else if (table.state === 'ORDERING') {
+                    document.getElementById('placeOrderBtn')?.addEventListener('click', () => handlePlaceOrder(selected));
+                    document.getElementById('cancelOrderBtn')?.addEventListener('click', () => handleCancelOrder(selected));
+                } else if (table.state === 'COOKING') {
+                    document.getElementById('addMoreItemsBtn')?.addEventListener('click', () => {
+                        // Stay in COOKING, can add more items
+                        alert('Select menu items to add to order');
+                    });
+                } else if (table.state === 'READY') {
+                    document.getElementById('serveOrderBtn')?.addEventListener('click', () => handleServeOrder(selected));
+                } else if (table.state === 'SERVED') {
+                    document.getElementById('requestPaymentBtn')?.addEventListener('click', () => handleRequestPayment(selected));
+                } else if (table.state === 'PAYMENT') {
+                    document.getElementById('processCashBtn')?.addEventListener('click', () => handleProcessPayment(selected, 'cash'));
+                    document.getElementById('processCardBtn')?.addEventListener('click', () => handleProcessPayment(selected, 'card'));
+                    document.getElementById('cancelPaymentBtn')?.addEventListener('click', () => handleCancelPayment(selected));
+                }
+            }
+            
+            // Update UI
+            function updateUI() {
+                buildTables();
+                updateKitchenQueue();
+                updatePaymentSection();
+                totalRevenue.innerText = RestaurantFSM.formatMoney(RestaurantFSM.totalRevenue);
+                kitchenStatus.innerText = RestaurantFSM.kitchenQueue.length > 0 ? 'COOKING' : 'IDLE';
+            }
+            
+            // Event handlers
+            function handleTableSelect(tableId) {
+                RestaurantFSM.selectTable(tableId);
+                updateUI();
+            }
+            
+            function handleSeatCustomer(tableId) {
+                RestaurantFSM.seatCustomer(tableId);
+                updateUI();
+            }
+            
+            function handleAddMenuItem(item) {
+                if (RestaurantFSM.selectedTable) {
+                    RestaurantFSM.addItemToOrder(RestaurantFSM.selectedTable, item);
+                    updateUI();
+                } else {
+                    alert('Please select a table first');
+                }
+            }
+            
+            function handlePlaceOrder(tableId) {
+                RestaurantFSM.placeOrder(tableId);
+                updateUI();
+            }
+            
+            function handleCancelOrder(tableId) {
+                RestaurantFSM.cancelOrder(tableId);
+                updateUI();
+            }
+            
+            function handleServeOrder(tableId) {
+                RestaurantFSM.serveOrder(tableId);
+                updateUI();
+            }
+            
+            function handleRequestPayment(tableId) {
+                RestaurantFSM.requestPayment(tableId);
+                updateUI();
+            }
+            
+            function handleProcessPayment(tableId, method) {
+                RestaurantFSM.processPayment(tableId, method);
+                updateUI();
+            }
+            
+            function handleCancelPayment(tableId) {
+                RestaurantFSM.cancelOrder(tableId);
+                updateUI();
+            }
+            
+            // Initialize
+            function init() {
+                buildMenu();
+                updateUI();
+            }
+            
+            init();
+        })();
+    </script>
+</body>
+</html>

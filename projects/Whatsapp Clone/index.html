@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Web Clone</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&display=swap');
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #dadbd3;
+        }
+
+        .chat-bg {
+            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+            background-color: #e5ddd5;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cccccc;
+        }
+
+        .sent-msg {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .received-msg {
+            background-color: #ffffff;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        /* Message tail effect */
+        .msg-bubble::after {
+            content: "";
+            position: absolute;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+        }
+        .sent-msg::after {
+            right: -8px;
+            top: 0;
+            border-left-color: #dcf8c6;
+        }
+        .received-msg::after {
+            left: -8px;
+            top: 0;
+            border-right-color: #ffffff;
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex items-center justify-center p-0 md:p-4">
+    <div class="w-full h-full max-w-[1600px] flex shadow-2xl bg-white overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside class="w-1/3 min-w-[300px] max-w-[450px] flex flex-col border-r border-gray-300">
+            <!-- Profile Header -->
+            <header class="bg-[#f0f2f5] p-3 flex justify-between items-center">
+                <div class="w-10 h-10 rounded-full bg-gray-400 overflow-hidden cursor-pointer">
+                    <img src="https://ui-avatars.com/api/?name=Me&background=random" alt="Profile">
+                </div>
+                <div class="flex gap-5 text-gray-500 text-xl">
+                    <button title="Status"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 20.664a9.163 9.163 0 0 1-6.521-2.702.977.977 0 0 1 1.381-1.381 7.21 7.21 0 1 0 10.278-10.278.977.977 0 1 1 1.381-1.381A9.166 9.166 0 0 1 12 20.664z"></path></svg></button>
+                    <button title="New Chat"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M19.005 3.175H4.674C3.642 3.175 2.8 4.017 2.8 5.049v14.594c0 1.032.842 1.874 1.874 1.874h14.331c1.032 0 1.874-.842 1.874-1.874V5.049c0-1.032-.842-1.874-1.874-1.874zM15.4 12.5h-2.9v2.9h-1v-2.9H8.6v-1h2.9V8.6h1v2.9h2.9v1z"></path></svg></button>
+                    <button title="Menu"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 7a2 2 0 1 0-.001-4.001A2 2 0 0 0 12 7zm0 2a2 2 0 1 0-.001 3.999A2 2 0 0 0 12 9zm0 6a2 2 0 1 0-.001 3.999A2 2 0 0 0 12 15z"></path></svg></button>
+                </div>
+            </header>
+
+            <!-- Search -->
+            <div class="p-2 bg-[#f6f6f6] border-b border-gray-200">
+                <div class="relative bg-white rounded-lg flex items-center px-4 py-1.5 shadow-sm">
+                    <svg class="text-gray-400 mr-4" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M15.009 13.805h-.636l-.22-.219a5.184 5.184 0 0 0 1.256-3.386 5.207 5.207 0 1 0-5.207 5.208 5.183 5.183 0 0 0 3.385-1.255l.221.22v.635l4.004 3.999 1.194-1.194-3.997-4.008zm-4.808 0a3.605 3.605 0 1 1 0-7.21 3.605 3.605 0 0 1 0 7.21z"></path></svg>
+                    <input type="text" placeholder="Search or start new chat" class="bg-transparent w-full outline-none text-sm py-1">
+                </div>
+            </div>
+
+            <!-- Chat List -->
+            <div id="chatList" class="flex-1 overflow-y-auto custom-scrollbar bg-white">
+                <!-- Chat Item Template -->
+                <div onclick="selectChat(this)" class="flex items-center p-3 cursor-pointer hover:bg-[#f5f6f6] border-b border-gray-100 bg-[#f0f2f5]">
+                    <img src="https://ui-avatars.com/api/?name=Gemini+Support&background=00a884&color=fff" class="w-12 h-12 rounded-full mr-4">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between">
+                            <h3 class="font-semibold text-gray-800 truncate">Gemini Support</h3>
+                            <span class="text-xs text-gray-500">14:30</span>
+                        </div>
+                        <p class="text-sm text-gray-500 truncate">How can I help you today?</p>
+                    </div>
+                </div>
+                
+                <div onclick="selectChat(this)" class="flex items-center p-3 cursor-pointer hover:bg-[#f5f6f6] border-b border-gray-100">
+                    <img src="https://ui-avatars.com/api/?name=Alex+Doe&background=random" class="w-12 h-12 rounded-full mr-4">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between">
+                            <h3 class="font-semibold text-gray-800 truncate">Alex Doe</h3>
+                            <span class="text-xs text-gray-500">Yesterday</span>
+                        </div>
+                        <p class="text-sm text-gray-500 truncate">That sounds like a great plan!</p>
+                    </div>
+                </div>
+
+                <div onclick="selectChat(this)" class="flex items-center p-3 cursor-pointer hover:bg-[#f5f6f6] border-b border-gray-100">
+                    <img src="https://ui-avatars.com/api/?name=Work+Group&background=25d366&color=fff" class="w-12 h-12 rounded-full mr-4">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between">
+                            <h3 class="font-semibold text-gray-800 truncate">Work Group</h3>
+                            <span class="text-xs text-gray-500">Tuesday</span>
+                        </div>
+                        <p class="text-sm text-gray-500 truncate"><span class="font-medium">Sarah:</span> Meeting moved to 10AM</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="flex-1 flex flex-col relative chat-bg">
+            <!-- Chat Header -->
+            <header class="bg-[#f0f2f5] p-3 flex justify-between items-center z-10 shadow-sm">
+                <div class="flex items-center cursor-pointer">
+                    <img id="activeAvatar" src="https://ui-avatars.com/api/?name=Gemini+Support&background=00a884&color=fff" class="w-10 h-10 rounded-full mr-3">
+                    <div>
+                        <h2 id="activeName" class="font-semibold text-gray-800 leading-tight">Gemini Support</h2>
+                        <span class="text-xs text-gray-500">online</span>
+                    </div>
+                </div>
+                <div class="flex gap-5 text-gray-500">
+                    <button><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M15.009 13.805h-.636l-.22-.219a5.184 5.184 0 0 0 1.256-3.386 5.207 5.207 0 1 0-5.207 5.208 5.183 5.183 0 0 0 3.385-1.255l.221.22v.635l4.004 3.999 1.194-1.194-3.997-4.008zm-4.808 0a3.605 3.605 0 1 1 0-7.21 3.605 3.605 0 0 1 0 7.21z"></path></svg></button>
+                    <button><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 7a2 2 0 1 0-.001-4.001A2 2 0 0 0 12 7zm0 2a2 2 0 1 0-.001 3.999A2 2 0 0 0 12 9zm0 6a2 2 0 1 0-.001 3.999A2 2 0 0 0 12 15z"></path></svg></button>
+                </div>
+            </header>
+
+            <!-- Messages Window -->
+            <div id="messagesWindow" class="flex-1 overflow-y-auto p-4 md:px-20 py-4 flex flex-col gap-2 custom-scrollbar">
+                
+                <div class="bg-[#d9f1ff] text-[#54656f] text-[12.5px] px-3 py-1.5 rounded-lg self-center mb-4 shadow-sm text-center max-w-[400px]">
+                    Messages are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them. Click to learn more.
+                </div>
+
+                <div class="bg-white text-gray-800 text-xs px-2 py-1 rounded-md self-center mb-4 shadow-sm uppercase tracking-wide font-medium">
+                    Today
+                </div>
+
+                <!-- Received -->
+                <div class="msg-bubble received-msg relative px-3 py-1.5 rounded-lg max-w-[65%] shadow-sm flex flex-col">
+                    <span class="text-[14.2px]">Welcome to the clone! Try typing a message below.</span>
+                    <span class="text-[11px] text-gray-500 self-end mt-1">14:30</span>
+                </div>
+
+                <!-- Sent -->
+                <div class="msg-bubble sent-msg relative px-3 py-1.5 rounded-lg max-w-[65%] shadow-sm flex flex-col">
+                    <span class="text-[14.2px]">Wow, this looks exactly like the real thing!</span>
+                    <div class="flex items-center self-end mt-1 gap-1">
+                        <span class="text-[11px] text-gray-500">14:31</span>
+                        <svg class="text-[#53bdeb]" viewBox="0 0 16 11" width="16" height="11" fill="currentColor"><path d="M11.053 2.514a.514.514 0 0 0-.727 0l-5.32 5.32-2.144-2.144a.514.514 0 1 0-.727.727l2.508 2.508a.514.514 0 0 0 .727 0l5.683-5.683a.514.514 0 0 0 0-.728zm2.434 0a.514.514 0 0 0-.727 0L7.077 8.197 6.45 7.57a.514.514 0 1 0-.727.727l.99 1a.514.514 0 0 0 .727 0l6.047-6.047a.514.514 0 0 0 0-.727z"></path></svg>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Input Bar -->
+            <footer class="bg-[#f0f2f5] p-2.5 flex items-center gap-4">
+                <div class="flex gap-4 text-gray-500 pl-2">
+                    <button title="Emojis"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 21.664a9.664 9.664 0 1 1 0-19.328 9.664 9.664 0 0 1 0 19.328zm0-17.664a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM15 13.5a3 3 0 1 1-6 0c0-1 2-1 3-1s3 0 3 1zm-6-2a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"></path></svg></button>
+                    <button title="Attach"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M11.001 14.5v-9c0-1.933 1.567-3.5 3.5-3.5s3.5 1.567 3.5 3.5v11c0 2.761-2.238 5-5 5s-5-2.239-5-5v-10h2v10c0 1.657 1.343 3 3 3s3-1.343 3-3v-11c0-1.105-.895-2-2-2s-2 .895-2 2v9h2z"></path></svg></button>
+                </div>
+                <div class="flex-1">
+                    <input id="messageInput" type="text" placeholder="Type a message" class="w-full bg-white rounded-lg px-4 py-2.5 outline-none text-sm shadow-sm">
+                </div>
+                <div class="pr-2">
+                    <button id="sendBtn" class="text-gray-500">
+                        <svg id="micIcon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M11.999 14.942c2.001 0 3.531-1.53 3.531-3.531V4.35c0-2.001-1.53-3.531-3.531-3.531S8.469 2.35 8.469 4.35v7.061c0 2.001 1.53 3.531 3.53 3.531zm6.235-3.531c0 3.177-2.353 5.883-5.353 6.235V21h-1.765v-3.353c-3 .353-5.353-2.353-5.353-5.529h1.765c0 2.647 2.118 4.706 4.706 4.706 2.647 0 4.706-2.118 4.706-4.706h1.765z"></path></svg>
+                        <svg id="sendIcon" class="hidden text-[#00a884]" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M1.101 21.757L23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z"></path></svg>
+                    </button>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const micIcon = document.getElementById('micIcon');
+        const sendIcon = document.getElementById('sendIcon');
+        const messagesWindow = document.getElementById('messagesWindow');
+
+        // Scroll to bottom helper
+        const scrollToBottom = () => {
+            messagesWindow.scrollTop = messagesWindow.scrollHeight;
+        };
+
+        // Switch between mic and send icon
+        messageInput.addEventListener('input', (e) => {
+            if (e.target.value.trim().length > 0) {
+                micIcon.classList.add('hidden');
+                sendIcon.classList.remove('hidden');
+            } else {
+                micIcon.classList.remove('hidden');
+                sendIcon.classList.add('hidden');
+            }
+        });
+
+        const createMessage = (text, type = 'sent') => {
+            const now = new Date();
+            const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            
+            const div = document.createElement('div');
+            div.className = `msg-bubble ${type === 'sent' ? 'sent-msg' : 'received-msg'} relative px-3 py-1.5 rounded-lg max-w-[65%] shadow-sm flex flex-col`;
+            
+            const content = `
+                <span class="text-[14.2px]">${text}</span>
+                <div class="flex items-center self-end mt-1 gap-1">
+                    <span class="text-[11px] text-gray-500">${time}</span>
+                    ${type === 'sent' ? `
+                    <svg class="text-[#53bdeb]" viewBox="0 0 16 11" width="16" height="11" fill="currentColor"><path d="M11.053 2.514a.514.514 0 0 0-.727 0l-5.32 5.32-2.144-2.144a.514.514 0 1 0-.727.727l2.508 2.508a.514.514 0 0 0 .727 0l5.683-5.683a.514.514 0 0 0 0-.728zm2.434 0a.514.514 0 0 0-.727 0L7.077 8.197 6.45 7.57a.514.514 0 1 0-.727.727l.99 1a.514.514 0 0 0 .727 0l6.047-6.047a.514.514 0 0 0 0-.727z"></path></svg>
+                    ` : ''}
+                </div>
+            `;
+            
+            div.innerHTML = content;
+            messagesWindow.appendChild(div);
+            scrollToBottom();
+        };
+
+        const handleSendMessage = () => {
+            const text = messageInput.value.trim();
+            if (text) {
+                createMessage(text, 'sent');
+                messageInput.value = '';
+                micIcon.classList.remove('hidden');
+                sendIcon.classList.add('hidden');
+
+                // Simulate reply
+                setTimeout(() => {
+                    createMessage("This is an automated reply. Looks great!", 'received');
+                }, 1000);
+            }
+        };
+
+        sendBtn.addEventListener('click', handleSendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSendMessage();
+        });
+
+        // Chat Selection Logic
+        window.selectChat = (element) => {
+            // Remove active class from all
+            document.querySelectorAll('#chatList > div').forEach(chat => {
+                chat.classList.remove('bg-[#f0f2f5]');
+            });
+            // Add to selected
+            element.classList.add('bg-[#f0f2f5]');
+
+            // Update Header
+            const name = element.querySelector('h3').innerText;
+            const avatar = element.querySelector('img').src;
+            document.getElementById('activeName').innerText = name;
+            document.getElementById('activeAvatar').src = avatar;
+
+            // Clear messages and add a "Switching" notice
+            messagesWindow.innerHTML = `
+                <div class="bg-white text-gray-800 text-xs px-2 py-1 rounded-md self-center mb-4 shadow-sm uppercase tracking-wide font-medium">
+                    Today
+                </div>
+                <div class="msg-bubble received-msg relative px-3 py-1.5 rounded-lg max-w-[65%] shadow-sm flex flex-col">
+                    <span class="text-[14.2px]">Chat history for ${name} goes here.</span>
+                    <span class="text-[11px] text-gray-500 self-end mt-1">Just now</span>
+                </div>
+            `;
+        };
+
+        // Initial Scroll
+        window.onload = scrollToBottom;
+    </script>
+</body>
+</html>

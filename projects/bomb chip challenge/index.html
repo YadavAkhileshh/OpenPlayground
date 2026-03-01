@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bomb Chip Challenge - Multiplayer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0f172a;
+            font-family: 'Outfit', sans-serif;
+            color: #f8fafc;
+            overflow: hidden;
+        }
+
+        .chip-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            perspective: 1000px;
+        }
+
+        .chip {
+            aspect-ratio: 1;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .chip.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .chip-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+
+        .chip-front {
+            background: linear-gradient(145deg, #1e293b, #334155);
+            border: 2px solid #475569;
+        }
+
+        .chip-front:hover {
+            border-color: #6366f1;
+            background: #1e1b4b;
+        }
+
+        .chip-back {
+            transform: rotateY(180deg);
+        }
+
+        .chip-safe {
+            background: linear-gradient(145deg, #065f46, #059669);
+            border: 2px solid #10b981;
+        }
+
+        .chip-bomb {
+            background: linear-gradient(145deg, #991b1b, #dc2626);
+            border: 2px solid #ef4444;
+            animation: shake 0.5s infinite;
+        }
+
+        .chip-selected-bomb {
+            border: 4px solid #facc15 !important;
+            background: #422006 !important;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: rotateY(180deg) translateX(0); }
+            25% { transform: rotateY(180deg) translateX(-2px); }
+            75% { transform: rotateY(180deg) translateX(2px); }
+        }
+
+        .multiplier-node {
+            transition: all 0.3s ease;
+        }
+
+        .multiplier-node.active {
+            background: #6366f1;
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.6);
+        }
+
+        .shake-screen {
+            animation: screenShake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes screenShake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .player-card {
+            transition: all 0.3s ease;
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+        .player-card.active {
+            opacity: 1;
+            transform: scale(1);
+            border-color: #6366f1;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+        
+        <!-- Left Panel: Controls & Multiplayer Info -->
+        <div class="lg:col-span-1 space-y-4">
+            <div class="bg-slate-900/80 p-6 rounded-3xl border border-slate-800 backdrop-blur-md">
+                <h1 class="text-2xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+                    BOMB CHIP PVP
+                </h1>
+
+                <div class="space-y-4">
+                    <!-- Player 1: The Setter -->
+                    <div id="p1-card" class="player-card p-4 bg-slate-800 rounded-2xl border-2 border-transparent">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Player 1</p>
+                        <p class="text-lg font-black">THE SETTER</p>
+                        <p class="text-xs text-slate-400 mt-1" id="p1-status">Waiting...</p>
+                    </div>
+
+                    <!-- Player 2: The Seeker -->
+                    <div id="p2-card" class="player-card p-4 bg-slate-800 rounded-2xl border-2 border-transparent">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Player 2</p>
+                        <p class="text-lg font-black">THE SEEKER</p>
+                        <p class="text-xs text-slate-400 mt-1" id="p2-status">Waiting...</p>
+                    </div>
+
+                    <hr class="border-slate-800">
+
+                    <div>
+                        <label class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2 block">Bomb Limit</label>
+                        <select id="bomb-select" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold focus:outline-none">
+                            <option value="1">1 Bomb</option>
+                            <option value="3" selected>3 Bombs</option>
+                            <option value="5">5 Bombs</option>
+                            <option value="8">8 Bombs</option>
+                        </select>
+                    </div>
+
+                    <button id="main-btn" onclick="startSetupPhase()" 
+                        class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black transition-all active:scale-95">
+                        START NEW ROUND
+                    </button>
+                </div>
+            </div>
+
+            <div id="instruction-box" class="bg-indigo-900/20 p-4 rounded-2xl border border-indigo-500/30">
+                <p id="instruction-text" class="text-sm text-indigo-200 font-medium text-center">
+                    Click "Start New Round" to begin.
+                </p>
+            </div>
+        </div>
+
+        <!-- Center Panel: Game Board -->
+        <div id="game-container" class="lg:col-span-3 space-y-6">
+            <div id="multiplier-bar" class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide opacity-0 transition-opacity">
+                <!-- Injected via JS -->
+            </div>
+
+            <div id="chip-grid" class="chip-grid pointer-events-none opacity-50">
+                <!-- 25 Chips injected via JS -->
+            </div>
+
+            <div id="status-container" class="h-12 flex items-center justify-center">
+                <p id="status-msg" class="text-lg font-bold text-slate-400"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GRID_SIZE = 25;
+        let gameState = {
+            phase: 'IDLE', // IDLE, SETUP, PLAY, END
+            bombsCount: 3,
+            bombPositions: [],
+            revealedIndices: [],
+            multipliers: []
+        };
+
+        function init() {
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('chip-grid');
+            grid.innerHTML = '';
+            for (let i = 0; i < GRID_SIZE; i++) {
+                const chip = document.createElement('div');
+                chip.className = 'chip';
+                chip.innerHTML = `
+                    <div class="chip-face chip-front"></div>
+                    <div class="chip-back chip-face"></div>
+                `;
+                chip.onclick = () => handleChipClick(i);
+                grid.appendChild(chip);
+            }
+        }
+
+        function startSetupPhase() {
+            gameState.phase = 'SETUP';
+            gameState.bombsCount = parseInt(document.getElementById('bomb-select').value);
+            gameState.bombPositions = [];
+            gameState.revealedIndices = [];
+            
+            // UI Updates
+            document.getElementById('chip-grid').classList.remove('pointer-events-none', 'opacity-50');
+            document.getElementById('multiplier-bar').classList.add('opacity-0');
+            document.getElementById('p1-card').classList.add('active');
+            document.getElementById('p2-card').classList.remove('active');
+            document.getElementById('p1-status').innerText = `Selecting ${gameState.bombsCount} bombs...`;
+            document.getElementById('p2-status').innerText = `Look away!`;
+            document.getElementById('instruction-text').innerText = `PLAYER 1: Click tiles to hide bombs. Player 2 shouldn't look!`;
+            document.getElementById('main-btn').disabled = true;
+            document.getElementById('main-btn').classList.add('opacity-50');
+
+            // Reset grid
+            const chips = document.querySelectorAll('.chip');
+            chips.forEach(c => {
+                c.classList.remove('flipped');
+                c.querySelector('.chip-front').classList.remove('chip-selected-bomb');
+                c.querySelector('.chip-back').className = 'chip-back chip-face';
+                c.querySelector('.chip-back').innerHTML = '';
+            });
+
+            showStatus(`Setting ${gameState.bombsCount} Bombs`, "text-indigo-400");
+        }
+
+        function handleChipClick(index) {
+            if (gameState.phase === 'SETUP') {
+                toggleBomb(index);
+            } else if (gameState.phase === 'PLAY') {
+                revealChip(index);
+            }
+        }
+
+        function toggleBomb(index) {
+            const chip = document.querySelectorAll('.chip')[index];
+            const front = chip.querySelector('.chip-front');
+            
+            if (gameState.bombPositions.includes(index)) {
+                gameState.bombPositions = gameState.bombPositions.filter(i => i !== index);
+                front.classList.remove('chip-selected-bomb');
+            } else {
+                if (gameState.bombPositions.length < gameState.bombsCount) {
+                    gameState.bombPositions.push(index);
+                    front.classList.add('chip-selected-bomb');
+                }
+            }
+
+            if (gameState.bombPositions.length === gameState.bombsCount) {
+                setTimeout(startPlayPhase, 800);
+            }
+        }
+
+        function startPlayPhase() {
+            gameState.phase = 'PLAY';
+            
+            // Hide bombs and prepare for P2
+            const chips = document.querySelectorAll('.chip');
+            chips.forEach(c => c.querySelector('.chip-front').classList.remove('chip-selected-bomb'));
+
+            document.getElementById('p1-card').classList.remove('active');
+            document.getElementById('p2-card').classList.add('active');
+            document.getElementById('p1-status').innerText = `Waiting...`;
+            document.getElementById('p2-status').innerText = `Hunting for diamonds!`;
+            document.getElementById('instruction-text').innerText = `PLAYER 2: Try to find all Safe Chips! Avoid the traps.`;
+            
+            calculateMultipliers();
+            document.getElementById('multiplier-bar').classList.remove('opacity-0');
+            showStatus("Player 2's Turn", "text-emerald-400");
+        }
+
+        function revealChip(index) {
+            if (gameState.revealedIndices.includes(index)) return;
+
+            const chips = document.querySelectorAll('.chip');
+            const target = chips[index];
+            const back = target.querySelector('.chip-back');
+
+            gameState.revealedIndices.push(index);
+            target.classList.add('flipped');
+
+            if (gameState.bombPositions.includes(index)) {
+                back.classList.add('chip-bomb');
+                back.innerHTML = '💣';
+                gameOver('PLAYER 1 WINS!');
+            } else {
+                back.classList.add('chip-safe');
+                back.innerHTML = '💎';
+                
+                const nodes = document.querySelectorAll('.multiplier-node');
+                nodes.forEach(n => n.classList.remove('active'));
+                if(nodes[gameState.revealedIndices.length - 1]) {
+                    nodes[gameState.revealedIndices.length - 1].classList.add('active');
+                }
+
+                if (gameState.revealedIndices.length === (GRID_SIZE - gameState.bombsCount)) {
+                    gameOver('PLAYER 2 WINS!');
+                }
+            }
+        }
+
+        function calculateMultipliers() {
+            const n = GRID_SIZE;
+            const b = gameState.bombsCount;
+            gameState.multipliers = [];
+            let currentMult = 1;
+            for (let i = 1; i <= (n - b); i++) {
+                let prob = (n - b - (i - 1)) / (n - (i - 1));
+                currentMult = currentMult * (1 / prob);
+                gameState.multipliers.push(currentMult.toFixed(2));
+            }
+            renderMultipliers();
+        }
+
+        function renderMultipliers() {
+            const bar = document.getElementById('multiplier-bar');
+            bar.innerHTML = gameState.multipliers.slice(0, 10).map((m, idx) => `
+                <div class="multiplier-node flex-shrink-0 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-slate-400">
+                    Step ${idx+1}: ${m}x
+                </div>
+            `).join('');
+        }
+
+        function gameOver(resultText) {
+            gameState.phase = 'END';
+            
+            if (resultText.includes('PLAYER 1')) {
+                document.body.classList.add('shake-screen');
+                setTimeout(() => document.body.classList.remove('shake-screen'), 400);
+            }
+
+            showStatus(resultText, resultText.includes('1') ? "text-indigo-400" : "text-emerald-400");
+            
+            // Show all bombs
+            const chips = document.querySelectorAll('.chip');
+            gameState.bombPositions.forEach(pos => {
+                const b = chips[pos].querySelector('.chip-back');
+                b.className = 'chip-back chip-face chip-bomb';
+                b.innerHTML = '💣';
+                chips[pos].classList.add('flipped');
+            });
+
+            document.getElementById('main-btn').disabled = false;
+            document.getElementById('main-btn').classList.remove('opacity-50');
+            document.getElementById('p1-card').classList.remove('active');
+            document.getElementById('p2-card').classList.remove('active');
+            document.getElementById('instruction-text').innerText = "Game Over! Click below to play again.";
+        }
+
+        function showStatus(msg, colorClass) {
+            const el = document.getElementById('status-msg');
+            el.innerText = msg;
+            el.className = `text-lg font-bold ${colorClass}`;
+        }
+
+        init();
+    </script>
+</body>
+</html>

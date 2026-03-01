@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aeronautica · Steampunk Skies</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Cinzel', 'Georgia', serif;
+            background-color: #3a281a;
+            color: #e6d7b8;
+        }
+        #bridge-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            background: rgba(60, 40, 20, 0.85);
+            backdrop-filter: blur(12px);
+            border: 3px solid #b87c4b;
+            border-radius: 60px;
+            padding: 12px 32px;
+            display: flex;
+            gap: 40px;
+            border-left: 8px solid #d9a066;
+            box-shadow: 0 0 40px rgba(200, 120, 50, 0.4);
+            pointer-events: none;
+            font-family: 'Cinzel', serif;
+        }
+        .bridge-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .bridge-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #e5c8a3;
+            letter-spacing: 3px;
+        }
+        .bridge-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #f0dbb0, #d9a066);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #airship-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(50, 35, 20, 0.85);
+            backdrop-filter: blur(16px);
+            border: 3px solid #b87c4b;
+            border-radius: 50px;
+            padding: 20px 32px;
+            z-index: 50;
+            border-right: 8px solid #d9a066;
+            min-width: 280px;
+            box-shadow: 0 15px 35px rgba(80, 40, 10, 0.6);
+        }
+        .airship-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 1rem;
+            border-bottom: 2px solid #8b6b45;
+            padding-bottom: 5px;
+        }
+        .airship-label {
+            color: #e5c8a3;
+        }
+        .airship-value {
+            font-weight: 600;
+            color: #f0dbb0;
+            font-family: 'Courier New', monospace;
+        }
+        .pulse-steam {
+            width: 16px;
+            height: 16px;
+            background: #d9a066;
+            border-radius: 50%;
+            box-shadow: 0 0 30px #ffaa44;
+            animation: steam-pulse 2s infinite;
+        }
+        @keyframes steam-pulse {
+            0% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.4); background: #ffcc88; }
+            100% { opacity: 0.5; transform: scale(1); }
+        }
+        #atmosphere-tag {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(40, 35, 25, 0.8);
+            backdrop-filter: blur(8px);
+            border: 3px solid #8b6b45;
+            border-radius: 40px;
+            padding: 12px 28px;
+            z-index: 50;
+            border-left: 6px solid #d9a066;
+            color: #e6d7b8;
+        }
+        .gear-icon {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            background: #b87c4b;
+            border-radius: 30% 70% 50% 50% / 30% 40% 60% 70%;
+            margin-right: 8px;
+            box-shadow: 0 0 15px #d9a066;
+        }
+        #engine-stats {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(50, 35, 20, 0.85);
+            backdrop-filter: blur(8px);
+            border: 3px solid #b87c4b;
+            border-radius: 40px;
+            padding: 16px 28px;
+            z-index: 50;
+            text-align: right;
+            border-bottom: 6px solid #d9a066;
+        }
+        .glow-number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f0dbb0, #d9a066);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="bridge-panel">
+        <div class="bridge-item">
+            <span class="bridge-label">vessel</span>
+            <span class="bridge-value">IRON EMPYREAN</span>
+        </div>
+        <div class="bridge-item">
+            <span class="bridge-label">altitude</span>
+            <span class="bridge-value" id="altitude-display">1,847</span><span style="font-size:1rem;">ft</span>
+        </div>
+        <div class="bridge-item">
+            <span class="bridge-label">heading</span>
+            <span class="bridge-value">NE</span>
+        </div>
+    </div>
+
+    <div id="airship-panel">
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+            <span class="pulse-steam"></span>
+            <span style="font-weight: 600; font-size: 1.3rem;">⚙️ ENGINE ROOM</span>
+        </div>
+        <div class="airship-row">
+            <span class="airship-label">boiler pressure</span>
+            <span class="airship-value" id="pressure">127 psi</span>
+        </div>
+        <div class="airship-row">
+            <span class="airship-label">rpm</span>
+            <span class="airship-value" id="rpm">243</span>
+        </div>
+        <div class="airship-row">
+            <span class="airship-label">coal bunker</span>
+            <span class="airship-value">78%</span>
+        </div>
+        <div class="airship-row">
+            <span class="airship-label">lift gas</span>
+            <span class="airship-value">hydrogen · 94%</span>
+        </div>
+        <div class="airship-row">
+            <span class="airship-label">ballast</span>
+            <span class="airship-value">12.4 tons</span>
+        </div>
+    </div>
+
+    <div id="atmosphere-tag">
+        <span class="gear-icon"></span> <span>cumulus clouds · wind SE 8 knots · visibility 12mi</span>
+    </div>
+
+    <div id="engine-stats">
+        <div style="font-size:1rem;">🔥 PROPULSION</div>
+        <div class="glow-number">2,840<span style="font-size:1rem;"> hp</span></div>
+        <div style="font-size:0.8rem;">4 x compound steam engines</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- Scene setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87a9b0); // hazy sky
+        scene.fog = new THREE.Fog(0x87a9b0, 40, 120);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(25, 20, 40);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.4;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.minDistance = 20;
+        controls.maxDistance = 100;
+        
+        // --- Lighting ---
+        const ambient = new THREE.AmbientLight(0x606080);
+        scene.add(ambient);
+        
+        const sunLight = new THREE.DirectionalLight(0xffeedd, 1.0);
+        sunLight.position.set(30, 40, 20);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        const d = 50;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 80;
+        scene.add(sunLight);
+        
+        // --- Ground (distant landscape) ---
+        const groundGeo = new THREE.CircleGeometry(100, 32);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x5a7a4a });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // --- Clouds (fluffy spheres) ---
+        const cloudGroup = new THREE.Group();
+        for (let i = 0; i < 30; i++) {
+            const cloudMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, transparent: true, opacity: 0.7 });
+            const cloud = new THREE.Mesh(new THREE.SphereGeometry(1.5 + Math.random(), 5), cloudMat);
+            cloud.position.set(
+                (Math.random() - 0.5) * 80,
+                15 + Math.random() * 15,
+                (Math.random() - 0.5) * 80
+            );
+            cloud.castShadow = false;
+            cloud.receiveShadow = false;
+            scene.add(cloud);
+        }
+        
+        // --- Main Airship (Iron Empyrean) ---
+        const airshipGroup = new THREE.Group();
+        airshipGroup.position.set(0, 18, 0);
+        
+        // Envelope (gas bag)
+        const envelopeGeo = new THREE.CylinderGeometry(5, 5, 15, 12);
+        const envelopeMat = new THREE.MeshStandardMaterial({ color: 0xb87c4b, emissive: 0x221100 });
+        const envelope = new THREE.Mesh(envelopeGeo, envelopeMat);
+        envelope.rotation.x = Math.PI/2;
+        envelope.rotation.z = 0.1;
+        envelope.castShadow = true;
+        envelope.receiveShadow = true;
+        airshipGroup.add(envelope);
+        
+        // Gondola (passenger cabin)
+        const gondolaGeo = new THREE.BoxGeometry(3, 1.5, 6);
+        const gondolaMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b });
+        const gondola = new THREE.Mesh(gondolaGeo, gondolaMat);
+        gondola.position.y = -3;
+        gondola.position.z = 1;
+        gondola.castShadow = true;
+        gondola.receiveShadow = true;
+        airshipGroup.add(gondola);
+        
+        // Windows
+        const windowMat = new THREE.MeshStandardMaterial({ color: 0xffdd99, emissive: 0x442200 });
+        for (let i = 0; i < 4; i++) {
+            const windowGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 6);
+            const window = new THREE.Mesh(windowGeo, windowMat);
+            window.position.set(1.0 + (i%2)*1.0, -3.2, -1 + i*1.2);
+            window.rotation.x = Math.PI/2;
+            airshipGroup.add(window);
+        }
+        
+        // Tail fins
+        const finMat = new THREE.MeshStandardMaterial({ color: 0x6b4e3a });
+        const fin1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2, 2), finMat);
+        fin1.position.set(0, 1, 8);
+        fin1.rotation.x = 0.3;
+        airshipGroup.add(fin1);
+        
+        // Propellers
+        const propMat = new THREE.MeshStandardMaterial({ color: 0xcc9966 });
+        const propGeo = new THREE.BoxGeometry(2, 0.2, 0.5);
+        
+        const prop1 = new THREE.Mesh(propGeo, propMat);
+        prop1.position.set(-3, -2, -2);
+        prop1.rotation.y = 0.3;
+        airshipGroup.add(prop1);
+        
+        const prop2 = new THREE.Mesh(propGeo, propMat);
+        prop2.position.set(3, -2, -2);
+        prop2.rotation.y = -0.3;
+        airshipGroup.add(prop2);
+        
+        scene.add(airshipGroup);
+        
+        // Airship label
+        const airshipDiv = document.createElement('div');
+        airshipDiv.textContent = '⚓ IRON EMPYREAN';
+        airshipDiv.style.background = '#3a281a';
+        airshipDiv.style.color = '#e5c8a3';
+        airshipDiv.style.border = '3px solid #b87c4b';
+        airshipDiv.style.borderRadius = '40px';
+        airshipDiv.style.padding = '4px 20px';
+        airshipDiv.style.fontSize = '18px';
+        airshipDiv.style.fontWeight = 'bold';
+        const airshipLabel = new CSS2DObject(airshipDiv);
+        airshipLabel.position.set(0, 24, 0);
+        scene.add(airshipLabel);
+        
+        // --- Support airships (smaller) ---
+        for (let j = 0; j < 4; j++) {
+            const smallGroup = new THREE.Group();
+            const angle = (j / 4) * Math.PI * 2;
+            const radius = 12;
+            smallGroup.position.set(
+                Math.cos(angle) * radius,
+                16 + Math.sin(j*2)*2,
+                Math.sin(angle) * radius
+            );
+            
+            const smallEnv = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 6, 6), new THREE.MeshStandardMaterial({ color: 0x9b7a5a }));
+            smallEnv.rotation.x = Math.PI/2;
+            smallEnv.castShadow = true;
+            smallGroup.add(smallEnv);
+            
+            const smallGond = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 2), new THREE.MeshStandardMaterial({ color: 0x6b4e3a }));
+            smallGond.position.y = -1.5;
+            smallGroup.add(smallGond);
+            
+            scene.add(smallGroup);
+        }
+        
+        // --- Steam vents (particle systems) ---
+        const steamGeo = new THREE.BufferGeometry();
+        const steamCount = 400;
+        const steamPos = new Float32Array(steamCount * 3);
+        for (let i = 0; i < steamCount; i++) {
+            steamPos[i*3] = (Math.random() - 0.5) * 40;
+            steamPos[i*3+1] = Math.random() * 30;
+            steamPos[i*3+2] = (Math.random() - 0.5) * 40;
+        }
+        steamGeo.setAttribute('position', new THREE.BufferAttribute(steamPos, 3));
+        const steamMat = new THREE.PointsMaterial({ color: 0xcccccc, size: 0.3, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+        const steam = new THREE.Points(steamGeo, steamMat);
+        scene.add(steam);
+        
+        // --- Floating lanterns (balloons) ---
+        const lanterns = [];
+        for (let i = 0; i < 20; i++) {
+            const lanternGroup = new THREE.Group();
+            
+            const balloonGeo = new THREE.SphereGeometry(0.6, 6);
+            const balloonMat = new THREE.MeshStandardMaterial({ color: 0xd9a066, emissive: 0x332211 });
+            const balloon = new THREE.Mesh(balloonGeo, balloonMat);
+            balloon.castShadow = true;
+            lanternGroup.add(balloon);
+            
+            const basketGeo = new THREE.BoxGeometry(0.3, 0.2, 0.3);
+            const basketMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b });
+            const basket = new THREE.Mesh(basketGeo, basketMat);
+            basket.position.y = -0.6;
+            lanternGroup.add(basket);
+            
+            lanternGroup.position.set(
+                (Math.random() - 0.5) * 50,
+                10 + Math.random() * 15,
+                (Math.random() - 0.5) * 50
+            );
+            
+            lanternGroup.userData = { speed: 0.002 + Math.random() * 0.003, angle: Math.random() * Math.PI * 2 };
+            scene.add(lanternGroup);
+            lanterns.push(lanternGroup);
+        }
+        
+        // --- Gears (decorative floating) ---
+        for (let i = 0; i < 10; i++) {
+            const gearGeo = new THREE.TorusGeometry(0.8, 0.1, 6, 12, Math.PI/2);
+            const gearMat = new THREE.MeshStandardMaterial({ color: 0xcc9966 });
+            const gear = new THREE.Mesh(gearGeo, gearMat);
+            gear.position.set(
+                (Math.random() - 0.5) * 40,
+                5 + Math.random() * 15,
+                (Math.random() - 0.5) * 40
+            );
+            gear.rotation.x = Math.random() * Math.PI;
+            gear.rotation.y = Math.random() * Math.PI;
+            scene.add(gear);
+        }
+        
+        // --- Animate ---
+        let time = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            time += 0.005;
+            
+            // Float airship gently
+            airshipGroup.position.y = 18 + Math.sin(time * 0.5) * 0.5;
+            airshipGroup.rotation.z = Math.sin(time * 0.3) * 0.02;
+            
+            // Move lanterns
+            lanterns.forEach(l => {
+                l.position.y += Math.sin(time * 2 + l.position.x) * 0.002;
+                l.rotation.y += 0.01;
+            });
+            
+            // Steam particles drift
+            const positions = steam.geometry.attributes.position.array;
+            for (let i = 1; i < positions.length; i+=3) {
+                positions[i] += 0.02; // rise
+                if (positions[i] > 30) positions[i] = 0;
+            }
+            steam.geometry.attributes.position.needsUpdate = true;
+            
+            // Update displays
+            const alt = 1847 + Math.sin(time * 2) * 20;
+            document.getElementById('altitude-display').innerText = Math.floor(alt);
+            document.getElementById('pressure').innerText = (127 + Math.sin(time*3)*5).toFixed(0) + ' psi';
+            document.getElementById('rpm').innerText = 243 + Math.floor(Math.sin(time*4)*10);
+            
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aetheria · Floating Isles</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Cinzel', 'Georgia', serif;
+            background-color: #1a2a3a;
+            color: #e0d8c0;
+        }
+        #aether-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            background: rgba(40, 30, 50, 0.8);
+            backdrop-filter: blur(12px);
+            border: 2px solid #c6a57a;
+            border-radius: 60px;
+            padding: 12px 32px;
+            display: flex;
+            gap: 40px;
+            border-left: 6px solid #e5b887;
+            box-shadow: 0 0 40px rgba(200, 150, 100, 0.4);
+            pointer-events: none;
+        }
+        .aether-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .aether-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #d4b68a;
+            letter-spacing: 2px;
+        }
+        .aether-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #f0e6d2, #c6a57a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #magic-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(45, 35, 55, 0.85);
+            backdrop-filter: blur(16px);
+            border: 2px solid #b89e7b;
+            border-radius: 50px;
+            padding: 20px 32px;
+            z-index: 50;
+            border-right: 6px solid #d4a56e;
+            min-width: 280px;
+            box-shadow: 0 15px 35px rgba(80, 50, 30, 0.6);
+        }
+        .magic-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 1rem;
+            border-bottom: 1px solid #5a4a3a;
+            padding-bottom: 5px;
+        }
+        .magic-label {
+            color: #d4b68a;
+        }
+        .magic-value {
+            font-weight: 600;
+            color: #f0dbb0;
+        }
+        .pulse-aether {
+            width: 14px;
+            height: 14px;
+            background: #e5b887;
+            border-radius: 50%;
+            box-shadow: 0 0 30px #ffaa66;
+            animation: aether-pulse 3s infinite;
+        }
+        @keyframes aether-pulse {
+            0% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.4); background: #ffd8a8; }
+            100% { opacity: 0.6; transform: scale(1); }
+        }
+        #environment-tag {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(40, 35, 45, 0.8);
+            backdrop-filter: blur(8px);
+            border: 2px solid #6b8a5a;
+            border-radius: 40px;
+            padding: 12px 28px;
+            z-index: 50;
+            border-left: 4px solid #a7c957;
+            color: #e0e6b0;
+        }
+        .aether-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #a7c957;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 15px #c6df75;
+        }
+        #floating-stats {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(45, 35, 55, 0.85);
+            backdrop-filter: blur(8px);
+            border: 2px solid #b89e7b;
+            border-radius: 40px;
+            padding: 16px 28px;
+            z-index: 50;
+            text-align: right;
+            border-bottom: 4px solid #d4a56e;
+        }
+        .glow-number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f0dbb0, #d4b68a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="aether-panel">
+        <div class="aether-item">
+            <span class="aether-label">realm</span>
+            <span class="aether-value">AETHERIA</span>
+        </div>
+        <div class="aether-item">
+            <span class="aether-label">altitude</span>
+            <span class="aether-value" id="altitude">3,847<span style="font-size:1rem;">m</span></span>
+        </div>
+        <div class="aether-item">
+            <span class="aether-label">magic</span>
+            <span class="aether-value" id="magic-level">8.4</span>
+        </div>
+    </div>
+
+    <div id="magic-panel">
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+            <span class="pulse-aether"></span>
+            <span style="font-weight: 600; font-size: 1.3rem;">✨ ARCANE ENERGY</span>
+        </div>
+        <div class="magic-row">
+            <span class="magic-label">ley line</span>
+            <span class="magic-value">convergence</span>
+        </div>
+        <div class="magic-row">
+            <span class="magic-label">crystals</span>
+            <span class="magic-value" id="crystals">147</span>
+        </div>
+        <div class="magic-row">
+            <span class="magic-label">wisps</span>
+            <span class="magic-value" id="wisps">23</span>
+        </div>
+        <div class="magic-row">
+            <span class="magic-label">ancient power</span>
+            <span class="magic-value" id="ancient-power">78%</span>
+        </div>
+        <div class="magic-row">
+            <span class="magic-label">portal</span>
+            <span class="magic-value">stable</span>
+        </div>
+    </div>
+
+    <div id="environment-tag">
+        <span class="aether-icon"></span> <span>floating isles · waterfalls · eternal twilight</span>
+    </div>
+
+    <div id="floating-stats">
+        <div style="font-size:1rem;">📜 LORE</div>
+        <div class="glow-number" id="lore-fragments">247</div>
+        <div style="font-size:0.8rem;">dragon · phoenix · griffin</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- Scene setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x2a3a4a);
+        scene.fog = new THREE.FogExp2(0x2a3a4a, 0.002);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(25, 15, 35);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.3;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.minDistance = 20;
+        controls.maxDistance = 80;
+        
+        // --- Lighting ---
+        const ambient = new THREE.AmbientLight(0x405060);
+        scene.add(ambient);
+        
+        const moonLight = new THREE.DirectionalLight(0xcce0ff, 0.6);
+        moonLight.position.set(-20, 30, 20);
+        moonLight.castShadow = true;
+        moonLight.shadow.mapSize.width = 1024;
+        moonLight.shadow.mapSize.height = 1024;
+        const d = 50;
+        moonLight.shadow.camera.left = -d;
+        moonLight.shadow.camera.right = d;
+        moonLight.shadow.camera.top = d;
+        moonLight.shadow.camera.bottom = -d;
+        moonLight.shadow.camera.near = 1;
+        moonLight.shadow.camera.far = 80;
+        scene.add(moonLight);
+        
+        // Magical lights
+        const colors = [0x88aaff, 0xffaa88, 0xaacc88, 0xffccaa];
+        for (let i = 0; i < 6; i++) {
+            const light = new THREE.PointLight(colors[Math.floor(Math.random() * colors.length)], 0.7, 25);
+            light.position.set(
+                (Math.random() - 0.5) * 25,
+                10 + Math.random() * 15,
+                (Math.random() - 0.5) * 25
+            );
+            scene.add(light);
+        }
+        
+        // --- Floating islands ---
+        function createIsland(x, y, z, size) {
+            const group = new THREE.Group();
+            
+            // Base rock
+            const rockGeo = new THREE.DodecahedronGeometry(size * 2, 0);
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x7a6a5a, roughness: 0.7 });
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+            rock.position.y = -size;
+            rock.castShadow = true;
+            rock.receiveShadow = true;
+            group.add(rock);
+            
+            // Grass top
+            const grassGeo = new THREE.CylinderGeometry(size * 1.8, size * 2, size * 0.5, 8);
+            const grassMat = new THREE.MeshStandardMaterial({ color: 0x5a7a4a });
+            const grass = new THREE.Mesh(grassGeo, grassMat);
+            grass.position.y = -size + 0.3;
+            grass.castShadow = true;
+            grass.receiveShadow = true;
+            group.add(grass);
+            
+            // Trees (simple cones)
+            for (let i = 0; i < 5; i++) {
+                const treeGeo = new THREE.ConeGeometry(size * 0.3, size * 1.5, 5);
+                const treeMat = new THREE.MeshStandardMaterial({ color: 0x2d5a27 });
+                const tree = new THREE.Mesh(treeGeo, treeMat);
+                const angle = (i / 5) * Math.PI * 2;
+                tree.position.set(
+                    Math.cos(angle) * size * 1.2,
+                    -size + 1.0,
+                    Math.sin(angle) * size * 1.2
+                );
+                tree.castShadow = true;
+                group.add(tree);
+            }
+            
+            group.position.set(x, y, z);
+            return group;
+        }
+        
+        // Main island
+        const mainIsland = createIsland(0, 8, 0, 3);
+        scene.add(mainIsland);
+        
+        // Smaller floating islands
+        for (let i = 0; i < 5; i++) {
+            const angle = (i / 5) * Math.PI * 2;
+            const radius = 15;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const y = 12 + Math.sin(angle * 2) * 3;
+            const island = createIsland(x, y, z, 1.2 + Math.sin(i) * 0.5);
+            scene.add(island);
+        }
+        
+        // --- Waterfall (particle system) ---
+        const waterfallGeo = new THREE.BufferGeometry();
+        const dropCount = 800;
+        const dropPos = new Float32Array(dropCount * 3);
+        const dropVel = [];
+        for (let i = 0; i < dropCount; i++) {
+            dropPos[i*3] = (Math.random() - 0.5) * 6;
+            dropPos[i*3+1] = 8 + Math.random() * 8;
+            dropPos[i*3+2] = (Math.random() - 0.5) * 6;
+            dropVel.push(0.02 + Math.random() * 0.03);
+        }
+        waterfallGeo.setAttribute('position', new THREE.BufferAttribute(dropPos, 3));
+        const waterMat = new THREE.PointsMaterial({ color: 0x88aaff, size: 0.2, transparent: true, blending: THREE.AdditiveBlending });
+        const waterfall = new THREE.Points(waterfallGeo, waterMat);
+        waterfall.position.set(3, 0, 2);
+        scene.add(waterfall);
+        
+        // --- Ancient temple on main island ---
+        const templeGroup = new THREE.Group();
+        templeGroup.position.set(0, 10.5, 0);
+        
+        // Base
+        const baseGeo = new THREE.BoxGeometry(3, 1, 3);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0xccaa88 });
+        const base = new THREE.Mesh(baseGeo, baseMat);
+        base.position.y = 0.5;
+        base.castShadow = true;
+        base.receiveShadow = true;
+        templeGroup.add(base);
+        
+        // Columns
+        const colGeo = new THREE.CylinderGeometry(0.3, 0.3, 2, 6);
+        const colMat = new THREE.MeshStandardMaterial({ color: 0xddbb99 });
+        for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI * 2;
+            const col = new THREE.Mesh(colGeo, colMat);
+            col.position.set(
+                Math.cos(angle) * 1.2,
+                1.5,
+                Math.sin(angle) * 1.2
+            );
+            col.castShadow = true;
+            templeGroup.add(col);
+        }
+        
+        // Roof
+        const roofGeo = new THREE.ConeGeometry(1.8, 1.2, 6);
+        const roofMat = new THREE.MeshStandardMaterial({ color: 0xaa8866 });
+        const roof = new THREE.Mesh(roofGeo, roofMat);
+        roof.position.y = 2.2;
+        roof.castShadow = true;
+        templeGroup.add(roof);
+        
+        scene.add(templeGroup);
+        
+        // Temple label
+        const templeDiv = document.createElement('div');
+        templeDiv.textContent = '🏛️ TEMPLE OF AETHER';
+        templeDiv.style.background = '#2a3a2a';
+        templeDiv.style.color = '#e5c8a3';
+        templeDiv.style.border = '2px solid #c6a57a';
+        templeDiv.style.borderRadius = '30px';
+        templeDiv.style.padding = '4px 16px';
+        const templeLabel = new CSS2DObject(templeDiv);
+        templeLabel.position.set(0, 14, 0);
+        scene.add(templeLabel);
+        
+        // --- Floating crystals (glowing) ---
+        for (let i = 0; i < 12; i++) {
+            const crystalGeo = new THREE.OctahedronGeometry(0.4);
+            const colors = [0xff88aa, 0x88aaff, 0xaaff88, 0xffaa88];
+            const crystalMat = new THREE.MeshStandardMaterial({ 
+                color: colors[Math.floor(Math.random() * colors.length)],
+                emissive: 0x442200,
+                transparent: true,
+                opacity: 0.8
+            });
+            const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+            
+            const angle = (i / 12) * Math.PI * 2;
+            const radius = 8;
+            crystal.position.set(
+                Math.cos(angle) * radius,
+                15 + Math.sin(i * 2) * 3,
+                Math.sin(angle) * radius
+            );
+            crystal.castShadow = true;
+            scene.add(crystal);
+        }
+        
+        // --- Wisps (floating lights) ---
+        const wisps = [];
+        for (let i = 0; i < 20; i++) {
+            const wispGeo = new THREE.SphereGeometry(0.15);
+            const wispMat = new THREE.MeshStandardMaterial({ color: 0xffdd99, emissive: 0x442200 });
+            const wisp = new THREE.Mesh(wispGeo, wispMat);
+            
+            wisp.position.set(
+                (Math.random() - 0.5) * 30,
+                5 + Math.random() * 15,
+                (Math.random() - 0.5) * 30
+            );
+            
+            wisp.userData = {
+                angle: Math.random() * Math.PI * 2,
+                speed: 0.005 + Math.random() * 0.01,
+                radius: 1 + Math.random() * 2,
+                height: wisp.position.y
+            };
+            
+            scene.add(wisp);
+            wisps.push(wisp);
+        }
+        
+        // --- Animate ---
+        let time = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            time += 0.01;
+            
+            // Waterfall flow
+            const positions = waterfall.geometry.attributes.position.array;
+            for (let i = 1; i < positions.length; i+=3) {
+                positions[i] -= dropVel[Math.floor(i/3)] * 0.5;
+                if (positions[i] < -2) {
+                    positions[i] = 16;
+                    positions[i-1] = (Math.random() - 0.5) * 6;
+                    positions[i+1] = (Math.random() - 0.5) * 6;
+                }
+            }
+            waterfall.geometry.attributes.position.needsUpdate = true;
+            
+            // Move wisps
+            wisps.forEach(w => {
+                const data = w.userData;
+                data.angle += data.speed;
+                w.position.x += Math.cos(data.angle) * 0.01;
+                w.position.z += Math.sin(data.angle) * 0.01;
+                w.position.y = data.height + Math.sin(time * 2 + data.angle) * 1;
+            });
+            
+            // Update displays
+            document.getElementById('altitude').innerText = (3847 + Math.sin(time)*10).toFixed(0) + 'm';
+            document.getElementById('magic-level').innerText = (8.4 + Math.sin(time*0.5)*0.2).toFixed(1);
+            document.getElementById('crystals').innerText = 147 + Math.floor(Math.sin(time)*3);
+            document.getElementById('wisps').innerText = 23 + Math.floor(Math.sin(time*2)*2);
+            document.getElementById('ancient-power').innerText = (78 + Math.sin(time*0.8)*2).toFixed(0) + '%';
+            document.getElementById('lore-fragments').innerText = 247 + Math.floor(Math.sin(time)*5);
+            
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
