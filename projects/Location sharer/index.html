@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocateMe - Live Tracking & Sharing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --secondary: #1e293b;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .map-bg {
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 30px 30px;
+            background-color: #f1f5f9;
+            position: relative;
+            overflow: hidden;
+        }
+        .user-pulse {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: rgba(139, 92, 246, 0.4);
+            border-radius: 50%;
+            animation: pulse-ring 2s infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(4); opacity: 0; }
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .history-line {
+            stroke-dasharray: 5;
+            animation: dash-flow 30s linear infinite;
+        }
+        @keyframes dash-flow {
+            to { stroke-dashoffset: -500; }
+        }
+        .safe-zone {
+            fill: rgba(34, 197, 94, 0.1);
+            stroke: rgba(34, 197, 94, 0.3);
+            stroke-width: 2;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <!-- Top Navigation -->
+    <header class="bg-white border-b px-6 py-3 flex justify-between items-center z-50 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="bg-violet-600 p-2.5 rounded-xl shadow-lg shadow-violet-200">
+                <i class="fas fa-location-crosshairs text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-slate-800 tracking-tight">LocateMe</h1>
+                <p class="text-[10px] uppercase tracking-widest text-violet-500 font-bold">Live Precision</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <div id="status-badge" class="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-full border border-green-100">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
+                <span class="text-xs font-bold text-green-700">Live Tracking</span>
+            </div>
+            <button onclick="toggleSOS()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md transition-all active:scale-95">
+                SOS
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        <!-- Sidebar: Controls & Sharing -->
+        <aside class="w-full md:w-[380px] bg-white shadow-2xl flex flex-col z-40 border-r border-slate-100">
+            <div class="p-6 flex-1 overflow-y-auto hide-scrollbar">
+                
+                <!-- Current Location Stats -->
+                <div class="bg-slate-900 rounded-2xl p-5 mb-6 text-white shadow-xl">
+                    <p class="text-slate-400 text-xs font-bold uppercase mb-4 tracking-wider">Your Position</p>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <h2 id="current-coords" class="text-2xl font-mono font-bold tracking-tighter">40.7128° N, 74.0060° W</h2>
+                            <p class="text-slate-400 text-sm mt-1 flex items-center gap-2">
+                                <i class="fas fa-map-pin text-violet-400"></i> Lower Manhattan, NY
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-violet-400 text-xs font-bold block">Accuracy</span>
+                            <span class="text-xl font-bold">±3m</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sharing Controls -->
+                <div class="mb-8">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Sharing Options</h3>
+                    <div class="space-y-4">
+                        <div class="p-4 border rounded-2xl border-slate-100 hover:border-violet-200 transition-colors group">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="font-bold text-slate-700">Live Share Link</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="share-toggle" class="sr-only peer" onchange="toggleSharing()">
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+                                </label>
+                            </div>
+                            <div id="share-link-box" class="hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div class="flex gap-2">
+                                    <input type="text" readonly value="locateme.app/s/xv29-k4" class="flex-1 bg-slate-50 border rounded-lg px-3 py-2 text-sm font-mono text-slate-600">
+                                    <button onclick="copyLink()" class="bg-slate-100 p-2 rounded-lg hover:bg-slate-200 text-slate-600">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                                <p class="text-[10px] text-slate-400 mt-2 italic">Anyone with this link can see your live position for 2 hours.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 border rounded-2xl border-slate-100">
+                            <div>
+                                <p class="font-bold text-slate-700">Trusted Contacts</p>
+                                <p class="text-xs text-slate-400">Notify family automatically</p>
+                            </div>
+                            <div class="flex -space-x-2">
+                                <img src="https://i.pravatar.cc/100?u=1" class="w-8 h-8 rounded-full border-2 border-white">
+                                <img src="https://i.pravatar.cc/100?u=2" class="w-8 h-8 rounded-full border-2 border-white">
+                                <button class="w-8 h-8 rounded-full bg-slate-100 border-2 border-white text-slate-400 text-xs flex items-center justify-center hover:bg-slate-200">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Feed -->
+                <div>
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Recent Activity</h3>
+                    <div class="space-y-6 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
+                        <div class="relative pl-10">
+                            <div class="absolute left-2.5 top-1.5 w-3 h-3 bg-violet-500 rounded-full border-2 border-white shadow-sm"></div>
+                            <p class="text-sm font-bold text-slate-800">Entered Safe Zone</p>
+                            <p class="text-xs text-slate-400">Home Office • 10:42 AM</p>
+                        </div>
+                        <div class="relative pl-10">
+                            <div class="absolute left-2.5 top-1.5 w-3 h-3 bg-slate-300 rounded-full border-2 border-white shadow-sm"></div>
+                            <p class="text-sm font-bold text-slate-800">Signal Resumed</p>
+                            <p class="text-xs text-slate-400">Broadway Ave • 09:15 AM</p>
+                        </div>
+                        <div class="relative pl-10 opacity-60">
+                            <div class="absolute left-2.5 top-1.5 w-3 h-3 bg-slate-300 rounded-full border-2 border-white shadow-sm"></div>
+                            <p class="text-sm font-bold text-slate-800">Stationary</p>
+                            <p class="text-xs text-slate-400">Central Park • 08:30 AM</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Action -->
+            <div class="p-6 bg-slate-50 border-t">
+                <button onclick="downloadLog()" class="w-full flex items-center justify-center gap-2 text-slate-600 font-bold text-sm py-3 border border-slate-200 rounded-xl hover:bg-white transition-all">
+                    <i class="fas fa-file-export"></i> Export Journey Data
+                </button>
+            </div>
+        </aside>
+
+        <!-- Map Section -->
+        <section class="flex-1 map-bg relative">
+            <!-- Simulated Vector Map -->
+            <svg class="absolute inset-0 w-full h-full" id="map-svg">
+                <!-- Grid Roads -->
+                <path d="M0 100 L2000 100" stroke="#e2e8f0" stroke-width="40" fill="none" />
+                <path d="M0 400 L2000 400" stroke="#e2e8f0" stroke-width="40" fill="none" />
+                <path d="M0 700 L2000 700" stroke="#e2e8f0" stroke-width="40" fill="none" />
+                
+                <path d="M200 0 L200 2000" stroke="#e2e8f0" stroke-width="40" fill="none" />
+                <path d="M600 0 L600 2000" stroke="#e2e8f0" stroke-width="40" fill="none" />
+                <path d="M1000 0 L1000 2000" stroke="#e2e8f0" stroke-width="40" fill="none" />
+
+                <!-- Geofence/Safe Zone -->
+                <circle cx="200" cy="400" r="120" class="safe-zone" />
+                
+                <!-- History Path -->
+                <path id="history-trail" d="M1000 700 L1000 400 L600 400 L600 100" stroke="#8b5cf6" stroke-width="4" fill="none" class="history-line opacity-30" />
+            </svg>
+
+            <!-- User Marker -->
+            <div id="user-marker" class="absolute top-[100px] left-[600px] -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-[2000ms] ease-linear">
+                <div class="user-pulse"></div>
+                <div class="relative w-10 h-10 bg-violet-600 rounded-full border-4 border-white shadow-2xl flex items-center justify-center">
+                    <i class="fas fa-person-walking text-white"></i>
+                    <!-- Directional arrow -->
+                    <div id="marker-dir" class="absolute -top-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-violet-600"></div>
+                </div>
+            </div>
+
+            <!-- Floating Map Controls -->
+            <div class="absolute right-6 top-6 flex flex-col gap-2">
+                <button class="w-12 h-12 glass-card rounded-xl shadow-lg flex items-center justify-center text-slate-600 hover:text-violet-600 transition-colors">
+                    <i class="fas fa-layer-group"></i>
+                </button>
+                <button onclick="centerMap()" class="w-12 h-12 glass-card rounded-xl shadow-lg flex items-center justify-center text-slate-600 hover:text-violet-600 transition-colors">
+                    <i class="fas fa-crosshairs"></i>
+                </button>
+                <div class="h-px bg-slate-200 my-1 mx-2"></div>
+                <button class="w-12 h-12 glass-card rounded-xl shadow-lg flex items-center justify-center text-slate-600">+</button>
+                <button class="w-12 h-12 glass-card rounded-xl shadow-lg flex items-center justify-center text-slate-600">-</button>
+            </div>
+
+            <!-- Speed & Alt Overlay -->
+            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4">
+                <div class="glass-card px-6 py-3 rounded-2xl shadow-xl flex items-center gap-4 border border-white">
+                    <div class="text-center">
+                        <p class="text-[10px] uppercase font-bold text-slate-400">Speed</p>
+                        <p class="text-lg font-black text-slate-800"><span id="live-speed">4.2</span> <small class="text-xs">km/h</small></p>
+                    </div>
+                    <div class="w-px h-8 bg-slate-100"></div>
+                    <div class="text-center">
+                        <p class="text-[10px] uppercase font-bold text-slate-400">Altitude</p>
+                        <p class="text-lg font-black text-slate-800">12 <small class="text-xs">m</small></p>
+                    </div>
+                    <div class="w-px h-8 bg-slate-100"></div>
+                    <div class="text-center">
+                        <p class="text-[10px] uppercase font-bold text-slate-400">Satellites</p>
+                        <p class="text-lg font-black text-slate-800">8</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- SOS Modal -->
+    <div id="sos-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-red-600/90 backdrop-blur-md p-6">
+        <div class="max-w-md w-full text-center text-white">
+            <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl animate-bounce">
+                <i class="fas fa-triangle-exclamation text-red-600 text-4xl"></i>
+            </div>
+            <h2 class="text-4xl font-black mb-2">SOS BROADCASTING</h2>
+            <p class="text-red-100 mb-8">Your live location and audio is being shared with emergency services and trusted contacts.</p>
+            <div class="space-y-3">
+                <div class="bg-white/10 p-4 rounded-2xl border border-white/20 flex items-center justify-between">
+                    <span>Police Notified</span>
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="bg-white/10 p-4 rounded-2xl border border-white/20 flex items-center justify-between">
+                    <span>Contacts Alerted</span>
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+            <button onclick="toggleSOS()" class="mt-12 bg-white text-red-600 font-bold py-4 px-8 rounded-2xl shadow-xl active:scale-95 transition-all">
+                Cancel Emergency Mode
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let isSharing = false;
+        let userPos = { x: 600, y: 100 };
+        const routePoints = [
+            {x: 600, y: 100}, {x: 600, y: 400}, {x: 1000, y: 400}, {x: 1000, y: 700}, {x: 200, y: 700}, {x: 200, y: 400}
+        ];
+        let currentIdx = 0;
+
+        // Simulate Movement
+        function simulateMovement() {
+            setInterval(() => {
+                currentIdx = (currentIdx + 1) % routePoints.length;
+                const nextPos = routePoints[currentIdx];
+                
+                const marker = document.getElementById('user-marker');
+                const dirArrow = document.getElementById('marker-dir');
+                
+                // Calculate rotation based on direction
+                const angle = Math.atan2(nextPos.y - userPos.y, nextPos.x - userPos.x) * (180 / Math.PI);
+                dirArrow.style.transform = `translateX(-50%) rotate(${angle + 90}deg)`;
+                
+                userPos = nextPos;
+                marker.style.left = userPos.x + 'px';
+                marker.style.top = userPos.y + 'px';
+
+                // Update Coordinates UI
+                const lat = (40.7128 + (userPos.y / 10000)).toFixed(4);
+                const lng = (74.0060 + (userPos.x / 10000)).toFixed(4);
+                document.getElementById('current-coords').innerText = `${lat}° N, ${lng}° W`;
+                
+                // Update speed randomly
+                document.getElementById('live-speed').innerText = (Math.random() * 5 + 2).toFixed(1);
+
+                // Auto-center map concept
+                centerMap();
+            }, 5000);
+        }
+
+        function centerMap() {
+            // In a real app, this would scroll/pan the map container
+            console.log("Centering on:", userPos);
+        }
+
+        function toggleSharing() {
+            isSharing = !isSharing;
+            const box = document.getElementById('share-link-box');
+            if(isSharing) {
+                box.classList.remove('hidden');
+                showToast("Live sharing enabled");
+            } else {
+                box.classList.add('hidden');
+                showToast("Live sharing disabled");
+            }
+        }
+
+        function toggleSOS() {
+            const modal = document.getElementById('sos-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function copyLink() {
+            const input = document.querySelector('#share-link-box input');
+            input.select();
+            document.execCommand('copy');
+            showToast("Link copied to clipboard!");
+        }
+
+        function downloadLog() {
+            showToast("Preparing journey log (KML/GPX)...");
+            setTimeout(() => showToast("Download started!"), 1500);
+        }
+
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = "fixed top-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl z-[100] transition-all animate-bounce text-sm font-bold";
+            t.innerText = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        window.onload = () => {
+            simulateMovement();
+        };
+    </script>
+</body>
+</html>

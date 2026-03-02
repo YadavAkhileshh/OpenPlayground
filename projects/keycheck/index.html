@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KeyCheck · Visual Keyboard Tester</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #f5f7fb;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            color: #1e293b;
+        }
+
+        .tester-container {
+            max-width: 1100px;
+            width: 100%;
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 48px;
+            box-shadow: 0 20px 45px -18px rgba(0,0,0,0.15), 0 0 0 1px rgba(209, 219, 233, 0.5) inset;
+            padding: 2.5rem 2rem;
+        }
+
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.8rem;
+        }
+
+        .title h1 {
+            font-weight: 600;
+            font-size: 2.2rem;
+            margin: 0 0 0.2rem 0;
+            background: linear-gradient(145deg, #1e2b3f, #3f5a82);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .title p {
+            margin: 0;
+            color: #62748c;
+            font-size: 1rem;
+        }
+
+        .stats-panel {
+            display: flex;
+            gap: 2rem;
+            background: #ffffff;
+            padding: 1rem 2rem;
+            border-radius: 60px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            border: 1px solid #e0e8f2;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #6a7f9f;
+            letter-spacing: 0.4px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #1e2f42;
+        }
+
+        .keyboard-area {
+            background: #ffffff;
+            border-radius: 36px;
+            padding: 2rem 1.5rem;
+            box-shadow: 0 12px 30px -15px rgba(0,0,0,0.1);
+            border: 1px solid #e6ecf5;
+            margin-bottom: 2rem;
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            gap: 0.6rem;
+            margin-bottom: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .key {
+            background: #f8fafd;
+            border: 2px solid #dbe2ed;
+            min-width: 58px;
+            height: 58px;
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 1.1rem;
+            color: #1e293b;
+            box-shadow: 0 4px 0 #cbd5e1;
+            transition: all 0.07s ease;
+            cursor: default;
+            user-select: none;
+            padding: 0 0.2rem;
+        }
+
+        .key.special {
+            background: #ecf1f7;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #334e77;
+            min-width: 80px;
+        }
+
+        .key.space {
+            min-width: 320px;
+            background: #f0f4fc;
+        }
+
+        .key.pressed {
+            background: #d4e2fc;
+            border-color: #4870b5;
+            color: #0d1f3a;
+            transform: translateY(4px);
+            box-shadow: 0 0 0 1px #4870b5, 0 0 0 3px rgba(72,112,181,0.15);
+        }
+
+        .key-row-label {
+            font-size: 0.7rem;
+            color: #6b83a5;
+            margin-top: 0.15rem;
+            font-weight: 400;
+        }
+
+        /* detected keys panel */
+        .detected-panel {
+            background: #ffffff;
+            border-radius: 32px;
+            padding: 1.8rem 2rem;
+            border: 1px solid #e3eaf3;
+            box-shadow: 0 8px 18px -10px rgba(0,0,0,0.04);
+        }
+
+        .detected-title {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 1.2rem;
+            color: #334e77;
+        }
+
+        .detected-bubbles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            min-height: 4rem;
+            align-items: center;
+        }
+
+        .bubble {
+            background: #ebf2fc;
+            border: 1.5px solid #98b9e3;
+            color: #1a3456;
+            padding: 0.7rem 1.4rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .bubble .code {
+            font-family: 'JetBrains Mono', monospace;
+            background: #ffffff;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            color: #2d4d87;
+            font-size: 0.8rem;
+            border: 1px solid #b7cde8;
+        }
+
+        .empty-state {
+            color: #8fa0bc;
+            font-style: italic;
+            padding: 1rem 0;
+        }
+
+        .footer-notes {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+            color: #7489a8;
+            font-size: 0.9rem;
+        }
+
+        .reset-btn {
+            background: none;
+            border: 2px solid #d4dfed;
+            padding: 0.5rem 2rem;
+            border-radius: 40px;
+            color: #405e83;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .reset-btn:hover {
+            background: #e7eefa;
+            border-color: #7d9bc7;
+        }
+
+        .light-accent {
+            color: #5879a7;
+        }
+    </style>
+</head>
+<body>
+    <div class="tester-container">
+        <div class="header">
+            <div class="title">
+                <h1>⌨️ KeyCheck</h1>
+                <p>press any key · visual keyboard tester</p>
+            </div>
+            <div class="stats-panel">
+                <div class="stat-item">
+                    <span class="stat-label">keys pressed</span>
+                    <span class="stat-value" id="keyCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">last key</span>
+                    <span class="stat-value" id="lastKey">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visual keyboard layout (simplified US) -->
+        <div class="keyboard-area">
+            <div class="keyboard-row">
+                <div class="key" data-key="`">`<span class="key-row-label">~</span></div>
+                <div class="key" data-key="1">1<span class="key-row-label">!</span></div>
+                <div class="key" data-key="2">2<span class="key-row-label">@</span></div>
+                <div class="key" data-key="3">3<span class="key-row-label">#</span></div>
+                <div class="key" data-key="4">4<span class="key-row-label">$</span></div>
+                <div class="key" data-key="5">5<span class="key-row-label">%</span></div>
+                <div class="key" data-key="6">6<span class="key-row-label">^</span></div>
+                <div class="key" data-key="7">7<span class="key-row-label">&</span></div>
+                <div class="key" data-key="8">8<span class="key-row-label">*</span></div>
+                <div class="key" data-key="9">9<span class="key-row-label">(</span></div>
+                <div class="key" data-key="0">0<span class="key-row-label">)</span></div>
+                <div class="key" data-key="-">-<span class="key-row-label">_</span></div>
+                <div class="key" data-key="=">=<span class="key-row-label">+</span></div>
+                <div class="key special" data-key="Backspace">⌫ Backspace</div>
+            </div>
+            <div class="keyboard-row">
+                <div class="key special" data-key="Tab">Tab</div>
+                <div class="key" data-key="q">Q</div>
+                <div class="key" data-key="w">W</div>
+                <div class="key" data-key="e">E</div>
+                <div class="key" data-key="r">R</div>
+                <div class="key" data-key="t">T</div>
+                <div class="key" data-key="y">Y</div>
+                <div class="key" data-key="u">U</div>
+                <div class="key" data-key="i">I</div>
+                <div class="key" data-key="o">O</div>
+                <div class="key" data-key="p">P</div>
+                <div class="key" data-key="[">[<span class="key-row-label">{</span></div>
+                <div class="key" data-key="]">]<span class="key-row-label">}</span></div>
+                <div class="key special" data-key="\">\<span class="key-row-label">|</span></div>
+            </div>
+            <div class="keyboard-row">
+                <div class="key special" data-key="CapsLock">Caps</div>
+                <div class="key" data-key="a">A</div>
+                <div class="key" data-key="s">S</div>
+                <div class="key" data-key="d">D</div>
+                <div class="key" data-key="f">F</div>
+                <div class="key" data-key="g">G</div>
+                <div class="key" data-key="h">H</div>
+                <div class="key" data-key="j">J</div>
+                <div class="key" data-key="k">K</div>
+                <div class="key" data-key="l">L</div>
+                <div class="key" data-key=";">;<span class="key-row-label">:</span></div>
+                <div class="key" data-key="'">'<span class="key-row-label">"</span></div>
+                <div class="key special" data-key="Enter">⏎ Enter</div>
+            </div>
+            <div class="keyboard-row">
+                <div class="key special" data-key="ShiftLeft">⇧ Shift</div>
+                <div class="key" data-key="z">Z</div>
+                <div class="key" data-key="x">X</div>
+                <div class="key" data-key="c">C</div>
+                <div class="key" data-key="v">V</div>
+                <div class="key" data-key="b">B</div>
+                <div class="key" data-key="n">N</div>
+                <div class="key" data-key="m">M</div>
+                <div class="key" data-key=",">,<span class="key-row-label">&lt;</span></div>
+                <div class="key" data-key=".">.<span class="key-row-label">></span></div>
+                <div class="key" data-key="/">/<span class="key-row-label">?</span></div>
+                <div class="key special" data-key="ShiftRight">⇧ Shift</div>
+            </div>
+            <div class="keyboard-row">
+                <div class="key special" data-key="ControlLeft">Ctrl</div>
+                <div class="key special" data-key="MetaLeft">⊞ Win</div>
+                <div class="key special" data-key="AltLeft">Alt</div>
+                <div class="key space" data-key="Space">␣ Space</div>
+                <div class="key special" data-key="AltRight">AltGr</div>
+                <div class="key special" data-key="MetaRight">⊞ Win</div>
+                <div class="key special" data-key="ContextMenu">≣ Menu</div>
+                <div class="key special" data-key="ControlRight">Ctrl</div>
+            </div>
+        </div>
+
+        <!-- detected keys live -->
+        <div class="detected-panel">
+            <div class="detected-title">📋 currently pressed keys</div>
+            <div class="detected-bubbles" id="pressedBubbles">
+                <div class="empty-state">— no keys pressed —</div>
+            </div>
+        </div>
+
+        <div class="footer-notes">
+            <span>⚡ click any key on screen to simulate (but real presses work best)</span>
+            <button class="reset-btn" id="resetBtn">reset</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ----- STATE -----
+            // pressed keys set (stores event.code for uniqueness)
+            const pressedSet = new Set();
+            // mapping from code to visual representation (key attribute)
+            const keyElements = document.querySelectorAll('.key');
+            const pressedBubblesDiv = document.getElementById('pressedBubbles');
+            const keyCountSpan = document.getElementById('keyCount');
+            const lastKeySpan = document.getElementById('lastKey');
+            const resetBtn = document.getElementById('resetBtn');
+
+            // helper to update UI (highlight keys and bubble list)
+            function updateUI() {
+                // 1. reset all highlights
+                keyElements.forEach(el => el.classList.remove('pressed'));
+
+                // 2. highlight keys that are in pressedSet by matching data-key attribute
+                pressedSet.forEach(code => {
+                    // try to match by data-key (exact code)
+                    let matched = false;
+                    keyElements.forEach(el => {
+                        const dataKey = el.getAttribute('data-key');
+                        if (dataKey && dataKey === code) {
+                            el.classList.add('pressed');
+                            matched = true;
+                        }
+                    });
+                    // optional: handle special cases (space, enter etc already covered)
+                });
+
+                // 3. update bubble list
+                const codesArray = Array.from(pressedSet).sort();
+                if (codesArray.length === 0) {
+                    pressedBubblesDiv.innerHTML = '<div class="empty-state">— no keys pressed —</div>';
+                } else {
+                    let html = '';
+                    codesArray.forEach(code => {
+                        // get nice display name (remove 'Key', 'Digit' etc)
+                        let display = code;
+                        if (code.startsWith('Key')) display = code.slice(3);
+                        else if (code.startsWith('Digit')) display = code.slice(5);
+                        else if (code === 'Space') display = '␣ Space';
+                        else if (code === 'Enter') display = '⏎ Enter';
+                        else if (code === 'Backspace') display = '⌫ Backspace';
+                        else if (code === 'Tab') display = 'Tab';
+                        else if (code.includes('Shift')) display = '⇧ Shift';
+                        else if (code.includes('Control')) display = 'Ctrl';
+                        else if (code.includes('Alt')) display = 'Alt';
+                        else if (code.includes('Meta')) display = '⊞ Win';
+                        else if (code === 'CapsLock') display = 'Caps';
+                        else if (code === 'ContextMenu') display = '≣ Menu';
+                        
+                        html += `<div class="bubble"><span>${display}</span> <span class="code">${code}</span></div>`;
+                    });
+                    pressedBubblesDiv.innerHTML = html;
+                }
+
+                // 4. update counters
+                keyCountSpan.innerText = pressedSet.size;
+            }
+
+            // add a key (by code)
+            function addKey(code) {
+                pressedSet.add(code);
+                // update last key
+                lastKeySpan.innerText = code;
+                updateUI();
+            }
+
+            // remove a key
+            function removeKey(code) {
+                pressedSet.delete(code);
+                updateUI();
+            }
+
+            // reset all
+            function resetAll() {
+                pressedSet.clear();
+                lastKeySpan.innerText = '—';
+                updateUI();
+            }
+
+            // ---- EVENT LISTENERS (real keyboard) ----
+            window.addEventListener('keydown', (e) => {
+                e.preventDefault(); // avoid triggering browser shortcuts, but keep it friendly
+                const code = e.code;
+                if (!pressedSet.has(code)) {
+                    addKey(code);
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                const code = e.code;
+                if (pressedSet.has(code)) {
+                    removeKey(code);
+                }
+            });
+
+            // handle window blur (if user switches tab, release all keys)
+            window.addEventListener('blur', () => {
+                resetAll();
+            });
+
+            // ---- SIMULATED KEY CLICKS (click on visual key) ----
+            keyElements.forEach(el => {
+                el.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    const dataKey = el.getAttribute('data-key');
+                    if (dataKey) {
+                        // simulate press (add to set)
+                        if (!pressedSet.has(dataKey)) {
+                            addKey(dataKey);
+                        }
+                    }
+                });
+                el.addEventListener('mouseup', () => {
+                    // we don't know which key to release on mouseup (could be many). better use mouseleave?
+                });
+                el.addEventListener('mouseleave', () => {
+                    // optional: we could release the specific key, but for simplicity we keep pressed until real keyup
+                });
+            });
+
+            // also handle mouseup anywhere to release? not accurate. We'll rely on keyup.
+            // but we can add a "release all" on clicking reset.
+
+            resetBtn.addEventListener('click', resetAll);
+
+            // prevent context menu on keys
+            document.querySelectorAll('.key').forEach(el => {
+                el.addEventListener('contextmenu', (e) => e.preventDefault());
+            });
+
+            // initial update
+            updateUI();
+        })();
+    </script>
+</body>
+</html>

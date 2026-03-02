@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VerletCloth Pro | Ultra Physics Engine</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+
+    <!-- Telemetry Overlay -->
+    <div id="telemetry">
+        <div class="stat-item">
+            <span class="label">FPS</span>
+            <span class="value" id="fps-val">60</span>
+        </div>
+        <div class="stat-item">
+            <span class="label">POINTS</span>
+            <span class="value" id="points-val">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="label">TENSION</span>
+            <span class="value" id="tension-val">0.00</span>
+        </div>
+        <div class="graph-container">
+            <canvas id="tension-graph"></canvas>
+        </div>
+    </div>
+
+    <!-- Main Control Panel -->
+    <aside class="ui-panel">
+        <header>
+            <h1>VerletCloth <span class="badge">PRO</span></h1>
+            <p class="subtitle">Next-Gen Physics Sandbox</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="physics">Physics</button>
+            <button class="tab-btn" data-tab="visual">Visual</button>
+            <button class="tab-btn" data-tab="scenes">Scenes</button>
+        </nav>
+
+        <div class="tab-content" id="physics-tab">
+            <div class="control-group">
+                <label for="material-select">Material Preset</label>
+                <select id="material-select">
+                    <option value="SILK">Silk (Flexible)</option>
+                    <option value="LINEN" selected>Linen (Natural)</option>
+                    <option value="CHAINMAIL">Chainmail (Heavy)</option>
+                    <option value="RUBBER">Rubber (Elastic)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <div class="label-row">
+                    <label for="gravity">Gravity</label>
+                    <span class="value-display" id="gravity-display">1.0</span>
+                </div>
+                <input type="range" id="gravity" min="-2" max="5" step="0.1" value="1.0">
+            </div>
+
+            <div class="control-group">
+                <div class="label-row">
+                    <label for="stiffness">Solver Iterations</label>
+                    <span class="value-display" id="stiffness-display">5</span>
+                </div>
+                <input type="range" id="stiffness" min="1" max="50" step="1" value="5">
+            </div>
+
+            <div class="control-group">
+                <div class="label-row">
+                    <label for="friction">Damping (Friction)</label>
+                    <span class="value-display" id="friction-display">0.98</span>
+                </div>
+                <input type="range" id="friction" min="0.8" max="1" step="0.001" value="0.98">
+            </div>
+
+            <div class="control-group">
+                <div class="label-row">
+                    <label for="breakingLimit">Elastic Limit (Snap)</label>
+                    <span class="value-display" id="breaking-display">2.5</span>
+                </div>
+                <input type="range" id="breakingLimit" min="1.1" max="15" step="0.1" value="2.5">
+            </div>
+        </div>
+
+        <div class="tab-content hidden" id="visual-tab">
+            <div class="toggle-group">
+                <label class="toggle">
+                    <input type="checkbox" id="fillMesh">
+                    <span class="slider"></span>
+                    Render Fabric Surface
+                </label>
+                <label class="toggle">
+                    <input type="checkbox" id="tensionAware" checked>
+                    <span class="slider"></span>
+                    Tension Heatmap
+                </label>
+                <label class="toggle">
+                    <input type="checkbox" id="bloomEnabled" checked>
+                    <span class="slider"></span>
+                    Bloom Post-Process
+                </label>
+                <label class="toggle">
+                    <input type="checkbox" id="showPoints">
+                    <span class="slider"></span>
+                    Show Mass Points
+                </label>
+            </div>
+        </div>
+
+        <div class="tab-content hidden" id="scenes-tab">
+            <div class="scene-grid">
+                <button class="scene-btn" data-scene="DEFAULT">Classic Curtain</button>
+                <button class="scene-btn" data-scene="WIND_TUNNEL">Wind Tunnel</button>
+                <button class="scene-btn" data-scene="IRON_CURTAIN">Iron Curtain</button>
+                <button class="scene-btn" data-scene="THE_VOID">Zero-G Void</button>
+                <button class="scene-btn" data-scene="OBSTACLE_COURSE">Plinko Course</button>
+            </div>
+        </div>
+
+        <footer>
+            <button id="reset" class="btn-primary">Initialize Simulation</button>
+            <div class="instructions">
+                <p><span>L-Click:</span> Interact and Drag</p>
+                <p><span>R-Click:</span> Tear Material</p>
+                <p><span>M-Click:</span> Pin / Unpin Point</p>
+                <p><span>[X]:</span> Explosion | <span>[G]:</span> Singularity</p>
+                <p><span>[F]:</span> Freeze Engine</p>
+            </div>
+        </footer>
+    </aside>
+
+    <!-- Global Audio Toggle -->
+    <div id="audio-ui">
+        <button id="audio-toggle" title="Toggle Audio Engine">
+            <svg viewBox="0 0 24 24" class="icon-off">
+                <path
+                    d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zM3 9v6h4l5 5V4L7 9H3z" />
+            </svg>
+            <span class="status">Click to enable Audio</span>
+        </button>
+    </div>
+
+    <!-- Core Scripts -->
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriFuture · Autonomous Farm</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Avenir', 'Segoe UI', sans-serif;
+            background-color: #1a3a2a;
+            color: #e0f0d0;
+        }
+        #farm-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            background: rgba(20, 50, 30, 0.8);
+            backdrop-filter: blur(12px);
+            border: 2px solid #88dd88;
+            border-radius: 50px;
+            padding: 12px 32px;
+            display: flex;
+            gap: 40px;
+            border-left: 6px solid #aaffaa;
+            box-shadow: 0 0 40px rgba(100, 255, 100, 0.3);
+            pointer-events: none;
+        }
+        .farm-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .farm-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #aaffaa;
+            letter-spacing: 2px;
+        }
+        .farm-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #ffffff, #aaffaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #harvest-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(20, 50, 30, 0.85);
+            backdrop-filter: blur(16px);
+            border: 2px solid #88dd88;
+            border-radius: 50px;
+            padding: 20px 32px;
+            z-index: 50;
+            border-right: 6px solid #aaffaa;
+            min-width: 280px;
+            box-shadow: 0 15px 35px rgba(0, 100, 0, 0.6);
+        }
+        .harvest-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 1rem;
+            border-bottom: 1px solid #2a6a2a;
+            padding-bottom: 5px;
+        }
+        .harvest-label {
+            color: #aaffaa;
+        }
+        .harvest-value {
+            font-weight: 600;
+            color: #e0f0d0;
+        }
+        .pulse-farm {
+            width: 14px;
+            height: 14px;
+            background: #88ff88;
+            border-radius: 50%;
+            box-shadow: 0 0 30px #88ff88;
+            animation: farm-pulse 1.8s infinite;
+        }
+        @keyframes farm-pulse {
+            0% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.4); background: #ccffcc; }
+            100% { opacity: 0.6; transform: scale(1); }
+        }
+        #environment-tag {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(20, 50, 30, 0.8);
+            backdrop-filter: blur(8px);
+            border: 2px solid #88dd88;
+            border-radius: 40px;
+            padding: 12px 28px;
+            z-index: 50;
+            border-left: 4px solid #aaffaa;
+            color: #e0f0d0;
+        }
+        .farm-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #aaffaa;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 15px #aaffaa;
+        }
+        #crop-stats {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(20, 50, 30, 0.85);
+            backdrop-filter: blur(8px);
+            border: 2px solid #ffaa44;
+            border-radius: 40px;
+            padding: 16px 28px;
+            z-index: 50;
+            text-align: right;
+            border-bottom: 4px solid #ffcc66;
+        }
+        .glow-number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff, #ffaa44);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="farm-panel">
+        <div class="farm-item">
+            <span class="farm-label">farm</span>
+            <span class="farm-value">AGRI-7</span>
+        </div>
+        <div class="farm-item">
+            <span class="farm-label">drones</span>
+            <span class="farm-value" id="drone-count">24</span>
+        </div>
+        <div class="farm-item">
+            <span class="farm-label">yield</span>
+            <span class="farm-value" id="yield">98%</span>
+        </div>
+    </div>
+
+    <div id="harvest-panel">
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+            <span class="pulse-farm"></span>
+            <span style="font-weight: 600; font-size: 1.3rem;">🤖 HARVEST DATA</span>
+        </div>
+        <div class="harvest-row">
+            <span class="harvest-label">crop type</span>
+            <span class="harvest-value" id="crop-type">Hydro Wheat</span>
+        </div>
+        <div class="harvest-row">
+            <span class="harvest-label">growth stage</span>
+            <span class="harvest-value" id="growth">83%</span>
+        </div>
+        <div class="harvest-row">
+            <span class="harvest-label">soil pH</span>
+            <span class="harvest-value" id="ph">6.8</span>
+        </div>
+        <div class="harvest-row">
+            <span class="harvest-label">water usage</span>
+            <span class="harvest-value" id="water">342 L/day</span>
+        </div>
+        <div class="harvest-row">
+            <span class="harvest-label">energy</span>
+            <span class="harvest-value" id="energy">1.2 kWh</span>
+        </div>
+    </div>
+
+    <div id="environment-tag">
+        <span class="farm-icon"></span> <span>vertical gardens · aquaponics · solar panels · 22°C</span>
+    </div>
+
+    <div id="crop-stats">
+        <div style="font-size:1rem;">🌱 TOTAL HARVEST</div>
+        <div class="glow-number" id="total-crops">12,847<span style="font-size:1rem;"> kg</span></div>
+        <div style="font-size:0.8rem;">tomatoes · lettuce · berries</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- Scene setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87c0a0);
+        scene.fog = new THREE.Fog(0x87c0a0, 30, 100);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(20, 12, 30);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.3;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.minDistance = 15;
+        controls.maxDistance = 60;
+        
+        // --- Lighting ---
+        const ambient = new THREE.AmbientLight(0x406040);
+        scene.add(ambient);
+        
+        const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
+        sunLight.position.set(30, 40, 20);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        const d = 50;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 80;
+        scene.add(sunLight);
+        
+        // --- Ground (fertile soil) ---
+        const groundGeo = new THREE.CircleGeometry(60, 32);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x5a7a4a, roughness: 0.7 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.5;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // --- Crop rows (green rectangles) ---
+        function createCropRow(x, z, length, color) {
+            const group = new THREE.Group();
+            
+            for (let i = 0; i < length; i++) {
+                const plantGeo = new THREE.BoxGeometry(0.2, 0.5, 0.2);
+                const plantMat = new THREE.MeshStandardMaterial({ color: color });
+                const plant = new THREE.Mesh(plantGeo, plantMat);
+                plant.position.set(i * 0.8 - length * 0.4, 0, 0);
+                plant.castShadow = true;
+                plant.receiveShadow = true;
+                group.add(plant);
+            }
+            
+            group.position.set(x, -0.25, z);
+            return group;
+        }
+        
+        // Grid of crop rows
+        for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 6; j++) {
+                const x = (i - 4) * 3;
+                const z = (j - 3) * 4;
+                const colors = [0x88aa44, 0x66aa33, 0xaacc55, 0x88cc44];
+                const row = createCropRow(x, z, 8, colors[Math.floor(Math.random() * colors.length)]);
+                scene.add(row);
+            }
+        }
+        
+        // --- Vertical farming towers ---
+        function createTower(x, z) {
+            const group = new THREE.Group();
+            
+            for (let level = 0; level < 5; level++) {
+                const trayGeo = new THREE.CylinderGeometry(1.2, 1.2, 0.2, 6);
+                const trayMat = new THREE.MeshStandardMaterial({ color: 0x88aadd });
+                const tray = new THREE.Mesh(trayGeo, trayMat);
+                tray.position.y = level * 1.5;
+                tray.castShadow = true;
+                tray.receiveShadow = true;
+                group.add(tray);
+                
+                // Plants on tray
+                for (let p = 0; p < 4; p++) {
+                    const plantGeo = new THREE.ConeGeometry(0.3, 0.5, 4);
+                    const plantMat = new THREE.MeshStandardMaterial({ color: 0x88dd88 });
+                    const plant = new THREE.Mesh(plantGeo, plantMat);
+                    const angle = (p / 4) * Math.PI * 2;
+                    plant.position.set(
+                        Math.cos(angle) * 0.8,
+                        level * 1.5 + 0.3,
+                        Math.sin(angle) * 0.8
+                    );
+                    plant.castShadow = true;
+                    group.add(plant);
+                }
+            }
+            
+            group.position.set(x, -0.5, z);
+            return group;
+        }
+        
+        // Place towers
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 2; j++) {
+                const x = -8 + i * 8;
+                const z = -5 + j * 15;
+                const tower = createTower(x, z);
+                scene.add(tower);
+            }
+        }
+        
+        // --- Farm buildings (automated facility) ---
+        const facilityGroup = new THREE.Group();
+        facilityGroup.position.set(10, -0.5, 8);
+        
+        const mainGeo = new THREE.BoxGeometry(4, 2.5, 4);
+        const mainMat = new THREE.MeshStandardMaterial({ color: 0x88aadd });
+        const main = new THREE.Mesh(mainGeo, mainMat);
+        main.position.y = 1.25;
+        main.castShadow = true;
+        main.receiveShadow = true;
+        facilityGroup.add(main);
+        
+        const roofGeo = new THREE.ConeGeometry(2.5, 1, 4);
+        const roofMat = new THREE.MeshStandardMaterial({ color: 0x3366aa });
+        const roof = new THREE.Mesh(roofGeo, roofMat);
+        roof.position.y = 2.8;
+        roof.castShadow = true;
+        facilityGroup.add(roof);
+        
+        scene.add(facilityGroup);
+        
+        // Facility label
+        const facilityDiv = document.createElement('div');
+        facilityDiv.textContent = '🏭 HARVEST CONTROL';
+        facilityDiv.style.background = '#1a4a3a';
+        facilityDiv.style.color = '#aaffaa';
+        facilityDiv.style.border = '2px solid #88dd88';
+        facilityDiv.style.borderRadius = '30px';
+        facilityDiv.style.padding = '4px 16px';
+        const facilityLabel = new CSS2DObject(facilityDiv);
+        facilityLabel.position.set(10, 3.5, 8);
+        scene.add(facilityLabel);
+        
+        // --- Autonomous drones (flying robots) ---
+        const drones = [];
+        function createDrone() {
+            const group = new THREE.Group();
+            
+            const bodyGeo = new THREE.BoxGeometry(0.6, 0.2, 0.8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x88aaff });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.castShadow = true;
+            group.add(body);
+            
+            const rotorGeo = new THREE.BoxGeometry(0.2, 0.1, 1.2);
+            const rotorMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+            for (let i = 0; i < 4; i++) {
+                const rotor = new THREE.Mesh(rotorGeo, rotorMat);
+                rotor.position.set(
+                    (i % 2 === 0 ? 0.5 : -0.5),
+                    0.1,
+                    (i < 2 ? 0.5 : -0.5)
+                );
+                group.add(rotor);
+            }
+            
+            return group;
+        }
+        
+        for (let i = 0; i < 12; i++) {
+            const drone = createDrone();
+            drone.position.set(
+                (Math.random() - 0.5) * 30,
+                3 + Math.random() * 8,
+                (Math.random() - 0.5) * 30
+            );
+            
+            drone.userData = {
+                angle: Math.random() * Math.PI * 2,
+                speed: 0.01 + Math.random() * 0.02,
+                radius: 2 + Math.random() * 5,
+                height: drone.position.y
+            };
+            
+            scene.add(drone);
+            drones.push(drone);
+        }
+        
+        // --- Solar panels ---
+        for (let i = 0; i < 6; i++) {
+            const panelGroup = new THREE.Group();
+            const panelGeo = new THREE.BoxGeometry(2, 0.1, 1);
+            const panelMat = new THREE.MeshStandardMaterial({ color: 0x3366aa });
+            const panel = new THREE.Mesh(panelGeo, panelMat);
+            panel.rotation.x = -0.5;
+            panel.castShadow = true;
+            panel.receiveShadow = true;
+            panelGroup.add(panel);
+            
+            panelGroup.position.set(
+                -12 + i * 4,
+                1,
+                12
+            );
+            scene.add(panelGroup);
+        }
+        
+        // --- Irrigation system (water particles) ---
+        const waterGeo = new THREE.BufferGeometry();
+        const waterCount = 400;
+        const waterPos = new Float32Array(waterCount * 3);
+        for (let i = 0; i < waterCount; i++) {
+            waterPos[i*3] = (Math.random() - 0.5) * 30;
+            waterPos[i*3+1] = Math.random() * 8;
+            waterPos[i*3+2] = (Math.random() - 0.5) * 30;
+        }
+        waterGeo.setAttribute('position', new THREE.BufferAttribute(waterPos, 3));
+        const waterMat = new THREE.PointsMaterial({ color: 0x88aaff, size: 0.1, transparent: true, blending: THREE.AdditiveBlending });
+        const waterParticles = new THREE.Points(waterGeo, waterMat);
+        scene.add(waterParticles);
+        
+        // --- Animate ---
+        let time = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            time += 0.01;
+            
+            // Move drones
+            drones.forEach(d => {
+                d.userData.angle += d.userData.speed;
+                d.position.x += Math.cos(d.userData.angle) * 0.02;
+                d.position.z += Math.sin(d.userData.angle) * 0.02;
+                d.position.y = d.userData.height + Math.sin(time * 2 + d.userData.angle) * 1;
+            });
+            
+            // Water particles fall
+            const positions = waterParticles.geometry.attributes.position.array;
+            for (let i = 1; i < positions.length; i+=3) {
+                positions[i] -= 0.01;
+                if (positions[i] < 0) {
+                    positions[i] = 8;
+                    positions[i-1] = (Math.random() - 0.5) * 30;
+                    positions[i+1] = (Math.random() - 0.5) * 30;
+                }
+            }
+            waterParticles.geometry.attributes.position.needsUpdate = true;
+            
+            // Update displays
+            document.getElementById('drone-count').innerText = 24 + Math.floor(Math.sin(time)*2);
+            document.getElementById('yield').innerText = (98 + Math.sin(time*2)*1).toFixed(0) + '%';
+            document.getElementById('growth').innerText = (83 + Math.sin(time*3)*2).toFixed(0) + '%';
+            document.getElementById('ph').innerText = (6.8 + Math.sin(time*4)*0.1).toFixed(1);
+            document.getElementById('water').innerText = (342 + Math.sin(time*5)*10).toFixed(0) + ' L/day';
+            document.getElementById('energy').innerText = (1.2 + Math.sin(time*6)*0.1).toFixed(1) + ' kWh';
+            document.getElementById('total-crops').innerText = (12847 + Math.floor(Math.sin(time)*50)).toLocaleString() + ' kg';
+            
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

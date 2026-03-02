@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frostholm · Enchanted Winter</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Cinzel', 'Georgia', serif;
+            background-color: #0a1a2a;
+            color: #e0f0ff;
+        }
+        #winter-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            background: rgba(30, 50, 70, 0.8);
+            backdrop-filter: blur(12px);
+            border: 2px solid #aaccff;
+            border-radius: 60px;
+            padding: 12px 32px;
+            display: flex;
+            gap: 40px;
+            border-left: 6px solid #d4e8ff;
+            box-shadow: 0 0 40px rgba(170, 220, 255, 0.4);
+            pointer-events: none;
+        }
+        .winter-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .winter-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #c0e0ff;
+            letter-spacing: 2px;
+        }
+        .winter-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #ffffff, #c0e0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #ice-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(40, 60, 80, 0.85);
+            backdrop-filter: blur(16px);
+            border: 2px solid #aaccff;
+            border-radius: 50px;
+            padding: 20px 32px;
+            z-index: 50;
+            border-right: 6px solid #d4e8ff;
+            min-width: 280px;
+            box-shadow: 0 15px 35px rgba(0, 50, 100, 0.6);
+        }
+        .ice-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 1rem;
+            border-bottom: 1px solid #3a6a9a;
+            padding-bottom: 5px;
+        }
+        .ice-label {
+            color: #c0e0ff;
+        }
+        .ice-value {
+            font-weight: 600;
+            color: #e0f0ff;
+        }
+        .pulse-ice {
+            width: 14px;
+            height: 14px;
+            background: #aaccff;
+            border-radius: 50%;
+            box-shadow: 0 0 30px #aaccff;
+            animation: ice-pulse 2.2s infinite;
+        }
+        @keyframes ice-pulse {
+            0% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.4); background: #d4e8ff; }
+            100% { opacity: 0.6; transform: scale(1); }
+        }
+        #winter-tag {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(40, 60, 80, 0.8);
+            backdrop-filter: blur(8px);
+            border: 2px solid #aaccff;
+            border-radius: 40px;
+            padding: 12px 28px;
+            z-index: 50;
+            border-left: 4px solid #d4e8ff;
+            color: #e0f0ff;
+        }
+        .snow-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #ffffff;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 15px #ffffff;
+        }
+        #aurora-stats {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(40, 60, 80, 0.85);
+            backdrop-filter: blur(8px);
+            border: 2px solid #ffaaff;
+            border-radius: 40px;
+            padding: 16px 28px;
+            z-index: 50;
+            text-align: right;
+            border-bottom: 4px solid #ffccff;
+        }
+        .glow-number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff, #ffaaff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="winter-panel">
+        <div class="winter-item">
+            <span class="winter-label">realm</span>
+            <span class="winter-value">FROSTHOLM</span>
+        </div>
+        <div class="winter-item">
+            <span class="winter-label">temp</span>
+            <span class="winter-value" id="temp">-12°C</span>
+        </div>
+        <div class="winter-item">
+            <span class="winter-label">snow</span>
+            <span class="winter-value" id="snow-depth">47cm</span>
+        </div>
+    </div>
+
+    <div id="ice-panel">
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+            <span class="pulse-ice"></span>
+            <span style="font-weight: 600; font-size: 1.3rem;">❄️ ICE MAGIC</span>
+        </div>
+        <div class="ice-row">
+            <span class="ice-label">ice sculptures</span>
+            <span class="ice-value" id="sculptures">23</span>
+        </div>
+        <div class="ice-row">
+            <span class="ice-label">frozen lake</span>
+            <span class="ice-value" id="ice-thickness">84cm</span>
+        </div>
+        <div class="ice-row">
+            <span class="ice-label">snowflakes</span>
+            <span class="ice-value" id="snowflakes">1.4M</span>
+        </div>
+        <div class="ice-row">
+            <span class="ice-label">northern lights</span>
+            <span class="ice-value" id="aurora">active</span>
+        </div>
+        <div class="ice-row">
+            <span class="ice-label">frost sprites</span>
+            <span class="ice-value" id="sprites">12</span>
+        </div>
+    </div>
+
+    <div id="winter-tag">
+        <span class="snow-icon"></span> <span>glowing ice · evergreen · polar night · -12°C</span>
+    </div>
+
+    <div id="aurora-stats">
+        <div style="font-size:1rem;">✨ AURORA BOREALIS</div>
+        <div class="glow-number" id="kp">KP 6</div>
+        <div style="font-size:0.8rem;">green · purple · red visible</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- Scene setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a1a2a);
+        scene.fog = new THREE.FogExp2(0x0a1a2a, 0.002);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(25, 12, 35);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.2;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.minDistance = 15;
+        controls.maxDistance = 70;
+        
+        // --- Lighting ---
+        const ambient = new THREE.AmbientLight(0x304060);
+        scene.add(ambient);
+        
+        // Moonlight
+        const moonLight = new THREE.DirectionalLight(0xcce0ff, 0.5);
+        moonLight.position.set(-20, 30, 20);
+        moonLight.castShadow = true;
+        moonLight.shadow.mapSize.width = 1024;
+        moonLight.shadow.mapSize.height = 1024;
+        const d = 50;
+        moonLight.shadow.camera.left = -d;
+        moonLight.shadow.camera.right = d;
+        moonLight.shadow.camera.top = d;
+        moonLight.shadow.camera.bottom = -d;
+        moonLight.shadow.camera.near = 1;
+        moonLight.shadow.camera.far = 80;
+        scene.add(moonLight);
+        
+        // Glowing ice lights
+        for (let i = 0; i < 8; i++) {
+            const light = new THREE.PointLight(0x88aaff, 0.6, 20);
+            light.position.set(
+                (Math.random() - 0.5) * 30,
+                2 + Math.random() * 5,
+                (Math.random() - 0.5) * 30
+            );
+            scene.add(light);
+        }
+        
+        // --- Snow ground ---
+        const groundGeo = new THREE.CircleGeometry(80, 32);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0xe0f0ff, emissive: 0x224466 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.5;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // --- Snow drifts (small mounds) ---
+        for (let i = 0; i < 30; i++) {
+            const driftGeo = new THREE.SphereGeometry(0.8 + Math.random() * 1.5, 5);
+            const driftMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x224466 });
+            const drift = new THREE.Mesh(driftGeo, driftMat);
+            drift.position.set(
+                (Math.random() - 0.5) * 60,
+                -0.2,
+                (Math.random() - 0.5) * 60
+            );
+            drift.scale.set(1, 0.3, 1);
+            drift.castShadow = true;
+            drift.receiveShadow = true;
+            scene.add(drift);
+        }
+        
+        // --- Ice sculptures (glowing) ---
+        function createIceSculpture(x, z, color) {
+            const group = new THREE.Group();
+            
+            // Central spire
+            const spireGeo = new THREE.ConeGeometry(0.6, 2.5, 5);
+            const spireMat = new THREE.MeshStandardMaterial({ color: color, emissive: 0x224466, transparent: true, opacity: 0.9 });
+            const spire = new THREE.Mesh(spireGeo, spireMat);
+            spire.position.y = 1.25;
+            spire.castShadow = true;
+            group.add(spire);
+            
+            // Base
+            const baseGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.3, 5);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0xaaccff, emissive: 0x224466 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = 0.15;
+            base.castShadow = true;
+            group.add(base);
+            
+            group.position.set(x, -0.5, z);
+            return group;
+        }
+        
+        const iceColors = [0xaaccff, 0xccddff, 0x99bbff, 0x88aaff];
+        for (let i = 0; i < 15; i++) {
+            const angle = (i / 15) * Math.PI * 2;
+            const radius = 8;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const sculpture = createIceSculpture(x, z, iceColors[i % iceColors.length]);
+            scene.add(sculpture);
+        }
+        
+        // --- Evergreen trees (frosted) ---
+        function createFrostedTree(x, z) {
+            const group = new THREE.Group();
+            
+            // Trunk
+            const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 1.5);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 0.75;
+            trunk.castShadow = true;
+            trunk.receiveShadow = true;
+            group.add(trunk);
+            
+            // Snow layers
+            const layerGeo = new THREE.ConeGeometry(0.8, 1.0, 5);
+            const layerMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x224466 });
+            const layer1 = new THREE.Mesh(layerGeo, layerMat);
+            layer1.position.y = 1.5;
+            layer1.castShadow = true;
+            group.add(layer1);
+            
+            const layer2 = new THREE.Mesh(layerGeo, layerMat);
+            layer2.scale.set(0.7, 0.8, 0.7);
+            layer2.position.y = 2.2;
+            layer2.castShadow = true;
+            group.add(layer2);
+            
+            group.position.set(x, -0.5, z);
+            return group;
+        }
+        
+        for (let i = 0; i < 20; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 12 + Math.random() * 8;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const tree = createFrostedTree(x, z);
+            scene.add(tree);
+        }
+        
+        // --- Frozen cottages (with warm glow) ---
+        function createCottage(x, z) {
+            const group = new THREE.Group();
+            
+            // Base
+            const baseGeo = new THREE.BoxGeometry(2, 1.5, 2);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = 0.75;
+            base.castShadow = true;
+            base.receiveShadow = true;
+            group.add(base);
+            
+            // Roof (snow-covered)
+            const roofGeo = new THREE.ConeGeometry(1.5, 1.2, 4);
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x224466 });
+            const roof = new THREE.Mesh(roofGeo, roofMat);
+            roof.position.y = 1.8;
+            roof.rotation.y = Math.PI/4;
+            roof.castShadow = true;
+            group.add(roof);
+            
+            // Window glow
+            const windowGeo = new THREE.BoxGeometry(0.4, 0.4, 0.1);
+            const windowMat = new THREE.MeshStandardMaterial({ color: 0xffaa44, emissive: 0x442200 });
+            const window = new THREE.Mesh(windowGeo, windowMat);
+            window.position.set(0.5, 1.0, 1.1);
+            group.add(window);
+            
+            group.position.set(x, -0.5, z);
+            return group;
+        }
+        
+        // Place cottages in a ring
+        for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2;
+            const radius = 15;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const cottage = createCottage(x, z);
+            scene.add(cottage);
+        }
+        
+        // --- Aurora borealis (particle curtain) ---
+        const auroraGeo = new THREE.BufferGeometry();
+        const auroraCount = 2000;
+        const auroraPos = new Float32Array(auroraCount * 3);
+        const auroraColors = new Float32Array(auroraCount * 3);
+        
+        for (let i = 0; i < auroraCount; i++) {
+            const r = 40 + Math.random() * 30;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            
+            auroraPos[i*3] = Math.sin(phi) * Math.cos(theta) * r;
+            auroraPos[i*3+1] = Math.abs(Math.sin(phi) * Math.sin(theta) * r) * 0.8 + 20;
+            auroraPos[i*3+2] = Math.cos(phi) * r;
+            
+            // Green/purple/blue colors
+            const choice = Math.random();
+            if (choice < 0.5) {
+                auroraColors[i*3] = 0.3 + Math.random()*0.5;
+                auroraColors[i*3+1] = 0.8 + Math.random()*0.5;
+                auroraColors[i*3+2] = 0.3 + Math.random()*0.5;
+            } else if (choice < 0.8) {
+                auroraColors[i*3] = 0.6 + Math.random()*0.4;
+                auroraColors[i*3+1] = 0.2 + Math.random()*0.3;
+                auroraColors[i*3+2] = 0.8 + Math.random()*0.5;
+            } else {
+                auroraColors[i*3] = 0.8 + Math.random()*0.5;
+                auroraColors[i*3+1] = 0.5 + Math.random()*0.4;
+                auroraColors[i*3+2] = 0.8 + Math.random()*0.5;
+            }
+        }
+        
+        auroraGeo.setAttribute('position', new THREE.BufferAttribute(auroraPos, 3));
+        auroraGeo.setAttribute('color', new THREE.BufferAttribute(auroraColors, 3));
+        const auroraMat = new THREE.PointsMaterial({ size: 0.5, vertexColors: true, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending });
+        const aurora = new THREE.Points(auroraGeo, auroraMat);
+        scene.add(aurora);
+        
+        // --- Snow particles ---
+        const snowGeo = new THREE.BufferGeometry();
+        const snowCount = 1500;
+        const snowPos = new Float32Array(snowCount * 3);
+        const snowVel = [];
+        for (let i = 0; i < snowCount; i++) {
+            snowPos[i*3] = (Math.random() - 0.5) * 80;
+            snowPos[i*3+1] = Math.random() * 40;
+            snowPos[i*3+2] = (Math.random() - 0.5) * 80;
+            snowVel.push(0.01 + Math.random() * 0.02);
+        }
+        snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+        const snowMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
+        const snow = new THREE.Points(snowGeo, snowMat);
+        scene.add(snow);
+        
+        // --- Frost sprites (small glowing orbs) ---
+        const sprites = [];
+        for (let i = 0; i < 12; i++) {
+            const spriteGeo = new THREE.SphereGeometry(0.2);
+            const spriteMat = new THREE.MeshStandardMaterial({ color: 0xaaccff, emissive: 0x224466 });
+            const sprite = new THREE.Mesh(spriteGeo, spriteMat);
+            
+            sprite.position.set(
+                (Math.random() - 0.5) * 25,
+                5 + Math.random() * 8,
+                (Math.random() - 0.5) * 25
+            );
+            
+            sprite.userData = {
+                angle: Math.random() * Math.PI * 2,
+                speed: 0.005 + Math.random() * 0.01,
+                radius: 1 + Math.random() * 2,
+                height: sprite.position.y
+            };
+            
+            scene.add(sprite);
+            sprites.push(sprite);
+        }
+        
+        // --- Animate ---
+        let time = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            time += 0.005;
+            
+            // Snow fall
+            const positions = snow.geometry.attributes.position.array;
+            for (let i = 1; i < positions.length; i+=3) {
+                positions[i] -= snowVel[Math.floor(i/3)] * 0.5;
+                if (positions[i] < -2) {
+                    positions[i] = 30;
+                    positions[i-1] = (Math.random() - 0.5) * 80;
+                    positions[i+1] = (Math.random() - 0.5) * 80;
+                }
+            }
+            snow.geometry.attributes.position.needsUpdate = true;
+            
+            // Rotate aurora
+            aurora.rotation.y += 0.0002;
+            
+            // Move sprites
+            sprites.forEach(s => {
+                s.userData.angle += s.userData.speed;
+                s.position.x += Math.cos(s.userData.angle) * 0.01;
+                s.position.z += Math.sin(s.userData.angle) * 0.01;
+                s.position.y = s.userData.height + Math.sin(time * 2 + s.userData.angle) * 1;
+            });
+            
+            // Update displays
+            document.getElementById('temp').innerText = (-12 + Math.sin(time*0.5)*1).toFixed(0) + '°C';
+            document.getElementById('snow-depth').innerText = (47 + Math.sin(time)*2).toFixed(0) + 'cm';
+            document.getElementById('sculptures').innerText = 23 + Math.floor(Math.sin(time)*2);
+            document.getElementById('ice-thickness').innerText = (84 + Math.sin(time*2)*2).toFixed(0) + 'cm';
+            document.getElementById('snowflakes').innerText = '1.4M';
+            document.getElementById('sprites').innerText = 12 + Math.floor(Math.sin(time)*1);
+            document.getElementById('kp').innerText = 'KP ' + (6 + Math.floor(Math.sin(time*0.3)*1));
+            
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
