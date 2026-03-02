@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vitalis · Fitness Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #f4f8fc;
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            color: #1c2f3f;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* header */
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .title h1 {
+            font-size: 2.8rem;
+            font-weight: 500;
+            background: linear-gradient(145deg, #2d4f6c, #4f7ca0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .title p {
+            color: #5a7a97;
+            margin-top: 0.3rem;
+        }
+
+        .date-badge {
+            background: white;
+            border-radius: 60px;
+            padding: 0.8rem 2rem;
+            border: 2px solid #d3e2f0;
+            color: #2d577c;
+            font-weight: 500;
+            box-shadow: 0 6px 12px -12px rgba(0,0,0,0.1);
+        }
+
+        /* stats cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 38px;
+            padding: 1.8rem 1.5rem;
+            border: 1px solid #ddeaf5;
+            box-shadow: 0 15px 25px -18px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .stat-icon {
+            font-size: 2.8rem;
+        }
+
+        .stat-content h3 {
+            font-size: 1rem;
+            font-weight: 400;
+            color: #557a99;
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-number {
+            font-size: 2.4rem;
+            font-weight: 600;
+            color: #1d4465;
+            line-height: 1;
+        }
+
+        .stat-unit {
+            font-size: 0.9rem;
+            color: #799bb9;
+            margin-left: 0.3rem;
+        }
+
+        /* main charts area */
+        .charts-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 42px;
+            padding: 1.8rem 2rem;
+            border: 1px solid #e1eef9;
+            flex: 1 1 300px;
+            box-shadow: 0 15px 25px -18px rgba(0,0,0,0.08);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+            color: #1c4462;
+        }
+
+        .bar-chart {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 160px;
+            gap: 0.5rem;
+        }
+
+        .bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 40px;
+        }
+
+        .bar {
+            width: 32px;
+            background: linear-gradient(to top, #5f9cd1, #97c4f0);
+            border-radius: 20px 20px 4px 4px;
+            transition: height 0.2s;
+            box-shadow: 0 -2px 8px rgba(79, 138, 196, 0.2);
+        }
+
+        .bar-label {
+            margin-top: 0.7rem;
+            font-size: 0.8rem;
+            color: #547a9c;
+        }
+
+        /* workout log table */
+        .log-section {
+            background: white;
+            border-radius: 48px;
+            padding: 2rem 2rem;
+            border: 1px solid #ddecf9;
+            margin-top: 2rem;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .log-header h2 {
+            font-size: 1.6rem;
+            font-weight: 500;
+            color: #1a4460;
+        }
+
+        .add-btn {
+            background: #e4f0fa;
+            border: 2px solid #bdd5ed;
+            padding: 0.7rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            color: #1f5780;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        .add-btn:hover {
+            background: #cfe2f7;
+        }
+
+        .workout-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .workout-table th {
+            text-align: left;
+            padding: 1rem 0.5rem 0.8rem 0.5rem;
+            color: #5881a3;
+            font-weight: 500;
+            border-bottom: 2px solid #cde0f0;
+        }
+
+        .workout-table td {
+            padding: 1rem 0.5rem;
+            border-bottom: 1px solid #deecf7;
+            color: #1f3e5a;
+        }
+
+        .workout-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .workout-type {
+            background: #e2f0f5;
+            padding: 0.2rem 1.2rem;
+            border-radius: 30px;
+            display: inline-block;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .workout-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .workout-actions span {
+            cursor: pointer;
+            color: #6d94b5;
+            font-size: 1.2rem;
+        }
+
+        .footer {
+            text-align: center;
+            color: #7295b3;
+            margin-top: 2.5rem;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 48px;
+            padding: 2.2rem 2.5rem;
+            max-width: 400px;
+            width: 90%;
+            border: 2px solid #d0e3f5;
+            box-shadow: 0 30px 45px -25px rgba(0,0,0,0.2);
+        }
+
+        .modal-content h3 {
+            font-size: 1.6rem;
+            margin-bottom: 1.5rem;
+            color: #1d4870;
+        }
+
+        .modal-content input, .modal-content select {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 2px solid #c6ddf2;
+            border-radius: 30px;
+            font-size: 1rem;
+            background: #f9fcff;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #e5f0fa;
+            color: #235983;
+        }
+
+        .modal-buttons button.primary {
+            background: #2d608b;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <div class="title">
+                <h1>💪 Vitalis</h1>
+                <p>track your daily activity & workouts</p>
+            </div>
+            <div class="date-badge" id="currentDate">Mon, 15 May 2025</div>
+        </div>
+
+        <!-- stats cards -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <span class="stat-icon">👣</span>
+                <div class="stat-content">
+                    <h3>steps</h3>
+                    <span class="stat-number" id="stepsCount">7,482</span><span class="stat-unit">steps</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">🔥</span>
+                <div class="stat-content">
+                    <h3>calories</h3>
+                    <span class="stat-number" id="caloriesCount">2,145</span><span class="stat-unit">kcal</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">💧</span>
+                <div class="stat-content">
+                    <h3>water</h3>
+                    <span class="stat-number" id="waterCount">5</span><span class="stat-unit">cups</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">⏱️</span>
+                <div class="stat-content">
+                    <h3>active min</h3>
+                    <span class="stat-number" id="activeMin">64</span><span class="stat-unit">min</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- charts row (activity and water) -->
+        <div class="charts-row">
+            <div class="chart-card">
+                <div class="chart-title">📊 weekly steps</div>
+                <div class="bar-chart" id="stepsChart"></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">💧 water intake (L)</div>
+                <div class="bar-chart" id="waterChart"></div>
+            </div>
+        </div>
+
+        <!-- workout log -->
+        <div class="log-section">
+            <div class="log-header">
+                <h2>📋 recent workouts</h2>
+                <button class="add-btn" id="addWorkoutBtn">+ add workout</button>
+            </div>
+            <table class="workout-table">
+                <thead>
+                    <tr>
+                        <th>type</th>
+                        <th>duration</th>
+                        <th>calories</th>
+                        <th>date</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="workoutLogBody">
+                    <!-- filled via js -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            ⚡ update stats with + button · simple demo tracker
+        </div>
+    </div>
+
+    <!-- modal for adding workout -->
+    <div class="modal" id="workoutModal">
+        <div class="modal-content">
+            <h3>➕ add workout</h3>
+            <select id="workoutType">
+                <option value="Running">Running</option>
+                <option value="Cycling">Cycling</option>
+                <option value="Swimming">Swimming</option>
+                <option value="Walking">Walking</option>
+                <option value="Yoga">Yoga</option>
+            </select>
+            <input type="text" placeholder="duration (min)" id="workoutDuration">
+            <input type="text" placeholder="calories burned" id="workoutCalories">
+            <input type="date" id="workoutDate" value="2025-05-15">
+            <div class="modal-buttons">
+                <button class="primary" id="saveWorkoutBtn">save</button>
+                <button id="cancelModalBtn">cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- demo data ----------
+            let stepsData = [5200, 6800, 7400, 8200, 7900, 6100, 7482];
+            let waterData = [2.2, 2.5, 1.8, 2.0, 2.4, 2.1, 2.3];
+            let stepsTotal = 7482;
+            let caloriesTotal = 2145;
+            let waterCups = 5;
+            let activeMinutes = 64;
+
+            let workouts = [
+                { type: 'Running', duration: 32, calories: 410, date: '2025-05-15' },
+                { type: 'Cycling', duration: 45, calories: 520, date: '2025-05-14' },
+                { type: 'Yoga', duration: 30, calories: 120, date: '2025-05-13' },
+                { type: 'Walking', duration: 25, calories: 110, date: '2025-05-12' }
+            ];
+
+            // DOM elements
+            const stepsCountSpan = document.getElementById('stepsCount');
+            const caloriesCountSpan = document.getElementById('caloriesCount');
+            const waterCountSpan = document.getElementById('waterCount');
+            const activeMinSpan = document.getElementById('activeMin');
+            const stepsChartDiv = document.getElementById('stepsChart');
+            const waterChartDiv = document.getElementById('waterChart');
+            const workoutLogBody = document.getElementById('workoutLogBody');
+            const addWorkoutBtn = document.getElementById('addWorkoutBtn');
+            const modal = document.getElementById('workoutModal');
+            const cancelModalBtn = document.getElementById('cancelModalBtn');
+            const saveWorkoutBtn = document.getElementById('saveWorkoutBtn');
+            const workoutType = document.getElementById('workoutType');
+            const workoutDuration = document.getElementById('workoutDuration');
+            const workoutCalories = document.getElementById('workoutCalories');
+            const workoutDate = document.getElementById('workoutDate');
+
+            // helper: update stats from data arrays
+            function updateStats() {
+                stepsCountSpan.innerText = stepsTotal;
+                caloriesCountSpan.innerText = caloriesTotal;
+                waterCountSpan.innerText = waterCups;
+                activeMinSpan.innerText = activeMinutes;
+            }
+
+            // render bar charts
+            function renderCharts() {
+                // steps chart
+                const maxSteps = Math.max(...stepsData, 10000);
+                let stepsHtml = '';
+                const days = ['M', 'T', 'W', 'T', 'F', 'S', 'Su'];
+                stepsData.forEach((val, idx) => {
+                    const height = (val / maxSteps) * 140;
+                    stepsHtml += `
+                        <div class="bar-wrapper">
+                            <div class="bar" style="height: ${height}px;"></div>
+                            <span class="bar-label">${days[idx]}</span>
+                        </div>
+                    `;
+                });
+                stepsChartDiv.innerHTML = stepsHtml;
+
+                // water chart (in liters)
+                const maxWater = Math.max(...waterData, 3);
+                let waterHtml = '';
+                waterData.forEach((val, idx) => {
+                    const height = (val / maxWater) * 140;
+                    waterHtml += `
+                        <div class="bar-wrapper">
+                            <div class="bar" style="height: ${height}px;"></div>
+                            <span class="bar-label">${days[idx]}</span>
+                        </div>
+                    `;
+                });
+                waterChartDiv.innerHTML = waterHtml;
+            }
+
+            // render workout table
+            function renderWorkouts() {
+                let rows = '';
+                workouts.forEach((w, index) => {
+                    rows += `
+                        <tr>
+                            <td><span class="workout-type">${w.type}</span></td>
+                            <td>${w.duration} min</td>
+                            <td>${w.calories} kcal</td>
+                            <td>${w.date}</td>
+                            <td><div class="workout-actions"><span class="delete-workout" data-index="${index}">🗑️</span></div></td>
+                        </tr>
+                    `;
+                });
+                workoutLogBody.innerHTML = rows;
+
+                // attach delete handlers
+                document.querySelectorAll('.delete-workout').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = e.target.getAttribute('data-index');
+                        workouts.splice(index, 1);
+                        // also adjust stats? not in demo, just re-render
+                        renderWorkouts();
+                    });
+                });
+            }
+
+            // update date display
+            function setCurrentDate() {
+                const now = new Date();
+                const options = { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('currentDate').innerText = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            }
+
+            // modal controls
+            function openModal() {
+                modal.classList.add('active');
+            }
+            function closeModal() {
+                modal.classList.remove('active');
+            }
+
+            addWorkoutBtn.addEventListener('click', openModal);
+            cancelModalBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+
+            saveWorkoutBtn.addEventListener('click', () => {
+                const type = workoutType.value;
+                const duration = parseInt(workoutDuration.value, 10);
+                const calories = parseInt(workoutCalories.value, 10);
+                const date = workoutDate.value;
+
+                if (isNaN(duration) || isNaN(calories) || !date) {
+                    alert('please fill all fields');
+                    return;
+                }
+
+                workouts.push({ type, duration, calories, date });
+                renderWorkouts();
+                closeModal();
+
+                // clear inputs
+                workoutDuration.value = '';
+                workoutCalories.value = '';
+                workoutDate.value = new Date().toISOString().split('T')[0];
+            });
+
+            // initialize
+            setCurrentDate();
+            updateStats();
+            renderCharts();
+            renderWorkouts();
+
+            // set default date in modal to today
+            const today = new Date().toISOString().split('T')[0];
+            workoutDate.value = today;
+        })();
+    </script>
+</body>
+</html>
