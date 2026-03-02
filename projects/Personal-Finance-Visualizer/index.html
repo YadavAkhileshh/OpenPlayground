@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Finance Visualizer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/3.5.0/remixicon.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="ri-line-chart-line"></i>
+                <span>Finance Visualizer</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" id="exportBtn">
+                    <i class="ri-download-line"></i> Export Data
+                </button>
+                <button class="btn btn-primary" id="addTransactionBtn">
+                    <i class="ri-add-line"></i> Add Transaction
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <nav class="nav-menu">
+                <button class="nav-item active" data-view="overview">
+                    <i class="ri-dashboard-line"></i>
+                    <span>Overview</span>
+                </button>
+                <button class="nav-item" data-view="transactions">
+                    <i class="ri-exchange-line"></i>
+                    <span>Transactions</span>
+                </button>
+                <button class="nav-item" data-view="budget">
+                    <i class="ri-wallet-line"></i>
+                    <span>Budget</span>
+                </button>
+                <button class="nav-item" data-view="savings">
+                    <i class="ri-safe-line"></i>
+                    <span>Savings Goals</span>
+                </button>
+                <button class="nav-item" data-view="investments">
+                    <i class="ri-stock-line"></i>
+                    <span>Investments</span>
+                </button>
+                <button class="nav-item" data-view="analytics">
+                    <i class="ri-pie-chart-line"></i>
+                    <span>Analytics</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button class="btn btn-danger" id="clearDataBtn">
+                    <i class="ri-delete-bin-line"></i> Clear All Data
+                </button>
+            </div>
+        </aside>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Overview View -->
+            <div class="view active" id="overview">
+                <div class="view-header">
+                    <h1>Financial Overview</h1>
+                    <div class="period-selector">
+                        <button class="period-btn active" data-period="month">This Month</button>
+                        <button class="period-btn" data-period="year">This Year</button>
+                        <button class="period-btn" data-period="all">All Time</button>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="summary-cards">
+                    <div class="summary-card income">
+                        <div class="card-icon">
+                            <i class="ri-arrow-down-line"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Total Income</span>
+                            <span class="card-value" id="totalIncome">$0.00</span>
+                            <span class="card-change positive" id="incomeChange">+0%</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-card expense">
+                        <div class="card-icon">
+                            <i class="ri-arrow-up-line"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Total Expenses</span>
+                            <span class="card-value" id="totalExpenses">$0.00</span>
+                            <span class="card-change negative" id="expenseChange">+0%</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-card balance">
+                        <div class="card-icon">
+                            <i class="ri-wallet-line"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Net Balance</span>
+                            <span class="card-value" id="netBalance">$0.00</span>
+                            <span class="card-change" id="balanceChange">+0%</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-card savings">
+                        <div class="card-icon">
+                            <i class="ri-safe-line"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Savings Rate</span>
+                            <span class="card-value" id="savingsRate">0%</span>
+                            <span class="card-change" id="savingsChange">+0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Income vs Expenses</h3>
+                        <canvas id="incomeExpenseChart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Spending by Category</h3>
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Trend Chart -->
+                <div class="chart-container full-width">
+                    <h3>Financial Trend (Last 6 Months)</h3>
+                    <canvas id="trendChart"></canvas>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div class="recent-transactions">
+                    <div class="section-header">
+                        <h3>Recent Transactions</h3>
+                        <button class="link-btn" id="viewAllTransactions">View All →</button>
+                    </div>
+                    <div id="recentTransactionsList"></div>
+                </div>
+            </div>
+
+            <!-- Transactions View -->
+            <div class="view" id="transactions">
+                <div class="view-header">
+                    <h1>All Transactions</h1>
+                    <div class="filter-controls">
+                        <select id="typeFilter" class="filter-select">
+                            <option value="all">All Types</option>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                        <select id="categoryFilter" class="filter-select">
+                            <option value="all">All Categories</option>
+                        </select>
+                        <input type="search" id="searchTransactions" placeholder="Search transactions..." class="search-input">
+                    </div>
+                </div>
+
+                <div class="transactions-list" id="transactionsList"></div>
+            </div>
+
+            <!-- Budget View -->
+            <div class="view" id="budget">
+                <div class="view-header">
+                    <h1>Budget Planning</h1>
+                    <button class="btn btn-primary" id="addBudgetBtn">
+                        <i class="ri-add-line"></i> Add Budget
+                    </button>
+                </div>
+
+                <div class="budget-grid" id="budgetGrid"></div>
+            </div>
+
+            <!-- Savings Goals View -->
+            <div class="view" id="savings">
+                <div class="view-header">
+                    <h1>Savings Goals</h1>
+                    <button class="btn btn-primary" id="addGoalBtn">
+                        <i class="ri-add-line"></i> Add Goal
+                    </button>
+                </div>
+
+                <div class="goals-grid" id="goalsGrid"></div>
+            </div>
+
+            <!-- Investments View -->
+            <div class="view" id="investments">
+                <div class="view-header">
+                    <h1>Investment Portfolio</h1>
+                    <button class="btn btn-primary" id="addInvestmentBtn">
+                        <i class="ri-add-line"></i> Add Investment
+                    </button>
+                </div>
+
+                <div class="investment-summary">
+                    <div class="summary-card">
+                        <span class="card-label">Total Portfolio Value</span>
+                        <span class="card-value" id="portfolioValue">$0.00</span>
+                    </div>
+                    <div class="summary-card">
+                        <span class="card-label">Total Gain/Loss</span>
+                        <span class="card-value" id="portfolioGainLoss">$0.00</span>
+                    </div>
+                    <div class="summary-card">
+                        <span class="card-label">ROI</span>
+                        <span class="card-value" id="portfolioROI">0%</span>
+                    </div>
+                </div>
+
+                <div class="investments-list" id="investmentsList"></div>
+            </div>
+
+            <!-- Analytics View -->
+            <div class="view" id="analytics">
+                <div class="view-header">
+                    <h1>Financial Analytics</h1>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Monthly Comparison</h3>
+                        <canvas id="monthlyComparisonChart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Category Distribution</h3>
+                        <canvas id="categoryDistributionChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="insights-section">
+                    <h3>Financial Insights</h3>
+                    <div id="insightsList" class="insights-list"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Transaction Modal -->
+    <div class="modal" id="transactionModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Transaction</h2>
+                <button class="modal-close"><i class="ri-close-line"></i></button>
+            </div>
+            <form id="transactionForm">
+                <div class="form-group">
+                    <label>Type</label>
+                    <div class="type-toggle">
+                        <button type="button" class="type-btn active" data-type="expense">
+                            <i class="ri-arrow-up-line"></i> Expense
+                        </button>
+                        <button type="button" class="type-btn" data-type="income">
+                            <i class="ri-arrow-down-line"></i> Income
+                        </button>
+                    </div>
+                    <input type="hidden" id="transactionType" value="expense">
+                </div>
+
+                <div class="form-group">
+                    <label for="amount">Amount ($)</label>
+                    <input type="number" id="amount" step="0.01" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" required></select>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <input type="text" id="description" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Transaction</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Budget Modal -->
+    <div class="modal" id="budgetModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Budget</h2>
+                <button class="modal-close"><i class="ri-close-line"></i></button>
+            </div>
+            <form id="budgetForm">
+                <div class="form-group">
+                    <label for="budgetCategory">Category</label>
+                    <select id="budgetCategory" required></select>
+                </div>
+
+                <div class="form-group">
+                    <label for="budgetAmount">Monthly Budget ($)</label>
+                    <input type="number" id="budgetAmount" step="0.01" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Budget</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Goal Modal -->
+    <div class="modal" id="goalModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Savings Goal</h2>
+                <button class="modal-close"><i class="ri-close-line"></i></button>
+            </div>
+            <form id="goalForm">
+                <div class="form-group">
+                    <label for="goalName">Goal Name</label>
+                    <input type="text" id="goalName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="goalTarget">Target Amount ($)</label>
+                    <input type="number" id="goalTarget" step="0.01" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="goalCurrent">Current Amount ($)</label>
+                    <input type="number" id="goalCurrent" step="0.01" value="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="goalDeadline">Target Date</label>
+                    <input type="date" id="goalDeadline" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Goal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Investment Modal -->
+    <div class="modal" id="investmentModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Investment</h2>
+                <button class="modal-close"><i class="ri-close-line"></i></button>
+            </div>
+            <form id="investmentForm">
+                <div class="form-group">
+                    <label for="investmentName">Investment Name</label>
+                    <input type="text" id="investmentName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="investmentType">Type</label>
+                    <select id="investmentType" required>
+                        <option value="stocks">Stocks</option>
+                        <option value="bonds">Bonds</option>
+                        <option value="crypto">Cryptocurrency</option>
+                        <option value="realestate">Real Estate</option>
+                        <option value="mutual">Mutual Funds</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="investmentAmount">Investment Amount ($)</label>
+                    <input type="number" id="investmentAmount" step="0.01" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="investmentValue">Current Value ($)</label>
+                    <input type="number" id="investmentValue" step="0.01" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Investment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
