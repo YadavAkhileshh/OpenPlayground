@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | DataFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <main class="workspace">
+            <header class="workspace-header">
+                <div class="system-status">
+                    <span class="status-indicator online"></span>
+                    <span class="status-text">CONFIGURATION_MODE</span>
+                </div>
+                <div class="header-tools">
+                    <div class="live-clock" id="clock">00:00:00</div>
+                    <div class="user-pill"></div>
+                    <button class="mobile-toggle" id="mobileToggle"><i class="fa-solid fa-bars-staggered"></i></button>
+                </div>
+            </header>
+
+            <h1 style="margin-bottom: 2rem;">System Settings</h1>
+
+            <div class="content-grid" style="grid-template-columns: 1fr; max-width: 600px;">
+                <section class="grid-card">
+                    <div class="card-header">
+                        <h2>Analyst Profile</h2>
+                    </div>
+                    <form id="profileForm" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div class="metric-card" style="padding: 1rem;">
+                            <span class="label">DISPLAY NAME</span>
+                            <input type="text" id="profName" style="width: 100%; padding: 0.5rem; background: #000; border: 1px solid var(--border); color: #fff; margin-top: 0.5rem;">
+                        </div>
+                        <div class="metric-card" style="padding: 1rem;">
+                            <span class="label">ACCESS LEVEL</span>
+                            <input type="text" id="profRole" disabled style="width: 100%; padding: 0.5rem; background: #000; border: 1px solid var(--border); color: var(--text-dim); margin-top: 0.5rem; opacity: 0.6;">
+                        </div>
+                        <button type="submit" class="btn-auth" style="background: var(--blue); color: #000; border-radius: 8px;">UPDATE_IDENTITY</button>
+                    </form>
+                </section>
+
+                <section class="grid-card">
+                    <div class="card-header">
+                        <h2>Analytics Configuration</h2>
+                    </div>
+                    <form style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <div class="metric-card" style="padding: 1rem;">
+                            <span class="label">DATA REFRESH RATE (MS)</span>
+                            <input type="number" value="1000" style="width: 100%; padding: 0.5rem; background: #000; border: 1px solid var(--border); color: #fff; margin-top: 0.5rem;">
+                        </div>
+                        <div class="metric-card" style="padding: 1rem;">
+                            <span class="label">LOG RETENTION LIMIT</span>
+                            <select style="width: 100%; padding: 0.5rem; background: #000; border: 1px solid var(--border); color: #fff; margin-top: 0.5rem;">
+                                <option>100 Events</option>
+                                <option>500 Events</option>
+                                <option>1000 Events</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn-auth" style="background: var(--blue); color: #000; border-radius: 8px;">SAVE_PARAMETERS</button>
+                    </form>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/db.js"></script>
+    <script src="js/shared.js"></script>
+    <script>
+        const user = DB.getSession();
+        if (user) {
+            document.getElementById('profName').value = user.name;
+            document.getElementById('profRole').value = user.role;
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newName = document.getElementById('profName').value;
+            const updatedUser = { ...user, name: newName };
+            localStorage.setItem(DB.KEYS.SESSION, JSON.stringify(updatedUser));
+            
+            // Also update in users list
+            const users = DB.get(DB.KEYS.USER);
+            const idx = users.findIndex(u => u.id === user.id);
+            if(idx !== -1) {
+                users[idx].name = newName;
+                DB.set(DB.KEYS.USER, users);
+            }
+            
+            alert('Identity Updated');
+            window.location.reload();
+        });
+
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString([], { hour12: false });
+        }, 1000);
+
+        document.getElementById('mobileToggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+    </script>
+</body>
+</html>
