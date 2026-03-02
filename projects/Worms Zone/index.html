@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Worms Zone Clone</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .pointer-events-auto {
+            pointer-events: auto;
+        }
+        #mini-map {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+        }
+        #mini-map-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        .gradient-text {
+            background: linear-gradient(45deg, #f39c12, #e74c3c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #joystick-container {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: none; /* Only for touch */
+        }
+        @media (pointer: coarse) {
+            #joystick-container { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <!-- Score & Rank -->
+        <div class="absolute top-5 left-5 text-white pointer-events-none">
+            <div class="text-3xl font-bold italic drop-shadow-lg">Score: <span id="score-val">0</span></div>
+            <div class="text-sm opacity-80">Length: <span id="length-val">10</span></div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="absolute top-5 right-5 bg-black/40 p-4 rounded-lg border border-white/10 text-white min-w-[180px]">
+            <h3 class="text-center font-bold mb-2 border-bottom border-white/20 pb-1">LEADERBOARD</h3>
+            <div id="leaderboard-list" class="text-sm space-y-1">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Mini Map -->
+        <div id="mini-map">
+            <canvas id="mini-map-canvas"></canvas>
+        </div>
+
+        <!-- Start/Death Screen -->
+        <div id="overlay" class="absolute inset-0 flex items-center justify-center bg-black/70 pointer-events-auto transition-opacity duration-300">
+            <div class="bg-zinc-900 p-8 rounded-2xl border-4 border-yellow-500 shadow-2xl text-center max-w-sm w-full mx-4">
+                <h1 class="text-5xl font-black mb-6 gradient-text uppercase italic tracking-tighter">Worms Zone</h1>
+                
+                <div id="death-stats" class="hidden mb-6 animate-bounce">
+                    <p class="text-red-500 font-bold text-xl">YOU CRASHED!</p>
+                    <p class="text-white text-lg">Final Score: <span id="final-score">0</span></p>
+                </div>
+
+                <input type="text" id="player-name" placeholder="Enter Name..." maxlength="12" 
+                    class="w-full p-3 mb-4 rounded bg-zinc-800 border border-zinc-700 text-white text-center outline-none focus:border-yellow-500">
+                
+                <button id="start-btn" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-4 rounded-xl text-2xl transition-transform active:scale-95 uppercase">
+                    Play Now
+                </button>
+
+                <p class="text-zinc-500 text-xs mt-6">Use Mouse or Arrow Keys to steer.<br>Hold Click or Space to Boost!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const mmCanvas = document.getElementById('mini-map-canvas');
+    const mmCtx = mmCanvas.getContext('2d');
+    
+    // UI Elements
+    const overlay = document.getElementById('overlay');
+    const startBtn = document.getElementById('start-btn');
+    const playerNameInput = document.getElementById('player-name');
+    const scoreVal = document.getElementById('score-val');
+    const lengthVal = document.getElementById('length-val');
+    const deathStats = document.getElementById('death-stats');
+    const finalScoreDisplay = document.getElementById('final-score');
+    const leaderboardList = document.getElementById('leaderboard-list');
+
+    // Game Constants
+    const WORLD_SIZE = 4000;
+    const GRID_SIZE = 100;
+    const INITIAL_SPEED = 3.5;
+    const BOOST_SPEED = 7;
+    const TURN_SPEED = 0.08;
+    const BOT_COUNT = 15;
+    const FOOD_COUNT = 400;
+
+    // Game State
+    let gameActive = false;
+    let camera = { x: 0, y: 0 };
+    let mouse = { x: 0, y: 0 };
+    let player = null;
+    let bots = [];
+    let foods = [];
+    let leaderboard = [];
+
+    class Food {
+        constructor() {
+            this.reset();
+        }
+        reset() {
+            this.x = Math.random() * WORLD_SIZE;
+            this.y = Math.random() * WORLD_SIZE;
+            this.value = Math.random() > 0.9 ? 5 : 1;
+            this.size = this.value === 5 ? 12 : 6;
+            this.color = this.value === 5 ? '#f1c40f' : `hsl(${Math.random() * 360}, 70%, 60%)`;
+            this.pulse = 0;
+        }
+        draw() {
+            this.pulse += 0.1;
+            const s = this.size + Math.sin(this.pulse) * 2;
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x - camera.x, this.y - camera.y, s, 0, Math.PI * 2);
+            ctx.fill();
+            // Glow
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = this.color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    class Worm {
+        constructor(name, x, y, isPlayer = false) {
+            this.name = name;
+            this.isPlayer = isPlayer;
+            this.segments = [];
+            this.angle = Math.random() * Math.PI * 2;
+            this.targetAngle = this.angle;
+            this.speed = INITIAL_SPEED;
+            this.baseSize = 15;
+            this.thickness = 15;
+            this.length = 20;
+            this.score = 0;
+            this.isBoosting = false;
+            this.hue = isPlayer ? 45 : Math.random() * 360;
+            this.dead = false;
+
+            // Initialize segments
+            for (let i = 0; i < this.length; i++) {
+                this.segments.push({ x: x, y: y });
+            }
+        }
+
+        update() {
+            if (this.dead) return;
+
+            // Steering
+            let angleDiff = this.targetAngle - this.angle;
+            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+            this.angle += angleDiff * TURN_SPEED;
+
+            // Speed logic
+            if (this.isBoosting && this.score > 5) {
+                this.speed = BOOST_SPEED;
+                if (Date.now() % 5 === 0) {
+                    this.score -= 0.1;
+                    this.length = Math.max(10, 20 + Math.floor(this.score / 5));
+                }
+            } else {
+                this.speed = INITIAL_SPEED;
+            }
+
+            // Move Head
+            const head = { ...this.segments[0] };
+            head.x += Math.cos(this.angle) * this.speed;
+            head.y += Math.sin(this.angle) * this.speed;
+
+            // World Boundary Collision
+            if (head.x < 0 || head.x > WORLD_SIZE || head.y < 0 || head.y > WORLD_SIZE) {
+                this.die();
+                return;
+            }
+
+            // Body collision (Simplified: check against others)
+            const allWorms = [player, ...bots].filter(w => w && !w.dead && w !== this);
+            for (let other of allWorms) {
+                for (let i = 0; i < other.segments.length; i += 3) {
+                    const dist = Math.hypot(head.x - other.segments[i].x, head.y - other.segments[i].y);
+                    if (dist < this.thickness + other.thickness * 0.5) {
+                        this.die();
+                        return;
+                    }
+                }
+            }
+
+            this.segments.unshift(head);
+            while (this.segments.length > this.length) {
+                this.segments.pop();
+            }
+
+            // Food collision
+            foods.forEach(f => {
+                const dist = Math.hypot(head.x - f.x, head.y - f.y);
+                if (dist < this.thickness + f.size) {
+                    this.score += f.value;
+                    this.length += f.value;
+                    f.reset();
+                }
+            });
+
+            this.thickness = this.baseSize + (this.length / 100);
+
+            // Simple Bot AI
+            if (!this.isPlayer) {
+                if (Math.random() < 0.02) {
+                    // Find nearest food
+                    let nearest = foods[0];
+                    let minDist = Infinity;
+                    foods.slice(0, 20).forEach(f => {
+                        const d = Math.hypot(this.segments[0].x - f.x, this.segments[0].y - f.y);
+                        if (d < minDist) { minDist = d; nearest = f; }
+                    });
+                    this.targetAngle = Math.atan2(nearest.y - head.y, nearest.x - head.x);
+                }
+            }
+        }
+
+        die() {
+            this.dead = true;
+            // Turn segments into food
+            for (let i = 0; i < this.segments.length; i += 5) {
+                const f = new Food();
+                f.x = this.segments[i].x;
+                f.y = this.segments[i].y;
+                f.value = 2;
+                f.color = `hsla(${this.hue}, 100%, 50%, 0.8)`;
+                foods.push(f);
+            }
+
+            if (this.isPlayer) {
+                endGame();
+            } else {
+                // Respawn bot
+                setTimeout(() => {
+                    const idx = bots.indexOf(this);
+                    if (idx > -1) bots[idx] = new Worm("Bot " + Math.floor(Math.random() * 100), Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE);
+                }, 2000);
+            }
+        }
+
+        draw() {
+            if (this.dead) return;
+
+            // Draw body segments
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = this.thickness * 2;
+            
+            // Outer glow effect
+            ctx.shadowBlur = this.isBoosting ? 15 : 0;
+            ctx.shadowColor = `hsl(${this.hue}, 100%, 50%)`;
+
+            ctx.beginPath();
+            ctx.strokeStyle = `hsl(${this.hue}, 80%, 40%)`;
+            ctx.moveTo(this.segments[0].x - camera.x, this.segments[0].y - camera.y);
+            for (let i = 1; i < this.segments.length; i++) {
+                ctx.lineTo(this.segments[i].x - camera.x, this.segments[i].y - camera.y);
+            }
+            ctx.stroke();
+
+            // Inner highlight
+            ctx.lineWidth = this.thickness;
+            ctx.strokeStyle = `hsl(${this.hue}, 80%, 60%)`;
+            ctx.stroke();
+
+            ctx.shadowBlur = 0;
+
+            // Draw Eyes on Head
+            const head = this.segments[0];
+            const eyeX = head.x - camera.x;
+            const eyeY = head.y - camera.y;
+            
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            const e1 = { x: Math.cos(this.angle + 0.5) * 10, y: Math.sin(this.angle + 0.5) * 10 };
+            const e2 = { x: Math.cos(this.angle - 0.5) * 10, y: Math.sin(this.angle - 0.5) * 10 };
+            ctx.arc(eyeX + e1.x, eyeY + e1.y, 5, 0, Math.PI * 2);
+            ctx.arc(eyeX + e2.x, eyeY + e2.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(eyeX + e1.x + Math.cos(this.angle)*2, eyeY + e1.y + Math.sin(this.angle)*2, 2.5, 0, Math.PI * 2);
+            ctx.arc(eyeX + e2.x + Math.cos(this.angle)*2, eyeY + e2.y + Math.sin(this.angle)*2, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Name
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(this.name, eyeX, eyeY - this.thickness - 10);
+        }
+    }
+
+    function init() {
+        resize();
+        foods = Array.from({ length: FOOD_COUNT }, () => new Food());
+        bots = Array.from({ length: BOT_COUNT }, (v, i) => new Worm("Bot " + (i + 1), Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE));
+        
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mousedown', () => { if(player) player.isBoosting = true; });
+        window.addEventListener('mouseup', () => { if(player) player.isBoosting = false; });
+        window.addEventListener('keydown', (e) => { if(e.code === 'Space' && player) player.isBoosting = true; });
+        window.addEventListener('keyup', (e) => { if(e.code === 'Space' && player) player.isBoosting = false; });
+
+        // Touch support
+        window.addEventListener('touchstart', (e) => { if(player) player.isBoosting = true; e.preventDefault(); }, {passive: false});
+        window.addEventListener('touchend', (e) => { if(player) player.isBoosting = false; e.preventDefault(); }, {passive: false});
+        window.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            handleMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
+            e.preventDefault();
+        }, {passive: false});
+
+        startBtn.onclick = startGame;
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    function startGame() {
+        const name = playerNameInput.value || "Wormy";
+        player = new Worm(name, WORLD_SIZE / 2, WORLD_SIZE / 2, true);
+        gameActive = true;
+        overlay.classList.add('opacity-0');
+        setTimeout(() => overlay.classList.add('hidden'), 300);
+    }
+
+    function endGame() {
+        gameActive = false;
+        finalScoreDisplay.innerText = Math.floor(player.score);
+        deathStats.classList.remove('hidden');
+        overlay.classList.remove('hidden');
+        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+    }
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    function handleMouseMove(e) {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+        if (player) {
+            const dx = mouse.x - canvas.width / 2;
+            const dy = mouse.y - canvas.height / 2;
+            player.targetAngle = Math.atan2(dy, dx);
+        }
+    }
+
+    function updateCamera() {
+        if (!player) return;
+        const targetX = player.segments[0].x - canvas.width / 2;
+        const targetY = player.segments[0].y - canvas.height / 2;
+        camera.x += (targetX - camera.x) * 0.1;
+        camera.y += (targetY - camera.y) * 0.1;
+    }
+
+    function drawGrid() {
+        ctx.strokeStyle = '#2a2a2a';
+        ctx.lineWidth = 1;
+        const startX = -camera.x % GRID_SIZE;
+        const startY = -camera.y % GRID_SIZE;
+
+        for (let x = startX; x < canvas.width; x += GRID_SIZE) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+        for (let y = startY; y < canvas.height; y += GRID_SIZE) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+
+        // Borders
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 5;
+        ctx.strokeRect(-camera.x, -camera.y, WORLD_SIZE, WORLD_SIZE);
+    }
+
+    function updateLeaderboard() {
+        const all = [player, ...bots].filter(w => w && !w.dead);
+        all.sort((a, b) => b.score - a.score);
+        leaderboard = all.slice(0, 10);
+
+        leaderboardList.innerHTML = leaderboard.map((w, i) => `
+            <div class="flex justify-between ${w.isPlayer ? 'text-yellow-400 font-bold' : ''}">
+                <span>${i+1}. ${w.name}</span>
+                <span>${Math.floor(w.score)}</span>
+            </div>
+        `).join('');
+    }
+
+    function drawMiniMap() {
+        mmCtx.clearRect(0, 0, mmCanvas.width, mmCanvas.height);
+        const scale = mmCanvas.width / WORLD_SIZE;
+        
+        // Players
+        [player, ...bots].forEach(w => {
+            if (!w || w.dead) return;
+            mmCtx.fillStyle = w.isPlayer ? 'white' : `hsl(${w.hue}, 80%, 50%)`;
+            mmCtx.beginPath();
+            mmCtx.arc(w.segments[0].x * scale, w.segments[0].y * scale, 2, 0, Math.PI * 2);
+            mmCtx.fill();
+        });
+    }
+
+    function gameLoop() {
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        drawGrid();
+
+        foods.forEach(f => f.draw());
+
+        if (player) {
+            player.update();
+            player.draw();
+            scoreVal.innerText = Math.floor(player.score);
+            lengthVal.innerText = player.length;
+        }
+
+        bots.forEach(b => {
+            b.update();
+            b.draw();
+        });
+
+        updateCamera();
+        
+        if (Date.now() % 30 === 0) {
+            updateLeaderboard();
+            drawMiniMap();
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    init();
+</script>
+</body>
+</html>

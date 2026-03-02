@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CabRide - Instant Bookings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e293b;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .map-bg {
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-color: #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+        .car-marker {
+            transition: all 2s ease-in-out;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .route-line {
+            stroke-dasharray: 10;
+            animation: dash 20s linear infinite;
+        }
+        @keyframes dash {
+            to { stroke-dashoffset: -1000; }
+        }
+        .pulse {
+            animation: pulse-ring 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(.33); }
+            80%, 100% { opacity: 0; }
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b px-6 py-4 flex justify-between items-center z-50">
+        <div class="flex items-center gap-2">
+            <div class="bg-blue-600 p-2 rounded-lg">
+                <i class="fas fa-taxi text-white text-xl"></i>
+            </div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">CabRide</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <button class="text-slate-600 font-medium">My Rides</button>
+            <div class="w-10 h-10 rounded-full bg-slate-200 border flex items-center justify-center text-slate-500">
+                <i class="fas fa-user"></i>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        <!-- Sidebar: Booking Controls -->
+        <aside class="w-full md:w-[400px] bg-white shadow-xl flex flex-col z-40 border-r">
+            <div id="booking-panel" class="p-6 flex-1 overflow-y-auto hide-scrollbar">
+                <h2 class="text-xl font-bold text-slate-800 mb-6">Where to?</h2>
+                
+                <!-- Inputs -->
+                <div class="space-y-4 mb-8">
+                    <div class="relative">
+                        <span class="absolute left-4 top-4 text-green-500"><i class="fas fa-circle text-[10px]"></i></span>
+                        <input type="text" id="pickup" placeholder="Pickup Location" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" value="Current Location">
+                    </div>
+                    <div class="relative">
+                        <span class="absolute left-4 top-4 text-red-500"><i class="fas fa-square text-[10px]"></i></span>
+                        <input type="text" id="destination" placeholder="Enter Destination" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    </div>
+                </div>
+
+                <!-- Vehicle Options -->
+                <div id="vehicle-options" class="space-y-3">
+                    <div onclick="selectVehicle('economy')" id="v-economy" class="vehicle-card p-4 border-2 rounded-2xl cursor-pointer hover:border-blue-400 transition-all flex justify-between items-center border-blue-500 bg-blue-50">
+                        <div class="flex items-center gap-4">
+                            <div class="text-3xl">🚗</div>
+                            <div>
+                                <p class="font-bold text-slate-800">Economy</p>
+                                <p class="text-xs text-slate-500">4 min away • Seats 4</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-slate-800" id="price-economy">$12.50</p>
+                        </div>
+                    </div>
+
+                    <div onclick="selectVehicle('premium')" id="v-premium" class="vehicle-card p-4 border-2 rounded-2xl cursor-pointer hover:border-blue-400 transition-all flex justify-between items-center border-slate-100">
+                        <div class="flex items-center gap-4">
+                            <div class="text-3xl">🚙</div>
+                            <div>
+                                <p class="font-bold text-slate-800">Premium</p>
+                                <p class="text-xs text-slate-500">7 min away • Spacious</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-slate-800" id="price-premium">$18.20</p>
+                        </div>
+                    </div>
+
+                    <div onclick="selectVehicle('luxury')" id="v-luxury" class="vehicle-card p-4 border-2 rounded-2xl cursor-pointer hover:border-blue-400 transition-all flex justify-between items-center border-slate-100">
+                        <div class="flex items-center gap-4">
+                            <div class="text-3xl">💎</div>
+                            <div>
+                                <p class="font-bold text-slate-800">Luxury</p>
+                                <p class="text-xs text-slate-500">12 min away • Top rated</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-slate-800" id="price-luxury">$35.00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="mt-8 pt-6 border-t">
+                    <div class="flex justify-between items-center text-slate-600 mb-6">
+                        <span class="flex items-center gap-2 font-medium">
+                            <i class="fab fa-cc-visa text-blue-800 text-xl"></i> •••• 4242
+                        </span>
+                        <button class="text-blue-600 text-sm font-bold">Change</button>
+                    </div>
+                    <button onclick="bookRide()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-200 transition-all transform active:scale-95">
+                        Confirm Booking
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ride Status Panel (Hidden initially) -->
+            <div id="status-panel" class="hidden p-6 flex-1 flex flex-col">
+                <div class="animate-pulse flex flex-col items-center justify-center py-8" id="searching-ui">
+                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-search text-blue-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800">Finding your driver...</h3>
+                    <p class="text-slate-500 text-sm">Contacting nearby vehicles</p>
+                </div>
+
+                <div id="driver-assigned" class="hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-bold text-green-600">Driver Found!</h3>
+                        <span class="bg-slate-100 px-3 py-1 rounded-full text-xs font-bold text-slate-600">Arriving in 4 min</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border">
+                        <img src="https://i.pravatar.cc/150?u=driver1" class="w-16 h-16 rounded-2xl object-cover" alt="Driver">
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-800 text-lg">Michael Scott</p>
+                            <p class="text-sm text-slate-500"><i class="fas fa-star text-yellow-500"></i> 4.9 (1.2k rides)</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-slate-400 uppercase">White Tesla</p>
+                            <p class="font-black text-slate-800">SCR-2005</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-700">
+                            <i class="fas fa-phone"></i> Call
+                        </button>
+                        <button class="flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-700">
+                            <i class="fas fa-comment"></i> Chat
+                        </button>
+                    </div>
+
+                    <button onclick="cancelBooking()" class="w-full py-3 text-red-500 font-bold hover:bg-red-50 rounded-xl transition-all">
+                        Cancel Ride
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Map Section -->
+        <section class="flex-1 map-bg relative">
+            <!-- Simulated Map Elements -->
+            <svg class="absolute inset-0 w-full h-full" id="map-svg">
+                <!-- Roads -->
+                <path d="M-100 200 L1200 200" stroke="#cbd5e1" stroke-width="40" fill="none" />
+                <path d="M400 -100 L400 1200" stroke="#cbd5e1" stroke-width="40" fill="none" />
+                <path d="M800 -100 L800 1200" stroke="#cbd5e1" stroke-width="40" fill="none" />
+                <path d="M-100 600 L1200 600" stroke="#cbd5e1" stroke-width="40" fill="none" />
+                
+                <!-- Route (Hidden until booked) -->
+                <path id="route" d="M400 200 L400 600 L800 600" stroke="#2563eb" stroke-width="6" fill="none" stroke-linecap="round" class="route-line hidden" />
+            </svg>
+
+            <!-- Pickup Marker -->
+            <div id="marker-pickup" class="absolute top-[200px] left-[400px] -translate-x-1/2 -translate-y-1/2 z-20">
+                <div class="w-8 h-8 bg-green-500 rounded-full border-4 border-white shadow-lg flex items-center justify-center">
+                    <div class="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- Destination Marker (Draggable concept) -->
+            <div id="marker-dest" class="absolute top-[600px] left-[800px] -translate-x-1/2 -translate-y-1/2 z-20 hidden">
+                <div class="w-10 h-10 bg-red-500 rounded-full border-4 border-white shadow-lg flex items-center justify-center text-white">
+                    <i class="fas fa-location-dot text-xs"></i>
+                </div>
+            </div>
+
+            <!-- Dynamic Car Icons (Simulated traffic) -->
+            <div class="car-marker absolute top-[190px] left-[100px] text-2xl z-30 transition-all duration-[5000ms]" style="transform: rotate(90deg);" id="traffic-car-1">🚗</div>
+            <div class="car-marker absolute top-[400px] left-[390px] text-2xl z-30 transition-all duration-[8000ms]" id="traffic-car-2">🚙</div>
+            <div class="car-marker absolute top-[590px] left-[900px] text-2xl z-30 transition-all duration-[6000ms]" style="transform: rotate(-90deg);" id="traffic-car-3">🚕</div>
+
+            <!-- Floating Info -->
+            <div class="absolute bottom-6 left-6 right-6 md:left-auto md:w-64 glass-card p-4 rounded-2xl shadow-xl z-50">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-100 text-blue-600 p-2 rounded-lg">
+                        <i class="fas fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-500 uppercase">Safety Center</p>
+                        <p class="text-sm font-bold text-slate-800">Your ride is protected</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let selectedCategory = 'economy';
+        const prices = {
+            economy: 12.50,
+            premium: 18.20,
+            luxury: 35.00
+        };
+
+        // UI Interactions
+        function selectVehicle(cat) {
+            selectedCategory = cat;
+            document.querySelectorAll('.vehicle-card').forEach(el => {
+                el.classList.remove('border-blue-500', 'bg-blue-50');
+                el.classList.add('border-slate-100');
+            });
+            document.getElementById(`v-${cat}`).classList.add('border-blue-500', 'bg-blue-50');
+            document.getElementById(`v-${cat}`).classList.remove('border-slate-100');
+        }
+
+        function bookRide() {
+            const dest = document.getElementById('destination').value;
+            if(!dest) {
+                showToast("Please enter a destination");
+                return;
+            }
+
+            // Switch Panels
+            document.getElementById('booking-panel').classList.add('hidden');
+            document.getElementById('status-panel').classList.remove('hidden');
+            document.getElementById('marker-dest').classList.remove('hidden');
+            document.getElementById('route').classList.remove('hidden');
+
+            // Simulate Booking Flow
+            setTimeout(() => {
+                document.getElementById('searching-ui').classList.add('hidden');
+                document.getElementById('driver-assigned').classList.remove('hidden');
+                moveDriverToPickup();
+            }, 3000);
+        }
+
+        function cancelBooking() {
+            if(confirm("Are you sure you want to cancel?")) {
+                location.reload();
+            }
+        }
+
+        function moveDriverToPickup() {
+            const car = document.getElementById('traffic-car-2');
+            car.style.top = '200px';
+            car.style.left = '400px';
+            car.classList.add('ring-4', 'ring-blue-500', 'ring-offset-2');
+            car.innerHTML = '🚗'; // Ensure it's a car icon
+        }
+
+        // Mock Traffic Movement
+        function animateTraffic() {
+            const car1 = document.getElementById('traffic-car-1');
+            const car3 = document.getElementById('traffic-car-3');
+            
+            setInterval(() => {
+                car1.style.left = Math.random() > 0.5 ? '1000px' : '0px';
+                car3.style.left = Math.random() > 0.5 ? '0px' : '1000px';
+            }, 5000);
+        }
+
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = "fixed top-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl z-[100] transition-all animate-bounce";
+            t.innerText = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        // Dynamic pricing simulator
+        setInterval(() => {
+            const modifier = (Math.random() * 0.5) + 0.8;
+            document.getElementById('price-economy').innerText = `$${(prices.economy * modifier).toFixed(2)}`;
+            document.getElementById('price-premium').innerText = `$${(prices.premium * modifier).toFixed(2)}`;
+            document.getElementById('price-luxury').innerText = `$${(prices.luxury * modifier).toFixed(2)}`;
+        }, 10000);
+
+        window.onload = animateTraffic;
+    </script>
+</body>
+</html>
