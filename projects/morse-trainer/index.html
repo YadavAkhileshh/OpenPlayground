@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morse Trainer · Learn Morse Code</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #f0f5fa;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            color: #1e3b4f;
+        }
+
+        .trainer-card {
+            max-width: 800px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 70px;
+            box-shadow: 0 30px 50px -20px rgba(0,0,0,0.2), 0 0 0 2px #d0e2f0 inset;
+            padding: 2.5rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #d0e2f0;
+            padding-bottom: 1.2rem;
+        }
+
+        .title h1 {
+            font-size: 2.5rem;
+            font-weight: 500;
+            background: linear-gradient(145deg, #2e5a7a, #558bb5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .title p {
+            color: #5d7e9c;
+            margin-top: 0.2rem;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        .mode-btn {
+            background: #e6f0fa;
+            border: 2px solid #c1d9f0;
+            padding: 0.6rem 1.5rem;
+            border-radius: 40px;
+            font-weight: 600;
+            color: #2b6286;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .mode-btn.active {
+            background: #2f6d97;
+            border-color: #2f6d97;
+            color: white;
+        }
+
+        /* main practice area */
+        .practice-panel {
+            background: #f8fcff;
+            border-radius: 50px;
+            padding: 2rem;
+            border: 2px solid #d0e2f0;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .target-char {
+            font-size: 6rem;
+            font-weight: 600;
+            color: #1d4a6b;
+            margin-bottom: 0.5rem;
+        }
+
+        .morse-display {
+            font-size: 3rem;
+            letter-spacing: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: #3f7aa6;
+            background: #e5f0fa;
+            padding: 1rem;
+            border-radius: 60px;
+            margin: 1rem 0;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+
+        .input-area input {
+            background: white;
+            border: 3px solid #c1d9f0;
+            border-radius: 60px;
+            padding: 1rem 2rem;
+            font-size: 1.5rem;
+            width: 200px;
+            text-align: center;
+            outline: none;
+        }
+
+        .input-area input:focus {
+            border-color: #7fa9cc;
+        }
+
+        .primary-btn {
+            background: #2f6d97;
+            border: none;
+            border-radius: 60px;
+            padding: 1rem 2.5rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: 0.1s;
+            border: 2px solid #2f6d97;
+        }
+
+        .primary-btn:hover {
+            background: #1e567b;
+        }
+
+        .secondary-btn {
+            background: #e6f0fa;
+            border: 3px solid #c1d9f0;
+            border-radius: 60px;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2b6286;
+            cursor: pointer;
+        }
+
+        /* feedback area */
+        .feedback {
+            font-size: 1.3rem;
+            margin: 1rem 0;
+            min-height: 3rem;
+            color: #2b6286;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            background: #e6f0fa;
+            border-radius: 60px;
+            padding: 1rem 2rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #5d7e9c;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #1d4a6b;
+        }
+
+        /* reference chart */
+        .reference {
+            background: #f8fcff;
+            border-radius: 40px;
+            padding: 1.5rem;
+            border: 2px solid #d0e2f0;
+            margin-top: 1.5rem;
+        }
+
+        .reference h3 {
+            text-align: center;
+            color: #1d4a6b;
+            margin-bottom: 1rem;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            text-align: center;
+        }
+
+        .chart-item {
+            background: #e6f0fa;
+            border-radius: 30px;
+            padding: 0.4rem;
+            font-family: monospace;
+        }
+
+        .footer {
+            text-align: center;
+            color: #7d9bc0;
+            margin-top: 2rem;
+        }
+
+        .audio-hint {
+            font-size: 0.9rem;
+            color: #6f8fb0;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="trainer-card">
+        <div class="header">
+            <div class="title">
+                <h1>📡 Morse Trainer</h1>
+                <p>learn · practice · master</p>
+            </div>
+            <div class="mode-selector">
+                <button class="mode-btn active" id="modeChar">A-Z</button>
+                <button class="mode-btn" id="modeNum">0-9</button>
+                <button class="mode-btn" id="modeMix">mixed</button>
+            </div>
+        </div>
+
+        <!-- main practice panel -->
+        <div class="practice-panel">
+            <div class="target-char" id="targetChar">A</div>
+            <div class="morse-display" id="morseCode">.-</div>
+
+            <div class="input-area">
+                <input type="text" id="userInput" maxlength="1" placeholder="?">
+                <button class="primary-btn" id="checkBtn">check</button>
+                <button class="secondary-btn" id="playBtn">🔊 play</button>
+            </div>
+
+            <div class="feedback" id="feedback">type the letter and press check</div>
+
+            <div class="stats-row">
+                <div class="stat-item">
+                    <span class="stat-label">correct</span>
+                    <span class="stat-value" id="correctCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">attempts</span>
+                    <span class="stat-value" id="attemptCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">streak</span>
+                    <span class="stat-value" id="streakCount">0</span>
+                </div>
+            </div>
+
+            <button class="secondary-btn" id="nextBtn">➡️ next character</button>
+        </div>
+
+        <!-- morse reference chart -->
+        <div class="reference">
+            <h3>📖 Morse Reference</h3>
+            <div class="chart-grid" id="morseChart">
+                <!-- filled by js -->
+            </div>
+        </div>
+
+        <div class="footer">
+            ⚡ click play to hear Morse code · type your answer
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ----- MORSE MAPPING -----
+            const morseMap = {
+                'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.', 'G': '--.', 'H': '....',
+                'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..', 'M': '--', 'N': '-.', 'O': '---', 'P': '.--.',
+                'Q': '--.-', 'R': '.-.', 'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-',
+                'Y': '-.--', 'Z': '--..',
+                '0': '-----', '1': '.----', '2': '..---', '3': '...--', '4': '....-', '5': '.....',
+                '6': '-....', '7': '--...', '8': '---..', '9': '----.'
+            };
+
+            // available characters based on mode
+            const charsAZ = Object.keys(morseMap).filter(c => c >= 'A' && c <= 'Z');
+            const nums09 = Object.keys(morseMap).filter(c => c >= '0' && c <= '9');
+            
+            // state
+            let currentMode = 'char'; // char, num, mix
+            let currentChar = 'A';
+            let correctCount = 0;
+            let attemptCount = 0;
+            let streak = 0;
+            let lastWasCorrect = false;
+
+            // DOM elements
+            const targetCharEl = document.getElementById('targetChar');
+            const morseCodeEl = document.getElementById('morseCode');
+            const userInput = document.getElementById('userInput');
+            const checkBtn = document.getElementById('checkBtn');
+            const playBtn = document.getElementById('playBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const feedbackEl = document.getElementById('feedback');
+            const correctSpan = document.getElementById('correctCount');
+            const attemptSpan = document.getElementById('attemptCount');
+            const streakSpan = document.getElementById('streakCount');
+            const modeCharBtn = document.getElementById('modeChar');
+            const modeNumBtn = document.getElementById('modeNum');
+            const modeMixBtn = document.getElementById('modeMix');
+            const morseChart = document.getElementById('morseChart');
+
+            // audio context for playing Morse
+            let audioCtx = null;
+
+            // initialize audio context on first play
+            function initAudio() {
+                if (audioCtx) return;
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            // play Morse code for given character
+            function playMorse(char) {
+                initAudio();
+                if (!audioCtx) return;
+
+                const morse = morseMap[char];
+                if (!morse) return;
+
+                // resume if suspended
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const dotDuration = 0.12; // seconds
+                const freq = 700; // Hz
+
+                let time = audioCtx.currentTime;
+
+                for (let i = 0; i < morse.length; i++) {
+                    const symbol = morse[i];
+                    const duration = symbol === '.' ? dotDuration : dotDuration * 3;
+
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.value = 0.3;
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.start(time);
+                    osc.stop(time + duration);
+
+                    time += duration + dotDuration; // add gap
+                }
+            }
+
+            // update displayed character and morse
+            function setRandomChar() {
+                let pool = [];
+                if (currentMode === 'char') pool = charsAZ;
+                else if (currentMode === 'num') pool = nums09;
+                else pool = [...charsAZ, ...nums09];
+
+                const randomIndex = Math.floor(Math.random() * pool.length);
+                currentChar = pool[randomIndex];
+                targetCharEl.innerText = currentChar;
+                morseCodeEl.innerText = morseMap[currentChar];
+                userInput.value = '';
+                userInput.focus();
+                feedbackEl.innerText = 'type and check';
+            }
+
+            // check user input
+            function checkInput() {
+                const input = userInput.value.trim().toUpperCase();
+                if (input.length === 0) {
+                    feedbackEl.innerText = '⚠️ enter a character';
+                    return;
+                }
+
+                attemptCount++;
+                const isCorrect = (input === currentChar);
+
+                if (isCorrect) {
+                    correctCount++;
+                    streak++;
+                    feedbackEl.innerText = '✅ correct!';
+                } else {
+                    streak = 0;
+                    feedbackEl.innerText = `❌ wrong. ${currentChar} is ${morseMap[currentChar]}`;
+                }
+
+                updateStats();
+                lastWasCorrect = isCorrect;
+            }
+
+            // update stats display
+            function updateStats() {
+                correctSpan.innerText = correctCount;
+                attemptSpan.innerText = attemptCount;
+                streakSpan.innerText = streak;
+            }
+
+            // render morse reference chart
+            function renderChart() {
+                let html = '';
+                // show first 8 letters + numbers as preview
+                const preview = [...charsAZ.slice(0, 8), ...nums09.slice(0, 4)];
+                preview.forEach(char => {
+                    html += `<div class="chart-item"><strong>${char}</strong> ${morseMap[char]}</div>`;
+                });
+                morseChart.innerHTML = html;
+            }
+
+            // mode change
+            function setMode(mode) {
+                currentMode = mode;
+                // reset stats? optional, we keep stats
+                setRandomChar();
+
+                // update active button
+                [modeCharBtn, modeNumBtn, modeMixBtn].forEach(btn => btn.classList.remove('active'));
+                if (mode === 'char') modeCharBtn.classList.add('active');
+                else if (mode === 'num') modeNumBtn.classList.add('active');
+                else modeMixBtn.classList.add('active');
+            }
+
+            // event listeners
+            checkBtn.addEventListener('click', checkInput);
+            userInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') checkInput();
+            });
+
+            playBtn.addEventListener('click', () => {
+                playMorse(currentChar);
+            });
+
+            nextBtn.addEventListener('click', () => {
+                setRandomChar();
+                feedbackEl.innerText = 'new character';
+            });
+
+            modeCharBtn.addEventListener('click', () => setMode('char'));
+            modeNumBtn.addEventListener('click', () => setMode('num'));
+            modeMixBtn.addEventListener('click', () => setMode('mix'));
+
+            // initialize
+            setRandomChar();
+            renderChart();
+            updateStats();
+
+            // ensure audio context is created on first user interaction (play button triggers it)
+        })();
+    </script>
+</body>
+</html>
