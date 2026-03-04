@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Life · Emergent Simulation</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #0a0c14;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            color: #e0f0ff;
+        }
+
+        .sim-card {
+            max-width: 1200px;
+            width: 100%;
+            background: #151e2a;
+            border-radius: 48px;
+            box-shadow: 0 30px 50px -20px rgba(0,0,0,0.8), 0 0 0 2px #3f5f7f inset;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #3f5f7f;
+            padding-bottom: 1rem;
+        }
+
+        .title h1 {
+            font-size: 2.2rem;
+            font-weight: 400;
+            color: #aad0ff;
+            letter-spacing: 2px;
+        }
+
+        .title p {
+            color: #8fa9c9;
+            font-size: 0.9rem;
+            margin-top: 0.3rem;
+        }
+
+        .stats {
+            background: #1f3140;
+            border-radius: 50px;
+            padding: 0.8rem 1.8rem;
+            border: 2px solid #3f5f7f;
+            color: #b0d8ff;
+        }
+
+        /* main canvas */
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+            background: #0a101a;
+            border-radius: 36px;
+            padding: 1rem;
+            border: 2px solid #3f5f7f;
+        }
+
+        canvas {
+            display: block;
+            width: 800px;
+            height: 500px;
+            border-radius: 24px;
+            background: #0f1722;
+            box-shadow: 0 0 0 2px #2a4055;
+        }
+
+        /* controls */
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .control-group {
+            background: #1f3140;
+            border-radius: 30px;
+            padding: 1.2rem 1.5rem;
+            border: 2px solid #3f5f7f;
+        }
+
+        .control-group h3 {
+            color: #b0d8ff;
+            font-weight: 400;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            border-bottom: 1px solid #3f5f7f;
+            padding-bottom: 0.5rem;
+        }
+
+        .slider-item {
+            margin-bottom: 1rem;
+        }
+
+        .slider-item label {
+            display: flex;
+            justify-content: space-between;
+            color: #8fa9c9;
+            font-size: 0.9rem;
+        }
+
+        .slider-item input {
+            width: 100%;
+            margin-top: 0.3rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            background: #1f3140;
+            border: 2px solid #4f7f9f;
+            border-radius: 40px;
+            padding: 0.8rem 1.8rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #d0e9ff;
+            cursor: pointer;
+            transition: 0.1s;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .btn:hover {
+            background: #2a4055;
+            border-color: #6f9fbf;
+        }
+
+        .btn.primary {
+            background: #2f6d97;
+            border-color: #2f6d97;
+            color: white;
+        }
+
+        .preset-bar {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin: 1.5rem 0 1rem;
+        }
+
+        .preset-btn {
+            background: #1f3140;
+            border: 2px solid #3f5f7f;
+            border-radius: 40px;
+            padding: 0.6rem 1.5rem;
+            cursor: pointer;
+            color: #b0d8ff;
+            transition: 0.1s;
+        }
+
+        .preset-btn:hover {
+            background: #2a4055;
+        }
+
+        .footer {
+            text-align: center;
+            color: #6f8fa8;
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+        }
+
+        .color-key {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+
+        .color-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.4rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="sim-card">
+        <div class="header">
+            <div class="title">
+                <h1>⚛️ PARTICLE LIFE</h1>
+                <p>emergent behavior · attraction & repulsion</p>
+            </div>
+            <div class="stats" id="fps">FPS: 60</div>
+        </div>
+
+        <!-- canvas -->
+        <div class="canvas-container">
+            <canvas id="particleCanvas" width="800" height="500"></canvas>
+        </div>
+
+        <!-- color key -->
+        <div class="color-key">
+            <span><span class="color-dot" style="background: #ff6b6b;"></span> Type A</span>
+            <span><span class="color-dot" style="background: #4ecdc4;"></span> Type B</span>
+            <span><span class="color-dot" style="background: #ffe66d;"></span> Type C</span>
+        </div>
+
+        <!-- presets -->
+        <div class="preset-bar">
+            <button class="preset-btn" id="presetRandom">🎲 random</button>
+            <button class="preset-btn" id="presetLiquid">💧 liquid</button>
+            <button class="preset-btn" id="presetCrystal">🔮 crystal</button>
+            <button class="preset-btn" id="presetGas">🌫️ gas</button>
+            <button class="preset-btn" id="presetReset">↺ reset</button>
+        </div>
+
+        <!-- main controls -->
+        <div class="control-panel">
+            <div class="control-group">
+                <h3>🔧 parameters</h3>
+                <div class="slider-item">
+                    <label>particles <span id="particleCount">300</span></label>
+                    <input type="range" id="particleSlider" min="50" max="600" value="300" step="10">
+                </div>
+                <div class="slider-item">
+                    <label>interaction radius <span id="radiusValue">80</span></label>
+                    <input type="range" id="radiusSlider" min="20" max="200" value="80" step="5">
+                </div>
+                <div class="slider-item">
+                    <label>force strength <span id="forceValue">0.5</span></label>
+                    <input type="range" id="forceSlider" min="0.1" max="2.0" value="0.5" step="0.1">
+                </div>
+                <div class="slider-item">
+                    <label>friction <span id="frictionValue">0.1</span></label>
+                    <input type="range" id="frictionSlider" min="0" max="0.5" value="0.1" step="0.01">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>🎛️ type forces</h3>
+                <div class="slider-item">
+                    <label>A↔A <span id="aaValue">0.5</span></label>
+                    <input type="range" id="aaSlider" min="-1" max="1" value="0.5" step="0.1">
+                </div>
+                <div class="slider-item">
+                    <label>A↔B <span id="abValue">-0.2</span></label>
+                    <input type="range" id="abSlider" min="-1" max="1" value="-0.2" step="0.1">
+                </div>
+                <div class="slider-item">
+                    <label>A↔C <span id="acValue">0.1</span></label>
+                    <input type="range" id="acSlider" min="-1" max="1" value="0.1" step="0.1">
+                </div>
+                <div class="slider-item">
+                    <label>B↔B <span id="bbValue">-0.3</span></label>
+                    <input type="range" id="bbSlider" min="-1" max="1" value="-0.3" step="0.1">
+                </div>
+                <div class="slider-item">
+                    <label>B↔C <span id="bcValue">0.4</span></label>
+                    <input type="range" id="bcSlider" min="-1" max="1" value="0.4" step="0.1">
+                </div>
+                <div class="slider-item">
+                    <label>C↔C <span id="ccValue">0.2</span></label>
+                    <input type="range" id="ccSlider" min="-1" max="1" value="0.2" step="0.1">
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            ⚡ particles move based on pairwise attraction/repulsion · emergent patterns
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // canvas
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = 800;
+            const height = 500;
+
+            // particle types (3 types)
+            const TYPES = 3;
+            const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d'];
+
+            // state
+            let particles = [];
+            let forces = [
+                [0.5, -0.2, 0.1],
+                [-0.2, -0.3, 0.4],
+                [0.1, 0.4, 0.2]
+            ];
+            let interactionRadius = 80;
+            let forceStrength = 0.5;
+            let friction = 0.1;
+            let targetParticleCount = 300;
+            let animationFrame = null;
+            let lastTimestamp = 0;
+            let fps = 60;
+
+            // DOM elements
+            const particleSlider = document.getElementById('particleSlider');
+            const particleCountSpan = document.getElementById('particleCount');
+            const radiusSlider = document.getElementById('radiusSlider');
+            const radiusValue = document.getElementById('radiusValue');
+            const forceSlider = document.getElementById('forceSlider');
+            const forceValue = document.getElementById('forceValue');
+            const frictionSlider = document.getElementById('frictionSlider');
+            const frictionValue = document.getElementById('frictionValue');
+            const fpsSpan = document.getElementById('fps');
+
+            // force sliders
+            const aaSlider = document.getElementById('aaSlider');
+            const aaValue = document.getElementById('aaValue');
+            const abSlider = document.getElementById('abSlider');
+            const abValue = document.getElementById('abValue');
+            const acSlider = document.getElementById('acSlider');
+            const acValue = document.getElementById('acValue');
+            const bbSlider = document.getElementById('bbSlider');
+            const bbValue = document.getElementById('bbValue');
+            const bcSlider = document.getElementById('bcSlider');
+            const bcValue = document.getElementById('bcValue');
+            const ccSlider = document.getElementById('ccSlider');
+            const ccValue = document.getElementById('ccValue');
+
+            // preset buttons
+            const presetRandom = document.getElementById('presetRandom');
+            const presetLiquid = document.getElementById('presetLiquid');
+            const presetCrystal = document.getElementById('presetCrystal');
+            const presetGas = document.getElementById('presetGas');
+            const presetReset = document.getElementById('presetReset');
+
+            // initialize particles
+            function initParticles(count) {
+                particles = [];
+                for (let i = 0; i < count; i++) {
+                    particles.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        type: Math.floor(Math.random() * TYPES)
+                    });
+                }
+            }
+
+            // update physics
+            function update() {
+                // apply forces
+                for (let i = 0; i < particles.length; i++) {
+                    const p1 = particles[i];
+                    let fx = 0, fy = 0;
+
+                    for (let j = 0; j < particles.length; j++) {
+                        if (i === j) continue;
+                        const p2 = particles[j];
+                        const dx = p2.x - p1.x;
+                        const dy = p2.y - p1.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist > interactionRadius || dist === 0) continue;
+
+                        const force = forces[p1.type][p2.type] * forceStrength * (1 - dist / interactionRadius);
+                        const angle = Math.atan2(dy, dx);
+                        fx += Math.cos(angle) * force;
+                        fy += Math.sin(angle) * force;
+                    }
+
+                    p1.vx += fx;
+                    p1.vy += fy;
+
+                    // friction
+                    p1.vx *= (1 - friction);
+                    p1.vy *= (1 - friction);
+
+                    // update position
+                    p1.x += p1.vx;
+                    p1.y += p1.vy;
+
+                    // wrap around edges
+                    if (p1.x < 0) p1.x = width;
+                    if (p1.x > width) p1.x = 0;
+                    if (p1.y < 0) p1.y = height;
+                    if (p1.y > height) p1.y = 0;
+                }
+            }
+
+            // draw
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                
+                // draw particles
+                for (let p of particles) {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = colors[p.type];
+                    ctx.shadowColor = colors[p.type];
+                    ctx.shadowBlur = 10;
+                    ctx.fill();
+                }
+                ctx.shadowBlur = 0;
+            }
+
+            // animation loop
+            function animate(timestamp) {
+                if (!timestamp) timestamp = 0;
+                const delta = timestamp - lastTimestamp;
+                lastTimestamp = timestamp;
+
+                // simple fps calculation
+                if (delta > 0) {
+                    fps = Math.round(1000 / delta);
+                    fpsSpan.innerText = `FPS: ${Math.min(60, fps)}`;
+                }
+
+                for (let step = 0; step < 2; step++) {
+                    update();
+                }
+                draw();
+
+                animationFrame = requestAnimationFrame(animate);
+            }
+
+            // start animation
+            function start() {
+                if (animationFrame) cancelAnimationFrame(animationFrame);
+                lastTimestamp = performance.now();
+                animationFrame = requestAnimationFrame(animate);
+            }
+
+            // update UI bindings
+            function bindSliders() {
+                particleSlider.addEventListener('input', () => {
+                    const val = parseInt(particleSlider.value);
+                    particleCountSpan.innerText = val;
+                    targetParticleCount = val;
+                    initParticles(val);
+                });
+
+                radiusSlider.addEventListener('input', () => {
+                    const val = parseInt(radiusSlider.value);
+                    radiusValue.innerText = val;
+                    interactionRadius = val;
+                });
+
+                forceSlider.addEventListener('input', () => {
+                    const val = parseFloat(forceSlider.value);
+                    forceValue.innerText = val.toFixed(1);
+                    forceStrength = val;
+                });
+
+                frictionSlider.addEventListener('input', () => {
+                    const val = parseFloat(frictionSlider.value);
+                    frictionValue.innerText = val.toFixed(2);
+                    friction = val;
+                });
+
+                // force matrix sliders
+                aaSlider.addEventListener('input', () => {
+                    const val = parseFloat(aaSlider.value);
+                    aaValue.innerText = val.toFixed(1);
+                    forces[0][0] = val;
+                });
+                abSlider.addEventListener('input', () => {
+                    const val = parseFloat(abSlider.value);
+                    abValue.innerText = val.toFixed(1);
+                    forces[0][1] = val;
+                });
+                acSlider.addEventListener('input', () => {
+                    const val = parseFloat(acSlider.value);
+                    acValue.innerText = val.toFixed(1);
+                    forces[0][2] = val;
+                });
+                bbSlider.addEventListener('input', () => {
+                    const val = parseFloat(bbSlider.value);
+                    bbValue.innerText = val.toFixed(1);
+                    forces[1][1] = val;
+                });
+                bcSlider.addEventListener('input', () => {
+                    const val = parseFloat(bcSlider.value);
+                    bcValue.innerText = val.toFixed(1);
+                    forces[1][2] = val;
+                });
+                ccSlider.addEventListener('input', () => {
+                    const val = parseFloat(ccSlider.value);
+                    ccValue.innerText = val.toFixed(1);
+                    forces[2][2] = val;
+                });
+            }
+
+            // presets
+            function setPreset(name) {
+                if (name === 'random') {
+                    // random forces
+                    for (let i = 0; i < TYPES; i++) {
+                        for (let j = 0; j < TYPES; j++) {
+                            forces[i][j] = (Math.random() * 2 - 1).toFixed(1);
+                        }
+                    }
+                } else if (name === 'liquid') {
+                    forces = [
+                        [0.5, -0.2, 0.1],
+                        [-0.2, -0.3, 0.4],
+                        [0.1, 0.4, 0.2]
+                    ];
+                } else if (name === 'crystal') {
+                    forces = [
+                        [0.8, -0.5, 0.2],
+                        [-0.5, 0.6, -0.3],
+                        [0.2, -0.3, 0.7]
+                    ];
+                } else if (name === 'gas') {
+                    forces = [
+                        [-0.1, -0.1, -0.1],
+                        [-0.1, -0.1, -0.1],
+                        [-0.1, -0.1, -0.1]
+                    ];
+                } else if (name === 'reset') {
+                    forces = [
+                        [0, 0, 0],
+                        [0, 0, 0],
+                        [0, 0, 0]
+                    ];
+                }
+
+                // update sliders
+                aaSlider.value = forces[0][0];
+                aaValue.innerText = forces[0][0].toFixed(1);
+                abSlider.value = forces[0][1];
+                abValue.innerText = forces[0][1].toFixed(1);
+                acSlider.value = forces[0][2];
+                acValue.innerText = forces[0][2].toFixed(1);
+                bbSlider.value = forces[1][1];
+                bbValue.innerText = forces[1][1].toFixed(1);
+                bcSlider.value = forces[1][2];
+                bcValue.innerText = forces[1][2].toFixed(1);
+                ccSlider.value = forces[2][2];
+                ccValue.innerText = forces[2][2].toFixed(1);
+            }
+
+            presetRandom.addEventListener('click', () => setPreset('random'));
+            presetLiquid.addEventListener('click', () => setPreset('liquid'));
+            presetCrystal.addEventListener('click', () => setPreset('crystal'));
+            presetGas.addEventListener('click', () => setPreset('gas'));
+            presetReset.addEventListener('click', () => setPreset('reset'));
+
+            // initial
+            initParticles(300);
+            bindSliders();
+            start();
+        })();
+    </script>
+</body>
+</html>
