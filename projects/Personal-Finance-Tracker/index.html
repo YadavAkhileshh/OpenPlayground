@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Finance Tracker</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/3.5.0/remixicon.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="finance-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1><i class="ri-wallet-2-line"></i> FinTrack</h1>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                    <i class="ri-moon-line"></i>
+                </button>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" data-section="overview">
+                    <i class="ri-home-line"></i>
+                    <span>Overview</span>
+                </button>
+                <button class="nav-item" data-section="transactions">
+                    <i class="ri-exchange-line"></i>
+                    <span>Transactions</span>
+                </button>
+                <button class="nav-item" data-section="budget">
+                    <i class="ri-money-euro-circle-line"></i>
+                    <span>Budget</span>
+                </button>
+                <button class="nav-item" data-section="reports">
+                    <i class="ri-bar-chart-2-line"></i>
+                    <span>Reports</span>
+                </button>
+                <button class="nav-item" data-section="settings">
+                    <i class="ri-settings-line"></i>
+                    <span>Settings</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="net-worth">
+                    <span class="net-worth-label">Net Worth</span>
+                    <span class="net-worth-value" id="netWorthValue">$0.00</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Overview Section -->
+            <section class="section-content active" id="overview">
+                <div class="header-section">
+                    <div>
+                        <h2>Financial Overview</h2>
+                        <p id="currentMonth"></p>
+                    </div>
+                    <button class="btn-primary" id="addTransactionBtn">
+                        <i class="ri-add-line"></i> Add Transaction
+                    </button>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="summary-grid">
+                    <div class="summary-card income">
+                        <div class="card-icon">
+                            <i class="ri-arrow-down-line"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Total Income</span>
+                            <span class="card-value" id="totalIncome">$0.00</span>
+                            <span class="card-subtext" id="incomeCount">0 transactions</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-card expense">
+                        <div class="card-icon">
+                            <i class="ri-arrow-up-line"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Total Expenses</span>
+                            <span class="card-value" id="totalExpenses">$0.00</span>
+                            <span class="card-subtext" id="expenseCount">0 transactions</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-card balance">
+                        <div class="card-icon">
+                            <i class="ri-wallet-line"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Balance</span>
+                            <span class="card-value" id="balance">$0.00</span>
+                            <span class="card-subtext">This month</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-card savings">
+                        <div class="card-icon">
+                            <i class="ri-piggy-bank-line"></i>
+                        </div>
+                        <div class="card-content">
+                            <span class="card-label">Savings Rate</span>
+                            <span class="card-value" id="savingsRate">0%</span>
+                            <span class="card-subtext">of income saved</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Expense Breakdown</h3>
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3>Income vs Expenses</h3>
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div class="recent-section">
+                    <div class="section-header">
+                        <h3>Recent Transactions</h3>
+                        <a href="#" class="view-all" onclick="switchSection('transactions')">View All →</a>
+                    </div>
+                    <div class="transaction-list" id="recentTransactions">
+                        <div class="empty-state">
+                            <i class="ri-inbox-line"></i>
+                            <p>No transactions yet</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transactions Section -->
+            <section class="section-content" id="transactions">
+                <div class="header-section">
+                    <h2>All Transactions</h2>
+                    <button class="btn-primary" id="addTransactionBtn2">
+                        <i class="ri-add-line"></i> Add Transaction
+                    </button>
+                </div>
+
+                <div class="filter-section">
+                    <div class="search-bar">
+                        <i class="ri-search-line"></i>
+                        <input type="text" id="searchInput" placeholder="Search transactions...">
+                    </div>
+
+                    <div class="filter-group">
+                        <select id="filterType" class="filter-select">
+                            <option value="all">All Types</option>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+
+                        <select id="filterCategory" class="filter-select">
+                            <option value="all">All Categories</option>
+                        </select>
+
+                        <select id="filterMonth" class="filter-select">
+                            <option value="all">All Months</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="transaction-list-full" id="allTransactions">
+                    <div class="empty-state">
+                        <i class="ri-inbox-line"></i>
+                        <p>No transactions</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Budget Section -->
+            <section class="section-content" id="budget">
+                <div class="header-section">
+                    <h2>Budget Management</h2>
+                    <button class="btn-primary" id="addBudgetBtn">
+                        <i class="ri-add-line"></i> Add Budget
+                    </button>
+                </div>
+
+                <div class="budget-grid" id="budgetGrid">
+                    <div class="empty-state">
+                        <i class="ri-inbox-line"></i>
+                        <p>No budgets created yet</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section class="section-content" id="reports">
+                <div class="header-section">
+                    <h2>Financial Reports</h2>
+                    <select id="reportPeriod" class="filter-select">
+                        <option value="month">This Month</option>
+                        <option value="quarter">This Quarter</option>
+                        <option value="year">This Year</option>
+                    </select>
+                </div>
+
+                <div class="reports-grid">
+                    <div class="report-card">
+                        <h3>Monthly Trend</h3>
+                        <canvas id="trendChart"></canvas>
+                    </div>
+
+                    <div class="report-card">
+                        <h3>Category Trend</h3>
+                        <canvas id="categoryTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="statistics-section">
+                    <h3>Key Statistics</h3>
+                    <div class="statistics-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Avg. Monthly Income</span>
+                            <span class="stat-value" id="avgIncome">$0.00</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Avg. Monthly Expense</span>
+                            <span class="stat-value" id="avgExpense">$0.00</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Highest Spending Day</span>
+                            <span class="stat-value" id="highestDay">—</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Transactions</span>
+                            <span class="stat-value" id="totalTransactions">0</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section class="section-content" id="settings">
+                <div class="header-section">
+                    <h2>Settings</h2>
+                </div>
+
+                <div class="settings-content">
+                    <div class="setting-item">
+                        <div>
+                            <h3>Currency</h3>
+                            <p class="setting-description">Choose your preferred currency</p>
+                        </div>
+                        <select id="currencySelect" class="filter-select">
+                            <option value="USD">USD ($)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="GBP">GBP (£)</option>
+                            <option value="INR">INR (₹)</option>
+                            <option value="JPY">JPY (¥)</option>
+                            <option value="CAD">CAD (C$)</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <h3>Dark Mode</h3>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="darkModeToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <p class="setting-description">Use dark theme for comfortable viewing</p>
+                    </div>
+
+                    <div class="setting-item">
+                        <h3>Data Management</h3>
+                        <div class="button-group">
+                            <button class="btn-secondary" id="exportDataBtn">
+                                <i class="ri-download-line"></i> Export Data
+                            </button>
+                            <button class="btn-secondary" id="importDataBtn">
+                                <i class="ri-upload-line"></i> Import Data
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <h3>Clear All Data</h3>
+                        <button class="btn-danger" id="clearDataBtn">
+                            <i class="ri-delete-bin-line"></i> Clear Everything
+                        </button>
+                        <p class="setting-description">This action cannot be undone</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div class="modal" id="transactionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Transaction</h2>
+                <button class="modal-close" id="closeModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <form id="transactionForm" class="modal-body">
+                <div class="form-group">
+                    <label for="transType">Type *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="type" value="income" required> Income
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="type" value="expense" checked> Expense
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description *</label>
+                    <input type="text" id="description" required placeholder="e.g., Grocery shopping">
+                </div>
+
+                <div class="form-group">
+                    <label for="category">Category *</label>
+                    <select id="category" required>
+                        <option value="">Select a category</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="amount">Amount *</label>
+                        <div class="amount-input">
+                            <span class="currency-symbol" id="currencySymbol">$</span>
+                            <input type="number" id="amount" step="0.01" min="0" required placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="date">Date *</label>
+                        <input type="date" id="date" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="transNotes">Notes</label>
+                    <textarea id="transNotes" placeholder="Add any additional notes..."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Transaction</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Budget Modal -->
+    <div class="modal" id="budgetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create Budget</h2>
+                <button class="modal-close" id="closeBudgetModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <form id="budgetForm" class="modal-body">
+                <div class="form-group">
+                    <label for="budgetCategory">Category *</label>
+                    <select id="budgetCategory" required>
+                        <option value="">Select a category</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="budgetAmount">Monthly Limit *</label>
+                    <div class="amount-input">
+                        <span class="currency-symbol" id="budgetCurrencySymbol">$</span>
+                        <input type="number" id="budgetAmount" step="0.01" min="0" required placeholder="0.00">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="budgetAlert">Alert at % *</label>
+                    <input type="number" id="budgetAlert" min="50" max="100" value="80" required placeholder="80">
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="cancelBudgetBtn">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Budget</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- File Input (Hidden) -->
+    <input type="file" id="importFile" accept=".json" style="display: none;">
+
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
