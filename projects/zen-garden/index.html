@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen Garden · Japanese Temple</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Cinzel', 'Georgia', serif;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(40, 30, 25, 0.7);
+            backdrop-filter: blur(8px);
+            color: #f0e6d2;
+            padding: 12px 28px;
+            border-radius: 50px;
+            border: 2px solid #b88a5a;
+            pointer-events: none;
+            box-shadow: 0 10px 25px -10px rgba(0,0,0,0.6);
+            font-size: 0.95rem;
+        }
+        #info span {
+            color: #ffb7c5;
+            font-weight: 600;
+        }
+        #controls-note {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(20,15,10,0.5);
+            backdrop-filter: blur(4px);
+            color: #e5c8a3;
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: 1px solid #8b6b45;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        🌸 <span>ZEN GARDEN</span> · japanese temple · cherry blossoms
+    </div>
+    <div id="controls-note">
+        🖱️ drag to rotate · scroll to zoom
+    </div>
+
+    <!-- Import Three.js and add-ons -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+        // --- setup scene ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xffb7c5); // soft pink sky (sunset)
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(18, 8, 22);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        document.body.appendChild(renderer.domElement);
+        
+        // optional CSS2 renderer for labels
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.left = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // --- controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.4;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.minDistance = 10;
+        controls.maxDistance = 40;
+        
+        // --- lighting ---
+        const ambient = new THREE.AmbientLight(0x606870);
+        scene.add(ambient);
+        
+        // sun
+        const sunLight = new THREE.DirectionalLight(0xffddbb, 1.2);
+        sunLight.position.set(10, 20, 15);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        const d = 20;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 30;
+        scene.add(sunLight);
+        
+        // lantern lights
+        const lanternColors = [0xffaa66, 0xff8844];
+        for (let i = 0; i < 6; i++) {
+            const light = new THREE.PointLight(lanternColors[i % lanternColors.length], 0.8, 15);
+            light.position.set(
+                (Math.random() - 0.5) * 12,
+                2,
+                (Math.random() - 0.5) * 12
+            );
+            scene.add(light);
+        }
+        
+        // --- ground (grass) ---
+        const groundGeo = new THREE.CircleGeometry(25, 32);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x7a9a5a, roughness: 0.8 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.5;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // --- pond (water) ---
+        const pondGeo = new THREE.CylinderGeometry(4, 4, 0.2, 16);
+        const pondMat = new THREE.MeshStandardMaterial({ color: 0x3a8fe0, transparent: true, opacity: 0.7, emissive: 0x112244 });
+        const pond = new THREE.Mesh(pondGeo, pondMat);
+        pond.position.set(4, -0.4, -3);
+        pond.receiveShadow = true;
+        scene.add(pond);
+        
+        // --- koi fish (simple) ---
+        const koiGroup = new THREE.Group();
+        for (let i = 0; i < 5; i++) {
+            const fishBody = new THREE.Mesh(
+                new THREE.ConeGeometry(0.2, 0.5, 4),
+                new THREE.MeshStandardMaterial({ color: 0xffaa44 })
+            );
+            fishBody.rotation.x = Math.PI/2;
+            fishBody.position.set(
+                4 + (Math.random() - 0.5) * 2,
+                -0.2,
+                -3 + (Math.random() - 0.5) * 2
+            );
+            koiGroup.add(fishBody);
+        }
+        scene.add(koiGroup);
+        
+        // --- temple (pagoda style) ---
+        const templeGroup = new THREE.Group();
+        templeGroup.position.set(-3, -0.5, 4);
+        
+        // base
+        const base = new THREE.Mesh(
+            new THREE.BoxGeometry(4, 1, 4),
+            new THREE.MeshStandardMaterial({ color: 0xaa8866 })
+        );
+        base.position.y = 0.5;
+        base.castShadow = true;
+        base.receiveShadow = true;
+        templeGroup.add(base);
+        
+        // first floor
+        const floor1 = new THREE.Mesh(
+            new THREE.BoxGeometry(3, 1.5, 3),
+            new THREE.MeshStandardMaterial({ color: 0xccaa88 })
+        );
+        floor1.position.y = 1.5;
+        floor1.castShadow = true;
+        floor1.receiveShadow = true;
+        templeGroup.add(floor1);
+        
+        // roof 1
+        const roof1 = new THREE.Mesh(
+            new THREE.ConeGeometry(2.5, 1.2, 4),
+            new THREE.MeshStandardMaterial({ color: 0x884422 })
+        );
+        roof1.position.y = 2.5;
+        roof1.rotation.y = Math.PI/4;
+        roof1.castShadow = true;
+        templeGroup.add(roof1);
+        
+        // top spire
+        const spire = new THREE.Mesh(
+            new THREE.ConeGeometry(0.5, 1.5, 4),
+            new THREE.MeshStandardMaterial({ color: 0xddaa66 })
+        );
+        spire.position.y = 3.2;
+        spire.castShadow = true;
+        templeGroup.add(spire);
+        
+        scene.add(templeGroup);
+        
+        // --- torii gate ---
+        const gateGroup = new THREE.Group();
+        gateGroup.position.set(2, -0.5, -5);
+        
+        const pillarLeft = new THREE.Mesh(
+            new THREE.BoxGeometry(0.5, 3, 0.5),
+            new THREE.MeshStandardMaterial({ color: 0xcc8866 })
+        );
+        pillarLeft.position.set(-1.5, 1.5, 0);
+        pillarLeft.castShadow = true;
+        gateGroup.add(pillarLeft);
+        
+        const pillarRight = pillarLeft.clone();
+        pillarRight.position.set(1.5, 1.5, 0);
+        gateGroup.add(pillarRight);
+        
+        const beam = new THREE.Mesh(
+            new THREE.BoxGeometry(4, 0.5, 1),
+            new THREE.MeshStandardMaterial({ color: 0xcc8866 })
+        );
+        beam.position.set(0, 3, 0);
+        beam.castShadow = true;
+        gateGroup.add(beam);
+        
+        scene.add(gateGroup);
+        
+        // --- stone lanterns ---
+        function createLantern(x, z) {
+            const group = new THREE.Group();
+            
+            const base = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.6, 0.8, 0.5, 6),
+                new THREE.MeshStandardMaterial({ color: 0xaaaaaa })
+            );
+            base.position.y = 0.25;
+            base.castShadow = true;
+            group.add(base);
+            
+            const post = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.3, 0.3, 1.2, 6),
+                new THREE.MeshStandardMaterial({ color: 0xbbbbbb })
+            );
+            post.position.y = 0.9;
+            post.castShadow = true;
+            group.add(post);
+            
+            const top = new THREE.Mesh(
+                new THREE.BoxGeometry(0.8, 0.4, 0.8),
+                new THREE.MeshStandardMaterial({ color: 0xcccccc, emissive: 0x442200 })
+            );
+            top.position.y = 1.6;
+            top.castShadow = true;
+            group.add(top);
+            
+            group.position.set(x, -0.5, z);
+            return group;
+        }
+        
+        scene.add(createLantern(-5, -2));
+        scene.add(createLantern(5, 2));
+        scene.add(createLantern(-4, 6));
+        
+        // --- cherry trees with blossoms ---
+        function createCherryTree(x, z) {
+            const group = new THREE.Group();
+            
+            // trunk
+            const trunk = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.4, 0.6, 2.5, 6),
+                new THREE.MeshStandardMaterial({ color: 0x8b5a2b })
+            );
+            trunk.position.y = 1.25;
+            trunk.castShadow = true;
+            trunk.receiveShadow = true;
+            group.add(trunk);
+            
+            // blossoms (pink spheres)
+            const blossomMat = new THREE.MeshStandardMaterial({ color: 0xffaacc, emissive: 0x442233 });
+            for (let i = 0; i < 12; i++) {
+                const blossom = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.3, 5),
+                    blossomMat
+                );
+                blossom.position.set(
+                    (Math.random() - 0.5) * 1.5,
+                    2.0 + Math.random() * 1.5,
+                    (Math.random() - 0.5) * 1.5
+                );
+                blossom.castShadow = true;
+                group.add(blossom);
+            }
+            
+            group.position.set(x, -0.5, z);
+            return group;
+        }
+        
+        for (let i = 0; i < 8; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 6 + Math.random() * 5;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            scene.add(createCherryTree(x, z));
+        }
+        
+        // --- falling petals (particles) ---
+        const petalGeo = new THREE.BufferGeometry();
+        const petalCount = 400;
+        const petalPos = new Float32Array(petalCount * 3);
+        for (let i = 0; i < petalCount * 3; i += 3) {
+            petalPos[i] = (Math.random() - 0.5) * 30;
+            petalPos[i+1] = Math.random() * 15;
+            petalPos[i+2] = (Math.random() - 0.5) * 30;
+        }
+        petalGeo.setAttribute('position', new THREE.BufferAttribute(petalPos, 3));
+        const petalMat = new THREE.PointsMaterial({ color: 0xffaacc, size: 0.1 });
+        const petals = new THREE.Points(petalGeo, petalMat);
+        scene.add(petals);
+        
+        // --- fog ---
+        scene.fog = new THREE.FogExp2(0xffb7c5, 0.008);
+        
+        // --- animation loop ---
+        let time = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            time += 0.005;
+            
+            // fall petals
+            const positions = petals.geometry.attributes.position.array;
+            for (let i = 1; i < positions.length; i += 3) {
+                positions[i] -= 0.01;
+                if (positions[i] < -2) {
+                    positions[i] = 12;
+                    positions[i-1] = (Math.random() - 0.5) * 30;
+                    positions[i+1] = (Math.random() - 0.5) * 30;
+                }
+            }
+            petals.geometry.attributes.position.needsUpdate = true;
+            
+            // rotate koi fish slowly
+            koiGroup.rotation.y += 0.002;
+            
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // --- resize handler ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
