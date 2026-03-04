@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FableForge · Interactive Story Generator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #f4f0e8;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            color: #2c3e4f;
+        }
+
+        .story-card {
+            max-width: 800px;
+            width: 100%;
+            background: #fffaf2;
+            border-radius: 48px;
+            box-shadow: 0 30px 50px -30px rgba(0,0,0,0.3), 0 0 0 2px #e8d9c5 inset;
+            padding: 2.5rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            border-bottom: 2px solid #e2d2bc;
+            padding-bottom: 1.2rem;
+        }
+
+        .title h1 {
+            font-size: 2.5rem;
+            font-weight: 400;
+            letter-spacing: 1px;
+            color: #4f3e2e;
+        }
+
+        .title p {
+            color: #7a6856;
+            font-style: italic;
+            margin-top: 0.2rem;
+        }
+
+        .stats {
+            background: #e8ddcf;
+            border-radius: 50px;
+            padding: 0.5rem 1.5rem;
+            color: #3a2e24;
+            font-size: 1.1rem;
+        }
+
+        .story-panel {
+            background: #fffcf7;
+            border-radius: 36px;
+            padding: 2rem;
+            border: 2px solid #e8d9c5;
+            box-shadow: 0 10px 20px -10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .story-text {
+            font-size: 1.3rem;
+            line-height: 1.6;
+            color: #2a3b4a;
+            min-height: 200px;
+            white-space: pre-wrap;
+            font-family: 'Georgia', serif;
+        }
+
+        .choices-area {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .choice-btn {
+            background: #f2e6d8;
+            border: 3px solid #d9c6b0;
+            border-radius: 60px;
+            padding: 1.2rem 2rem;
+            font-size: 1.2rem;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.15s;
+            color: #2c3e4f;
+            font-weight: 500;
+            box-shadow: 0 5px 0 #b8a48e;
+        }
+
+        .choice-btn:hover {
+            background: #ffe9d6;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 0 #b8a48e;
+        }
+
+        .choice-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #b8a48e;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .nav-btn {
+            background: #d9c6b0;
+            border: none;
+            border-radius: 60px;
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            cursor: pointer;
+            color: #2e3f4f;
+            font-weight: 600;
+            border: 2px solid #b8a48e;
+            transition: 0.1s;
+            flex: 1;
+        }
+
+        .nav-btn:hover {
+            background: #cfb99f;
+        }
+
+        .reset-btn {
+            background: #b8a48e;
+            color: white;
+        }
+
+        .footer {
+            text-align: center;
+            color: #9b8a78;
+            margin-top: 2rem;
+            font-style: italic;
+        }
+
+        .progress-indicator {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            background: #d9c6b0;
+            border-radius: 50%;
+        }
+
+        .dot.active {
+            background: #8f7b64;
+            box-shadow: 0 0 0 3px #f2e6d8;
+        }
+    </style>
+</head>
+<body>
+    <div class="story-card">
+        <div class="header">
+            <div class="title">
+                <h1>📖 FableForge</h1>
+                <p>choose your own adventure</p>
+            </div>
+            <div class="stats" id="chapterDisplay">Chapter 1</div>
+        </div>
+
+        <!-- main story panel -->
+        <div class="story-panel">
+            <div class="story-text" id="storyText">
+                You stand at the edge of an ancient forest. The path splits in two directions. Which way do you go?
+            </div>
+            <div class="choices-area" id="choicesArea">
+                <!-- choice buttons will be injected here -->
+            </div>
+        </div>
+
+        <!-- navigation controls -->
+        <div class="controls">
+            <button class="nav-btn" id="restartBtn">↺ restart</button>
+            <button class="nav-btn reset-btn" id="backBtn">← back</button>
+        </div>
+
+        <!-- progress dots (simple visual) -->
+        <div class="progress-indicator" id="progressDots"></div>
+
+        <div class="footer">
+            ✦ every choice shapes your story ✦
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ----- STORY NODES (branching narrative) -----
+            const storyGraph = {
+                // node IDs
+                start: {
+                    id: 'start',
+                    text: 'You stand at the edge of an ancient forest. The path splits in two directions. Which way do you go?',
+                    choices: [
+                        { text: '🌲 Take the left path into the dark woods', nextNode: 'forest' },
+                        { text: '🏔️ Take the right path toward the mountains', nextNode: 'mountains' },
+                        { text: '🛤️ Wait and observe (stay where you are)', nextNode: 'wait' }
+                    ]
+                },
+                forest: {
+                    id: 'forest',
+                    text: 'The forest grows darker. You hear wolves howling in the distance. A small cottage with a light appears ahead.',
+                    choices: [
+                        { text: '🏡 Approach the cottage cautiously', nextNode: 'cottage' },
+                        { text: '🌿 Hide in the bushes and wait', nextNode: 'hide' },
+                        { text: '🏃 Run back to the start', nextNode: 'start' }
+                    ]
+                },
+                mountains: {
+                    id: 'mountains',
+                    text: 'The mountain path is steep and rocky. You see an old mine entrance and a narrow ledge leading upward.',
+                    choices: [
+                        { text: '⛏️ Enter the mine', nextNode: 'mine' },
+                        { text: '🧗 Climb the ledge', nextNode: 'ledge' },
+                        { text: '↩️ Return to the start', nextNode: 'start' }
+                    ]
+                },
+                wait: {
+                    id: 'wait',
+                    text: 'You wait for a while. An old traveler appears and offers you advice: "The forest holds secrets, but the mountains test your courage."',
+                    choices: [
+                        { text: '🌲 Thank him and enter the forest', nextNode: 'forest' },
+                        { text: '🏔️ Thank him and head for the mountains', nextNode: 'mountains' },
+                        { text: '💬 Ask him more about the region', nextNode: 'traveler' }
+                    ]
+                },
+                traveler: {
+                    id: 'traveler',
+                    text: 'The traveler tells you about a hidden valley with ancient ruins. He gives you a map.',
+                    choices: [
+                        { text: '🗺️ Follow the map to the valley', nextNode: 'valley' },
+                        { text: '🌲 Ignore the map and go to the forest', nextNode: 'forest' },
+                        { text: '🏔️ Head to the mountains instead', nextNode: 'mountains' }
+                    ]
+                },
+                cottage: {
+                    id: 'cottage',
+                    text: 'You knock on the cottage door. A kind witch offers you tea and tells you about a treasure deep in the woods.',
+                    choices: [
+                        { text: '🍵 Accept tea and ask about treasure', nextNode: 'treasure' },
+                        { text: '🏃 Decline and leave quickly', nextNode: 'forest' }
+                    ]
+                },
+                hide: {
+                    id: 'hide',
+                    text: 'You hide in the bushes. A group of goblins passes by, unaware of you. After they leave, you find a shiny key on the ground.',
+                    choices: [
+                        { text: '🔑 Take the key and continue', nextNode: 'forest' },
+                        { text: '🏃 Run back to the start', nextNode: 'start' }
+                    ]
+                },
+                mine: {
+                    id: 'mine',
+                    text: 'The mine is dark, but you see glittering gems on the walls. Suddenly, you hear a rumble...',
+                    choices: [
+                        { text: '💎 Grab a gem and run out', nextNode: 'gem' },
+                        { text: '🚶 Go deeper into the mine', nextNode: 'deepMine' }
+                    ]
+                },
+                ledge: {
+                    id: 'ledge',
+                    text: 'You carefully climb the ledge and discover a hidden cave with ancient paintings.',
+                    choices: [
+                        { text: '🎨 Study the paintings', nextNode: 'paintings' },
+                        { text: '⬇️ Go back down', nextNode: 'mountains' }
+                    ]
+                },
+                valley: {
+                    id: 'valley',
+                    text: 'You find the hidden valley. It\'s beautiful, with a waterfall and an ancient altar.',
+                    choices: [
+                        { text: '💧 Drink from the waterfall', nextNode: 'water' },
+                        { text: '🪦 Examine the altar', nextNode: 'altar' }
+                    ]
+                },
+                treasure: {
+                    id: 'treasure',
+                    text: 'The witch tells you the treasure is guarded by a sleeping dragon. She gives you a sleeping potion.',
+                    choices: [
+                        { text: '🐉 Go to the dragon\'s lair', nextNode: 'dragon' },
+                        { text: '🏡 Stay at the cottage', nextNode: 'cottageEnd' }
+                    ]
+                },
+                gem: {
+                    id: 'gem',
+                    text: 'You escape the mine with a beautiful gem. You feel lucky and return to the start.',
+                    choices: [
+                        { text: '🔁 Start over', nextNode: 'start' }
+                    ]
+                },
+                deepMine: {
+                    id: 'deepMine',
+                    text: 'You go deeper and find a lost dwarven city. The dwarves welcome you and give you a gift.',
+                    choices: [
+                        { text: '⚒️ Accept their gift and return', nextNode: 'start' }
+                    ]
+                },
+                paintings: {
+                    id: 'paintings',
+                    text: 'The paintings tell the story of a lost civilization. You feel enlightened.',
+                    choices: [
+                        { text: '🔁 Return to the start', nextNode: 'start' }
+                    ]
+                },
+                water: {
+                    id: 'water',
+                    text: 'The water tastes magical. You gain +1 wisdom. You decide to return home.',
+                    choices: [
+                        { text: '🏠 Return to start', nextNode: 'start' }
+                    ]
+                },
+                altar: {
+                    id: 'altar',
+                    text: 'The altar glows. You receive a blessing. Your journey ends here, but you feel fulfilled.',
+                    choices: [
+                        { text: '✨ Start a new journey', nextNode: 'start' }
+                    ]
+                },
+                dragon: {
+                    id: 'dragon',
+                    text: 'You use the potion and the dragon falls asleep. You take a small portion of the treasure and become rich!',
+                    choices: [
+                        { text: '💰 Return home a hero', nextNode: 'start' }
+                    ]
+                },
+                cottageEnd: {
+                    id: 'cottageEnd',
+                    text: 'You decide to stay with the witch and learn magic. A peaceful ending.',
+                    choices: [
+                        { text: '🔄 Begin again', nextNode: 'start' }
+                    ]
+                }
+            };
+
+            // history stack for back navigation
+            let historyStack = ['start'];
+            let currentNodeId = 'start';
+
+            // DOM elements
+            const storyTextEl = document.getElementById('storyText');
+            const choicesArea = document.getElementById('choicesArea');
+            const chapterDisplay = document.getElementById('chapterDisplay');
+            const restartBtn = document.getElementById('restartBtn');
+            const backBtn = document.getElementById('backBtn');
+            const progressDots = document.getElementById('progressDots');
+
+            // render current node
+            function renderNode(nodeId) {
+                const node = storyGraph[nodeId];
+                if (!node) return;
+
+                storyTextEl.innerText = node.text;
+
+                // render choices
+                let choicesHtml = '';
+                node.choices.forEach((choice, index) => {
+                    choicesHtml += `<button class="choice-btn" data-next="${choice.nextNode}">${choice.text}</button>`;
+                });
+                choicesArea.innerHTML = choicesHtml;
+
+                // attach event listeners to choices
+                document.querySelectorAll('.choice-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const nextNode = btn.getAttribute('data-next');
+                        // push current node to history before moving
+                        historyStack.push(currentNodeId);
+                        currentNodeId = nextNode;
+                        renderNode(currentNodeId);
+                        updateChapter();
+                        renderProgressDots();
+                    });
+                });
+
+                // update chapter display (simple numbering)
+                updateChapter();
+                renderProgressDots();
+            }
+
+            function updateChapter() {
+                // count steps from start (approximate chapter)
+                const depth = historyStack.length;
+                chapterDisplay.innerText = `Chapter ${depth}`;
+            }
+
+            // back navigation
+            function goBack() {
+                if (historyStack.length > 0) {
+                    const prevNode = historyStack.pop();
+                    currentNodeId = prevNode;
+                    renderNode(currentNodeId);
+                    updateChapter();
+                    renderProgressDots();
+                }
+            }
+
+            // restart
+            function restart() {
+                historyStack = [];
+                currentNodeId = 'start';
+                renderNode(currentNodeId);
+                updateChapter();
+                renderProgressDots();
+            }
+
+            // progress dots (visual indicator of steps)
+            function renderProgressDots() {
+                let dotsHtml = '';
+                const steps = historyStack.length + 1; // current depth
+                for (let i = 0; i < 7; i++) {
+                    const activeClass = i < steps ? 'active' : '';
+                    dotsHtml += `<span class="dot ${activeClass}"></span>`;
+                }
+                progressDots.innerHTML = dotsHtml;
+            }
+
+            // event listeners
+            restartBtn.addEventListener('click', restart);
+            backBtn.addEventListener('click', goBack);
+
+            // initial render
+            renderNode('start');
+        })();
+    </script>
+</body>
+</html>
