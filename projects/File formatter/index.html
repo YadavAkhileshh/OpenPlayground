@@ -1,0 +1,396 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal File Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .drop-zone {
+            border: 2px dashed rgba(71, 85, 105, 1);
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.active {
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.05);
+            transform: scale(1.01);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            opacity: 0.9;
+        }
+
+        .loader {
+            border-top-color: #38bdf8;
+            animation: spinner 0.6s linear infinite;
+        }
+
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-2xl w-full">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold mb-2 gradient-text">FileFlex</h1>
+            <p class="text-slate-400">Instant client-side file conversion. Secure & Fast.</p>
+        </div>
+
+        <div class="glass-panel rounded-3xl p-8 shadow-2xl">
+            <!-- Step 1: Upload -->
+            <div id="upload-stage">
+                <div id="drop-zone" class="drop-zone rounded-2xl p-12 text-center cursor-pointer mb-6">
+                    <input type="file" id="file-input" class="hidden">
+                    <div class="flex flex-col items-center">
+                        <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                            <i class="fas fa-cloud-upload-alt text-2xl text-sky-400"></i>
+                        </div>
+                        <p class="text-lg font-medium mb-1">Click to upload or drag and drop</p>
+                        <p class="text-sm text-slate-500">Supports Images (PNG, JPG, WEBP) & Data (JSON, TXT, CSV)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Configure (Hidden initially) -->
+            <div id="config-stage" class="hidden">
+                <div class="flex items-center gap-4 mb-6 p-4 bg-slate-800/50 rounded-xl">
+                    <div id="file-icon" class="text-3xl text-sky-400">
+                        <i class="fas fa-file-image"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p id="file-name" class="font-semibold truncate">filename.png</p>
+                        <p id="file-size" class="text-xs text-slate-500 uppercase">2.4 MB</p>
+                    </div>
+                    <button onclick="resetApp()" class="text-slate-500 hover:text-red-400 transition-colors">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="mb-8">
+                    <label class="block text-sm font-medium text-slate-400 mb-3 uppercase tracking-wider">Convert to</label>
+                    <div id="format-options" class="grid grid-cols-3 gap-3">
+                        <!-- Options generated dynamically based on input type -->
+                    </div>
+                </div>
+
+                <button id="convert-btn" class="btn-primary w-full py-4 rounded-xl font-bold text-lg shadow-lg">
+                    Convert Now
+                </button>
+            </div>
+
+            <!-- Step 3: Processing (Hidden initially) -->
+            <div id="processing-stage" class="hidden py-12 text-center">
+                <div class="loader w-12 h-12 border-4 border-slate-700 rounded-full mx-auto mb-4"></div>
+                <p class="text-lg font-medium">Processing your file...</p>
+                <p class="text-sm text-slate-500">This happens entirely in your browser.</p>
+            </div>
+
+            <!-- Step 4: Result (Hidden initially) -->
+            <div id="result-stage" class="hidden text-center py-6">
+                <div class="w-20 h-20 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-check-circle text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold mb-2">Conversion Complete!</h3>
+                <p class="text-slate-400 mb-8">Your new file is ready for download.</p>
+                
+                <div class="flex gap-3">
+                    <button id="download-btn" class="btn-primary flex-1 py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                    <button onclick="resetApp()" class="bg-slate-700 hover:bg-slate-600 px-6 rounded-xl transition-colors">
+                        <i class="fas fa-redo-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-full shadow-xl opacity-0 transition-opacity pointer-events-none flex items-center gap-3">
+            <i class="fas fa-info-circle text-sky-400"></i>
+            <span id="toast-msg">Message goes here</span>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const uploadStage = document.getElementById('upload-stage');
+        const configStage = document.getElementById('config-stage');
+        const processingStage = document.getElementById('processing-stage');
+        const resultStage = document.getElementById('result-stage');
+        const formatOptions = document.getElementById('format-options');
+        const convertBtn = document.getElementById('convert-btn');
+        const downloadBtn = document.getElementById('download-btn');
+
+        let currentFile = null;
+        let targetFormat = null;
+        let convertedBlob = null;
+
+        // --- Event Listeners ---
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('active');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('active');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('active');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            currentFile = files[0];
+            
+            showConfigStage();
+        }
+
+        function showConfigStage() {
+            uploadStage.classList.add('hidden');
+            configStage.classList.remove('hidden');
+            
+            document.getElementById('file-name').textContent = currentFile.name;
+            document.getElementById('file-size').textContent = formatBytes(currentFile.size);
+            
+            setupFormatOptions();
+        }
+
+        function setupFormatOptions() {
+            formatOptions.innerHTML = '';
+            const type = currentFile.type;
+            let options = [];
+
+            if (type.startsWith('image/')) {
+                options = ['png', 'jpeg', 'webp'];
+                document.getElementById('file-icon').innerHTML = '<i class="fas fa-file-image"></i>';
+            } else if (type === 'application/json' || type === 'text/plain' || type === 'text/csv' || currentFile.name.endsWith('.csv')) {
+                options = ['json', 'txt', 'csv'];
+                document.getElementById('file-icon').innerHTML = '<i class="fas fa-file-code"></i>';
+            } else {
+                showToast("Unsupported file type, but we'll try anyway!");
+                options = ['txt', 'json'];
+            }
+
+            options.forEach(fmt => {
+                const btn = document.createElement('button');
+                btn.className = 'format-btn py-3 px-4 rounded-xl border border-slate-700 hover:border-sky-500 transition-all font-medium uppercase tracking-wide';
+                btn.textContent = fmt;
+                btn.onclick = () => selectFormat(fmt, btn);
+                formatOptions.appendChild(btn);
+                
+                // Auto-select first if not same as current
+                if (!currentFile.name.toLowerCase().endsWith(fmt) && !targetFormat) {
+                    selectFormat(fmt, btn);
+                }
+            });
+        }
+
+        function selectFormat(fmt, element) {
+            targetFormat = fmt;
+            document.querySelectorAll('.format-btn').forEach(b => {
+                b.classList.remove('bg-sky-500/20', 'border-sky-500', 'text-sky-400');
+            });
+            element.classList.add('bg-sky-500/20', 'border-sky-500', 'text-sky-400');
+        }
+
+        convertBtn.onclick = async () => {
+            if (!targetFormat) return showToast("Please select a target format");
+            
+            configStage.classList.add('hidden');
+            processingStage.classList.remove('hidden');
+
+            try {
+                // Artificial delay for UI feel
+                await new Promise(r => setTimeout(r, 1200));
+
+                if (currentFile.type.startsWith('image/')) {
+                    convertedBlob = await convertImage(currentFile, targetFormat);
+                } else {
+                    convertedBlob = await convertText(currentFile, targetFormat);
+                }
+
+                showResultStage();
+            } catch (err) {
+                console.error(err);
+                showToast("Error during conversion");
+                resetApp();
+            }
+        };
+
+        function showResultStage() {
+            processingStage.classList.add('hidden');
+            resultStage.classList.remove('hidden');
+        }
+
+        downloadBtn.onclick = () => {
+            const url = URL.createObjectURL(convertedBlob);
+            const a = document.createElement('a');
+            const newName = currentFile.name.split('.').slice(0, -1).join('.') + '.' + targetFormat;
+            a.href = url;
+            a.download = newName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("Downloaded!");
+        };
+
+        function resetApp() {
+            currentFile = null;
+            targetFormat = null;
+            convertedBlob = null;
+            uploadStage.classList.remove('hidden');
+            configStage.classList.add('hidden');
+            processingStage.classList.add('hidden');
+            resultStage.classList.add('hidden');
+            fileInput.value = '';
+        }
+
+        // --- Conversion Logic ---
+
+        async function convertImage(file, format) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const mimeType = `image/${format === 'jpg' ? 'jpeg' : format}`;
+                    canvas.toBlob((blob) => {
+                        if (blob) resolve(blob);
+                        else reject(new Error("Canvas blob conversion failed"));
+                    }, mimeType, 0.92);
+                };
+                img.onerror = reject;
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        async function convertText(file, format) {
+            const text = await file.text();
+            let finalContent = text;
+
+            // Logic for specific data conversions
+            if (format === 'json') {
+                if (file.name.endsWith('.csv')) {
+                    finalContent = JSON.stringify(csvToJson(text), null, 2);
+                } else {
+                    try { JSON.parse(text); } catch(e) { 
+                        finalContent = JSON.stringify({ content: text }, null, 2);
+                    }
+                }
+            } else if (format === 'csv') {
+                try {
+                    const obj = JSON.parse(text);
+                    finalContent = jsonToCsv(obj);
+                } catch(e) {
+                    showToast("Not valid JSON to convert to CSV");
+                }
+            }
+
+            return new Blob([finalContent], { type: 'text/plain' });
+        }
+
+        // --- Helpers ---
+
+        function csvToJson(csv) {
+            const lines = csv.split('\n');
+            const result = [];
+            const headers = lines[0].split(',').map(h => h.trim());
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i]) continue;
+                const obj = {};
+                const currentline = lines[i].split(',');
+                for (let j = 0; j < headers.length; j++) {
+                    obj[headers[j]] = currentline[j]?.trim();
+                }
+                result.push(obj);
+            }
+            return result;
+        }
+
+        function jsonToCsv(json) {
+            const array = Array.isArray(json) ? json : [json];
+            if (array.length === 0) return "";
+            const keys = Object.keys(array[0]);
+            const header = keys.join(',');
+            const rows = array.map(obj => keys.map(k => JSON.stringify(obj[k])).join(','));
+            return [header, ...rows].join('\n');
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+        }
+    </script>
+</body>
+</html>
