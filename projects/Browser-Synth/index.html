@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BROWSER-SYNTH</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- HEADER -->
+      <div class="header">
+        <div class="logo">
+          BROWSER<span>-</span>SYNTH
+          <span
+            style="font-size: 12px; color: var(--text-dim); letter-spacing: 2px"
+            >// STEP SEQUENCER v2.0</span
+          >
+        </div>
+        <div class="header-status">
+          <div class="seg-display" id="stepDisplay">STEP: --</div>
+          <div class="seg-display" id="timeDisplay">00:00:00</div>
+          <div class="status-dot" id="statusDot"></div>
+          <span style="font-size: 11px; color: var(--text-dim)" id="statusText"
+            >STOPPED</span
+          >
+        </div>
+      </div>
+
+      <div class="main-grid">
+        <!-- TRANSPORT -->
+        <div class="panel transport">
+          <button class="btn play" id="playBtn" onclick="togglePlay()">
+            ▶ PLAY
+          </button>
+          <button class="btn" onclick="stopSeq()">■ STOP</button>
+          <button class="btn" onclick="recordToggle()" id="recBtn">
+            ⏺ REC
+          </button>
+          <button class="btn danger" onclick="clearAll()">✕ CLEAR</button>
+          <button class="btn" onclick="randomize()">⚄ RNG</button>
+          <button class="btn" onclick="fillTrack()">▬ FILL</button>
+
+          <div
+            style="
+              display: flex;
+              gap: 12px;
+              align-items: center;
+              margin-left: 12px;
+            "
+          >
+            <span class="bpm-label">PATTERN</span>
+            <div class="pattern-row" id="patternRow"></div>
+          </div>
+
+          <div class="bpm-control">
+            <div>
+              <div class="bpm-label" style="text-align: center">BPM</div>
+              <div class="bpm-display" id="bpmDisplay">128</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <input
+                type="range"
+                id="bpmSlider"
+                min="40"
+                max="240"
+                value="128"
+                oninput="setBPM(this.value)"
+              />
+              <div style="display: flex; gap: 8px; align-items: center">
+                <span class="bpm-label">SWING</span>
+                <input
+                  type="range"
+                  id="swingSlider"
+                  min="0"
+                  max="0.3"
+                  step="0.01"
+                  value="0"
+                  oninput="setSwing(this.value)"
+                  class="yellow"
+                  style="width: 80px"
+                />
+                <span class="bpm-label">STEPS</span>
+                <select
+                  id="stepsSelect"
+                  onchange="setSteps(this.value)"
+                  style="font-size: 10px; padding: 2px 4px"
+                >
+                  <option value="8">8</option>
+                  <option value="16" selected>16</option>
+                  <option value="32">32</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEQUENCER GRID -->
+        <div class="panel sequencer-panel">
+          <div class="panel-label accent">// SEQUENCER MATRIX</div>
+          <div class="step-indicators" id="stepIndicators"></div>
+          <div class="seq-grid" id="seqGrid"></div>
+        </div>
+
+        <!-- BOTTOM PANELS -->
+        <div class="bottom-grid">
+          <!-- VISUALIZER -->
+          <div class="panel">
+            <div class="panel-label">// SPECTRUM ANALYZER</div>
+            <canvas id="specCanvas" height="90"></canvas>
+            <canvas
+              id="waveformCanvas"
+              height="50"
+              style="
+                margin-top: 6px;
+                width: 100%;
+                border: 1px solid var(--border);
+              "
+            ></canvas>
+            <div
+              style="
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                margin-top: 8px;
+              "
+            >
+              <div class="meter-strip" id="meterStrip"></div>
+              <div style="flex: 1">
+                <div class="bpm-label" style="margin-bottom: 4px">
+                  MASTER VOL
+                </div>
+                <input
+                  type="range"
+                  id="masterVol"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value="0.7"
+                  oninput="setMasterVol(this.value)"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- WAVE EDITOR -->
+          <div class="panel">
+            <div class="panel-label">// OSCILLATOR EDITOR</div>
+            <div class="track-selector" id="trackSelector"></div>
+            <div class="wave-types" id="waveTypes">
+              <button
+                class="wave-btn active"
+                data-wave="sine"
+                onclick="setWaveType('sine',this)"
+              >
+                SINE
+              </button>
+              <button
+                class="wave-btn"
+                data-wave="square"
+                onclick="setWaveType('square',this)"
+              >
+                SQR
+              </button>
+              <button
+                class="wave-btn"
+                data-wave="sawtooth"
+                onclick="setWaveType('sawtooth',this)"
+              >
+                SAW
+              </button>
+              <button
+                class="wave-btn"
+                data-wave="triangle"
+                onclick="setWaveType('triangle',this)"
+              >
+                TRI
+              </button>
+              <button
+                class="wave-btn"
+                data-wave="custom"
+                onclick="setWaveType('custom',this)"
+              >
+                DRAW
+              </button>
+            </div>
+            <canvas id="waveCanvas"></canvas>
+            <div style="margin-top: 8px">
+              <div class="panel-label" style="margin-bottom: 6px">NOTE</div>
+              <div class="note-selector" id="noteSelector"></div>
+            </div>
+          </div>
+
+          <!-- EFFECTS RACK -->
+          <div class="panel">
+            <div class="panel-label">// FX RACK</div>
+            <div class="fx-rack" id="fxRack">
+              <div class="fx-unit">
+                <div class="fx-header">
+                  <span class="fx-name">REVERB</span>
+                  <div
+                    class="fx-toggle"
+                    id="reverbToggle"
+                    onclick="toggleFX('reverb')"
+                  ></div>
+                </div>
+                <div class="fx-params">
+                  <div class="fx-param">
+                    <label>DECAY</label>
+                    <input
+                      type="range"
+                      class="purple"
+                      id="reverbDecay"
+                      min="0.1"
+                      max="8"
+                      step="0.1"
+                      value="2.5"
+                      oninput="updateFX('reverb','decay',this.value)"
+                    />
+                  </div>
+                  <div class="fx-param">
+                    <label>MIX</label>
+                    <input
+                      type="range"
+                      id="reverbMix"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value="0.3"
+                      oninput="updateFX('reverb','mix',this.value)"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="fx-unit">
+                <div class="fx-header">
+                  <span class="fx-name">DELAY</span>
+                  <div
+                    class="fx-toggle"
+                    id="delayToggle"
+                    onclick="toggleFX('delay')"
+                  ></div>
+                </div>
+                <div class="fx-params">
+                  <div class="fx-param">
+                    <label>TIME</label>
+                    <input
+                      type="range"
+                      class="yellow"
+                      id="delayTime"
+                      min="0.05"
+                      max="1"
+                      step="0.01"
+                      value="0.375"
+                      oninput="updateFX('delay','time',this.value)"
+                    />
+                  </div>
+                  <div class="fx-param">
+                    <label>FDBK</label>
+                    <input
+                      type="range"
+                      class="red"
+                      id="delayFeedback"
+                      min="0"
+                      max="0.9"
+                      step="0.01"
+                      value="0.4"
+                      oninput="updateFX('delay','feedback',this.value)"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="fx-unit">
+                <div class="fx-header">
+                  <span class="fx-name">LP FILTER</span>
+                  <div
+                    class="fx-toggle"
+                    id="filterToggle"
+                    onclick="toggleFX('filter')"
+                  ></div>
+                </div>
+                <div class="fx-params">
+                  <div class="fx-param">
+                    <label>CUTOFF</label>
+                    <input
+                      type="range"
+                      id="filterCutoff"
+                      min="100"
+                      max="18000"
+                      step="10"
+                      value="8000"
+                      oninput="updateFX('filter','cutoff',this.value)"
+                    />
+                  </div>
+                  <div class="fx-param">
+                    <label>RES</label>
+                    <input
+                      type="range"
+                      class="red"
+                      id="filterRes"
+                      min="0.1"
+                      max="20"
+                      step="0.1"
+                      value="1"
+                      oninput="updateFX('filter','res',this.value)"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="fx-unit">
+                <div class="fx-header">
+                  <span class="fx-name">DISTORTION</span>
+                  <div
+                    class="fx-toggle"
+                    id="distToggle"
+                    onclick="toggleFX('dist')"
+                  ></div>
+                </div>
+                <div class="fx-params">
+                  <div class="fx-param">
+                    <label>DRIVE</label>
+                    <input
+                      type="range"
+                      class="red"
+                      id="distDrive"
+                      min="1"
+                      max="400"
+                      step="1"
+                      value="100"
+                      oninput="updateFX('dist','drive',this.value)"
+                    />
+                  </div>
+                  <div class="fx-param">
+                    <label>MIX</label>
+                    <input
+                      type="range"
+                      id="distMix"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value="0.5"
+                      oninput="updateFX('dist','mix',this.value)"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- /bottom-grid -->
+      </div>
+      <!-- /main-grid -->
+    </div>
+    <!-- /app -->
+
+    <script src="script.js"></script>
+  </body>
+</html>

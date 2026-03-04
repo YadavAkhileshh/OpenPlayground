@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Paddle</title>
+    <link rel="stylesheet" href="styles/base.css">
+    <link rel="stylesheet" href="styles/arcade.css">
+    <style>
+        body {
+            border: 8px solid var(--primary-color);
+        }
+
+        .side-label {
+            font-size: 2rem;
+            opacity: 0.5;
+            transform: rotate(-90deg);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="scanline"></div>
+    <div class="side-label" id="side-id">P1</div>
+    <script>
+        const side = new URLSearchParams(window.location.search).get('side') || '1';
+        document.getElementById('side-id').innerText = 'P' + side;
+        document.body.style.borderColor = side === '1' ? 'var(--primary-color)' : 'var(--secondary-color)';
+
+        const bc = new BroadcastChannel('pong_channel');
+
+        function syncPosition() {
+            bc.postMessage({
+                type: 'PADDLE_UPDATE',
+                side: side,
+                bounds: {
+                    x: window.screenX,
+                    y: window.screenY,
+                    w: window.outerWidth,
+                    h: window.outerHeight
+                }
+            });
+            requestAnimationFrame(syncPosition);
+        }
+
+        bc.onmessage = (e) => {
+            if (e.data.type === 'FLASH_HIT') {
+                document.body.classList.add('hit-flash');
+                setTimeout(() => document.body.classList.remove('hit-flash'), 200);
+            }
+        };
+
+        syncPosition();
+    </script>
+</body>
+
+</html>

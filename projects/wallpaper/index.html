@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generative Wallpaper Maker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+        .control-group label {
+            display: block;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            color: #94a3b8;
+        }
+        input[type="range"] {
+            width: 100%;
+            accent-color: #3b82f6;
+        }
+        .btn {
+            transition: all 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        #ui-overlay {
+            transition: opacity 0.3s;
+        }
+        .hidden-ui {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="wallpaperCanvas"></canvas>
+
+    <!-- UI Panel -->
+    <div id="ui-overlay" class="fixed inset-0 p-6 flex flex-col justify-between pointer-events-none">
+        
+        <!-- Top Bar -->
+        <div class="flex justify-between items-start pointer-events-auto">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                    AESTHETICA
+                </h1>
+                <p class="text-xs text-slate-400">Generative Wallpaper Lab</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="toggleUI()" class="glass p-2 rounded-full hover:bg-slate-700 transition btn" title="Toggle UI (H)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Controls Side Panel -->
+        <div class="flex justify-between items-end">
+            <div class="glass p-6 rounded-2xl w-80 pointer-events-auto shadow-2xl">
+                
+                <div class="space-y-6">
+                    <!-- Engine Selection -->
+                    <div class="control-group">
+                        <label>Engine Type</label>
+                        <select id="engineType" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="polygons">Polygonal Mesh</option>
+                            <option value="waves">Organic Waves</option>
+                            <option value="particles">Cosmic Dust</option>
+                        </select>
+                    </div>
+
+                    <!-- Complexity -->
+                    <div class="control-group">
+                        <label id="complexityLabel">Complexity: 50</label>
+                        <input type="range" id="complexity" min="10" max="200" value="50">
+                    </div>
+
+                    <!-- Speed -->
+                    <div class="control-group">
+                        <label id="speedLabel">Movement: 1.0x</label>
+                        <input type="range" id="speed" min="0" max="50" value="10">
+                    </div>
+
+                    <!-- Color Mode -->
+                    <div class="control-group">
+                        <label>Palette</label>
+                        <div class="flex gap-2" id="paletteSelect">
+                            <button onclick="setPalette('neon')" class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-cyan-400 border-2 border-white"></button>
+                            <button onclick="setPalette('ocean')" class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-700 to-emerald-400"></button>
+                            <button onclick="setPalette('sunset')" class="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-rose-500"></button>
+                            <button onclick="setPalette('mono')" class="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-200 to-slate-900"></button>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-700 flex flex-col gap-2">
+                        <button onclick="randomize()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg btn text-sm">
+                            Randomize
+                        </button>
+                        <button onclick="exportWallpaper()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg btn text-sm flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                            Export 4K PNG
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-right hidden sm:block">
+                <p class="text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-1">Status</p>
+                <div class="flex items-center gap-2 justify-end">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-xs font-mono text-slate-300" id="fpsDisplay">60 FPS</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('wallpaperCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const complexityInput = document.getElementById('complexity');
+        const speedInput = document.getElementById('speed');
+        const engineSelect = document.getElementById('engineType');
+
+        let width, height;
+        let points = [];
+        let frame = 0;
+        let palette = {
+            bg: '#0f172a',
+            colors: ['#3b82f6', '#8b5cf6', '#d946ef', '#06b6d4'],
+            opacity: 0.15
+        };
+
+        const palettes = {
+            neon: { bg: '#050505', colors: ['#ff00ff', '#00ffff', '#7000ff', '#ff0055'], opacity: 0.2 },
+            ocean: { bg: '#001a2c', colors: ['#0077be', '#00a86b', '#20b2aa', '#00ced1'], opacity: 0.15 },
+            sunset: { bg: '#1a0f1f', colors: ['#f43f5e', '#fb923c', '#facc15', '#9f1239'], opacity: 0.2 },
+            mono: { bg: '#000000', colors: ['#ffffff', '#333333', '#666666', '#999999'], opacity: 0.1 }
+        };
+
+        function init() {
+            resize();
+            randomize();
+            requestAnimationFrame(animate);
+        }
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width * window.devicePixelRatio;
+            canvas.height = height * window.devicePixelRatio;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            generatePoints();
+        }
+
+        function generatePoints() {
+            const count = parseInt(complexityInput.value);
+            points = [];
+            for (let i = 0; i < count; i++) {
+                points.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    radius: Math.random() * 2 + 1,
+                    phase: Math.random() * Math.PI * 2,
+                    color: palette.colors[Math.floor(Math.random() * palette.colors.length)]
+                });
+            }
+        }
+
+        function setPalette(key) {
+            palette = palettes[key];
+            // Update button visual
+            document.querySelectorAll('#paletteSelect button').forEach(b => b.classList.remove('border-2', 'border-white'));
+            event.target.classList.add('border-2', 'border-white');
+            generatePoints();
+        }
+
+        function randomize() {
+            complexityInput.value = 40 + Math.random() * 80;
+            speedInput.value = 5 + Math.random() * 15;
+            engineSelect.selectedIndex = Math.floor(Math.random() * 3);
+            generatePoints();
+            updateLabels();
+        }
+
+        function updateLabels() {
+            document.getElementById('complexityLabel').innerText = `Complexity: ${complexityInput.value}`;
+            document.getElementById('speedLabel').innerText = `Movement: ${(speedInput.value / 10).toFixed(1)}x`;
+        }
+
+        function toggleUI() {
+            document.getElementById('ui-overlay').classList.toggle('hidden-ui');
+        }
+
+        function animate() {
+            const engine = engineSelect.value;
+            const speedMultiplier = speedInput.value / 10;
+            
+            // Draw Background
+            ctx.fillStyle = palette.bg;
+            ctx.fillRect(0, 0, width, height);
+
+            if (engine === 'polygons') {
+                drawPolygons(speedMultiplier);
+            } else if (engine === 'waves') {
+                drawWaves(speedMultiplier);
+            } else {
+                drawParticles(speedMultiplier);
+            }
+
+            frame++;
+            
+            // Performance metrics
+            if(frame % 30 === 0) {
+                document.getElementById('fpsDisplay').innerText = `RENDER: ${engine.toUpperCase()}`;
+            }
+            
+            requestAnimationFrame(animate);
+        }
+
+        function drawPolygons(speed) {
+            points.forEach(p => {
+                p.x += p.vx * speed;
+                p.y += p.vy * speed;
+
+                if (p.x < 0 || p.x > width) p.vx *= -1;
+                if (p.y < 0 || p.y > height) p.vy *= -1;
+
+                // Connect nearby points
+                points.forEach(p2 => {
+                    const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                    if (dist < 150) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = p.color;
+                        ctx.globalAlpha = (1 - dist / 150) * palette.opacity;
+                        ctx.lineWidth = 1;
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                });
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        function drawWaves(speed) {
+            const count = 5;
+            for (let i = 0; i < count; i++) {
+                ctx.beginPath();
+                ctx.strokeStyle = palette.colors[i % palette.colors.length];
+                ctx.globalAlpha = palette.opacity * 2;
+                ctx.lineWidth = 2;
+                
+                const yOffset = (height / count) * i + (height / (count * 2));
+                ctx.moveTo(0, yOffset);
+
+                for (let x = 0; x <= width; x += 10) {
+                    const y = yOffset + Math.sin(x * 0.005 + (frame * 0.02 * speed) + i) * 50;
+                    ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        function drawParticles(speed) {
+            points.forEach(p => {
+                const noise = Math.sin(p.x * 0.01 + frame * 0.01) * 20;
+                p.x += p.vx * speed;
+                p.y += (p.vy + Math.sin(frame * 0.05 + p.phase)) * speed;
+
+                if (p.x < -50) p.x = width + 50;
+                if (p.x > width + 50) p.x = -50;
+                if (p.y < -50) p.y = height + 50;
+                if (p.y > height + 50) p.y = -50;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = p.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+        }
+
+        function exportWallpaper() {
+            // Hide UI for a cleaner export
+            const link = document.createElement('a');
+            link.download = `aesthetica-wallpaper-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+        }
+
+        // Interaction
+        window.addEventListener('resize', resize);
+        complexityInput.addEventListener('input', () => { generatePoints(); updateLabels(); });
+        speedInput.addEventListener('input', updateLabels);
+        
+        window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'h') toggleUI();
+            if (e.key.toLowerCase() === 'r') randomize();
+        });
+
+        init();
+    </script>
+</body>
+</html>

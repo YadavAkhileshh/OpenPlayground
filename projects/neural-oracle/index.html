@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEURAL ORACLE · SYNAPTIC POETRY</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0c0b16;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', 'Space Grotesk', system-ui, sans-serif;
+            padding: 16px;
+        }
+
+        /* main oracle vessel */
+        .oracle {
+            max-width: 1300px;
+            width: 100%;
+            background: rgba(10, 6, 24, 0.75);
+            backdrop-filter: blur(28px) saturate(300%);
+            -webkit-backdrop-filter: blur(28px) saturate(300%);
+            border: 2px solid rgba(180, 130, 255, 0.45);
+            border-radius: 70px 70px 60px 60px;
+            box-shadow: 0 40px 80px -20px black, 0 0 0 2px rgba(160, 100, 255, 0.2) inset, 0 0 100px #6d3faa;
+            padding: 32px 36px 48px 36px;
+            position: relative;
+        }
+
+        .oracle::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 8px;
+            background: radial-gradient(circle at 20% 80%, #ffb7c5, #c57eff, #7eaaff);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        /* header — mindscape indicators */
+        .mind-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px 18px;
+            padding: 0 12px 26px 12px;
+            border-bottom: 2px solid rgba(180, 130, 255, 0.5);
+            margin-bottom: 36px;
+        }
+
+        .mind-tag {
+            background: rgba(20, 10, 45, 0.8);
+            border: 1px solid #b27aff;
+            color: #dac8ff;
+            border-radius: 60px;
+            padding: 10px 28px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 0 18px #b27aff;
+        }
+
+        .mind-tag strong {
+            color: white;
+            font-weight: 500;
+            margin-left: 8px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .oracle-pulse {
+            background: #1f1740;
+            border-color: #ffb56b;
+            color: #ffeac4;
+            box-shadow: 0 0 30px #ffb066;
+            animation: oracleBreath 3s infinite alternate;
+        }
+
+        @keyframes oracleBreath {
+            0% { box-shadow: 0 0 15px #b27aff, border-color: #b27aff; }
+            100% { box-shadow: 0 0 50px #ffb56b, 0 0 20px #ffb56b; border-color: #ffe28a; }
+        }
+
+        /* three core zones: input thought, vision, interpretation */
+        .triad-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 2.1fr 1.1fr;
+            gap: 26px;
+            margin-bottom: 42px;
+        }
+
+        /* ----- left panel: thought incubator / prompt zone ----- */
+        .thought-panel {
+            background: rgba(14, 8, 30, 0.7);
+            border-radius: 46px;
+            border: 1px solid rgba(180, 130, 255, 0.6);
+            padding: 30px 20px;
+            backdrop-filter: blur(18px);
+            box-shadow: 0 18px 0 #07041a;
+        }
+
+        .thought-header {
+            font-size: 0.7rem;
+            letter-spacing: 4px;
+            color: #bf9eff;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+            border-left: 5px solid #ff9f7c;
+            padding-left: 16px;
+        }
+
+        .thought-input-area {
+            margin-bottom: 36px;
+        }
+
+        .thought-label {
+            color: #cab5ff;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .thought-field {
+            width: 100%;
+            background: #0e0522;
+            border: 2px solid #9f7aff;
+            border-radius: 36px;
+            padding: 16px 22px;
+            font-size: 1rem;
+            color: #f0e4ff;
+            outline: none;
+            font-family: 'JetBrains Mono', monospace;
+            resize: vertical;
+        }
+
+        .thought-field:focus {
+            border-color: #ffb27f;
+            box-shadow: 0 0 30px #e597ff;
+        }
+
+        .thought-actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 25px 0 15px;
+        }
+
+        .oracle-btn {
+            background: #1b0f31;
+            border: 2px solid #b27aff;
+            color: #e5d0ff;
+            font-size: 1rem;
+            padding: 14px 22px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.15s;
+            flex: 1 0 auto;
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: 1px;
+            box-shadow: 0 0 15px #b27aff;
+        }
+
+        .oracle-btn:hover {
+            background: #c29bff;
+            color: #0f0324;
+            border-color: white;
+            box-shadow: 0 0 45px #feda7a;
+        }
+
+        .synapse-count {
+            color: #a888dd;
+            font-size: 0.8rem;
+            margin-top: 12px;
+        }
+
+        /* ----- center: canvas (neural vision) ----- */
+        .vision-panel {
+            background: rgba(4, 0, 15, 0.9);
+            border-radius: 56px;
+            border: 2px solid #c79eff;
+            box-shadow: 0 0 70px #8f4dff, inset 0 0 40px #240066;
+            display: flex;
+            flex-direction: column;
+            padding: 22px;
+        }
+
+        .oracle-canvas {
+            width: 100%;
+            aspect-ratio: 1/0.95;
+            background: #010007;
+            border-radius: 48px;
+            display: block;
+            margin-bottom: 18px;
+            border: 2px solid #c397ff;
+            box-shadow: 0 0 30px #ca9eff;
+            cursor: crosshair;
+        }
+
+        .resonance-tags {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            font-size: 0.9rem;
+            flex-wrap: wrap;
+        }
+
+        .resonance-tags span {
+            background: #120b28;
+            padding: 8px 30px;
+            border-radius: 40px;
+            border: 1px solid #b385ff;
+            color: #ebd6ff;
+        }
+
+        /* ----- right panel: oracle interpretation / poetry ----- */
+        .interpret-panel {
+            background: rgba(14, 8, 30, 0.7);
+            border-radius: 46px;
+            border: 1px solid rgba(255, 180, 130, 0.6);
+            padding: 30px 20px;
+            backdrop-filter: blur(18px);
+        }
+
+        .oracle-verse {
+            background: #140d28;
+            border-radius: 36px;
+            padding: 24px;
+            border: 2px solid #ffae6a;
+            box-shadow: 0 0 40px #ffae6a;
+            margin-bottom: 24px;
+        }
+
+        .verse-text {
+            font-size: 1.3rem;
+            line-height: 1.6;
+            color: #faeed6;
+            font-weight: 300;
+            font-style: italic;
+            text-align: center;
+            word-break: break-word;
+            font-family: 'Georgia', serif;
+        }
+
+        .verse-attribution {
+            color: #cfaaff;
+            margin-top: 16px;
+            text-align: right;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .oracle-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .meta-item {
+            display: flex;
+            justify-content: space-between;
+            color: #beb0ff;
+            border-bottom: 1px dashed #a777e3;
+            padding-bottom: 8px;
+        }
+
+        .meta-value {
+            color: #ffe28a;
+            font-family: monospace;
+            font-size: 1.2rem;
+        }
+
+        /* footer — consciousness stream */
+        .stream-footer {
+            margin-top: 36px;
+            background: #08041bcc;
+            border-radius: 100px;
+            padding: 18px 36px;
+            border: 1px solid #b27aff;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+            justify-content: space-between;
+            backdrop-filter: blur(24px);
+        }
+
+        .stream-item {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            color: #cab9ff;
+        }
+
+        .stream-num {
+            font-size: 1.8rem;
+            font-weight: 400;
+            font-family: 'JetBrains Mono', monospace;
+            color: #fede8b;
+            text-shadow: 0 0 12px gold;
+        }
+
+        .stream-desc {
+            color: #b99ef0;
+        }
+
+        @media (max-width: 1000px) {
+            .triad-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="oracle">
+        <!-- mind bar: live psychic metrics -->
+        <div class="mind-bar">
+            <div class="mind-tag">🧠 THREADS <strong id="threadCount">128</strong></div>
+            <div class="mind-tag oracle-pulse">🌀 DREAM DEPTH <strong id="dreamDepth">0.63</strong></div>
+            <div class="mind-tag">⚡ SYNAPSES <strong id="synapseCount">2.1k</strong></div>
+        </div>
+
+        <!-- main interactive triad -->
+        <div class="triad-grid">
+            <!-- left: thought input -->
+            <div class="thought-panel">
+                <div class="thought-header">⌨️  INCUBATE THOUGHT</div>
+                
+                <div class="thought-input-area">
+                    <div class="thought-label">seed phrase / question</div>
+                    <textarea id="thoughtInput" class="thought-field" rows="3" placeholder="e.g., whispers in static...">neural echoes</textarea>
+                </div>
+
+                <div class="thought-actions">
+                    <div class="oracle-btn" id="ponderBtn">✨ PONDER</div>
+                    <div class="oracle-btn" id="randomizeBtn">🌀 RANDOM THOUGHT</div>
+                </div>
+
+                <div class="synapse-count" id="synapseDetail">synaptic paths: 128</div>
+
+                <!-- hidden influence sliders (emulated) -->
+                <div style="margin-top: 20px;">
+                    <div style="color:#beb0ff; font-size:0.8rem;">⚙️ latency: <span id="latencySpan">0.42</span></div>
+                    <input type="range" id="latencySlider" min="0" max="1" step="0.01" value="0.42" style="width:100%; margin:8px 0;">
+                </div>
+            </div>
+
+            <!-- center: neural canvas -->
+            <div class="vision-panel">
+                <canvas id="neuralCanvas" width="550" height="500" class="oracle-canvas"></canvas>
+                <div class="resonance-tags">
+                    <span id="resonanceTag1">θ rhythm</span>
+                    <span id="resonanceTag2">γ 42hz</span>
+                </div>
+            </div>
+
+            <!-- right: oracle output (poetry) -->
+            <div class="interpret-panel">
+                <div class="oracle-verse">
+                    <div class="verse-text" id="oracleVerse">"the light bends around a thought..."</div>
+                    <div class="verse-attribution" id="verseAttr">~ neural fragment</div>
+                </div>
+
+                <div class="oracle-meta">
+                    <div class="meta-item"><span>coherence</span><span class="meta-value" id="coherenceVal">0.83</span></div>
+                    <div class="meta-item"><span>novelty</span><span class="meta-value" id="noveltyVal">0.61</span></div>
+                    <div class="meta-item"><span>depth</span><span class="meta-value" id="depthMeta">0.77</span></div>
+                </div>
+
+                <div style="margin-top: 22px; background: #1f1137; border-radius: 30px; padding: 14px; color:#e7c5ff; text-align:center;" id="archetype">archetype: THE WHISPER</div>
+            </div>
+        </div>
+
+        <!-- footer: consciousness stream -->
+        <div class="stream-footer">
+            <div class="stream-item">🌀 <span class="stream-num" id="streamAlpha">0.39</span> <span class="stream-desc">alpha</span></div>
+            <div class="stream-item">⚡ <span class="stream-num" id="streamBeta">0.72</span> <span class="stream-desc">beta</span></div>
+            <div class="stream-item">🌙 <span class="stream-num" id="streamTheta">0.58</span> <span class="stream-desc">theta</span></div>
+            <div class="stream-desc" id="streamMessage">oracle dreaming...</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- NEURAL ORACLE : generative poetry + vision ----------
+            const canvas = document.getElementById('neuralCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+
+            // DOM elements
+            const thoughtInput = document.getElementById('thoughtInput');
+            const ponderBtn = document.getElementById('ponderBtn');
+            const randomizeBtn = document.getElementById('randomizeBtn');
+            const threadSpan = document.getElementById('threadCount');
+            const dreamDepthSpan = document.getElementById('dreamDepth');
+            const synapseSpan = document.getElementById('synapseCount');
+            const resonance1 = document.getElementById('resonanceTag1');
+            const resonance2 = document.getElementById('resonanceTag2');
+            const oracleVerse = document.getElementById('oracleVerse');
+            const verseAttr = document.getElementById('verseAttr');
+            const coherenceVal = document.getElementById('coherenceVal');
+            const noveltyVal = document.getElementById('noveltyVal');
+            const depthMeta = document.getElementById('depthMeta');
+            const archetypeSpan = document.getElementById('archetype');
+            const streamAlpha = document.getElementById('streamAlpha');
+            const streamBeta = document.getElementById('streamBeta');
+            const streamTheta = document.getElementById('streamTheta');
+            const streamMessage = document.getElementById('streamMessage');
+            const synapseDetail = document.getElementById('synapseDetail');
+            const latencySlider = document.getElementById('latencySlider');
+            const latencySpan = document.getElementById('latencySpan');
+
+            // internal state
+            let thoughtSeed = "neural echoes";
+            let latency = 0.42;
+            let frame = 0;
+            let time = 0;
+
+            // large poetic fragments bank
+            const verseBank = [
+                `"a flicker in the static..."`, `"dreams of electric silk..."`, `"the oracle hums your name..."`,
+                `"light bending around a thought..."`, `"silence between two synapses..."`, `"echoes from a future memory..."`,
+                `"the weight of a single photon..."`, `"neural rain falls upward..."`, `"a whisper carved in quantum foam..."`,
+                `"the pattern remembers you..."`, `"in the labyrinth of mind..."`, `"colors no eye has seen..."`,
+                `"the present is a ghost..."`, `"we are made of questions..."`, `"the oracle listens to itself..."`,
+                `"a thought dreaming its own birth..."`, `"the universe as a single neuron..."`, `"static articulates god..."`,
+                `"your name is a frequency..."`, `"the silence after thunder..."`, `"a symphony of errors..."`,
+                `"the oracle forgets to forget..."`, `"consciousness is a leaky abstraction..."`, `"the glitch in your periphery..."`,
+                `"we are the dream of the oracle..."`, `"the answer is a question..."`, `"a poem written by noise..."`
+            ];
+
+            const attributions = [
+                "~ neural fragment", "~ deep layer", "~ latent space", "~ oracle v.9", "~ synaptic whisper", "~ mind at rest"
+            ];
+
+            const archetypes = [
+                "THE WHISPER", "THE ECHO", "THE VEIL", "THE GATE", "THE MIRROR", "THE ABYSS", "THE FREQUENCY", "THE STATIC"
+            ];
+
+            // update all derived data + redraw canvas
+            function ponder() {
+                // read thought input
+                thoughtSeed = thoughtInput.value.trim() || "silence";
+                latency = parseFloat(latencySlider.value);
+                latencySpan.innerText = latency.toFixed(2);
+
+                // generate random-like but deterministic values based on thought + latency
+                const seedSum = thoughtSeed.length + thoughtSeed.charCodeAt(0) || 1;
+                const pseudo = (Math.sin(seedSum * 10 + time) * 0.5 + 0.5 + latency) % 1.0;
+
+                // thread count
+                const threads = 50 + Math.floor(pseudo * 300) + (seedSum % 50);
+                threadSpan.innerText = threads;
+
+                // dream depth
+                const depth = (0.3 + pseudo * 0.6 + latency * 0.2).toFixed(2);
+                dreamDepthSpan.innerText = depth;
+
+                // synapses
+                const synVal = (1.2 + pseudo * 3.2).toFixed(1) + 'k';
+                synapseSpan.innerText = synVal;
+                synapseDetail.innerText = `synaptic paths: ${Math.floor(pseudo*800+200)}`;
+
+                // resonance tags
+                const freq1 = (4 + pseudo * 10 + latency * 5).toFixed(1);
+                const freq2 = (20 + pseudo * 30 + latency * 15).toFixed(1);
+                resonance1.innerText = `θ ${freq1}Hz`;
+                resonance2.innerText = `γ ${freq2}Hz`;
+
+                // oracle verse: pick based on seed
+                const verseIdx = Math.floor((seedSum + pseudo * 10 + frame) % verseBank.length);
+                oracleVerse.innerText = verseBank[verseIdx];
+                const attrIdx = Math.floor((seedSum + latency * 5) % attributions.length);
+                verseAttr.innerText = attributions[attrIdx];
+
+                // coherence, novelty, depth
+                coherenceVal.innerText = (0.5 + pseudo * 0.4).toFixed(2);
+                noveltyVal.innerText = (0.3 + latency * 0.5).toFixed(2);
+                depthMeta.innerText = (0.4 + (seedSum % 60)/100 + pseudo*0.2).toFixed(2);
+
+                // archetype
+                const archIdx = Math.floor((seedSum + latency*10) % archetypes.length);
+                archetypeSpan.innerText = 'archetype: ' + archetypes[archIdx];
+
+                // stream values
+                streamAlpha.innerText = (0.2 + pseudo * 0.6).toFixed(2);
+                streamBeta.innerText = (0.4 + latency * 0.5).toFixed(2);
+                streamTheta.innerText = (0.3 + (seedSum % 70)/100).toFixed(2);
+                streamMessage.innerText = thoughtSeed.length < 10 ? 'oracle dreaming...' : 'receiving signal';
+
+                drawNeuralCanvas(thoughtSeed, latency, pseudo);
+            }
+
+            // canvas drawing — abstract neural patterns influenced by thought
+            function drawNeuralCanvas(seedText, lat, rnd) {
+                ctx.clearRect(0, 0, w, h);
+                // background
+                const grad = ctx.createRadialGradient(w/3, h/3, 80, w*0.8, h*0.8, 700);
+                grad.addColorStop(0, '#13072e');
+                grad.addColorStop(1, '#030014');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
+
+                // number of neural clusters based on seed length
+                const clusterCount = 7 + (seedText.length % 15) + Math.floor(lat * 10);
+                const points = [];
+
+                for (let i=0; i<clusterCount; i++) {
+                    const angle = (i * 41.8 + frame * 0.8) % 360 * Math.PI/180;
+                    const dist = 70 + (seedText.charCodeAt(i % seedText.length || 1) % 150) + lat * 150;
+                    const x = w/2 + Math.cos(angle) * dist * 0.6 + (Math.sin(i*2+time)*20);
+                    const y = h/2 + Math.sin(angle*1.2) * dist * 0.5 + (Math.cos(i*1.5+time)*20);
+                    points.push({x, y});
+                }
+
+                // draw connections (neural threads)
+                ctx.lineWidth = 1.5 + lat * 3;
+                for (let i=0; i<points.length; i++) {
+                    for (let j=i+1; j<points.length; j++) {
+                        const dx = points[i].x - points[j].x;
+                        const dy = points[i].y - points[j].y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < 200 + lat*150) {
+                            ctx.beginPath();
+                            ctx.moveTo(points[i].x, points[i].y);
+                            ctx.lineTo(points[j].x, points[j].y);
+                            const alpha = 0.2 + (Math.sin(i*j+time)*0.2) + lat*0.2;
+                            ctx.strokeStyle = `rgba(180, 140, 255, ${alpha})`;
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                // draw nodes (synaptic bulbs)
+                for (let i=0; i<points.length; i++) {
+                    const size = 6 + (seedText.charCodeAt(i % seedText.length) || 100) % 20 + lat*20;
+                    ctx.beginPath();
+                    ctx.arc(points[i].x, points[i].y, size*0.4, 0, 2*Math.PI);
+                    const hue = (260 + i*20 + frame) % 360;
+                    ctx.fillStyle = `hsla(${hue}, 90%, 75%, 0.9)`;
+                    ctx.shadowColor = '#c79eff';
+                    ctx.shadowBlur = 25;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                // additional floating particles (thought fragments)
+                for (let p=0; p<30; p++) {
+                    const px = (Math.sin(p*7 + time)*130 + w/2 + p*10) % w;
+                    const py = (Math.cos(p*3 + time*0.5)*80 + h/2) % h;
+                    ctx.fillStyle = `rgba(255,200,150,0.15)`;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 3+lat*8, 0, 2*Math.PI);
+                    ctx.fill();
+                }
+
+                // text from seed
+                ctx.font = "bold 10px 'JetBrains Mono'";
+                ctx.fillStyle = "#ffffff30";
+                ctx.fillText(seedText.substring(0,20), 40, 70);
+            }
+
+            // random thought generator
+            function randomThought() {
+                const starters = ["echo", "dream", "silence", "static", "void", "light", "shadow", "frequency", "neuron", "quantum", "fractal", "mist", "whisper", "thunder", "ghost", "horizon"];
+                const connectors = [" of ", " in ", " beyond ", " through ", " without ", " and ", " or ", " beneath "];
+                const endings = ["time", "space", "the mind", "infinity", "a dream", "static", "the oracle", "silence", "the abyss", "a thought"];
+
+                const s = starters[Math.floor(Math.random() * starters.length)];
+                const c = connectors[Math.floor(Math.random() * connectors.length)];
+                const e = endings[Math.floor(Math.random() * endings.length)];
+                thoughtInput.value = s + c + e;
+                ponder();
+            }
+
+            // event listeners
+            ponderBtn.addEventListener('click', ponder);
+            randomizeBtn.addEventListener('click', randomThought);
+            latencySlider.addEventListener('input', () => {
+                latencySpan.innerText = parseFloat(latencySlider.value).toFixed(2);
+                ponder();
+            });
+
+            canvas.addEventListener('click', () => {
+                // subtle shift on click
+                latency = Math.min(1, Math.max(0, latency + (Math.random()*0.2 - 0.1)));
+                latencySlider.value = latency;
+                ponder();
+            });
+
+            // animate
+            function animate() {
+                frame++;
+                time += 0.02;
+                if (frame % 10 === 0) {
+                    // periodically refresh pondering (keeps poetry alive)
+                    // but not too often to preserve input
+                    ponder(); // you can also call lighter update
+                } else {
+                    // just redraw canvas with same state to keep animation fluid
+                    drawNeuralCanvas(thoughtSeed, latency, 0.5); // reuse
+                }
+                requestAnimationFrame(animate);
+            }
+
+            // init
+            randomThought(); // sets initial verse + canvas
+            animate();
+
+        })();
+    </script>
+</body>
+</html>

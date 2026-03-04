@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Study Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg: #f8fafc;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: #1e293b;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 24px;
+        }
+
+        .timer-ring {
+            transition: stroke-dashoffset 0.3s linear;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .task-enter {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .notification-toast {
+            animation: toastIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes toastIn {
+            from { transform: translateX(100%) scale(0.9); opacity: 0; }
+            to { transform: translateX(0) scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <!-- Notification Container -->
+    <div id="notificationArea" class="fixed top-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Header Section -->
+        <header class="lg:col-span-12 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight text-slate-900">StudyFlow</h1>
+                <p class="text-slate-500 font-medium">Smart planning for better results.</p>
+            </div>
+            <div class="flex items-center gap-4 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="text-right px-4">
+                    <p id="currentDate" class="text-xs font-bold text-slate-400 uppercase tracking-widest"></p>
+                    <p id="currentTime" class="text-lg font-bold text-indigo-600"></p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Left Column: Tasks & Planner -->
+        <section class="lg:col-span-7 space-y-6">
+            <div class="glass-card p-6 shadow-xl shadow-slate-200/50">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <span class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center">
+                            <i data-lucide="list-todo" class="w-5 h-5"></i>
+                        </span>
+                        Focus Sessions
+                    </h2>
+                    <span id="taskCount" class="text-xs font-bold bg-slate-100 text-slate-500 px-3 py-1 rounded-full">0 Tasks</span>
+                </div>
+
+                <!-- Add Task Form -->
+                <div class="flex flex-col gap-3 mb-8">
+                    <div class="flex gap-2">
+                        <input type="text" id="taskInput" placeholder="What are we studying today?" 
+                            class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition">
+                        <select id="taskPriority" class="bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm font-medium">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Med</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="time" id="taskTime" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm flex-1">
+                        <button onclick="addTask()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2 rounded-xl transition shadow-lg shadow-indigo-200">
+                            Add Session
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Task List -->
+                <div id="taskList" class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div id="emptyState" class="text-center py-12">
+                        <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="book-open" class="text-slate-300 w-8 h-8"></i>
+                        </div>
+                        <p class="text-slate-400 font-medium">Your schedule is clear. Ready to learn?</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Focus Timer & Stats -->
+        <section class="lg:col-span-5 space-y-6">
+            <!-- Pomodoro Timer -->
+            <div class="glass-card p-8 shadow-xl shadow-indigo-100/50 flex flex-col items-center">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Deep Focus Timer</h3>
+                
+                <!-- Timer Customization -->
+                <div class="flex items-center gap-2 mb-6 bg-slate-100/50 p-2 rounded-xl">
+                    <label class="text-[10px] font-black text-slate-400 uppercase pl-2">Set Minutes:</label>
+                    <input type="number" id="customTimerInput" value="25" min="1" max="120" 
+                        class="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1 text-center font-bold text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                        onchange="handleCustomTimeChange()">
+                </div>
+
+                <div class="relative w-64 h-64 mb-8">
+                    <svg class="w-full h-full">
+                        <circle cx="128" cy="128" r="120" stroke="#e2e8f0" stroke-width="8" fill="transparent" />
+                        <circle id="progressRing" cx="128" cy="128" r="120" stroke="#6366f1" stroke-width="8" fill="transparent" 
+                            stroke-dasharray="753.98" stroke-dashoffset="0" class="timer-ring" stroke-linecap="round" />
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span id="timerDisplay" class="text-6xl font-black text-slate-900 tracking-tighter">25:00</span>
+                        <span id="timerLabel" class="text-xs font-bold text-indigo-500 uppercase mt-2">Study Time</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 w-full">
+                    <button id="timerToggle" onclick="toggleTimer()" class="flex-1 bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 transition flex items-center justify-center gap-2">
+                        <i data-lucide="play" class="w-5 h-5 fill-current"></i> Start
+                    </button>
+                    <button onclick="resetTimer()" class="p-4 bg-slate-100 text-slate-600 rounded-2xl hover:bg-slate-200 transition">
+                        <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 w-full mt-6">
+                    <button onclick="setTimerMode('study')" class="text-xs font-bold py-2 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">Study Mode</button>
+                    <button onclick="setTimerMode('break')" class="text-xs font-bold py-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">Break Mode</button>
+                </div>
+            </div>
+
+            <!-- Smart Tips / Reminders Log -->
+            <div class="glass-card p-6 border-l-4 border-l-indigo-500">
+                <h4 class="font-bold text-slate-800 mb-2">Smart Insights</h4>
+                <p id="smartInsight" class="text-sm text-slate-500 leading-relaxed">
+                    Research shows that studying in 25-minute intervals (Pomodoro) maximizes focus and retention.
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // State Management - Moved to the top to ensure availability for functions
+        let tasks = JSON.parse(localStorage.getItem('studyTasks')) || [];
+        let timerSeconds = 1500;
+        let initialSeconds = 1500;
+        let timerActive = false;
+        let timerInterval = null;
+        let currentMode = 'study';
+
+        // Initialize Icons correctly after DOM load
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+            saveAndRender();
+            renderTimer();
+        });
+
+        // --- Clock Logic ---
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const dateStr = now.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+            
+            const timeEl = document.getElementById('currentTime');
+            const dateEl = document.getElementById('currentDate');
+            if (timeEl) timeEl.innerText = timeStr;
+            if (dateEl) dateEl.innerText = dateStr;
+
+            if (now.getSeconds() === 0) checkReminders(now);
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- Task Management ---
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            const time = document.getElementById('taskTime');
+            const priority = document.getElementById('taskPriority').value;
+
+            if (!input.value.trim()) {
+                showToast("Please enter a subject", "error");
+                return;
+            }
+
+            const newTask = {
+                id: Date.now(),
+                title: input.value.trim(),
+                time: time.value || "--:--",
+                priority: priority,
+                completed: false,
+                notified: false
+            };
+
+            tasks.push(newTask);
+            saveAndRender();
+            input.value = "";
+            showToast(`Added focus session: ${newTask.title}`, "success");
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveAndRender();
+        }
+
+        function toggleTask(id) {
+            tasks = tasks.map(t => t.id === id ? {...t, completed: !t.completed} : t);
+            saveAndRender();
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('studyTasks', JSON.stringify(tasks));
+            const list = document.getElementById('taskList');
+            const emptyState = document.getElementById('emptyState');
+            const countLabel = document.getElementById('taskCount');
+            
+            if (!list) return;
+            
+            list.innerHTML = "";
+            if (countLabel) countLabel.innerText = `${tasks.length} Tasks`;
+
+            if (tasks.length === 0) {
+                if (emptyState) list.appendChild(emptyState);
+            } else {
+                tasks.sort((a,b) => a.time.localeCompare(b.time)).forEach(task => {
+                    const div = document.createElement('div');
+                    div.className = `task-enter flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm transition-all hover:shadow-md ${task.completed ? 'opacity-60' : ''}`;
+                    
+                    const priorityColors = {
+                        high: 'bg-rose-100 text-rose-600',
+                        medium: 'bg-amber-100 text-amber-600',
+                        low: 'bg-blue-100 text-blue-600'
+                    };
+
+                    div.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <button onclick="toggleTask(${task.id})" class="w-6 h-6 rounded-full border-2 border-indigo-200 flex items-center justify-center transition hover:border-indigo-500 ${task.completed ? 'bg-indigo-500 border-indigo-500' : ''}">
+                                ${task.completed ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
+                            </button>
+                            <div>
+                                <h4 class="font-bold text-slate-800 ${task.completed ? 'line-through' : ''}">${task.title}</h4>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-xs font-bold text-slate-400 flex items-center gap-1">
+                                        <i data-lucide="clock" class="w-3 h-3"></i> ${task.time}
+                                    </span>
+                                    <span class="text-[10px] uppercase font-black px-2 py-0.5 rounded-md ${priorityColors[task.priority]}">
+                                        ${task.priority}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="deleteTask(${task.id})" class="text-slate-300 hover:text-rose-500 p-2 transition">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    `;
+                    list.appendChild(div);
+                });
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
+        function checkReminders(now) {
+            const currentTimeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+            tasks.forEach(task => {
+                if (task.time === currentTimeStr && !task.notified && !task.completed) {
+                    showToast(`Time to study: ${task.title}!`, "info");
+                    task.notified = true;
+                }
+            });
+        }
+
+        // --- Timer Logic ---
+        function handleCustomTimeChange() {
+            const input = document.getElementById('customTimerInput');
+            if (!input) return;
+            const val = parseInt(input.value);
+            if (isNaN(val) || val < 1) return;
+            
+            initialSeconds = val * 60;
+            timerSeconds = initialSeconds;
+            
+            if (timerActive) {
+                clearInterval(timerInterval);
+                timerActive = false;
+                const toggleBtn = document.getElementById('timerToggle');
+                if (toggleBtn) toggleBtn.innerHTML = `<i data-lucide="play" class="w-5 h-5 fill-current"></i> Start`;
+                if (window.lucide) lucide.createIcons();
+            }
+            
+            renderTimer();
+        }
+
+        function toggleTimer() {
+            const btn = document.getElementById('timerToggle');
+            if (timerActive) {
+                clearInterval(timerInterval);
+                if (btn) btn.innerHTML = `<i data-lucide="play" class="w-5 h-5 fill-current"></i> Start`;
+            } else {
+                timerInterval = setInterval(updateTimer, 1000);
+                if (btn) btn.innerHTML = `<i data-lucide="pause" class="w-5 h-5 fill-current"></i> Pause`;
+            }
+            timerActive = !timerActive;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function updateTimer() {
+            if (timerSeconds <= 0) {
+                clearInterval(timerInterval);
+                timerActive = false;
+                showToast(currentMode === 'study' ? "Study session finished!" : "Break over!", "success");
+                const toggleBtn = document.getElementById('timerToggle');
+                if (toggleBtn) toggleBtn.innerHTML = `<i data-lucide="play" class="w-5 h-5 fill-current"></i> Start`;
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+            timerSeconds--;
+            renderTimer();
+        }
+
+        function renderTimer() {
+            const display = document.getElementById('timerDisplay');
+            if (!display) return;
+            
+            const m = Math.floor(timerSeconds / 60);
+            const s = timerSeconds % 60;
+            display.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            
+            const ring = document.getElementById('progressRing');
+            if (ring) {
+                const percent = timerSeconds / initialSeconds;
+                const offset = 753.98 * (1 - percent);
+                ring.style.strokeDashoffset = offset;
+            }
+        }
+
+        function resetTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerActive = false;
+            timerSeconds = initialSeconds;
+            renderTimer();
+            const toggleBtn = document.getElementById('timerToggle');
+            if (toggleBtn) toggleBtn.innerHTML = `<i data-lucide="play" class="w-5 h-5 fill-current"></i> Start`;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function setTimerMode(mode) {
+            currentMode = mode;
+            const inputField = document.getElementById('customTimerInput');
+            const label = document.getElementById('timerLabel');
+            const ring = document.getElementById('progressRing');
+            
+            if (mode === 'study') {
+                if (inputField) inputField.value = 25;
+                initialSeconds = 1500;
+                if (label) {
+                    label.innerText = 'Study Time';
+                    label.className = 'text-xs font-bold uppercase mt-2 text-indigo-500';
+                }
+                if (ring) ring.style.stroke = '#6366f1';
+            } else {
+                if (inputField) inputField.value = 5;
+                initialSeconds = 300;
+                if (label) {
+                    label.innerText = 'Resting';
+                    label.className = 'text-xs font-bold uppercase mt-2 text-emerald-500';
+                }
+                if (ring) ring.style.stroke = '#10b981';
+            }
+            
+            timerSeconds = initialSeconds;
+            resetTimer();
+        }
+
+        function showToast(message, type = "info") {
+            const area = document.getElementById('notificationArea');
+            if (!area) return;
+            const toast = document.createElement('div');
+            const types = { success: 'bg-emerald-500 text-white', error: 'bg-rose-500 text-white', info: 'bg-indigo-600 text-white' };
+            toast.className = `notification-toast pointer-events-auto flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl min-w-[280px] ${types[type]}`;
+            toast.innerHTML = `<i data-lucide="bell" class="w-5 h-5"></i><span class="font-bold text-sm">${message}</span>`;
+            area.appendChild(toast);
+            if (window.lucide) lucide.createIcons();
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(20px)';
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+
+        const insights = [
+            "Research shows that studying in 25-minute intervals maximizes focus.",
+            "Drinking water improves cognitive function by up to 15%.",
+            "Try to tackle your hardest subject first while your brain is fresh.",
+            "Summarizing what you learned in your own words improves retention.",
+            "Taking a walk during breaks helps reset your attention span."
+        ];
+        const insightEl = document.getElementById('smartInsight');
+        if (insightEl) insightEl.innerText = insights[Math.floor(Math.random() * insights.length)];
+
+    </script>
+</body>
+</html>

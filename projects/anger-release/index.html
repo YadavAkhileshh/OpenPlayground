@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anger Release Click Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #2c3e50, #1a1a2e);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        header {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            border: 2px solid #e74c3c;
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.3);
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #e74c3c, #f39c12);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .tagline {
+            font-size: 1.3rem;
+            color: #ecf0f1;
+            margin-bottom: 15px;
+        }
+        
+        .warning {
+            background: rgba(231, 76, 60, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            border-left: 5px solid #e74c3c;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #ffcccb;
+        }
+        
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 900px) {
+            .game-area {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .destruction-zone {
+            position: relative;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 3px solid #7f8c8d;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.7);
+        }
+        
+        .anger-meter-container {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid #e74c3c;
+        }
+        
+        .anger-meter-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #e74c3c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .meter {
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            border: 2px solid #444;
+        }
+        
+        .meter-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #3498db, #e74c3c, #c0392b);
+            border-radius: 15px;
+            transition: width 0.5s ease;
+        }
+        
+        .meter-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+            color: #bdc3c7;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #f39c12;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #ecf0f1;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 15px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        #releaseBtn {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+            color: white;
+        }
+        
+        #resetBtn {
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+        }
+        
+        #calmBtn {
+            background: linear-gradient(to right, #2ecc71, #27ae60);
+            color: white;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .destructible {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+        
+        .destructible:hover {
+            transform: scale(1.05);
+        }
+        
+        .glass {
+            width: 80px;
+            height: 80px;
+            background: rgba(52, 152, 219, 0.7);
+            border-radius: 10px;
+            border: 5px solid #ecf0f1;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+        }
+        
+        .plate {
+            width: 100px;
+            height: 20px;
+            background: linear-gradient(to bottom, #f1c40f, #f39c12);
+            border-radius: 50% 50% 10% 10%;
+        }
+        
+        .bottle {
+            width: 40px;
+            height: 120px;
+            background: rgba(46, 204, 113, 0.7);
+            border-radius: 10px 10px 5px 5px;
+            border: 3px solid #2c3e50;
+        }
+        
+        .monitor {
+            width: 120px;
+            height: 90px;
+            background: #2c3e50;
+            border-radius: 10px;
+            border: 8px solid #7f8c8d;
+        }
+        
+        .monitor::before {
+            content: "";
+            display: block;
+            width: 80%;
+            height: 70%;
+            background: #27ae60;
+            margin: 10px auto;
+            border-radius: 5px;
+        }
+        
+        .break-effect {
+            position: absolute;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        .fragment {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: inherit;
+            border-radius: 2px;
+            opacity: 0.8;
+        }
+        
+        .anger-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            background: rgba(231, 76, 60, 0.9);
+            border-radius: 50px;
+            font-weight: bold;
+            z-index: 1000;
+            animation: fadeOut 2s forwards;
+            display: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; top: 20px; }
+            70% { opacity: 1; top: 20px; }
+            100% { opacity: 0; top: 0; }
+        }
+        
+        .calm-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            background: rgba(46, 204, 113, 0.9);
+            border-radius: 50px;
+            font-weight: bold;
+            z-index: 1000;
+            animation: fadeOut 2s forwards;
+            display: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        .rage-mode {
+            animation: ragePulse 0.5s infinite alternate;
+        }
+        
+        @keyframes ragePulse {
+            from { box-shadow: 0 0 20px rgba(231, 76, 60, 0.5); }
+            to { box-shadow: 0 0 40px rgba(231, 76, 60, 0.9); }
+        }
+        
+        .objects-info {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: left;
+        }
+        
+        .objects-info h3 {
+            color: #f39c12;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .objects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .object-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .object-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+        }
+        
+        .glass-icon {
+            background: rgba(52, 152, 219, 0.7);
+            border: 2px solid #ecf0f1;
+        }
+        
+        .plate-icon {
+            background: linear-gradient(to bottom, #f1c40f, #f39c12);
+        }
+        
+        .bottle-icon {
+            background: rgba(46, 204, 113, 0.7);
+            border: 2px solid #2c3e50;
+        }
+        
+        .monitor-icon {
+            background: #2c3e50;
+            border: 2px solid #7f8c8d;
+        }
+        
+        footer {
+            margin-top: 40px;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .rage-active {
+            color: #e74c3c;
+            font-weight: bold;
+            animation: textPulse 0.5s infinite alternate;
+        }
+        
+        @keyframes textPulse {
+            from { opacity: 0.7; }
+            to { opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .destruction-zone {
+                height: 400px;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-fire"></i> Anger Release Click Game</h1>
+            <p class="tagline">Release your frustration by smashing virtual objects. Click to break things and vent your anger!</p>
+            <div class="warning">
+                <i class="fas fa-exclamation-triangle"></i> 
+                This is a virtual anger release game. In real life, please find healthy ways to manage anger.
+            </div>
+        </header>
+        
+        <div class="game-area">
+            <div class="destruction-zone" id="destructionZone">
+                <!-- Destructible objects will be generated here -->
+                <div class="anger-message" id="angerMessage"></div>
+                <div class="calm-message" id="calmMessage"></div>
+            </div>
+            
+            <div class="anger-meter-container">
+                <div class="anger-meter-title">
+                    <i class="fas fa-tachometer-alt"></i> Anger Meter
+                </div>
+                
+                <div class="meter">
+                    <div class="meter-fill" id="meterFill"></div>
+                </div>
+                
+                <div class="meter-labels">
+                    <span>Calm</span>
+                    <span id="angerLevelText">Frustrated</span>
+                    <span class="rage-active" id="rageText">RAGE!</span>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="objectsSmashed">0</div>
+                        <div class="stat-label">Objects Smashed</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalDamage">0</div>
+                        <div class="stat-label">Total Damage</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="rageModeCount">0</div>
+                        <div class="stat-label">Rage Modes</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="clickForce">1.0x</div>
+                        <div class="stat-label">Click Force</div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button id="releaseBtn">
+                        <i class="fas fa-bomb"></i> Release Anger
+                    </button>
+                    <button id="calmBtn">
+                        <i class="fas fa-spa"></i> Calm Down
+                    </button>
+                    <button id="resetBtn">
+                        <i class="fas fa-redo"></i> Reset Game
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="objects-info">
+            <h3><i class="fas fa-cube"></i> Smashable Objects</h3>
+            <div class="objects-grid">
+                <div class="object-item">
+                    <div class="object-icon glass-icon"></div>
+                    <div>Glass - 10 damage</div>
+                </div>
+                <div class="object-item">
+                    <div class="object-icon plate-icon"></div>
+                    <div>Plate - 15 damage</div>
+                </div>
+                <div class="object-item">
+                    <div class="object-icon bottle-icon"></div>
+                    <div>Bottle - 20 damage</div>
+                </div>
+                <div class="object-item">
+                    <div class="object-icon monitor-icon"></div>
+                    <div>Monitor - 30 damage</div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Anger Release Click Game &copy; 2026 | Virtual stress relief game. Remember to practice real-world anger management techniques.</p>
+            <p>This game is for entertainment purposes only.</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const destructionZone = document.getElementById('destructionZone');
+        const meterFill = document.getElementById('meterFill');
+        const angerLevelText = document.getElementById('angerLevelText');
+        const rageText = document.getElementById('rageText');
+        const objectsSmashedElement = document.getElementById('objectsSmashed');
+        const totalDamageElement = document.getElementById('totalDamage');
+        const rageModeCountElement = document.getElementById('rageModeCount');
+        const clickForceElement = document.getElementById('clickForce');
+        const releaseBtn = document.getElementById('releaseBtn');
+        const calmBtn = document.getElementById('calmBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const angerMessage = document.getElementById('angerMessage');
+        const calmMessage = document.getElementById('calmMessage');
+        
+        // Game variables
+        let angerLevel = 0; // 0-100
+        let objectsSmashed = 0;
+        let totalDamage = 0;
+        let rageModeCount = 0;
+        let clickForce = 1.0;
+        let isRageMode = false;
+        let objects = [];
+        const objectTypes = [
+            { class: 'glass', name: 'Glass', damage: 10, color: 'rgba(52, 152, 219, 0.7)' },
+            { class: 'plate', name: 'Plate', damage: 15, color: 'linear-gradient(to bottom, #f1c40f, #f39c12)' },
+            { class: 'bottle', name: 'Bottle', damage: 20, color: 'rgba(46, 204, 113, 0.7)' },
+            { class: 'monitor', name: 'Monitor', damage: 30, color: '#2c3e50' }
+        ];
+        
+        // Initialize the game
+        function initGame() {
+            angerLevel = 0;
+            objectsSmashed = 0;
+            totalDamage = 0;
+            rageModeCount = 0;
+            clickForce = 1.0;
+            isRageMode = false;
+            
+            updateUI();
+            generateObjects(8);
+            updateMeter();
+            
+            // Reset destruction zone appearance
+            destructionZone.classList.remove('rage-mode');
+            rageText.style.display = 'none';
+        }
+        
+        // Generate destructible objects
+        function generateObjects(count) {
+            // Clear existing objects
+            objects.forEach(obj => {
+                if (obj.element && obj.element.parentNode) {
+                    obj.element.parentNode.removeChild(obj.element);
+                }
+            });
+            
+            objects = [];
+            
+            // Create new objects
+            for (let i = 0; i < count; i++) {
+                const typeIndex = Math.floor(Math.random() * objectTypes.length);
+                const objType = objectTypes[typeIndex];
+                
+                const obj = document.createElement('div');
+                obj.className = `destructible ${objType.class}`;
+                
+                // Random position within destruction zone
+                const maxX = destructionZone.clientWidth - 120;
+                const maxY = destructionZone.clientHeight - 120;
+                
+                const x = Math.floor(Math.random() * maxX);
+                const y = Math.floor(Math.random() * maxY);
+                
+                obj.style.left = `${x}px`;
+                obj.style.top = `${y}px`;
+                
+                // Store object data
+                const objectData = {
+                    element: obj,
+                    type: objType,
+                    x: x,
+                    y: y,
+                    smashed: false
+                };
+                
+                // Add click event
+                obj.addEventListener('click', () => smashObject(objectData));
+                
+                destructionZone.appendChild(obj);
+                objects.push(objectData);
+            }
+        }
+        
+        // Smash an object
+        function smashObject(obj) {
+            if (obj.smashed) return;
+            
+            obj.smashed = true;
+            
+            // Calculate damage with force multiplier
+            const damage = Math.floor(obj.type.damage * clickForce);
+            
+            // Update stats
+            objectsSmashed++;
+            totalDamage += damage;
+            angerLevel += damage / 2;
+            
+            // Cap anger level at 100
+            if (angerLevel > 100) angerLevel = 100;
+            
+            // Check for rage mode
+            if (angerLevel >= 80 && !isRageMode) {
+                activateRageMode();
+            }
+            
+            // Visual breaking effect
+            createBreakEffect(obj);
+            
+            // Hide the object
+            obj.element.style.opacity = '0';
+            
+            // Update UI
+            updateUI();
+            updateMeter();
+            
+            // Show anger message occasionally
+            if (Math.random() > 0.7) {
+                showAngerMessage();
+            }
+            
+            // Replace object after delay
+            setTimeout(() => {
+                if (obj.element && obj.element.parentNode) {
+                    obj.element.parentNode.removeChild(obj.element);
+                }
+                
+                // Add new object if we're below the limit
+                if (objects.filter(o => !o.smashed).length < 10) {
+                    generateObjects(1);
+                }
+            }, 500);
+        }
+        
+        // Create visual break effect
+        function createBreakEffect(obj) {
+            const effect = document.createElement('div');
+            effect.className = 'break-effect';
+            effect.style.left = obj.element.style.left;
+            effect.style.top = obj.element.style.top;
+            
+            // Create fragments
+            const fragmentCount = 8 + Math.floor(Math.random() * 8);
+            for (let i = 0; i < fragmentCount; i++) {
+                const fragment = document.createElement('div');
+                fragment.className = 'fragment';
+                
+                // Random direction and distance
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 20 + Math.random() * 60;
+                const x = Math.cos(angle) * distance;
+                const y = Math.sin(angle) * distance;
+                
+                // Random size
+                const size = 5 + Math.random() * 15;
+                fragment.style.width = `${size}px`;
+                fragment.style.height = `${size}px`;
+                
+                // Set color based on object type
+                if (obj.type.class === 'glass') {
+                    fragment.style.background = 'rgba(52, 152, 219, 0.8)';
+                    fragment.style.border = '1px solid #ecf0f1';
+                } else if (obj.type.class === 'plate') {
+                    fragment.style.background = 'linear-gradient(to bottom, #f1c40f, #f39c12)';
+                } else if (obj.type.class === 'bottle') {
+                    fragment.style.background = 'rgba(46, 204, 113, 0.8)';
+                    fragment.style.border = '1px solid #2c3e50';
+                } else if (obj.type.class === 'monitor') {
+                    fragment.style.background = '#2c3e50';
+                    fragment.style.border = '1px solid #7f8c8d';
+                }
+                
+                // Animate fragment
+                fragment.style.transform = `translate(${x}px, ${y}px) rotate(${Math.random() * 360}deg)`;
+                fragment.style.opacity = '0';
+                fragment.style.transition = 'all 0.8s ease-out';
+                
+                effect.appendChild(fragment);
+                
+                // Trigger animation
+                setTimeout(() => {
+                    fragment.style.opacity = '0.8';
+                }, 10);
+                
+                // Remove fragment after animation
+                setTimeout(() => {
+                    if (fragment.parentNode) {
+                        fragment.parentNode.removeChild(fragment);
+                    }
+                }, 800);
+            }
+            
+            destructionZone.appendChild(effect);
+            
+            // Remove effect after animation
+            setTimeout(() => {
+                if (effect.parentNode) {
+                    effect.parentNode.removeChild(effect);
+                }
+            }, 1000);
+        }
+        
+        // Activate rage mode
+        function activateRageMode() {
+            isRageMode = true;
+            rageModeCount++;
+            
+            // Visual effects
+            destructionZone.classList.add('rage-mode');
+            rageText.style.display = 'inline';
+            
+            // Increase click force
+            clickForce = 2.0;
+            
+            // Show rage message
+            angerMessage.textContent = "RAGE MODE ACTIVATED! DOUBLE DAMAGE!";
+            angerMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                angerMessage.style.display = 'none';
+            }, 2000);
+            
+            // Auto-generate more objects in rage mode
+            generateObjects(5);
+            
+            // Rage mode lasts for 10 seconds
+            setTimeout(() => {
+                if (isRageMode) {
+                    deactivateRageMode();
+                }
+            }, 10000);
+        }
+        
+        // Deactivate rage mode
+        function deactivateRageMode() {
+            isRageMode = false;
+            clickForce = 1.0;
+            destructionZone.classList.remove('rage-mode');
+            rageText.style.display = 'none';
+            
+            // Reduce anger level after rage
+            angerLevel = 40;
+            updateMeter();
+            updateUI();
+        }
+        
+        // Update the anger meter
+        function updateMeter() {
+            meterFill.style.width = `${angerLevel}%`;
+            
+            // Update anger level text
+            if (angerLevel < 30) {
+                angerLevelText.textContent = "Calm";
+                angerLevelText.style.color = "#2ecc71";
+            } else if (angerLevel < 60) {
+                angerLevelText.textContent = "Frustrated";
+                angerLevelText.style.color = "#f39c12";
+            } else if (angerLevel < 80) {
+                angerLevelText.textContent = "Angry";
+                angerLevelText.style.color = "#e74c3c";
+            } else {
+                angerLevelText.textContent = "FURIOUS";
+                angerLevelText.style.color = "#c0392b";
+            }
+        }
+        
+        // Update UI stats
+        function updateUI() {
+            objectsSmashedElement.textContent = objectsSmashed;
+            totalDamageElement.textContent = totalDamage;
+            rageModeCountElement.textContent = rageModeCount;
+            clickForceElement.textContent = `${clickForce.toFixed(1)}x`;
+        }
+        
+        // Show random anger message
+        function showAngerMessage() {
+            const messages = [
+                "Take that!",
+                "Smash!",
+                "Destroy!",
+                "Vent your anger!",
+                "Feel the release!",
+                "Crush it!",
+                "Boom!",
+                "Shatter!"
+            ];
+            
+            const message = messages[Math.floor(Math.random() * messages.length)];
+            angerMessage.textContent = message;
+            angerMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                angerMessage.style.display = 'none';
+            }, 1500);
+        }
+        
+        // Show calm message
+        function showCalmMessage() {
+            const messages = [
+                "Breathing deeply...",
+                "Finding inner peace...",
+                "Releasing tension...",
+                "Calming down...",
+                "Letting it go..."
+            ];
+            
+            const message = messages[Math.floor(Math.random() * messages.length)];
+            calmMessage.textContent = message;
+            calmMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                calmMessage.style.display = 'none';
+            }, 2000);
+        }
+        
+        // Event Listeners
+        releaseBtn.addEventListener('click', () => {
+            // Increase anger level
+            angerLevel += 15;
+            if (angerLevel > 100) angerLevel = 100;
+            
+            // Check for rage mode
+            if (angerLevel >= 80 && !isRageMode) {
+                activateRageMode();
+            }
+            
+            updateMeter();
+            showAngerMessage();
+            
+            // Generate more objects to smash
+            generateObjects(3);
+        });
+        
+        calmBtn.addEventListener('click', () => {
+            // Decrease anger level
+            angerLevel -= 30;
+            if (angerLevel < 0) angerLevel = 0;
+            
+            // If in rage mode, deactivate it
+            if (isRageMode) {
+                deactivateRageMode();
+            }
+            
+            updateMeter();
+            showCalmMessage();
+            
+            // Generate calming objects (more glass, less aggressive colors)
+            generateObjects(5);
+        });
+        
+        resetBtn.addEventListener('click', initGame);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Spacebar') {
+                // Space bar to smash a random object
+                const unsmashed = objects.filter(obj => !obj.smashed);
+                if (unsmashed.length > 0) {
+                    const randomObj = unsmashed[Math.floor(Math.random() * unsmashed.length)];
+                    smashObject(randomObj);
+                }
+            }
+            
+            if (e.key === 'r' || e.key === 'R') {
+                // R for rage release
+                releaseBtn.click();
+            }
+            
+            if (e.key === 'c' || e.key === 'C') {
+                // C for calm down
+                calmBtn.click();
+            }
+            
+            if (e.key === 'Escape') {
+                // ESC to reset
+                initGame();
+            }
+        });
+        
+        // Add instructions for keyboard shortcuts
+        document.addEventListener('DOMContentLoaded', () => {
+            const tagline = document.querySelector('.tagline');
+            tagline.innerHTML += '<br><small>Press SPACE to smash, R to release anger, C to calm down, ESC to reset</small>';
+        });
+        
+        // Initialize the game
+        initGame();
+    </script>
+</body>
+</html>

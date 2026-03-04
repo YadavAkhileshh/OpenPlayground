@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Banana Logic Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Poppins:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --yellow: #FFD93D;
+      --orange: #FF6B35;
+      --green: #6BCB77;
+      --bg: #1A1A2E;
+      --card: #0F3460;
+      --muted: #A8B2D8;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: #F5F5F5;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .bg-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .bg-layer::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(255,217,61,.09) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(255,107,53,.08) 0%, transparent 50%);
+    }
+    .floater {
+      position: absolute;
+      opacity: .1;
+      animation: floatUp linear infinite;
+      user-select: none;
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(110vh) rotate(0deg);   opacity: 0; }
+      10%  { opacity: .1; }
+      90%  { opacity: .1; }
+      100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+    }
+
+    .screen { display: none; position: relative; z-index: 1; min-height: 100vh; align-items: center; justify-content: center; padding: 20px; }
+    .screen.active { display: flex; }
+    #sGame { flex-direction: column; padding: 0; align-items: stretch; }
+
+    /* HOME */
+    .home-card {
+      background: linear-gradient(135deg, var(--card), #0a2647);
+      border: 2px solid rgba(255,217,61,.25);
+      border-radius: 32px;
+      padding: 48px 40px;
+      text-align: center;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 0 40px rgba(255,217,61,.25), 0 40px 80px rgba(0,0,0,.5);
+      animation: popIn .7s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(40px) scale(.95); }
+      to   { opacity: 1; transform: none; }
+    }
+    .banana-icon {
+      font-size: 5rem;
+      display: block;
+      margin-bottom: 10px;
+      animation: wobble 2s ease-in-out infinite;
+      filter: drop-shadow(0 0 20px rgba(255,217,61,.5));
+    }
+    @keyframes wobble {
+      0%,100% { transform: rotate(-10deg) scale(1); }
+      25%     { transform: rotate(12deg) scale(1.1); }
+      50%     { transform: rotate(-5deg) scale(1.05); }
+      75%     { transform: rotate(9deg) scale(1.08); }
+    }
+    .game-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 3rem;
+      color: var(--yellow);
+      text-shadow: 3px 3px 0 var(--orange);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .game-title span { font-size: 1.8rem; color: #fff; display: block; letter-spacing: 6px; }
+    .tagline { font-size: .9rem; color: var(--muted); margin-bottom: 30px; line-height: 1.6; }
+
+    .mode-buttons { display: flex; gap: 10px; justify-content: center; margin-bottom: 22px; flex-wrap: wrap; }
+
+    .btn {
+      background: var(--yellow);
+      color: #1A1A2E;
+      border: none;
+      border-radius: 50px;
+      padding: 12px 26px;
+      font-family: 'Fredoka One', cursive;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all .2s cubic-bezier(.34,1.56,.64,1);
+      box-shadow: 0 4px 15px rgba(255,217,61,.3);
+    }
+    .btn:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 8px 25px rgba(255,217,61,.5); }
+    .btn:active { transform: scale(.96); }
+    .btn-outline { background: transparent; color: var(--yellow); border: 2px solid var(--yellow); }
+    .btn-outline:hover { background: rgba(255,217,61,.1); }
+
+    .hs-box { background: rgba(255,217,61,.1); border: 1px solid rgba(255,217,61,.3); border-radius: 12px; padding: 10px 20px; font-size: .9rem; color: var(--yellow); font-weight: 600; }
+
+    /* GAME HEADER */
+    .game-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px 12px;
+      max-width: 700px;
+      margin: 0 auto;
+      width: 100%;
+      gap: 10px;
+    }
+    .btn-back { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: #fff; border-radius: 12px; padding: 8px 16px; font-family: 'Poppins', sans-serif; font-size: .85rem; cursor: pointer; transition: background .2s; }
+    .btn-back:hover { background: rgba(255,255,255,.18); }
+    .hud { display: flex; gap: 16px; background: rgba(15,52,96,.85); border: 1px solid rgba(255,217,61,.2); border-radius: 40px; padding: 7px 18px; }
+    .hud-item { font-size: .9rem; font-weight: 600; }
+    .hud-item span { color: var(--yellow); }
+    .lvl-tag { background: var(--orange); color: #fff; border-radius: 20px; padding: 6px 16px; font-size: .85rem; font-weight: 700; white-space: nowrap; }
+
+    /* PUZZLE */
+    .puzzle-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 24px;
+      max-width: 700px;
+      width: 100%;
+      margin: 0 auto;
+      gap: 24px;
+    }
+    .p-instr { font-family: 'Fredoka One', cursive; font-size: 1.2rem; color: var(--muted); text-align: center; }
+
+    .seq-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      background: rgba(15,52,96,.6);
+      border: 2px solid rgba(255,217,61,.15);
+      border-radius: 24px;
+      padding: 22px 28px;
+      width: 100%;
+    }
+    .seq-item {
+      min-width: 58px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      font-family: 'Fredoka One', cursive;
+      animation: seqPop .4s cubic-bezier(.34,1.56,.64,1) both;
+      padding: 0 6px;
+    }
+    .seq-item.num   { background: rgba(255,217,61,.15); border: 2px solid rgba(255,217,61,.4);  color: var(--yellow); font-size: 1.5rem; }
+    .seq-item.emo   { background: rgba(107,203,119,.12); border: 2px solid rgba(107,203,119,.3); font-size: 1.7rem; }
+    .seq-item.blank { background: rgba(255,107,53,.08);  border: 2px dashed rgba(255,107,53,.5); color: var(--orange); font-size: 1.7rem; }
+    .seq-arrow { color: var(--muted); font-size: 1.2rem; }
+    @keyframes seqPop {
+      from { transform: scale(0) rotate(-10deg); opacity: 0; }
+      to   { transform: scale(1) rotate(0);      opacity: 1; }
+    }
+
+    .ans-label { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; display: block; text-align: center; margin-bottom: 12px; }
+    .opts-grid { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .opt-btn {
+      min-width: 70px;
+      height: 70px;
+      border-radius: 18px;
+      background: rgba(15,52,96,.85);
+      border: 2px solid rgba(255,255,255,.12);
+      color: #fff;
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.35rem;
+      cursor: pointer;
+      transition: all .2s cubic-bezier(.34,1.56,.64,1);
+      padding: 0 8px;
+    }
+    .opt-btn:hover:not(:disabled) { border-color: var(--yellow); background: rgba(255,217,61,.12); transform: translateY(-4px) scale(1.05); box-shadow: 0 8px 20px rgba(255,217,61,.2); }
+    .opt-btn.correct { background: rgba(107,203,119,.25) !important; border-color: var(--green) !important; transform: scale(1.1) !important; box-shadow: 0 0 20px rgba(107,203,119,.4); }
+    .opt-btn.wrong   { background: rgba(255,80,80,.2) !important; border-color: #FF5050 !important; animation: shake .4s ease; }
+    .opt-btn:disabled { cursor: default; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25%     { transform: translateX(-6px); }
+      75%     { transform: translateX(6px); }
+    }
+
+    .feedback { font-family: 'Fredoka One', cursive; font-size: 1.3rem; min-height: 2rem; text-align: center; }
+    .feedback.ok  { color: var(--green); }
+    .feedback.bad { color: #FF5050; }
+
+    .prog-wrap { width: 100%; max-width: 700px; margin: 0 auto; padding: 0 24px 24px; }
+    .prog-bar  { height: 8px; background: rgba(255,255,255,.08); border-radius: 99px; overflow: hidden; }
+    .prog-fill { height: 100%; background: linear-gradient(90deg, var(--yellow), var(--orange)); border-radius: 99px; width: 0%; transition: width .5s ease; }
+
+    .timer-warn { color: #FF5050 !important; animation: tpulse .5s ease infinite; }
+    @keyframes tpulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
+
+    /* GAME OVER */
+    .over-card {
+      background: linear-gradient(135deg, var(--card), #0a2647);
+      border: 2px solid rgba(255,217,61,.25);
+      border-radius: 32px;
+      padding: 48px 40px;
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 0 40px rgba(255,217,61,.2), 0 40px 80px rgba(0,0,0,.5);
+      animation: popIn .6s ease forwards;
+    }
+    .over-emoji { font-size: 5rem; display: block; margin-bottom: 12px; animation: wobble 1.5s ease-in-out infinite; }
+    .over-card h2 { font-family: 'Fredoka One', cursive; font-size: 2.2rem; color: var(--yellow); text-shadow: 2px 2px 0 var(--orange); margin-bottom: 8px; }
+    .over-card p  { color: var(--muted); margin-bottom: 26px; font-size: .92rem; }
+    .over-stats { display: flex; gap: 16px; justify-content: center; margin-bottom: 28px; }
+    .over-stat { background: rgba(255,217,61,.08); border: 1px solid rgba(255,217,61,.2); border-radius: 14px; padding: 14px 20px; display: flex; flex-direction: column; gap: 4px; }
+    .over-stat b { font-family: 'Fredoka One', cursive; font-size: 1.8rem; color: var(--yellow); line-height: 1; }
+    .over-stat small { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .over-card .btn { width: 100%; margin-top: 10px; display: block; }
+
+    @media (max-width: 480px) {
+      .game-title { font-size: 2.4rem; }
+      .seq-item   { min-width: 48px; height: 48px; font-size: 1.1rem; }
+      .seq-item.emo { font-size: 1.4rem; }
+      .opt-btn    { min-width: 60px; height: 60px; font-size: 1.1rem; }
+      .home-card, .over-card { padding: 36px 22px; }
+      .hud        { gap: 10px; padding: 6px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-layer" id="bgLayer"></div>
+
+<!-- HOME SCREEN -->
+<div class="screen active" id="sHome">
+  <div class="home-card">
+    <span class="banana-icon">&#x1F34C;</span>
+    <h1 class="game-title">BANANA<br/><span>LOGIC</span></h1>
+    <p class="tagline">Can your brain go bananas?<br/>Solve patterns. Beat the clock. Win!</p>
+    <div class="mode-buttons">
+      <button class="btn" id="btnEasy">&#x1F7E2; Easy</button>
+      <button class="btn" id="btnMedium">&#x1F7E1; Medium</button>
+      <button class="btn" id="btnHard">&#x1F534; Hard</button>
+    </div>
+    <div class="hs-box">&#x1F3C6; Best Score: <span id="hsDisplay">0</span></div>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="sGame">
+  <div class="game-header">
+    <button class="btn-back" id="btnBack">&#8592; Back</button>
+    <div class="hud">
+      <div class="hud-item">&#x23F1; <span id="timerEl">30</span>s</div>
+      <div class="hud-item">&#x2B50; <span id="scoreEl">0</span></div>
+      <div class="hud-item">&#x2764;&#xFE0F; <span id="livesEl">3</span></div>
+    </div>
+    <div class="lvl-tag">Level <span id="lvlEl">1</span></div>
+  </div>
+
+  <div class="puzzle-area">
+    <p class="p-instr" id="instrEl">What comes next?</p>
+    <div class="seq-row" id="seqRow"></div>
+    <div>
+      <span class="ans-label">Choose your answer:</span>
+      <div class="opts-grid" id="optsGrid"></div>
+    </div>
+    <div class="feedback" id="fbMsg"></div>
+  </div>
+
+  <div class="prog-wrap">
+    <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+  </div>
+</div>
+
+<!-- GAME OVER SCREEN -->
+<div class="screen" id="sOver">
+  <div class="over-card">
+    <span class="over-emoji" id="overEmoji">&#x1F34C;</span>
+    <h2 id="overTitle">Game Over!</h2>
+    <p id="overMsg">Better luck next time!</p>
+    <div class="over-stats">
+      <div class="over-stat"><b id="fScore">0</b><small>Score</small></div>
+      <div class="over-stat"><b id="fLevel">1</b><small>Level</small></div>
+      <div class="over-stat"><b id="fCorrect">0</b><small>Correct</small></div>
+    </div>
+    <button class="btn" id="btnAgain">&#x1F34C; Play Again</button>
+    <button class="btn btn-outline" id="btnHome">&#x1F3E0; Home</button>
+  </div>
+</div>
+
+<script>
+/* =============================================
+   BANANA LOGIC GAME - All logic in one file
+   ============================================= */
+
+// --- Helpers ---
+function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function pick(arr)      { return arr[Math.floor(Math.random() * arr.length)]; }
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+function distractors(ans, count) {
+  var s = [];
+  var offsets = shuffle([1, 2, 3, -1, -2, 4, 5, -3]);
+  for (var i = 0; i < offsets.length; i++) {
+    var v = ans + offsets[i];
+    if (v !== ans && v > 0 && s.indexOf(v) === -1) s.push(v);
+    if (s.length >= count) break;
+  }
+  return s.slice(0, count);
+}
+function el(id) { return document.getElementById(id); }
+
+// --- Emoji sets ---
+var EMOJIS = {
+  fruits:  ['&#x1F34C;','&#x1F34E;','&#x1F34A;','&#x1F347;','&#x1F353;','&#x1F351;','&#x1F34B;','&#x1F95D;'],
+  animals: ['&#x1F436;','&#x1F431;','&#x1F438;','&#x1F43C;','&#x1F981;','&#x1F42F;','&#x1F98A;','&#x1F428;'],
+  shapes:  ['&#x2B50;','&#x1F53A;','&#x1F535;','&#x2B1B;','&#x1F4A0;','&#x1F537;','&#x1F536;','&#x2764;&#xFE0F;'],
+};
+
+// --- Puzzle generators ---
+function makeArithmetic(level) {
+  var step  = [2,3,4,5,6,7,8,9,10][Math.min(level - 1, 8)];
+  var start = rnd(1, 10);
+  var op    = level >= 5 ? '-' : '+';
+  var seq   = [];
+  var cur   = start;
+  for (var i = 0; i < 6; i++) {
+    seq.push(cur);
+    cur = op === '+' ? cur + step : cur - step;
+  }
+  var answer  = seq[5];
+  var visible = seq.slice(0, 5);
+  var opts    = distractors(answer, 3);
+  return {
+    instr: 'What number comes next?',
+    seq: visible.map(function(n){ return { k:'num', v: String(n) }; }),
+    answer: String(answer),
+    options: shuffle([String(answer)].concat(opts.map(String))),
+  };
+}
+
+function makeDouble() {
+  var start = rnd(1, 4);
+  var seq   = [];
+  var cur   = start;
+  for (var i = 0; i < 6; i++) { seq.push(cur); cur *= 2; }
+  var answer  = seq[5];
+  var visible = seq.slice(0, 5);
+  var opts    = distractors(answer, 3);
+  return {
+    instr: 'Double each time — what is next?',
+    seq: visible.map(function(n){ return { k:'num', v: String(n) }; }),
+    answer: String(answer),
+    options: shuffle([String(answer)].concat(opts.map(String))),
+  };
+}
+
+function makeFib() {
+  var a = rnd(1, 4), b = rnd(2, 6);
+  var seq = [a, b];
+  for (var i = 2; i < 6; i++) seq.push(seq[i-1] + seq[i-2]);
+  var answer  = seq[5];
+  var visible = seq.slice(0, 5);
+  var opts    = distractors(answer, 3);
+  return {
+    instr: 'Add previous two — what comes next?',
+    seq: visible.map(function(n){ return { k:'num', v: String(n) }; }),
+    answer: String(answer),
+    options: shuffle([String(answer)].concat(opts.map(String))),
+  };
+}
+
+function makeAltStep() {
+  var s1 = pick([2, 3, 4]);
+  var s2 = pick([2, 3, 4, 5].filter(function(x){ return x !== s1; }));
+  var seq = [rnd(1, 8)];
+  for (var i = 0; i < 5; i++) seq.push(seq[seq.length - 1] + (i % 2 === 0 ? s1 : s2));
+  var answer  = seq[5];
+  var visible = seq.slice(0, 5);
+  var opts    = distractors(answer, 3);
+  return {
+    instr: 'Alternating +' + s1 + '/+' + s2 + ' steps — next?',
+    seq: visible.map(function(n){ return { k:'num', v: String(n) }; }),
+    answer: String(answer),
+    options: shuffle([String(answer)].concat(opts.map(String))),
+  };
+}
+
+function makeEmojiRepeat(level) {
+  var setKey  = pick(Object.keys(EMOJIS));
+  var pool    = EMOJIS[setKey];
+  var patLen  = level <= 3 ? 2 : level <= 6 ? 3 : 4;
+  var pattern = pool.slice(0, patLen);
+  var seq = [];
+  while (seq.length < 5) { for (var i = 0; i < pattern.length && seq.length < 5; i++) seq.push(pattern[i]); }
+  var answer  = pattern[seq.length % pattern.length];
+  var wrong   = pool.filter(function(e){ return e !== answer; }).slice(0, 3);
+  return {
+    instr: 'Find the repeating pattern — what is next?',
+    seq: seq.map(function(e){ return { k:'emo', v: e }; }),
+    answer: answer,
+    options: shuffle([answer].concat(wrong)),
+  };
+}
+
+function makeBananaMath() {
+  var a = rnd(1, 5), b = rnd(1, 5);
+  var c = a + b;
+  var wrong = [c+1, c-1, c+2].filter(function(x){ return x > 0; }).slice(0, 3);
+  var banana = '&#x1F34C;';
+  var bananasA = '';
+  var bananasB = '';
+  for (var i = 0; i < a; i++) bananasA += banana;
+  for (var i = 0; i < b; i++) bananasB += banana;
+  return {
+    instr: 'Count the bananas — what is the total?',
+    seq: [
+      { k:'emo',   v: bananasA },
+      { k:'num',   v: '+' },
+      { k:'emo',   v: bananasB },
+      { k:'num',   v: '=' },
+      { k:'blank', v: '?' },
+    ],
+    answer: String(c),
+    options: shuffle([String(c)].concat(wrong.map(String))),
+  };
+}
+
+function makeSquares() {
+  var base = rnd(1, 4);
+  var seq  = [];
+  for (var i = 1; i <= 5; i++) seq.push((base + i - 1) * (base + i - 1));
+  var answer  = seq[4];
+  var visible = seq.slice(0, 4);
+  var opts    = distractors(answer, 3);
+  return {
+    instr: 'Perfect squares — what comes next?',
+    seq: visible.map(function(n){ return { k:'num', v: String(n) }; }),
+    answer: String(answer),
+    options: shuffle([String(answer)].concat(opts.map(String))),
+  };
+}
+
+function getPuzzle(level) {
+  var pool = [function(){ return makeArithmetic(level); }];
+  if (level >= 2) pool.push(function(){ return makeEmojiRepeat(level); });
+  if (level >= 3) pool.push(makeBananaMath);
+  if (level >= 4) pool.push(makeAltStep);
+  if (level >= 5) pool.push(makeDouble);
+  if (level >= 6) pool.push(makeFib);
+  if (level >= 7) pool.push(makeSquares);
+  return pick(pool)();
+}
+
+// --- Config ---
+var CFG = {
+  easy:   { time: 40, lives: 3, total: 6,  pts: 10 },
+  medium: { time: 30, lives: 3, total: 10, pts: 20 },
+  hard:   { time: 20, lives: 2, total: 14, pts: 35 },
+};
+
+// --- State ---
+var G = {};
+
+// --- Screen switcher ---
+function showScreen(id) {
+  var ids = ['sHome','sGame','sOver'];
+  for (var i = 0; i < ids.length; i++) el(ids[i]).classList.remove('active');
+  el(id).classList.add('active');
+}
+
+// --- Floaters ---
+(function() {
+  var bg = el('bgLayer');
+  for (var i = 0; i < 18; i++) {
+    var s = document.createElement('span');
+    s.className = 'floater';
+    s.innerHTML = '&#x1F34C;';
+    s.style.left = rnd(0, 100) + '%';
+    s.style.animationDuration = rnd(10, 22) + 's';
+    s.style.animationDelay    = rnd(0, 15) + 's';
+    s.style.fontSize          = rnd(14, 32) + 'px';
+    bg.appendChild(s);
+  }
+})();
+
+// --- Start game ---
+function startGame(diff) {
+  var cfg = CFG[diff];
+  G = { diff: diff, level: 1, score: 0, lives: cfg.lives, timer: cfg.time, interval: null, puzzle: null, correct: 0, answered: false };
+  el('scoreEl').textContent = '0';
+  el('livesEl').textContent = String(cfg.lives);
+  el('lvlEl').textContent   = '1';
+  showScreen('sGame');
+  loadPuzzle();
+}
+
+// --- Load puzzle ---
+function loadPuzzle() {
+  G.answered = false;
+  G.puzzle   = getPuzzle(G.level);
+  var p      = G.puzzle;
+
+  el('instrEl').textContent = p.instr;
+  el('fbMsg').textContent   = '';
+  el('fbMsg').className     = 'feedback';
+
+  // Sequence
+  var row = el('seqRow');
+  row.innerHTML = '';
+  for (var i = 0; i < p.seq.length; i++) {
+    var item = p.seq[i];
+    if (i > 0) {
+      var arrow = document.createElement('span');
+      arrow.className   = 'seq-arrow';
+      arrow.textContent = '\u2192';
+      row.appendChild(arrow);
+    }
+    var div = document.createElement('div');
+    div.className = 'seq-item ' + item.k;
+    div.style.animationDelay = (i * 0.07) + 's';
+    div.innerHTML = item.v;
+    row.appendChild(div);
+  }
+
+  // Options
+  var grid = el('optsGrid');
+  grid.innerHTML = '';
+  for (var j = 0; j < p.options.length; j++) {
+    (function(opt) {
+      var btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      btn.innerHTML = opt;
+      btn.addEventListener('click', function(){ checkAnswer(opt, btn); });
+      grid.appendChild(btn);
+    })(p.options[j]);
+  }
+
+  // Progress
+  var cfg = CFG[G.diff];
+  el('progFill').style.width = ((G.level - 1) / cfg.total * 100) + '%';
+
+  startTimer();
+}
+
+// --- Timer ---
+function startTimer() {
+  clearInterval(G.interval);
+  G.timer = CFG[G.diff].time;
+  var timerEl = el('timerEl');
+  timerEl.textContent = String(G.timer);
+  timerEl.className = '';
+
+  G.interval = setInterval(function() {
+    G.timer--;
+    timerEl.textContent = String(G.timer);
+    if (G.timer <= 8)  timerEl.className = 'timer-warn';
+    if (G.timer <= 0) {
+      clearInterval(G.interval);
+      if (!G.answered) onTimeout();
+    }
+  }, 1000);
+}
+
+function onTimeout() {
+  G.answered = true;
+  G.lives--;
+  el('livesEl').textContent = String(G.lives);
+  setFeedback('Time is up! -1 Life', 'bad');
+  highlightCorrect();
+  if (G.lives <= 0) {
+    setTimeout(endGame, 1400);
+  } else {
+    setTimeout(nextLevel, 1400);
+  }
+}
+
+// --- Check answer ---
+function checkAnswer(chosen, btn) {
+  if (G.answered) return;
+  G.answered = true;
+  clearInterval(G.interval);
+
+  var btns = el('optsGrid').querySelectorAll('.opt-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
+
+  if (chosen === G.puzzle.answer) {
+    btn.classList.add('correct');
+    G.score += CFG[G.diff].pts + G.timer;
+    G.correct++;
+    el('scoreEl').textContent = String(G.score);
+    setFeedback(randomPraise(), 'ok');
+    setTimeout(nextLevel, 1100);
+  } else {
+    btn.classList.add('wrong');
+    G.lives--;
+    el('livesEl').textContent = String(G.lives);
+    setFeedback('Wrong! -1 Life', 'bad');
+    highlightCorrect();
+    if (G.lives <= 0) {
+      setTimeout(endGame, 1400);
+    } else {
+      setTimeout(nextLevel, 1400);
+    }
+  }
+}
+
+function nextLevel() {
+  G.level++;
+  var cfg = CFG[G.diff];
+  if (G.level > cfg.total) { winGame(); return; }
+  el('lvlEl').textContent = String(G.level);
+  loadPuzzle();
+}
+
+function highlightCorrect() {
+  var btns = el('optsGrid').querySelectorAll('.opt-btn');
+  for (var i = 0; i < btns.length; i++) {
+    if (btns[i].innerHTML === G.puzzle.answer || btns[i].textContent === G.puzzle.answer) {
+      btns[i].classList.add('correct');
+    }
+  }
+}
+
+function setFeedback(msg, cls) {
+  var fbEl = el('fbMsg');
+  fbEl.textContent = msg;
+  fbEl.className   = 'feedback ' + cls;
+}
+
+var PRAISES = ['Bananas! Correct!','Nailed it!','On fire!','Big brain!','Lightning fast!','Genius!','Perfect!','Excellent!'];
+function randomPraise() { return pick(PRAISES); }
+
+// --- End states ---
+function showOver(emoji, title, msg) {
+  clearInterval(G.interval);
+  saveHS(G.score);
+  el('overEmoji').innerHTML  = emoji;
+  el('overTitle').textContent = title;
+  el('overMsg').textContent   = msg;
+  el('fScore').textContent    = String(G.score);
+  el('fLevel').textContent    = String(G.level - 1);
+  el('fCorrect').textContent  = String(G.correct);
+  showScreen('sOver');
+}
+function endGame() { showOver('&#x1F635;', 'Game Over!', 'No more lives! Try again'); }
+function winGame()  { showOver('&#x1F3C6;', 'You Won!',  'All levels cleared! Amazing!'); }
+
+// --- High score ---
+function saveHS(score) {
+  var prev = parseInt(localStorage.getItem('bananaHS') || '0');
+  if (score > prev) {
+    localStorage.setItem('bananaHS', String(score));
+    el('hsDisplay').textContent = String(score);
+  }
+}
+function loadHS() {
+  el('hsDisplay').textContent = localStorage.getItem('bananaHS') || '0';
+}
+
+// --- Events ---
+el('btnEasy').addEventListener('click',   function(){ startGame('easy'); });
+el('btnMedium').addEventListener('click', function(){ startGame('medium'); });
+el('btnHard').addEventListener('click',   function(){ startGame('hard'); });
+el('btnBack').addEventListener('click',   function(){ clearInterval(G.interval); showScreen('sHome'); });
+el('btnAgain').addEventListener('click',  function(){ startGame(G.diff); });
+el('btnHome').addEventListener('click',   function(){ showScreen('sHome'); });
+
+// --- Init ---
+loadHS();
+</script>
+</body>
+</html>

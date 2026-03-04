@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puppet Master: Grand Finale</title>
+    <style>
+        :root {
+            --primary: #c026d3;
+            --accent: #f472b6;
+            --bg: #020617;
+            --wood: #78350f;
+        }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--bg);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 1000px;
+            max-height: 750px;
+            background: #000;
+            border-radius: 12px;
+            box-shadow: 0 0 100px rgba(192, 38, 211, 0.2);
+            overflow: hidden;
+            border: 4px solid #1e293b;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        #ui {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .stat-group { display: flex; gap: 15px; }
+        .glass-box {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            padding: 15px 25px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .label { font-size: 11px; text-transform: uppercase; color: #94a3b8; letter-spacing: 2px; margin-bottom: 4px; display: block;}
+        .value { font-size: 28px; font-weight: 900; font-variant-numeric: tabular-nums; }
+        .combo-meter { color: var(--accent); text-shadow: 0 0 10px var(--accent); }
+
+        #level-card {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+        .show-card { opacity: 1 !important; }
+        h2 { font-size: 64px; margin: 0; font-weight: 900; letter-spacing: -2px; text-transform: uppercase; font-style: italic;}
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui">
+        <div class="stat-group">
+            <div class="glass-box">
+                <span class="label">Audience Score</span>
+                <span id="score-val" class="value">0000</span>
+            </div>
+        </div>
+        <div class="stat-group">
+            <div class="glass-box">
+                <span class="label">Combo Multiplier</span>
+                <span id="combo-val" class="value combo-meter">1.0x</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="level-card">
+        <h2 id="act-title">ACT I</h2>
+        <p style="color: var(--accent); letter-spacing: 4px;">THE PUPPETEER'S DEBUT</p>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Engine Constants
+    const GRAVITY = 0.5;
+    const FRICTION = 0.98;
+    const AIR_RESISTANCE = 0.995;
+    const GROUND_Y = 680;
+    const SUBSTEPS = 12; // High precision physics
+
+    let points = [];
+    let constraints = [];
+    let obstacles = [];
+    let targets = [];
+    let particles = [];
+    let mouse = { x: 500, y: 375, active: false, targetPoint: null, vx: 0, vy: 0 };
+    let score = 0;
+    let combo = 1.0;
+    let level = 1;
+    let shake = 0;
+
+    class Point {
+        constructor(x, y, isFixed = false, radius = 6, type = "body") {
+            this.x = x; this.y = y;
+            this.oldX = x; this.oldY = y;
+            this.isFixed = isFixed;
+            this.radius = radius;
+            this.type = type;
+        }
+
+        update() {
+            if (this.isFixed) return;
+            
+            let vx = (this.x - this.oldX) * FRICTION;
+            let vy = (this.y - this.oldY) * FRICTION;
+
+            this.oldX = this.x;
+            this.oldY = this.y;
+
+            this.x += vx;
+            this.y += vy;
+            this.y += GRAVITY;
+
+            // Simple floor
+            if (this.y + this.radius > GROUND_Y) {
+                this.y = GROUND_Y - this.radius;
+                this.oldX = this.x + vx * 0.2; // Floor friction
+            }
+            
+            // Wall bounce
+            if (this.x < this.radius) { this.x = this.radius; this.oldX = this.x + vx * 0.5; }
+            if (this.x > canvas.width - this.radius) { this.x = canvas.width - this.radius; this.oldX = this.x + vx * 0.5; }
+        }
+    }
+
+    class Constraint {
+        constructor(p1, p2, length, thickness = 4, color = "#78350f") {
+            this.p1 = p1; this.p2 = p2;
+            this.length = length;
+            this.thickness = thickness;
+            this.color = color;
+        }
+
+        resolve() {
+            let dx = this.p2.x - this.p1.x;
+            let dy = this.p2.y - this.p1.y;
+            let distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance === 0) return;
+            let diff = (this.length - distance) / distance;
+            let offsetX = dx * diff * 0.5;
+            let offsetY = dy * diff * 0.5;
+
+            if (!this.p1.isFixed) { this.p1.x -= offsetX; this.p1.y -= offsetY; }
+            if (!this.p2.isFixed) { this.p2.x += offsetX; this.p2.y += offsetY; }
+        }
+    }
+
+    function createPuppet(x = 500, y = 250) {
+        points = [];
+        constraints = [];
+        
+        // Control Bar Anchors
+        const barL = new Point(x - 100, 20, true);
+        const barR = new Point(x + 100, 20, true);
+
+        // Body Segments
+        const head = new Point(x, y, false, 18, "head");
+        const neck = new Point(x, y + 40, false, 6);
+        const torso = new Point(x, y + 90, false, 8);
+        const hips = new Point(x, y + 140, false, 10);
+        
+        // Limbs
+        const handL = new Point(x - 100, y + 100, false, 10, "limb");
+        const handR = new Point(x + 100, y + 100, false, 10, "limb");
+        const footL = new Point(x - 40, y + 240, false, 12, "limb");
+        const footR = new Point(x + 40, y + 240, false, 12, "limb");
+        
+        // Elbows/Knees (Joints)
+        const elL = new Point(x - 50, y + 70, false, 6);
+        const elR = new Point(x + 50, y + 70, false, 6);
+        const knL = new Point(x - 30, y + 190, false, 7);
+        const knR = new Point(x + 30, y + 190, false, 7);
+
+        points.push(head, neck, torso, hips, handL, handR, footL, footR, elL, elR, knL, knR);
+
+        // Skeleton Constraints (The "Bones")
+        const wood = "#92400e";
+        constraints.push(new Constraint(head, neck, 40, 14, wood));
+        constraints.push(new Constraint(neck, torso, 50, 20, wood));
+        constraints.push(new Constraint(torso, hips, 50, 24, wood));
+        
+        // Arms
+        constraints.push(new Constraint(neck, elL, 45, 10, wood));
+        constraints.push(new Constraint(elL, handL, 45, 8, wood));
+        constraints.push(new Constraint(neck, elR, 45, 10, wood));
+        constraints.push(new Constraint(elR, handR, 45, 8, wood));
+
+        // Legs
+        constraints.push(new Constraint(hips, knL, 60, 12, wood));
+        constraints.push(new Constraint(knL, footL, 60, 10, wood));
+        constraints.push(new Constraint(hips, knR, 60, 12, wood));
+        constraints.push(new Constraint(knR, footR, 60, 10, wood));
+
+        // Marionette Strings (Flexible but with limits)
+        const stringCol = "rgba(255,255,255,0.2)";
+        constraints.push(new Constraint(barL, handL, 350, 1, stringCol));
+        constraints.push(new Constraint(barR, handR, 350, 1, stringCol));
+        constraints.push(new Constraint(barL, head, 180, 1, stringCol));
+        constraints.push(new Constraint(barL, footL, 550, 1, stringCol));
+        constraints.push(new Constraint(barR, footR, 550, 1, stringCol));
+    }
+
+    function createObstacles() {
+        obstacles = [];
+        // Physics-enabled boxes that can be knocked around or static platforms
+        if (level >= 2) {
+            obstacles.push({ x: 150, y: 450, w: 200, h: 30, type: 'static' });
+            obstacles.push({ x: 650, y: 450, w: 200, h: 30, type: 'static' });
+        }
+        if (level >= 3) {
+            obstacles.push({ x: 450, y: 300, w: 100, h: 100, type: 'static' });
+        }
+    }
+
+    function spawnTarget() {
+        targets.push({
+            x: 150 + Math.random() * 700,
+            y: 150 + Math.random() * 350,
+            radius: 25,
+            hue: Math.random() * 60 + 280, // Purples and Pinks
+            rot: 0,
+            alive: true
+        });
+    }
+
+    function createExplosion(x, y, color, count = 20) {
+        shake = 10;
+        for(let i=0; i<count; i++) {
+            particles.push({
+                x, y,
+                vx: (Math.random() - 0.5) * 15,
+                vy: (Math.random() - 0.5) * 15,
+                life: 1.0,
+                color: color,
+                size: Math.random() * 6 + 2,
+                gravity: 0.2
+            });
+        }
+    }
+
+    function init() {
+        canvas.width = 1000;
+        canvas.height = 750;
+        createPuppet();
+        createObstacles();
+        for(let i=0; i<4; i++) spawnTarget();
+        
+        const card = document.getElementById('level-card');
+        card.classList.add('show-card');
+        setTimeout(() => card.classList.remove('show-card'), 2000);
+    }
+
+    // Input Logic
+    const getPos = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        return {
+            x: (clientX - rect.left) * (canvas.width / rect.width),
+            y: (clientY - rect.top) * (canvas.height / rect.height)
+        };
+    };
+
+    const handleDown = (e) => {
+        const pos = getPos(e);
+        if (isFinite(pos.x) && isFinite(pos.y)) {
+            mouse.x = pos.x; mouse.y = pos.y;
+            mouse.active = true;
+            let minDist = 50;
+            mouse.targetPoint = null;
+            points.forEach(p => {
+                let d = Math.sqrt((p.x - mouse.x)**2 + (p.y - mouse.y)**2);
+                if (d < minDist) { minDist = d; mouse.targetPoint = p; }
+            });
+        }
+    };
+
+    const handleMove = (e) => {
+        const pos = getPos(e);
+        if (isFinite(pos.x) && isFinite(pos.y)) {
+            mouse.vx = (pos.x - mouse.x);
+            mouse.vy = (pos.y - mouse.y);
+            mouse.x = pos.x; mouse.y = pos.y;
+        }
+    };
+
+    window.addEventListener('mousedown', handleDown);
+    window.addEventListener('touchstart', handleDown);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('touchmove', handleMove);
+    window.addEventListener('mouseup', () => { mouse.active = false; mouse.targetPoint = null; });
+    window.addEventListener('touchend', () => { mouse.active = false; mouse.targetPoint = null; });
+
+    function update() {
+        if (mouse.active && mouse.targetPoint) {
+            mouse.targetPoint.x = mouse.x;
+            mouse.targetPoint.y = mouse.y;
+            // High velocity injection
+            mouse.targetPoint.oldX = mouse.x - mouse.vx * 0.8;
+            mouse.targetPoint.oldY = mouse.y - mouse.vy * 0.8;
+        }
+
+        points.forEach(p => p.update());
+
+        // Multi-pass Solver
+        for (let s = 0; s < SUBSTEPS; s++) {
+            constraints.forEach(c => c.resolve());
+            
+            // Obstacle Collision in solver
+            points.forEach(p => {
+                obstacles.forEach(o => {
+                    if (p.x > o.x && p.x < o.x + o.w && p.y > o.y && p.y < o.y + o.h) {
+                        let overlapX = Math.min(p.x - o.x, o.x + o.w - p.x);
+                        let overlapY = Math.min(p.y - o.y, o.y + o.h - p.y);
+                        if (overlapX < overlapY) {
+                            if (p.x < o.x + o.w/2) p.x = o.x - p.radius;
+                            else p.x = o.x + o.w + p.radius;
+                        } else {
+                            if (p.y < o.y + o.h/2) p.y = o.y - p.radius;
+                            else p.y = o.y + o.h + p.radius;
+                        }
+                    }
+                });
+            });
+        }
+
+        // Target Interaction
+        targets.forEach((t, i) => {
+            t.rot += 0.02;
+            points.forEach(p => {
+                let d = Math.sqrt((p.x - t.x)**2 + (p.y - t.y)**2);
+                if (d < t.radius + p.radius) {
+                    createExplosion(t.x, t.y, `hsl(${t.hue}, 100%, 60%)`);
+                    targets.splice(i, 1);
+                    
+                    // Score calculation
+                    let speed = Math.sqrt(mouse.vx**2 + mouse.vy**2);
+                    combo = Math.max(1, combo + (speed > 10 ? 0.2 : 0.05));
+                    score += Math.floor(100 * combo);
+                    
+                    document.getElementById('score-val').innerText = score.toString().padStart(4, '0');
+                    document.getElementById('combo-val').innerText = combo.toFixed(1) + 'x';
+
+                    if (targets.length === 0) {
+                        level++;
+                        document.getElementById('act-title').innerText = "ACT " + "I".repeat(level);
+                        init(); // Level reset/next
+                    }
+                }
+            });
+        });
+
+        // Decay combo
+        combo = Math.max(1, combo - 0.001);
+        document.getElementById('combo-val').innerText = combo.toFixed(1) + 'x';
+
+        // Particles
+        for(let i = particles.length-1; i>=0; i--) {
+            let p = particles[i];
+            p.x += p.vx; p.y += p.vy;
+            p.vy += p.gravity;
+            p.life -= 0.015;
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+
+        if (shake > 0) shake *= 0.9;
+    }
+
+    function draw() {
+        ctx.save();
+        if (shake > 1) ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
+
+        // Background Atmosphere
+        const mx = isFinite(mouse.x) ? mouse.x : 500;
+        const my = isFinite(mouse.y) ? mouse.y : 375;
+        const grad = ctx.createRadialGradient(mx, my, 0, mx, my, 1000);
+        grad.addColorStop(0, '#2e1065');
+        grad.addColorStop(0.5, '#020617');
+        grad.addColorStop(1, '#000');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Floor Shadow
+        ctx.fillStyle = "rgba(0,0,0,0.4)";
+        ctx.beginPath();
+        ctx.ellipse(500, GROUND_Y + 10, 400, 40, 0, 0, Math.PI*2);
+        ctx.fill();
+
+        // Obstacles
+        obstacles.forEach(o => {
+            ctx.fillStyle = "#1e293b";
+            ctx.strokeStyle = "#334155";
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.roundRect(o.x, o.y, o.w, o.h, 8); 
+            ctx.fill(); ctx.stroke();
+        });
+
+        // Strings (Shadows first)
+        ctx.shadowBlur = 0;
+        constraints.forEach(c => {
+            if (c.thickness === 1) { // It's a string
+                ctx.strokeStyle = "rgba(0,0,0,0.5)";
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(c.p1.x + 5, c.p1.y); ctx.lineTo(c.p2.x + 5, c.p2.y); ctx.stroke();
+            }
+        });
+
+        // The Puppet
+        constraints.forEach(c => {
+            ctx.beginPath();
+            ctx.strokeStyle = c.color;
+            ctx.lineWidth = c.thickness;
+            ctx.lineCap = "round";
+            ctx.moveTo(c.p1.x, c.p1.y);
+            ctx.lineTo(c.p2.x, c.p2.y);
+            ctx.stroke();
+        });
+
+        points.forEach(p => {
+            ctx.fillStyle = "#78350f";
+            if (p.type === "head") {
+                // Head Gloss
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "rgba(255,255,255,0.1)";
+                ctx.beginPath(); ctx.arc(p.x - 5, p.y - 5, 5, 0, Math.PI*2); ctx.fill();
+                // Face
+                ctx.fillStyle = "#fff";
+                let eyeH = Math.sin(Date.now()/300) > 0.95 ? 1 : 5;
+                ctx.fillRect(p.x - 7, p.y - 3, 3, eyeH);
+                ctx.fillRect(p.x + 4, p.y - 3, 3, eyeH);
+            } else if (p.type === "limb") {
+                ctx.shadowBlur = 15; ctx.shadowColor = varColor('--primary');
+                ctx.fillStyle = varColor('--primary');
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        });
+
+        // Targets (Star-like)
+        targets.forEach(t => {
+            ctx.save();
+            ctx.translate(t.x, t.y);
+            ctx.rotate(t.rot);
+            ctx.shadowBlur = 25; ctx.shadowColor = `hsl(${t.hue}, 100%, 50%)`;
+            ctx.fillStyle = `hsl(${t.hue}, 100%, 70%)`;
+            
+            // Draw a diamond/star shape
+            ctx.beginPath();
+            ctx.moveTo(0, -t.radius - 5);
+            ctx.lineTo(t.radius, 0);
+            ctx.lineTo(0, t.radius + 5);
+            ctx.lineTo(-t.radius, 0);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.restore();
+        });
+
+        // Dynamic Particles
+        particles.forEach(p => {
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI*2); ctx.fill();
+        });
+        ctx.globalAlpha = 1.0;
+
+        // Stage Overlay (Curtains)
+        const curtainWidth = 80;
+        const curtainGradL = ctx.createLinearGradient(0, 0, curtainWidth, 0);
+        curtainGradL.addColorStop(0, '#450a0a');
+        curtainGradL.addColorStop(1, 'transparent');
+        ctx.fillStyle = curtainGradL;
+        ctx.fillRect(0, 0, curtainWidth, canvas.height);
+        
+        const curtainGradR = ctx.createLinearGradient(canvas.width, 0, canvas.width - curtainWidth, 0);
+        curtainGradR.addColorStop(0, '#450a0a');
+        curtainGradR.addColorStop(1, 'transparent');
+        ctx.fillStyle = curtainGradR;
+        ctx.fillRect(canvas.width - curtainWidth, 0, curtainWidth, canvas.height);
+
+        ctx.restore();
+        requestAnimationFrame(loop);
+    }
+
+    function varColor(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function loop() {
+        update();
+        draw();
+    }
+
+    init();
+    loop();
+
+</script>
+</body>
+</html>

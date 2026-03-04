@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar System · Gravity Assist Mission</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Avenir', 'Segoe UI', sans-serif;
+            background-color: #010314;
+            color: white;
+        }
+        #mission-control {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            background: rgba(8, 12, 28, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid #4f8aff;
+            border-radius: 60px;
+            padding: 12px 32px;
+            display: flex;
+            gap: 40px;
+            border-left: 6px solid #ffaa44;
+            box-shadow: 0 20px 40px rgba(0,20,80,0.7);
+        }
+        .data-block {
+            display: flex;
+            flex-direction: column;
+        }
+        .data-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #99bbff;
+        }
+        .data-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #fff, #ffddaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #flyby-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(10, 10, 30, 0.85);
+            backdrop-filter: blur(14px);
+            border: 1px solid #ffaa44;
+            border-radius: 48px;
+            padding: 20px 32px;
+            z-index: 50;
+            border-right: 6px solid #ffaa44;
+            min-width: 260px;
+        }
+        .flyby-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 1rem;
+        }
+        .flyby-label {
+            color: #ffc285;
+        }
+        .flyby-value {
+            font-weight: 600;
+            color: #ffddaa;
+        }
+        .progress-solar {
+            width: 100%;
+            height: 6px;
+            background: #1a2a44;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .progress-fill-solar {
+            width: 42%;
+            height: 6px;
+            background: linear-gradient(90deg, #ffaa44, #ffdd88);
+            border-radius: 10px;
+        }
+        .legend-bottom {
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid #4f8aff;
+            border-radius: 40px;
+            padding: 12px 28px;
+            z-index: 50;
+            font-size: 0.9rem;
+        }
+        .legend-color {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .velocity-indicator {
+            position: absolute;
+            bottom: 25px;
+            right: 25px;
+            background: rgba(30, 20, 40, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid #ffaa44;
+            border-radius: 40px;
+            padding: 18px 32px;
+            z-index: 50;
+            text-align: center;
+            border-bottom: 4px solid #ffbb55;
+        }
+        .vel-number {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff3d1, #ffcbaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="mission-control">
+        <div class="data-block">
+            <span class="data-label">mission</span>
+            <span class="data-value">ODYSSEY-7</span>
+        </div>
+        <div class="data-block">
+            <span class="data-label">target</span>
+            <span class="data-value">JUPITER</span>
+        </div>
+        <div class="data-block">
+            <span class="data-label">gravity assists</span>
+            <span class="data-value">3</span>
+        </div>
+    </div>
+
+    <div id="flyby-panel">
+        <div style="font-size:1.2rem; margin-bottom:12px; display:flex; gap:10px; align-items:center;">
+            <span>🪐 FLYBY SEQUENCE</span>
+        </div>
+        <div class="flyby-row">
+            <span class="flyby-label">🌍 Earth (launch)</span>
+            <span class="flyby-value">2026-03-14</span>
+        </div>
+        <div class="flyby-row">
+            <span class="flyby-label">🪨 Mars (gravity assist)</span>
+            <span class="flyby-value">2027-02-09</span>
+        </div>
+        <div class="flyby-row">
+            <span class="flyby-label" style="color:#ffaa88;">🪐 Jupiter (arrival)</span>
+            <span class="flyby-value">2031-11-03</span>
+        </div>
+        <div class="progress-solar">
+            <div class="progress-fill-solar" style="width:42%;"></div>
+        </div>
+        <div class="flyby-row">
+            <span class="flyby-label">mission elapsed</span>
+            <span class="flyby-value" id="mission-elapsed">2.3 years</span>
+        </div>
+    </div>
+
+    <div class="legend-bottom">
+        <span><span class="legend-color" style="background:#88aaff;"></span> Planetary orbits</span>
+        <span style="margin-left:20px;"><span class="legend-color" style="background:#ffaa44;"></span> Trajectory</span>
+        <span style="margin-left:20px;"><span class="legend-color" style="background:#ff6688;"></span> Flyby points</span>
+    </div>
+
+    <div class="velocity-indicator">
+        <div style="font-size:0.9rem; color:#ffc285;">current velocity (relative to Sun)</div>
+        <div class="vel-number" id="velocity-display">24.7 <span style="font-size:1rem;">km/s</span></div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- Scene setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x010314);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(40, 25, 60);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+        controls.enableZoom = true;
+        controls.maxDistance = 150;
+        controls.minDistance = 30;
+        
+        // --- Lighting ---
+        const ambient = new THREE.AmbientLight(0x303050);
+        scene.add(ambient);
+        
+        const sunLight = new THREE.DirectionalLight(0xffeedd, 1.8);
+        sunLight.position.set(10, 20, 15);
+        scene.add(sunLight);
+        
+        const backLight = new THREE.DirectionalLight(0x446688, 0.3);
+        backLight.position.set(-20, -10, -20);
+        scene.add(backLight);
+        
+        // --- Stars ---
+        const starsGeo = new THREE.BufferGeometry();
+        const starsCount = 6000;
+        const starsPos = new Float32Array(starsCount * 3);
+        for (let i = 0; i < starsCount*3; i+=3) {
+            const r = 200 + Math.random() * 150;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            starsPos[i] = Math.sin(phi) * Math.cos(theta) * r;
+            starsPos[i+1] = Math.sin(phi) * Math.sin(theta) * r;
+            starsPos[i+2] = Math.cos(phi) * r;
+        }
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+        const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.25 });
+        const stars = new THREE.Points(starsGeo, starsMat);
+        scene.add(stars);
+        
+        // --- Sun ---
+        const sunGeo = new THREE.SphereGeometry(2.5, 48, 48);
+        const sunMat = new THREE.MeshStandardMaterial({ color: 0xffaa55, emissive: 0xff5500, emissiveIntensity: 1.2 });
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        sun.position.set(0, 0, 0);
+        scene.add(sun);
+        
+        // Sun glow sprite
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        gradient.addColorStop(0, 'rgba(255,200,100,1)');
+        gradient.addColorStop(0.4, 'rgba(255,120,50,0.8)');
+        gradient.addColorStop(0.7, 'rgba(255,60,0,0.3)');
+        gradient.addColorStop(1, 'rgba(255,0,0,0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 64, 64);
+        const sunSpriteMap = new THREE.CanvasTexture(canvas);
+        const sunSpriteMat = new THREE.SpriteMaterial({ map: sunSpriteMap, blending: THREE.AdditiveBlending });
+        const sunSprite = new THREE.Sprite(sunSpriteMat);
+        sunSprite.scale.set(8, 8, 1);
+        sun.add(sunSprite);
+        
+        // --- Planets (simplified) ---
+        const planets = [
+            { name: 'Mercury', radius: 0.4, distance: 6, color: 0xaaaaaa, speed: 0.02 },
+            { name: 'Venus', radius: 0.7, distance: 9, color: 0xffcc88, speed: 0.015 },
+            { name: 'Earth', radius: 0.8, distance: 12, color: 0x2288ff, speed: 0.012 },
+            { name: 'Mars', radius: 0.6, distance: 15, color: 0xc47e5a, speed: 0.01 },
+            { name: 'Jupiter', radius: 1.8, distance: 22, color: 0xd8a27a, speed: 0.005 },
+            { name: 'Saturn', radius: 1.5, distance: 28, color: 0xe0b060, speed: 0.003 }
+        ];
+        
+        const planetMeshes = [];
+        
+        planets.forEach(p => {
+            const geo = new THREE.SphereGeometry(p.radius, 32, 32);
+            const mat = new THREE.MeshStandardMaterial({ color: p.color });
+            const mesh = new THREE.Mesh(geo, mat);
+            // position will be set in animation
+            scene.add(mesh);
+            planetMeshes.push({ mesh, distance: p.distance, speed: p.speed, angle: Math.random() * Math.PI * 2, name: p.name });
+            
+            // Add orbit ring
+            const ringPoints = [];
+            for (let i = 0; i <= 64; i++) {
+                const theta = (i / 64) * Math.PI * 2;
+                ringPoints.push(new THREE.Vector3(p.distance * Math.cos(theta), 0, p.distance * Math.sin(theta)));
+            }
+            const ringGeo = new THREE.BufferGeometry().setFromPoints(ringPoints);
+            const ringMat = new THREE.LineBasicMaterial({ color: 0x335588, transparent: true, opacity: 0.15 });
+            const ring = new THREE.LineLoop(ringGeo, ringMat);
+            scene.add(ring);
+            
+            // Label
+            const div = document.createElement('div');
+            div.textContent = p.name;
+            div.style.color = '#ccddff';
+            div.style.fontSize = '14px';
+            div.style.background = 'rgba(10,10,20,0.6)';
+            div.style.padding = '2px 10px';
+            div.style.borderRadius = '20px';
+            div.style.border = '1px solid #6688aa';
+            const label = new CSS2DObject(div);
+            label.position.set(p.distance + 0.8, 0.8, 0);
+            scene.add(label);
+        });
+        
+        // --- Trajectory (complex gravity assist) ---
+        const trajPoints = [];
+        const steps = 300;
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            // Simulated multi-flyby trajectory using parametric equations
+            // Earth -> Mars -> Jupiter
+            let r, angle, y;
+            if (t < 0.2) {
+                // Earth to Mars
+                const u = t / 0.2;
+                r = 12 + 6 * u;
+                angle = u * Math.PI * 1.2;
+                y = 1.5 * Math.sin(u * Math.PI * 2);
+            } else if (t < 0.5) {
+                // Mars to Jupiter
+                const u = (t - 0.2) / 0.3;
+                r = 15 + 12 * u;
+                angle = 1.2 * Math.PI + u * Math.PI * 1.8;
+                y = 2 * Math.sin(u * Math.PI * 3);
+            } else {
+                // Approach Jupiter
+                const u = (t - 0.5) / 0.5;
+                r = 22 + 5 * Math.sin(u * Math.PI * 2);
+                angle = 3.0 * Math.PI + u * Math.PI * 1.5;
+                y = 1.0 * Math.cos(u * Math.PI * 2);
+            }
+            
+            const x = r * Math.cos(angle);
+            const z = r * Math.sin(angle);
+            trajPoints.push(new THREE.Vector3(x, y, z));
+        }
+        
+        const trajGeo = new THREE.BufferGeometry().setFromPoints(trajPoints);
+        const trajMat = new THREE.LineBasicMaterial({ color: 0xffaa44, transparent: true, opacity: 0.7 });
+        const trajLine = new THREE.Line(trajGeo, trajMat);
+        scene.add(trajLine);
+        
+        // --- Flyby markers ---
+        const flybyIndices = [50, 150, 260]; // approximate indices for Earth, Mars, Jupiter flybys
+        flybyIndices.forEach(idx => {
+            const pos = trajPoints[idx];
+            const geo = new THREE.SphereGeometry(0.5, 8);
+            const mat = new THREE.MeshStandardMaterial({ color: 0xff6688, emissive: 0x440000 });
+            const marker = new THREE.Mesh(geo, mat);
+            marker.position.copy(pos);
+            scene.add(marker);
+            
+            // Glow sprite
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(16,16,0,16,16,16);
+            grad.addColorStop(0, 'rgba(255,100,100,1)');
+            grad.addColorStop(1, 'rgba(255,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0,0,32,32);
+            const spriteMap = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: spriteMap, blending: THREE.AdditiveBlending });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(2,2,1);
+            sprite.position.copy(pos);
+            scene.add(sprite);
+        });
+        
+        // --- Probe (spacecraft) ---
+        const probeGroup = new THREE.Group();
+        
+        // Main bus
+        const busGeo = new THREE.BoxGeometry(0.8, 0.8, 1.0);
+        const busMat = new THREE.MeshStandardMaterial({ color: 0xccccdd });
+        const bus = new THREE.Mesh(busGeo, busMat);
+        probeGroup.add(bus);
+        
+        // Dish
+        const dishGeo = new THREE.ConeGeometry(0.6, 0.2, 8);
+        const dishMat = new THREE.MeshStandardMaterial({ color: 0xaaccff });
+        const dish = new THREE.Mesh(dishGeo, dishMat);
+        dish.rotation.x = Math.PI/2;
+        dish.position.z = 0.6;
+        probeGroup.add(dish);
+        
+        // Panels
+        const panelGeo = new THREE.BoxGeometry(1.5, 0.1, 0.3);
+        const panelMat = new THREE.MeshStandardMaterial({ color: 0x222244 });
+        const left = new THREE.Mesh(panelGeo, panelMat);
+        left.position.set(-1.0, 0, 0);
+        probeGroup.add(left);
+        const right = new THREE.Mesh(panelGeo, panelMat);
+        right.position.set(1.0, 0, 0);
+        probeGroup.add(right);
+        
+        scene.add(probeGroup);
+        
+        // Probe label
+        const probeDiv = document.createElement('div');
+        probeDiv.textContent = '🛰️ ODYSSEY-7';
+        probeDiv.style.background = '#1a2639';
+        probeDiv.style.color = '#ffaa88';
+        probeDiv.style.border = '2px solid #ffaa44';
+        probeDiv.style.borderRadius = '30px';
+        probeDiv.style.padding = '2px 18px';
+        const probeLabel = new CSS2DObject(probeDiv);
+        probeLabel.position.set(0, 1.5, 0);
+        probeGroup.add(probeLabel);
+        
+        // --- Animate ---
+        let t = 0.28; // progress along trajectory
+        const speed = 0.0003;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            t += speed;
+            if (t > 1.0) t = 0.0;
+            
+            // Update probe position
+            const idx = Math.floor(t * steps);
+            const frac = (t * steps) - idx;
+            if (idx < steps) {
+                const p1 = trajPoints[idx];
+                const p2 = trajPoints[idx+1];
+                const pos = new THREE.Vector3().lerpVectors(p1, p2, frac);
+                probeGroup.position.copy(pos);
+                
+                // Roughly orient along trajectory
+                const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+                probeGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), dir);
+            }
+            
+            // Update planet positions (simple circular motion)
+            planetMeshes.forEach(p => {
+                p.angle += p.speed * 0.5;
+                p.mesh.position.x = p.distance * Math.cos(p.angle);
+                p.mesh.position.z = p.distance * Math.sin(p.angle);
+            });
+            
+            // Update mission elapsed display
+            const years = (t * 5.5).toFixed(1);
+            document.getElementById('mission-elapsed').innerText = years + ' years';
+            
+            // Update velocity display (fake)
+            const v = (20 + Math.sin(t * 20) * 5).toFixed(1);
+            document.getElementById('velocity-display').innerHTML = v + ' <span style="font-size:1rem;">km/s</span>';
+            
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

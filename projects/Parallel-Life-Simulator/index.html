@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parallel Life Simulator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --pastel-pink: #ffd6e0;
+            --pastel-blue: #c6e2ff;
+            --pastel-green: #d4f1d4;
+            --pastel-purple: #e6d4ff;
+            --pastel-yellow: #fff9d6;
+            --pastel-lavender: #f0e6ff;
+            --text-dark: #5a5a8a;
+            --text-light: #7a7aaa;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--pastel-lavender), var(--pastel-blue));
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 16px var(--shadow);
+            border: 2px solid white;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            background: linear-gradient(45deg, var(--text-dark), #9d9dc9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            flex: 1;
+            min-width: 300px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 16px var(--shadow);
+            border: 2px solid white;
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px dashed var(--pastel-purple);
+        }
+
+        .panel-title i {
+            margin-right: 12px;
+            color: var(--text-dark);
+            font-size: 1.5rem;
+        }
+
+        .panel-title h2 {
+            font-size: 1.6rem;
+            color: var(--text-dark);
+        }
+
+        .character-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--pastel-pink), var(--pastel-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            font-size: 3rem;
+            color: white;
+            border: 4px solid white;
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat {
+            background-color: white;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+
+        .stat-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .progress-bar {
+            height: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 5px;
+        }
+
+        .life-path {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .path-option {
+            background-color: white;
+            padding: 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+
+        .path-option:hover {
+            transform: translateY(-5px);
+            border-color: var(--pastel-purple);
+            box-shadow: 0 8px 16px var(--shadow);
+        }
+
+        .path-option.selected {
+            border-color: var(--pastel-purple);
+            background-color: rgba(230, 212, 255, 0.2);
+        }
+
+        .path-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .path-title i {
+            margin-right: 10px;
+            color: var(--pastel-purple);
+        }
+
+        .parallel-lives {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .parallel-life {
+            background-color: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 8px var(--shadow);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .parallel-life:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px var(--shadow);
+        }
+
+        .life-title {
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-dark);
+        }
+
+        .life-description {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .life-stats {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .life-stat {
+            text-align: center;
+        }
+
+        .stat-icon {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--pastel-purple), var(--pastel-blue));
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: var(--text-dark);
+            border: 2px solid var(--pastel-purple);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px var(--shadow);
+        }
+
+        .btn i {
+            margin-right: 10px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px;
+            margin-top: 30px;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 20px;
+            border: 2px solid white;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .parallel-lives {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-infinity"></i> Parallel Life Simulator</h1>
+            <p class="subtitle">Explore different life paths and see how your choices shape alternate realities. Each decision creates a new parallel universe with unique outcomes.</p>
+        </header>
+
+        <div class="main-content">
+            <div class="panel">
+                <div class="panel-title">
+                    <i class="fas fa-user-circle"></i>
+                    <h2>Current Character</h2>
+                </div>
+                
+                <div class="character-info">
+                    <div class="avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                        <h3 id="character-name">Alex Morgan</h3>
+                        <p id="character-age">Age: 28</p>
+                        <p id="character-career">Software Developer</p>
+                    </div>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-name">Happiness</div>
+                        <div class="stat-value" id="happiness-value">72</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="happiness-bar" style="width: 72%; background-color: #ffb6c1;"></div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-name">Health</div>
+                        <div class="stat-value" id="health-value">85</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="health-bar" style="width: 85%; background-color: #a2d5c6;"></div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-name">Wealth</div>
+                        <div class="stat-value" id="wealth-value">64</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="wealth-bar" style="width: 64%; background-color: #ffd8b1;"></div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-name">Career</div>
+                        <div class="stat-value" id="career-value">78</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="career-bar" style="width: 78%; background-color: #c5a3ff;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-title">
+                    <i class="fas fa-crossroads"></i>
+                    <h2>Life Path Choices</h2>
+                </div>
+                
+                <div class="life-path">
+                    <div class="path-option" data-choice="career">
+                        <div class="path-title">
+                            <i class="fas fa-briefcase"></i>
+                            <h3>Career Change</h3>
+                        </div>
+                        <p>Switch to a creative career in graphic design. This will decrease wealth initially but increase happiness.</p>
+                    </div>
+                    
+                    <div class="path-option" data-choice="health">
+                        <div class="path-title">
+                            <i class="fas fa-heartbeat"></i>
+                            <h3>Health Focus</h3>
+                        </div>
+                        <p>Dedicate more time to exercise and healthy eating. This will improve health but may reduce career progress.</p>
+                    </div>
+                    
+                    <div class="path-option" data-choice="travel">
+                        <div class="path-title">
+                            <i class="fas fa-globe-americas"></i>
+                            <h3>World Travel</h3>
+                        </div>
+                        <p>Take a year off to travel the world. This will greatly increase happiness but decrease wealth and career.</p>
+                    </div>
+                    
+                    <div class="path-option" data-choice="education">
+                        <div class="path-title">
+                            <i class="fas fa-graduation-cap"></i>
+                            <h3>Advanced Education</h3>
+                        </div>
+                        <p>Pursue a master's degree in computer science. This will improve career prospects but decrease current wealth.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-title">
+                <i class="fas fa-layer-group"></i>
+                <h2>Parallel Lives</h2>
+            </div>
+            
+            <div class="parallel-lives" id="parallel-lives-container">
+                <!-- Parallel lives will be generated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="actions">
+            <button class="btn btn-primary" id="simulate-button">
+                <i class="fas fa-play-circle"></i> Simulate Current Path
+            </button>
+            <button class="btn btn-secondary" id="reset-button">
+                <i class="fas fa-redo"></i> Reset Simulation
+            </button>
+        </div>
+        
+        <footer>
+            <p>Parallel Life Simulator | Explore infinite possibilities in a pastel-themed multiverse</p>
+            <p>Each choice creates a new parallel reality. Your current stats: <span id="current-stats">Happiness: 72, Health: 85, Wealth: 64, Career: 78</span></p>
+        </footer>
+    </div>
+
+    <script>
+        // Initial character state
+        let character = {
+            name: "Alex Morgan",
+            age: 28,
+            career: "Software Developer",
+            happiness: 72,
+            health: 85,
+            wealth: 64,
+            careerProgress: 78
+        };
+
+        // Parallel lives storage
+        let parallelLives = [
+            {
+                id: 1,
+                title: "The Artist",
+                description: "In this reality, you pursued painting instead of technology. Your life is less wealthy but more creatively fulfilling.",
+                happiness: 88,
+                health: 75,
+                wealth: 45,
+                career: 62,
+                active: false
+            },
+            {
+                id: 2,
+                title: "The Entrepreneur",
+                description: "You started your own tech company. It's been stressful but highly rewarding financially.",
+                happiness: 65,
+                health: 70,
+                wealth: 92,
+                career: 95,
+                active: false
+            },
+            {
+                id: 3,
+                title: "The Adventurer",
+                description: "You chose a nomadic lifestyle, traveling and working remotely. You've seen the world but have few possessions.",
+                happiness: 90,
+                health: 80,
+                wealth: 40,
+                career: 60,
+                active: false
+            }
+        ];
+
+        // DOM Elements
+        const characterNameEl = document.getElementById('character-name');
+        const characterAgeEl = document.getElementById('character-age');
+        const characterCareerEl = document.getElementById('character-career');
+        const happinessValueEl = document.getElementById('happiness-value');
+        const healthValueEl = document.getElementById('health-value');
+        const wealthValueEl = document.getElementById('wealth-value');
+        const careerValueEl = document.getElementById('career-value');
+        const happinessBarEl = document.getElementById('happiness-bar');
+        const healthBarEl = document.getElementById('health-bar');
+        const wealthBarEl = document.getElementById('wealth-bar');
+        const careerBarEl = document.getElementById('career-bar');
+        const pathOptions = document.querySelectorAll('.path-option');
+        const parallelLivesContainer = document.getElementById('parallel-lives-container');
+        const simulateButton = document.getElementById('simulate-button');
+        const resetButton = document.getElementById('reset-button');
+        const currentStatsEl = document.getElementById('current-stats');
+
+        // Initialize the display
+        function updateCharacterDisplay() {
+            characterNameEl.textContent = character.name;
+            characterAgeEl.textContent = `Age: ${character.age}`;
+            characterCareerEl.textContent = character.career;
+            
+            happinessValueEl.textContent = character.happiness;
+            healthValueEl.textContent = character.health;
+            wealthValueEl.textContent = character.wealth;
+            careerValueEl.textContent = character.careerProgress;
+            
+            happinessBarEl.style.width = `${character.happiness}%`;
+            healthBarEl.style.width = `${character.health}%`;
+            wealthBarEl.style.width = `${character.wealth}%`;
+            careerBarEl.style.width = `${character.careerProgress}%`;
+            
+            currentStatsEl.textContent = `Happiness: ${character.happiness}, Health: ${character.health}, Wealth: ${character.wealth}, Career: ${character.careerProgress}`;
+        }
+
+        // Render parallel lives
+        function renderParallelLives() {
+            parallelLivesContainer.innerHTML = '';
+            
+            parallelLives.forEach(life => {
+                const lifeEl = document.createElement('div');
+                lifeEl.className = 'parallel-life';
+                if (life.active) {
+                    lifeEl.style.borderColor = 'var(--pastel-purple)';
+                    lifeEl.style.backgroundColor = 'rgba(230, 212, 255, 0.1)';
+                }
+                
+                lifeEl.innerHTML = `
+                    <div class="life-title">${life.title}</div>
+                    <div class="life-description">${life.description}</div>
+                    <div class="life-stats">
+                        <div class="life-stat">
+                            <div class="stat-icon" style="color: #ffb6c1;"><i class="fas fa-smile"></i></div>
+                            <div>${life.happiness}</div>
+                        </div>
+                        <div class="life-stat">
+                            <div class="stat-icon" style="color: #a2d5c6;"><i class="fas fa-heart"></i></div>
+                            <div>${life.health}</div>
+                        </div>
+                        <div class="life-stat">
+                            <div class="stat-icon" style="color: #ffd8b1;"><i class="fas fa-coins"></i></div>
+                            <div>${life.wealth}</div>
+                        </div>
+                        <div class="life-stat">
+                            <div class="stat-icon" style="color: #c5a3ff;"><i class="fas fa-briefcase"></i></div>
+                            <div>${life.career}</div>
+                        </div>
+                    </div>
+                `;
+                
+                parallelLivesContainer.appendChild(lifeEl);
+            });
+        }
+
+        // Handle path selection
+        let selectedChoice = null;
+
+        pathOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove selected class from all options
+                pathOptions.forEach(opt => opt.classList.remove('selected'));
+                
+                // Add selected class to clicked option
+                this.classList.add('selected');
+                selectedChoice = this.getAttribute('data-choice');
+                
+                // Show visual feedback
+                this.style.transform = 'translateY(-5px)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 300);
+            });
+        });
+
+        // Apply the effects of a life path choice
+        function applyChoice(choice) {
+            // Reset all parallel lives active status
+            parallelLives.forEach(life => life.active = false);
+            
+            let newLife = {
+                id: parallelLives.length + 1,
+                active: true
+            };
+            
+            // Apply effects based on choice
+            switch(choice) {
+                case 'career':
+                    character.happiness = Math.min(100, character.happiness + 15);
+                    character.wealth = Math.max(0, character.wealth - 10);
+                    character.careerProgress = Math.min(100, character.careerProgress + 5);
+                    character.career = "Graphic Designer";
+                    
+                    newLife.title = "The Creative";
+                    newLife.description = "You left the corporate tech world to become a graphic designer. Your work is now more visually creative and personally fulfilling.";
+                    newLife.happiness = character.happiness;
+                    newLife.health = character.health;
+                    newLife.wealth = character.wealth;
+                    newLife.career = character.careerProgress;
+                    break;
+                    
+                case 'health':
+                    character.health = Math.min(100, character.health + 12);
+                    character.careerProgress = Math.max(0, character.careerProgress - 5);
+                    character.happiness = Math.min(100, character.happiness + 5);
+                    
+                    newLife.title = "The Wellness Guru";
+                    newLife.description = "You prioritized your physical and mental health above all else. You're in great shape but your career has taken a backseat.";
+                    newLife.happiness = character.happiness;
+                    newLife.health = character.health;
+                    newLife.wealth = character.wealth;
+                    newLife.career = character.careerProgress;
+                    break;
+                    
+                case 'travel':
+                    character.happiness = Math.min(100, character.happiness + 20);
+                    character.wealth = Math.max(0, character.wealth - 25);
+                    character.careerProgress = Math.max(0, character.careerProgress - 15);
+                    character.age += 1; // Time passes
+                    
+                    newLife.title = "The World Traveler";
+                    newLife.description = "You spent a year exploring different cultures around the globe. The experience changed your perspective on life.";
+                    newLife.happiness = character.happiness;
+                    newLife.health = character.health;
+                    newLife.wealth = character.wealth;
+                    newLife.career = character.careerProgress;
+                    break;
+                    
+                case 'education':
+                    character.careerProgress = Math.min(100, character.careerProgress + 20);
+                    character.wealth = Math.max(0, character.wealth - 30);
+                    character.happiness = Math.max(0, character.happiness - 5);
+                    character.age += 2; // Time for degree
+                    
+                    newLife.title = "The Scholar";
+                    newLife.description = "You pursued higher education and earned a master's degree. Your career prospects have greatly improved.";
+                    newLife.happiness = character.happiness;
+                    newLife.health = character.health;
+                    newLife.wealth = character.wealth;
+                    newLife.career = character.careerProgress;
+                    break;
+                    
+                default:
+                    return; // No valid choice
+            }
+            
+            // Add the new parallel life
+            parallelLives.push(newLife);
+            
+            // Update display
+            updateCharacterDisplay();
+            renderParallelLives();
+            
+            // Reset selection
+            pathOptions.forEach(opt => opt.classList.remove('selected'));
+            selectedChoice = null;
+        }
+
+        // Simulate button handler
+        simulateButton.addEventListener('click', function() {
+            if (selectedChoice) {
+                applyChoice(selectedChoice);
+                
+                // Visual feedback
+                this.innerHTML = '<i class="fas fa-check-circle"></i> Path Simulated!';
+                this.style.background = 'linear-gradient(45deg, #a2d5c6, #ffd8b1)';
+                
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-play-circle"></i> Simulate Current Path';
+                    this.style.background = '';
+                }, 1500);
+            } else {
+                // Visual feedback for no selection
+                this.innerHTML = '<i class="fas fa-exclamation-circle"></i> Select a Path First';
+                this.style.background = 'linear-gradient(45deg, #ffb6c1, #ffd8b1)';
+                
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-play-circle"></i> Simulate Current Path';
+                    this.style.background = '';
+                }, 1500);
+            }
+        });
+
+        // Reset button handler
+        resetButton.addEventListener('click', function() {
+            // Reset character to initial state
+            character = {
+                name: "Alex Morgan",
+                age: 28,
+                career: "Software Developer",
+                happiness: 72,
+                health: 85,
+                wealth: 64,
+                careerProgress: 78
+            };
+            
+            // Reset parallel lives
+            parallelLives = [
+                {
+                    id: 1,
+                    title: "The Artist",
+                    description: "In this reality, you pursued painting instead of technology. Your life is less wealthy but more creatively fulfilling.",
+                    happiness: 88,
+                    health: 75,
+                    wealth: 45,
+                    career: 62,
+                    active: false
+                },
+                {
+                    id: 2,
+                    title: "The Entrepreneur",
+                    description: "You started your own tech company. It's been stressful but highly rewarding financially.",
+                    happiness: 65,
+                    health: 70,
+                    wealth: 92,
+                    career: 95,
+                    active: false
+                },
+                {
+                    id: 3,
+                    title: "The Adventurer",
+                    description: "You chose a nomadic lifestyle, traveling and working remotely. You've seen the world but have few possessions.",
+                    happiness: 90,
+                    health: 80,
+                    wealth: 40,
+                    career: 60,
+                    active: false
+                }
+            ];
+            
+            // Reset selection
+            pathOptions.forEach(opt => opt.classList.remove('selected'));
+            selectedChoice = null;
+            
+            // Update display
+            updateCharacterDisplay();
+            renderParallelLives();
+            
+            // Visual feedback
+            this.innerHTML = '<i class="fas fa-check-circle"></i> Simulation Reset!';
+            
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-redo"></i> Reset Simulation';
+            }, 1500);
+        });
+
+        // Initialize the simulator
+        updateCharacterDisplay();
+        renderParallelLives();
+        
+        // Add some initial animation
+        setTimeout(() => {
+            document.querySelectorAll('.panel').forEach((panel, index) => {
+                panel.style.opacity = '0';
+                panel.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    panel.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    panel.style.opacity = '1';
+                    panel.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+        }, 300);
+    </script>
+</body>
+</html>

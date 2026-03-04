@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Archery Game with Realistic Sounds</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: #1a1a1a;
+    font-family: Arial, sans-serif;
+    color: white;
+  }
+  canvas {
+    display: block;
+  }
+  #scoreBoard {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 22px;
+  }
+</style>
+</head>
+<body>
+
+<div id="scoreBoard">Score: 0</div>
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let score = 0;
+const scoreBoard = document.getElementById("scoreBoard");
+
+const bowX = 200;
+const bowY = canvas.height / 2;
+
+const targetX = canvas.width - 300;
+const targetY = canvas.height / 2;
+
+let aiming = false;
+let power = 0;
+let angle = 0;
+let arrow = null;
+let stuckArrows = [];
+
+/* ------------------ SOUND ------------------ */
+// Bow stretch realistic sound
+const stretchSound = new Audio("assets/sounds/bow-draw-1.mp3"); // light rubber stretching
+stretchSound.loop = true;
+
+// Arrow release sound
+const releaseSound = new Audio("assets/stretch.mp3");
+
+// Arrow hit sound on target / wall
+const hitSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2700/2700-preview.mp3");
+
+/* ------------------ TARGET ------------------ */
+const scale = 1.5; 
+const baseRings = [120, 90, 60, 30, 15];
+const ringScores = [10, 20, 30, 40, 50];
+
+function drawTarget() {
+  const colors = ["white", "red", "white", "red", "gold"];
+  for (let i = 0; i < baseRings.length; i++) {
+    const radius = baseRings[i] * scale;
+    ctx.beginPath();
+    ctx.arc(targetX, targetY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+    ctx.fillStyle = "black";
+    ctx.font = "22px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(ringScores[i], targetX, targetY - radius + 35);
+  }
+}
+
+/* ------------------ BOW ------------------ */
+function drawBow(pullX, pullY) {
+  ctx.save();
+
+  // wooden curve
+  ctx.beginPath();
+  ctx.moveTo(bowX, bowY - 110);
+  ctx.quadraticCurveTo(bowX - 80, bowY, bowX, bowY + 110);
+  ctx.strokeStyle = "#5c3a1a";
+  ctx.lineWidth = 18;
+  ctx.lineCap = "round";
+  ctx.stroke();
+
+  // string
+  ctx.beginPath();
+  ctx.moveTo(bowX, bowY - 110);
+  ctx.lineTo(pullX, pullY);
+  ctx.lineTo(bowX, bowY + 110);
+  ctx.strokeStyle = "#eee";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/* ------------------ ARROW ------------------ */
+function drawArrow(x, y, ang) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(ang);
+
+  // shaft
+  ctx.fillStyle = "#c2a26b";
+  ctx.fillRect(-45, -2, 55, 4);
+
+  // head
+  ctx.beginPath();
+  ctx.moveTo(10, -8);
+  ctx.lineTo(28, 0);
+  ctx.lineTo(10, 8);
+  ctx.fillStyle = "#444";
+  ctx.fill();
+
+  // feathers
+  ctx.beginPath();
+  ctx.moveTo(-45, -6);
+  ctx.lineTo(-58, 0);
+  ctx.lineTo(-45, 6);
+  ctx.fillStyle = "red";
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* ------------------ TRAJECTORY LINE ------------------ */
+function drawTrajectoryLine() {
+  const steps = 50;
+  const dt = 1;
+  let tempX = bowX;
+  let tempY = bowY;
+  let vx = power * Math.cos(angle) / 2;
+  let vy = power * Math.sin(angle) / 2;
+
+  ctx.save();
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 1;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(tempX, tempY);
+
+  for (let i = 0; i < steps; i++) {
+    tempX += vx * dt;
+    tempY += vy * dt;
+    vy += 0.25; // gravity
+    ctx.lineTo(tempX, tempY);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ------------------ SCORING ------------------ */
+function calculateScore(x, y, ang) {
+  const tipX = x + Math.cos(ang) * 28;
+  const tipY = y + Math.sin(ang) * 28;
+  const dx = tipX - targetX;
+  const dy = tipY - targetY;
+  const distance = Math.sqrt(dx*dx + dy*dy);
+  for (let i = baseRings.length - 1; i >= 0; i--) {
+    if (distance <= baseRings[i] * scale) {
+      return ringScores[i];
+    }
+  }
+  return 0;
+}
+
+/* ------------------ ARROW PHYSICS ------------------ */
+function updateArrow() {
+  if (!arrow) return;
+
+  arrow.x += arrow.vx;
+  arrow.y += arrow.vy;
+  arrow.vy += 0.25;
+
+  const ang = Math.atan2(arrow.vy, arrow.vx);
+
+  drawArrow(arrow.x, arrow.y, ang);
+
+  const tipX = arrow.x + Math.cos(ang) * 28;
+  const tipY = arrow.y + Math.sin(ang) * 28;
+
+  const dx = tipX - targetX;
+  const dy = tipY - targetY;
+  const distance = Math.sqrt(dx*dx + dy*dy);
+
+  const maxRadius = baseRings[0] * scale;
+
+  if (distance <= maxRadius) {
+    // 🎯 Score
+    const points = calculateScore(arrow.x, arrow.y, ang);
+    score += points;
+    scoreBoard.innerText = "Score: " + score;
+
+    // 🔊 Play arrow hit sound
+    hitSound.currentTime = 0;
+    hitSound.play();
+
+    // penetration
+    let penetration = power < 5 ? Math.random() * 5 : Math.min(power * power * 0.9, 120);
+
+    const embedX = arrow.x + Math.cos(ang) * penetration;
+    const embedY = arrow.y + Math.sin(ang) * penetration;
+
+    stuckArrows.push({
+      x: embedX,
+      y: embedY,
+      angle: ang
+    });
+
+    arrow = null;
+  }
+
+  if (arrow && (arrow.x > canvas.width || arrow.y > canvas.height)) {
+    // arrow hits wall / ground
+    hitSound.currentTime = 0;
+    hitSound.play();
+    arrow = null;
+  }
+}
+
+/* ------------------ CONTROLS ------------------ */
+canvas.addEventListener("mousedown", () => {
+  aiming = true;
+  stretchSound.currentTime = 0;
+  stretchSound.play();
+});
+
+canvas.addEventListener("mousemove", (e) => {
+  if (!aiming) return;
+
+  const dx = bowX - e.clientX;
+  const dy = bowY - e.clientY;
+
+  const rawDistance = Math.sqrt(dx*dx + dy*dy);
+  power = Math.max(0, rawDistance - 20); // minimum pull to start
+  angle = Math.atan2(dy, dx);
+});
+
+canvas.addEventListener("mouseup", () => {
+  if (!aiming) return;
+
+  aiming = false;
+  stretchSound.pause();
+  stretchSound.currentTime = 0;
+
+  releaseSound.currentTime = 0;
+  releaseSound.play();
+
+  if (power < 5) {
+    arrow = null; // too weak
+    return;
+  }
+
+  arrow = {
+    x: bowX,
+    y: bowY,
+    vx: power * Math.cos(angle) / 2,
+    vy: power * Math.sin(angle) / 2
+  };
+});
+
+/* ------------------ LOOP ------------------ */
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawTarget();
+
+  let pullX = bowX;
+  let pullY = bowY;
+
+  if (aiming) {
+    pullX = bowX - power * 0.8 * Math.cos(angle);
+    pullY = bowY - power * 0.8 * Math.sin(angle);
+
+    // draw trajectory while aiming
+    drawTrajectoryLine();
+  }
+
+  drawBow(pullX, pullY);
+
+  stuckArrows.forEach(a => drawArrow(a.x, a.y, a.angle));
+
+  updateArrow();
+
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Bot Football</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #111;
+        }
+        canvas {
+            display: block;
+            background-color: #2d5a27;
+        }
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            pointer-events: none;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            color: white;
+            z-index: 10;
+        }
+        .score-card {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 25px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            font-size: 1.5rem;
+            font-weight: 800;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            backdrop-filter: blur(8px);
+        }
+        .goal-banner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(0, 0, 0, 0.9);
+            color: #fbbf24;
+            padding: 30px 60px;
+            border-radius: 20px;
+            font-size: 4rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+            border: 4px solid #fbbf24;
+            pointer-events: none;
+        }
+        .goal-banner.active {
+            transform: translate(-50%, -50%) scale(1);
+        }
+        #mini-map {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 180px;
+            height: 110px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            pointer-events: none;
+        }
+        #start-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            color: white;
+            text-align: center;
+        }
+        .start-btn {
+            background: #4ade80;
+            color: #064e3b;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 20px;
+            pointer-events: all;
+        }
+        .start-btn:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="start-overlay">
+        <h1 class="text-5xl font-black mb-4">SUPER BOT FOOTBALL</h1>
+        <p class="text-gray-400 mb-6">Use WASD or Arrow Keys to move.<br>Collide with the ball to kick!</p>
+        <button class="start-btn" onclick="startGame()">PLAY MATCH</button>
+    </div>
+
+    <div class="ui-overlay">
+        <div class="score-card">
+            <span style="color: #60a5fa;">BLUE</span>
+            <span id="score-text">0 - 0</span>
+            <span style="color: #f87171;">RED</span>
+        </div>
+        <div class="score-card" id="timer">02:00</div>
+    </div>
+
+    <div id="goal-banner" class="goal-banner">GOAL!</div>
+    
+    <canvas id="gameCanvas"></canvas>
+    <canvas id="mini-map"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const mapCanvas = document.getElementById('mini-map');
+    const mapCtx = mapCanvas.getContext('2d');
+    const scoreText = document.getElementById('score-text');
+    const timerText = document.getElementById('timer');
+    const goalBanner = document.getElementById('goal-banner');
+    const startOverlay = document.getElementById('start-overlay');
+
+    const WORLD_WIDTH = 2200;
+    const WORLD_HEIGHT = 1300;
+    const BOT_RADIUS = 28;
+    const BALL_RADIUS = 16;
+    const GOAL_SIZE = 300;
+    const FRICTION = 0.98;
+    const BALL_FRICTION = 0.992;
+    
+    let gameState = {
+        score: { blue: 0, red: 0 },
+        time: 120,
+        running: false,
+        goalScored: false
+    };
+
+    class Entity {
+        constructor(x, y, radius, color) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.color = color;
+            this.vx = 0;
+            this.vy = 0;
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.vx *= FRICTION;
+            this.vy *= FRICTION;
+
+            if (this.x < this.radius) { this.x = this.radius; this.vx *= -0.5; }
+            if (this.x > WORLD_WIDTH - this.radius) { this.x = WORLD_WIDTH - this.radius; this.vx *= -0.5; }
+            if (this.y < this.radius) { this.y = this.radius; this.vy *= -0.5; }
+            if (this.y > WORLD_HEIGHT - this.radius) { this.y = WORLD_HEIGHT - this.radius; this.vy *= -0.5; }
+        }
+    }
+
+    class Bot extends Entity {
+        constructor(x, y, team, isPlayer = false) {
+            super(x, y, BOT_RADIUS, team === 'blue' ? '#3b82f6' : '#ef4444');
+            this.team = team;
+            this.isPlayer = isPlayer;
+            this.speed = 0.9;
+            this.maxSpeed = 7;
+            this.angle = 0;
+        }
+
+        update(ball, playerInput) {
+            if (this.isPlayer) {
+                if (playerInput.up) this.vy -= this.speed;
+                if (playerInput.down) this.vy += this.speed;
+                if (playerInput.left) this.vx -= this.speed;
+                if (playerInput.right) this.vx += this.speed;
+            } else {
+                this.aiLogic(ball);
+            }
+
+            const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+            if (currentSpeed > this.maxSpeed) {
+                this.vx = (this.vx / currentSpeed) * this.maxSpeed;
+                this.vy = (this.vy / currentSpeed) * this.maxSpeed;
+            }
+
+            super.update();
+            if (currentSpeed > 0.1) this.angle = Math.atan2(this.vy, this.vx);
+        }
+
+        aiLogic(ball) {
+            let targetX, targetY;
+            
+            // Basic AI: Chase ball if it's on their side, otherwise stay in position
+            const isDefending = (this.team === 'red' && ball.x < WORLD_WIDTH / 2) || (this.team === 'blue' && ball.x > WORLD_WIDTH / 2);
+            
+            if (isDefending) {
+                targetX = ball.x;
+                targetY = ball.y;
+            } else {
+                targetX = this.team === 'red' ? WORLD_WIDTH * 0.75 : WORLD_WIDTH * 0.25;
+                targetY = WORLD_HEIGHT / 2;
+            }
+
+            const dx = targetX - this.x;
+            const dy = targetY - this.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            if (dist > 10) {
+                this.vx += (dx / dist) * 0.6;
+                this.vy += (dy / dist) * 0.6;
+            }
+        }
+
+        draw(camera) {
+            ctx.save();
+            ctx.translate(this.x - camera.x, this.y - camera.y);
+            
+            // Shadow
+            ctx.beginPath();
+            ctx.ellipse(0, this.radius - 5, this.radius * 0.8, 8, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.fill();
+
+            // Main Body
+            ctx.rotate(this.angle);
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            ctx.strokeStyle = this.isPlayer ? '#fff' : 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = this.isPlayer ? 4 : 2;
+            ctx.stroke();
+
+            // Face
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(14, -10, 6, 0, Math.PI * 2);
+            ctx.arc(14, 10, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+    }
+
+    class Ball extends Entity {
+        constructor(x, y) {
+            super(x, y, BALL_RADIUS, '#ffffff');
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.vx *= BALL_FRICTION;
+            this.vy *= BALL_FRICTION;
+
+            // Collision with boundaries
+            const inGoalY = this.y > (WORLD_HEIGHT/2 - GOAL_SIZE/2) && this.y < (WORLD_HEIGHT/2 + GOAL_SIZE/2);
+            
+            if (this.x < this.radius || this.x > WORLD_WIDTH - this.radius) {
+                if (!inGoalY) {
+                    if (this.x < this.radius) { this.x = this.radius; this.vx *= -0.7; }
+                    if (this.x > WORLD_WIDTH - this.radius) { this.x = WORLD_WIDTH - this.radius; this.vx *= -0.7; }
+                }
+            }
+            if (this.y < this.radius) { this.y = this.radius; this.vy *= -0.7; }
+            if (this.y > WORLD_HEIGHT - this.radius) { this.y = WORLD_HEIGHT - this.radius; this.vy *= -0.7; }
+
+            // Goal Scoring
+            if (!gameState.goalScored) {
+                if (this.x < -this.radius) triggerGoal('red');
+                else if (this.x > WORLD_WIDTH + this.radius) triggerGoal('blue');
+            }
+        }
+
+        draw(camera) {
+            ctx.beginPath();
+            ctx.arc(this.x - camera.x, this.y - camera.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+    }
+
+    const ball = new Ball(WORLD_WIDTH / 2, WORLD_HEIGHT / 2);
+    const players = [
+        new Bot(WORLD_WIDTH * 0.3, WORLD_HEIGHT / 2, 'blue', true),
+        new Bot(WORLD_WIDTH * 0.2, WORLD_HEIGHT * 0.3, 'blue'),
+        new Bot(WORLD_WIDTH * 0.2, WORLD_HEIGHT * 0.7, 'blue'),
+        new Bot(WORLD_WIDTH * 0.7, WORLD_HEIGHT / 2, 'red'),
+        new Bot(WORLD_WIDTH * 0.8, WORLD_HEIGHT * 0.3, 'red'),
+        new Bot(WORLD_WIDTH * 0.8, WORLD_HEIGHT * 0.7, 'red')
+    ];
+
+    const input = { up: false, down: false, left: false, right: false };
+    const camera = { x: 0, y: 0 };
+
+    function handleInput(e, isDown) {
+        if (e.key === 'ArrowUp' || e.key === 'w') input.up = isDown;
+        if (e.key === 'ArrowDown' || e.key === 's') input.down = isDown;
+        if (e.key === 'ArrowLeft' || e.key === 'a') input.left = isDown;
+        if (e.key === 'ArrowRight' || e.key === 'd') input.right = isDown;
+    }
+
+    window.addEventListener('keydown', e => handleInput(e, true));
+    window.addEventListener('keyup', e => handleInput(e, false));
+
+    function resolveCollision(bot, ball) {
+        const dx = ball.x - bot.x;
+        const dy = ball.y - bot.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const min = bot.radius + ball.radius;
+
+        if (dist < min) {
+            const angle = Math.atan2(dy, dx);
+            const strength = 1.2;
+            
+            // Push ball
+            ball.vx += Math.cos(angle) * strength + bot.vx * 0.5;
+            ball.vy += Math.sin(angle) * strength + bot.vy * 0.5;
+            
+            // Push bot back slightly
+            bot.vx -= Math.cos(angle) * 0.2;
+            bot.vy -= Math.sin(angle) * 0.2;
+            
+            // Prevent overlap
+            const overlap = min - dist;
+            ball.x += Math.cos(angle) * overlap;
+            ball.y += Math.sin(angle) * overlap;
+        }
+    }
+
+    function triggerGoal(scoringTeam) {
+        gameState.goalScored = true;
+        gameState.score[scoringTeam]++;
+        scoreText.innerText = `${gameState.score.blue} - ${gameState.score.red}`;
+        
+        goalBanner.innerText = `${scoringTeam.toUpperCase()} SCORES!`;
+        goalBanner.style.color = scoringTeam === 'blue' ? '#60a5fa' : '#f87171';
+        goalBanner.classList.add('active');
+
+        setTimeout(() => {
+            resetField();
+            goalBanner.classList.remove('active');
+            gameState.goalScored = false;
+        }, 2000);
+    }
+
+    function resetField() {
+        ball.x = WORLD_WIDTH / 2;
+        ball.y = WORLD_HEIGHT / 2;
+        ball.vx = 0; ball.vy = 0;
+        
+        players[0].x = WORLD_WIDTH * 0.35; players[0].y = WORLD_HEIGHT / 2;
+        players[1].x = WORLD_WIDTH * 0.2;  players[1].y = WORLD_HEIGHT * 0.25;
+        players[2].x = WORLD_WIDTH * 0.2;  players[2].y = WORLD_HEIGHT * 0.75;
+        
+        players[3].x = WORLD_WIDTH * 0.65; players[3].y = WORLD_HEIGHT / 2;
+        players[4].x = WORLD_WIDTH * 0.8;  players[4].y = WORLD_HEIGHT * 0.25;
+        players[5].x = WORLD_WIDTH * 0.8;  players[5].y = WORLD_HEIGHT * 0.75;
+
+        players.forEach(p => { p.vx = 0; p.vy = 0; });
+    }
+
+    function drawWorld() {
+        // Field Grass
+        ctx.fillStyle = '#2d5a27';
+        ctx.fillRect(-camera.x, -camera.y, WORLD_WIDTH, WORLD_HEIGHT);
+
+        // Grid pattern
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = 2;
+        for(let i=0; i<WORLD_WIDTH; i+=100) {
+            ctx.beginPath(); ctx.moveTo(i-camera.x, 0-camera.y); ctx.lineTo(i-camera.x, WORLD_HEIGHT-camera.y); ctx.stroke();
+        }
+
+        // Lines
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(-camera.x, -camera.y, WORLD_WIDTH, WORLD_HEIGHT);
+        
+        // Mid Line
+        ctx.beginPath();
+        ctx.moveTo(WORLD_WIDTH/2 - camera.x, 0 - camera.y);
+        ctx.lineTo(WORLD_WIDTH/2 - camera.x, WORLD_HEIGHT - camera.y);
+        ctx.stroke();
+
+        // Mid Circle
+        ctx.beginPath();
+        ctx.arc(WORLD_WIDTH/2 - camera.x, WORLD_HEIGHT/2 - camera.y, 120, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Goals
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        // Left
+        ctx.fillRect(-60-camera.x, WORLD_HEIGHT/2 - GOAL_SIZE/2 - camera.y, 60, GOAL_SIZE);
+        // Right
+        ctx.fillRect(WORLD_WIDTH-camera.x, WORLD_HEIGHT/2 - GOAL_SIZE/2 - camera.y, 60, GOAL_SIZE);
+    }
+
+    function drawMiniMap() {
+        mapCtx.clearRect(0,0, mapCanvas.width, mapCanvas.height);
+        const sx = mapCanvas.width / WORLD_WIDTH;
+        const sy = mapCanvas.height / WORLD_HEIGHT;
+
+        mapCtx.fillStyle = 'rgba(255,255,255,0.1)';
+        mapCtx.fillRect(0,0, mapCanvas.width, mapCanvas.height);
+
+        players.forEach(p => {
+            mapCtx.fillStyle = p.color;
+            mapCtx.beginPath();
+            mapCtx.arc(p.x * sx, p.y * sy, 4, 0, Math.PI * 2);
+            mapCtx.fill();
+        });
+
+        mapCtx.fillStyle = 'white';
+        mapCtx.beginPath();
+        mapCtx.arc(ball.x * sx, ball.y * sy, 3, 0, Math.PI * 2);
+        mapCtx.fill();
+    }
+
+    function startGame() {
+        startOverlay.style.display = 'none';
+        gameState.running = true;
+        resetField();
+    }
+
+    function loop() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        if (gameState.running) {
+            const p = players[0];
+            camera.x = p.x - canvas.width/2;
+            camera.y = p.y - canvas.height/2;
+
+            if (!gameState.goalScored) {
+                ball.update();
+                players.forEach(bot => {
+                    bot.update(ball, input);
+                    resolveCollision(bot, ball);
+                });
+
+                if (gameState.time > 0) {
+                    gameState.time -= 1/60;
+                    const m = Math.floor(gameState.time / 60);
+                    const s = Math.floor(gameState.time % 60);
+                    timerText.innerText = `${m}:${s.toString().padStart(2, '0')}`;
+                }
+            }
+        }
+
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0,0, canvas.width, canvas.height);
+
+        drawWorld();
+        ball.draw(camera);
+        players.forEach(p => p.draw(camera));
+        drawMiniMap();
+
+        requestAnimationFrame(loop);
+    }
+
+    loop();
+</script>
+</body>
+</html>

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desert Oasis · Sunken Ruins</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Cairo', 'Arial', sans-serif;
+            background-color: #c49a6c;
+            color: #f5e6d3;
+        }
+        #expedition-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            background: rgba(80, 50, 20, 0.8);
+            backdrop-filter: blur(12px);
+            border: 2px solid #d9a066;
+            border-radius: 50px;
+            padding: 12px 32px;
+            display: flex;
+            gap: 40px;
+            border-left: 6px solid #f0c28a;
+            box-shadow: 0 0 40px rgba(200, 100, 30, 0.4);
+            pointer-events: none;
+        }
+        .expedition-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .expedition-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #f5d0a0;
+            letter-spacing: 2px;
+        }
+        .expedition-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #fff3e0, #f0c28a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #ruins-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(70, 45, 25, 0.85);
+            backdrop-filter: blur(16px);
+            border: 2px solid #d9a066;
+            border-radius: 50px;
+            padding: 20px 32px;
+            z-index: 50;
+            border-right: 6px solid #f0c28a;
+            min-width: 280px;
+            box-shadow: 0 15px 35px rgba(80, 40, 10, 0.6);
+        }
+        .ruins-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 1rem;
+            border-bottom: 1px solid #b87c4b;
+            padding-bottom: 5px;
+        }
+        .ruins-label {
+            color: #f5d0a0;
+        }
+        .ruins-value {
+            font-weight: 600;
+            color: #f5e6d3;
+        }
+        .pulse-sun {
+            width: 14px;
+            height: 14px;
+            background: #f0c28a;
+            border-radius: 50%;
+            box-shadow: 0 0 30px #ffaa44;
+            animation: sun-pulse 2.5s infinite;
+        }
+        @keyframes sun-pulse {
+            0% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.4); background: #ffd8a8; }
+            100% { opacity: 0.6; transform: scale(1); }
+        }
+        #environment-tag {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(70, 50, 30, 0.8);
+            backdrop-filter: blur(8px);
+            border: 2px solid #d9a066;
+            border-radius: 40px;
+            padding: 12px 28px;
+            z-index: 50;
+            border-left: 4px solid #f0c28a;
+            color: #f5e6d3;
+        }
+        .sun-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #f0c28a;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 15px #ffaa44;
+        }
+        #water-stats {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(60, 45, 25, 0.85);
+            backdrop-filter: blur(8px);
+            border: 2px solid #5a9eff;
+            border-radius: 40px;
+            padding: 16px 28px;
+            z-index: 50;
+            text-align: right;
+            border-bottom: 4px solid #88ddff;
+        }
+        .glow-number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff, #88ddff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="expedition-panel">
+        <div class="expedition-item">
+            <span class="expedition-label">site</span>
+            <span class="expedition-value">WADI RUM</span>
+        </div>
+        <div class="expedition-item">
+            <span class="expedition-label">temp</span>
+            <span class="expedition-value" id="temp-display">41°C</span>
+        </div>
+        <div class="expedition-item">
+            <span class="expedition-label">depth</span>
+            <span class="expedition-value" id="water-depth">3.2m</span>
+        </div>
+    </div>
+
+    <div id="ruins-panel">
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+            <span class="pulse-sun"></span>
+            <span style="font-weight: 600; font-size: 1.3rem;">🏛️ SUNKEN TEMPLE</span>
+        </div>
+        <div class="ruins-row">
+            <span class="ruins-label">period</span>
+            <span class="ruins-value">NABATEAN</span>
+        </div>
+        <div class="ruins-row">
+            <span class="ruins-label">artifacts</span>
+            <span class="ruins-value" id="artifact-count">147</span>
+        </div>
+        <div class="ruins-row">
+            <span class="ruins-label">hieroglyphs</span>
+            <span class="ruins-value">DECIPHERED 68%</span>
+        </div>
+        <div class="ruins-row">
+            <span class="ruins-label">water salinity</span>
+            <span class="ruins-value" id="salinity">3.2%</span>
+        </div>
+    </div>
+
+    <div id="environment-tag">
+        <span class="sun-icon"></span> <span>heat shimmer · palm grove · 12:47 PM</span>
+    </div>
+
+    <div id="water-stats">
+        <div style="font-size:1rem;">💧 OASIS AQUIFER</div>
+        <div class="glow-number" id="water-temp">28°C</div>
+        <div style="font-size:0.8rem;">pH 7.4 · clarity 8.2m</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- Scene setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87c0e8); // sky blue
+        scene.fog = new THREE.Fog(0x87c0e8, 40, 120);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(20, 10, 30);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.3;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.minDistance = 15;
+        controls.maxDistance = 80;
+        
+        // --- Lighting ---
+        const ambient = new THREE.AmbientLight(0x605040);
+        scene.add(ambient);
+        
+        const sunLight = new THREE.DirectionalLight(0xffeedd, 1.5);
+        sunLight.position.set(30, 40, 20);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        const d = 50;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 80;
+        scene.add(sunLight);
+        
+        // --- Ground (sand) ---
+        const sandGeo = new THREE.CircleGeometry(80, 32);
+        const sandMat = new THREE.MeshStandardMaterial({ color: 0xc49a6c, roughness: 0.8 });
+        const sand = new THREE.Mesh(sandGeo, sandMat);
+        sand.rotation.x = -Math.PI / 2;
+        sand.position.y = -0.5;
+        sand.receiveShadow = true;
+        scene.add(sand);
+        
+        // --- Dunes (gentle hills) ---
+        for (let i = 0; i < 30; i++) {
+            const duneGeo = new THREE.ConeGeometry(2 + Math.random() * 4, 0.5 + Math.random() * 1.5, 8);
+            const duneMat = new THREE.MeshStandardMaterial({ color: 0xb88a5a });
+            const dune = new THREE.Mesh(duneGeo, duneMat);
+            dune.position.set(
+                (Math.random() - 0.5) * 60,
+                -0.2,
+                (Math.random() - 0.5) * 60
+            );
+            dune.castShadow = true;
+            dune.receiveShadow = true;
+            scene.add(dune);
+        }
+        
+        // --- Oasis water (reflective plane) ---
+        const waterGeo = new THREE.CircleGeometry(12, 32);
+        const waterMat = new THREE.MeshStandardMaterial({ 
+            color: 0x3a8fe0, 
+            emissive: 0x112244,
+            transparent: true,
+            opacity: 0.8,
+            metalness: 0.2,
+            roughness: 0.1
+        });
+        const water = new THREE.Mesh(waterGeo, waterMat);
+        water.rotation.x = -Math.PI / 2;
+        water.position.y = -0.4;
+        water.receiveShadow = true;
+        scene.add(water);
+        
+        // --- Palm trees around oasis ---
+        function createPalm(x, z) {
+            const group = new THREE.Group();
+            
+            // Trunk
+            const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, 3, 6);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 1.5;
+            trunk.castShadow = true;
+            trunk.receiveShadow = true;
+            group.add(trunk);
+            
+            // Fronds (multiple)
+            const frondMat = new THREE.MeshStandardMaterial({ color: 0x2d5a27 });
+            for (let i = 0; i < 5; i++) {
+                const frondGeo = new THREE.ConeGeometry(0.8, 1.2, 4);
+                const frond = new THREE.Mesh(frondGeo, frondMat);
+                frond.position.set(
+                    Math.cos(i * 1.2) * 1.0,
+                    3.2,
+                    Math.sin(i * 1.2) * 1.0
+                );
+                frond.rotation.x = 0.3;
+                frond.rotation.z = i * 0.5;
+                frond.castShadow = true;
+                group.add(frond);
+            }
+            
+            group.position.set(x, -0.5, z);
+            return group;
+        }
+        
+        // Place palms in a ring
+        for (let i = 0; i < 12; i++) {
+            const angle = (i / 12) * Math.PI * 2;
+            const radius = 14;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const palm = createPalm(x, z);
+            scene.add(palm);
+        }
+        
+        // Additional scattered palms
+        for (let i = 0; i < 8; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 16 + Math.random() * 4;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            const palm = createPalm(x, z);
+            scene.add(palm);
+        }
+        
+        // --- Ancient ruins (columns) ---
+        const ruinGroup = new THREE.Group();
+        ruinGroup.position.set(0, -0.5, 0);
+        
+        // Partial columns emerging from water
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            const radius = 5;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            
+            const columnGeo = new THREE.CylinderGeometry(0.6, 0.8, 2.5, 6);
+            const columnMat = new THREE.MeshStandardMaterial({ color: 0xccaa88 });
+            const column = new THREE.Mesh(columnGeo, columnMat);
+            column.position.set(x, 0.75, z);
+            column.castShadow = true;
+            column.receiveShadow = true;
+            ruinGroup.add(column);
+            
+            // Capital
+            const capitalGeo = new THREE.BoxGeometry(1.0, 0.3, 1.0);
+            const capitalMat = new THREE.MeshStandardMaterial({ color: 0xddbb99 });
+            const capital = new THREE.Mesh(capitalGeo, capitalMat);
+            capital.position.set(x, 2.0, z);
+            capital.castShadow = true;
+            ruinGroup.add(capital);
+        }
+        
+        // Central altar (partially submerged)
+        const altarGeo = new THREE.BoxGeometry(2.5, 0.6, 2.5);
+        const altarMat = new THREE.MeshStandardMaterial({ color: 0xaa8866 });
+        const altar = new THREE.Mesh(altarGeo, altarMat);
+        altar.position.set(0, -0.1, 0);
+        altar.castShadow = true;
+        altar.receiveShadow = true;
+        ruinGroup.add(altar);
+        
+        scene.add(ruinGroup);
+        
+        // Ruins label
+        const ruinsDiv = document.createElement('div');
+        ruinsDiv.textContent = '🏛️ NABATEAN TEMPLE';
+        ruinsDiv.style.background = '#5a3a1a';
+        ruinsDiv.style.color = '#f0c28a';
+        ruinsDiv.style.border = '2px solid #d9a066';
+        ruinsDiv.style.borderRadius = '30px';
+        ruinsDiv.style.padding = '4px 16px';
+        const ruinsLabel = new CSS2DObject(ruinsDiv);
+        ruinsLabel.position.set(0, 3, 0);
+        scene.add(ruinsLabel);
+        
+        // --- Camels (simplified) near oasis ---
+        for (let j = 0; j < 3; j++) {
+            const camelGroup = new THREE.Group();
+            const angle = (j / 3) * Math.PI * 2 + 1;
+            const radius = 18;
+            camelGroup.position.set(
+                Math.cos(angle) * radius,
+                -0.5,
+                Math.sin(angle) * radius
+            );
+            
+            // Body
+            const bodyGeo = new THREE.BoxGeometry(1.2, 0.8, 2);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xc49a6c });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.4;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            camelGroup.add(body);
+            
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.4);
+            const head = new THREE.Mesh(headGeo, bodyMat);
+            head.position.set(0.8, 0.7, 0.5);
+            head.castShadow = true;
+            camelGroup.add(head);
+            
+            scene.add(camelGroup);
+        }
+        
+        // --- Heat shimmer particles (dust) ---
+        const dustGeo = new THREE.BufferGeometry();
+        const dustCount = 800;
+        const dustPos = new Float32Array(dustCount * 3);
+        for (let i = 0; i < dustCount; i++) {
+            dustPos[i*3] = (Math.random() - 0.5) * 60;
+            dustPos[i*3+1] = Math.random() * 10;
+            dustPos[i*3+2] = (Math.random() - 0.5) * 60;
+        }
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+        const dustMat = new THREE.PointsMaterial({ color: 0xd9a066, size: 0.1, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending });
+        const dust = new THREE.Points(dustGeo, dustMat);
+        scene.add(dust);
+        
+        // --- Animate ---
+        let time = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            time += 0.01;
+            
+            // Dust drift
+            const positions = dust.geometry.attributes.position.array;
+            for (let i = 0; i < positions.length; i+=3) {
+                positions[i] += 0.005;
+                if (positions[i] > 30) positions[i] = -30;
+            }
+            dust.geometry.attributes.position.needsUpdate = true;
+            
+            // Update displays
+            const temp = 41 + Math.sin(time * 0.5) * 2;
+            document.getElementById('temp-display').innerText = Math.floor(temp) + '°C';
+            document.getElementById('water-depth').innerText = (3.2 + Math.sin(time)*0.1).toFixed(1) + 'm';
+            document.getElementById('artifact-count').innerText = 147 + Math.floor(Math.sin(time*2)*5);
+            document.getElementById('salinity').innerText = (3.2 + Math.sin(time*0.8)*0.2).toFixed(1) + '%';
+            document.getElementById('water-temp').innerText = (28 + Math.sin(time*0.7)*1).toFixed(0) + '°C';
+            
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

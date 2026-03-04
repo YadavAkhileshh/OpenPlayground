@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Passport Photo Maker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .canvas-container {
+            position: relative;
+            user-select: none;
+            touch-action: none;
+            overflow: hidden;
+            background: #e2e8f0;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        #cropCanvas {
+            cursor: move;
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .guide-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            border: 2px solid #3b82f6;
+            box-sizing: border-box;
+        }
+
+        /* Face Guide Lines */
+        .face-guide {
+            position: absolute;
+            border: 1px dashed rgba(59, 130, 246, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .slider-custom {
+            -webkit-appearance: none;
+            height: 6px;
+            background: #cbd5e1;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .slider-custom::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #3b82f6;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .loader {
+            border-top-color: #3b82f6;
+            animation: spinner 0.6s linear infinite;
+        }
+
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Passport Photo Maker</h1>
+                <p class="text-slate-500">Create, crop, and print official documents in seconds.</p>
+            </div>
+            <div class="flex gap-3">
+                <button id="uploadBtn" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload Image
+                </button>
+                <input type="file" id="fileInput" class="hidden" accept="image/*">
+            </div>
+        </header>
+
+        <main id="mainInterface" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Left: Workspace -->
+            <div class="lg:col-span-8 flex flex-col gap-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div class="canvas-container" id="container">
+                        <canvas id="cropCanvas"></canvas>
+                        <!-- Guidelines -->
+                        <div id="guides" class="absolute inset-0 pointer-events-none opacity-50">
+                            <!-- Inner Oval for Face -->
+                            <div class="absolute border-2 border-blue-400 rounded-[50%] left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 w-[60%] h-[70%]"></div>
+                            <!-- Horizontal Eye Line -->
+                            <div class="absolute border-t border-blue-400 w-full top-[40%]"></div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4 text-sm text-slate-500">
+                        <span>Drag to move • Scroll to zoom</span>
+                        <div class="flex gap-4">
+                            <button id="rotateLeft" class="p-2 hover:bg-slate-100 rounded-lg" title="Rotate Left">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                            </button>
+                            <button id="rotateRight" class="p-2 hover:bg-slate-100 rounded-lg" title="Rotate Right">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h5"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Controls -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                <!-- Size Presets -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                        Photo Standards
+                    </h3>
+                    <div class="space-y-2" id="presetList">
+                        <!-- Presets injected here -->
+                    </div>
+                </div>
+
+                <!-- Enhancements -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M12 12h10"/></svg>
+                        Adjustments
+                    </h3>
+                    <div class="space-y-6">
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <label class="text-xs font-medium text-slate-500 uppercase">Brightness</label>
+                                <span id="brightVal" class="text-xs text-blue-600 font-bold">100%</span>
+                            </div>
+                            <input type="range" id="brightness" min="50" max="150" value="100" class="w-full slider-custom">
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <label class="text-xs font-medium text-slate-500 uppercase">Contrast</label>
+                                <span id="contrastVal" class="text-xs text-blue-600 font-bold">100%</span>
+                            </div>
+                            <input type="range" id="contrast" min="50" max="150" value="100" class="w-full slider-custom">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Export & Download
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="downloadSingle" class="flex flex-col items-center justify-center p-3 border-2 border-slate-100 hover:border-blue-200 hover:bg-blue-50 rounded-xl transition-all group">
+                            <span class="text-blue-600 font-bold text-lg">1x</span>
+                            <span class="text-[10px] text-slate-500 uppercase font-semibold">Single Photo</span>
+                        </button>
+                        <button id="downloadSheet" class="flex flex-col items-center justify-center p-3 border-2 border-slate-100 hover:border-blue-200 hover:bg-blue-50 rounded-xl transition-all group">
+                            <span class="text-blue-600 font-bold text-lg">8x</span>
+                            <span class="text-[10px] text-slate-500 uppercase font-semibold">4x6 Print Sheet</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Welcome View -->
+        <div id="welcomeView" class="mt-20 flex flex-col items-center justify-center text-center px-4">
+            <div class="w-24 h-24 bg-blue-100 text-blue-600 rounded-3xl flex items-center justify-center mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-900 mb-2">No Image Selected</h2>
+            <p class="text-slate-500 max-w-sm mb-8">Upload a portrait photo to start. We support JPG, PNG, and WebP formats.</p>
+            <button onclick="document.getElementById('fileInput').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg shadow-blue-200 transition-all">
+                Select Photo
+            </button>
+        </div>
+    </div>
+
+    <!-- Hidden Output Canvas for Exporting -->
+    <canvas id="outputCanvas" class="hidden"></canvas>
+
+    <script>
+        const PHOTO_STANDARDS = [
+            { id: 'us', name: 'USA Passport', width: 51, height: 51, unit: 'mm', desc: '2 x 2 inches' },
+            { id: 'india', name: 'India Passport', width: 35, height: 45, unit: 'mm', desc: '3.5 x 4.5 cm' },
+            { id: 'uk', name: 'UK / EU Passport', width: 35, height: 45, unit: 'mm', desc: '35 x 45 mm' },
+            { id: 'pan', name: 'India PAN Card', width: 25, height: 35, unit: 'mm', desc: '2.5 x 3.5 cm' },
+            { id: 'china', name: 'China Passport', width: 33, height: 48, unit: 'mm', desc: '33 x 48 mm' }
+        ];
+
+        // State
+        let img = new Image();
+        let currentStandard = PHOTO_STANDARDS[0];
+        let scale = 1;
+        let rotation = 0;
+        let pos = { x: 0, y: 0 };
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let filters = { brightness: 100, contrast: 100 };
+
+        const canvas = document.getElementById('cropCanvas');
+        const ctx = canvas.getContext('2d');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const mainInterface = document.getElementById('mainInterface');
+        const welcomeView = document.getElementById('welcomeView');
+
+        // Initialize Presets
+        const presetContainer = document.getElementById('presetList');
+        PHOTO_STANDARDS.forEach(std => {
+            const btn = document.createElement('button');
+            btn.className = `w-full text-left p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-all flex justify-between items-center group ${std.id === currentStandard.id ? 'bg-blue-50 border-blue-200' : ''}`;
+            btn.id = `btn-${std.id}`;
+            btn.innerHTML = `
+                <div>
+                    <div class="text-sm font-semibold text-slate-800">${std.name}</div>
+                    <div class="text-[10px] text-slate-500 uppercase tracking-wider">${std.desc}</div>
+                </div>
+                <div class="w-4 h-4 rounded-full border-2 border-slate-200 group-hover:border-blue-400 flex items-center justify-center">
+                    <div class="w-2 h-2 rounded-full ${std.id === currentStandard.id ? 'bg-blue-500' : ''}"></div>
+                </div>
+            `;
+            btn.onclick = () => setStandard(std);
+            presetContainer.appendChild(btn);
+        });
+
+        // Event Listeners
+        uploadBtn.onclick = () => fileInput.click();
+        fileInput.onchange = handleFileUpload;
+        
+        // Canvas Interactions
+        canvas.addEventListener('mousedown', startDragging);
+        window.addEventListener('mousemove', drag);
+        window.addEventListener('mouseup', stopDragging);
+        canvas.addEventListener('wheel', handleZoom, { passive: false });
+
+        // Touch support
+        canvas.addEventListener('touchstart', e => startDragging(e.touches[0]));
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            drag(e.touches[0]);
+        }, { passive: false });
+        canvas.addEventListener('touchend', stopDragging);
+
+        // Filters
+        document.getElementById('brightness').oninput = (e) => {
+            filters.brightness = e.target.value;
+            document.getElementById('brightVal').innerText = `${e.target.value}%`;
+            draw();
+        };
+        document.getElementById('contrast').oninput = (e) => {
+            filters.contrast = e.target.value;
+            document.getElementById('contrastVal').innerText = `${e.target.value}%`;
+            draw();
+        };
+
+        // Rotation
+        document.getElementById('rotateLeft').onclick = () => { rotation -= 90; draw(); };
+        document.getElementById('rotateRight').onclick = () => { rotation += 90; draw(); };
+
+        // Export
+        document.getElementById('downloadSingle').onclick = () => downloadImage(false);
+        document.getElementById('downloadSheet').onclick = () => downloadImage(true);
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                img.onload = () => {
+                    welcomeView.classList.add('hidden');
+                    mainInterface.classList.remove('hidden');
+                    resetImageState();
+                    setStandard(currentStandard);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetImageState() {
+            // Center image and fit to height
+            const canvasAspect = currentStandard.width / currentStandard.height;
+            const imgAspect = img.width / img.height;
+            
+            if (imgAspect > canvasAspect) {
+                scale = (currentStandard.height * 10) / img.height;
+            } else {
+                scale = (currentStandard.width * 10) / img.width;
+            }
+            
+            pos = { x: 0, y: 0 };
+            rotation = 0;
+        }
+
+        function setStandard(std) {
+            // Update UI
+            document.querySelectorAll('#presetList button').forEach(b => b.classList.remove('bg-blue-50', 'border-blue-200'));
+            document.querySelectorAll('#presetList button div.rounded-full div').forEach(d => d.classList.remove('bg-blue-500'));
+            
+            const activeBtn = document.getElementById(`btn-${std.id}`);
+            activeBtn.classList.add('bg-blue-50', 'border-blue-200');
+            activeBtn.querySelector('div.rounded-full div').classList.add('bg-blue-500');
+
+            currentStandard = std;
+            
+            // Set Canvas logical dimensions (using 10px per mm for high quality workspace)
+            canvas.width = std.width * 10;
+            canvas.height = std.height * 10;
+            
+            // Adjust CSS display
+            const container = document.getElementById('container');
+            const ratio = std.height / std.width;
+            container.style.aspectRatio = `${std.width} / ${std.height}`;
+            container.style.width = '100%';
+            container.style.maxWidth = ratio > 1 ? '400px' : '500px';
+            container.style.margin = '0 auto';
+
+            draw();
+        }
+
+        function startDragging(e) {
+            isDragging = true;
+            dragStart = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            pos.x = e.clientX - dragStart.x;
+            pos.y = e.clientY - dragStart.y;
+            draw();
+        }
+
+        function stopDragging() {
+            isDragging = false;
+        }
+
+        function handleZoom(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.95 : 1.05;
+            scale *= delta;
+            draw();
+        }
+
+        function draw() {
+            if (!img.src) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            
+            // Apply Filters
+            ctx.filter = `brightness(${filters.brightness}%) contrast(${filters.contrast}%)`;
+
+            // Transform
+            ctx.translate(canvas.width / 2 + pos.x, canvas.height / 2 + pos.y);
+            ctx.rotate((rotation * Math.PI) / 180);
+            ctx.scale(scale, scale);
+            
+            // Draw
+            ctx.drawImage(img, -img.width / 2, -img.height / 2);
+            
+            ctx.restore();
+        }
+
+        function downloadImage(asSheet) {
+            const outCanvas = document.getElementById('outputCanvas');
+            const outCtx = outCanvas.getContext('2d');
+
+            // Quality multiplier (300 DPI approx)
+            // 1mm = 11.81 pixels at 300DPI
+            const dpiScale = 11.811;
+
+            if (asSheet) {
+                // 4x6 inch = 101.6mm x 152.4mm
+                // Landscape: 152.4 x 101.6
+                const sheetW = 152.4 * dpiScale;
+                const sheetH = 101.6 * dpiScale;
+                outCanvas.width = sheetW;
+                outCanvas.height = sheetH;
+
+                outCtx.fillStyle = "white";
+                outCtx.fillRect(0, 0, sheetW, sheetH);
+
+                const photoW = currentStandard.width * dpiScale;
+                const photoH = currentStandard.height * dpiScale;
+                const margin = 5 * dpiScale; // 5mm margin
+
+                // Calculate grid
+                const cols = Math.floor((sheetW - margin) / (photoW + margin));
+                const rows = Math.floor((sheetH - margin) / (photoH + margin));
+
+                // Center grid
+                const offsetX = (sheetW - (cols * photoW + (cols - 1) * margin)) / 2;
+                const offsetY = (sheetH - (rows * photoH + (rows - 1) * margin)) / 2;
+
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const x = offsetX + c * (photoW + margin);
+                        const y = offsetY + r * (photoH + margin);
+                        
+                        // Draw single crop to this position
+                        drawClippedTo(outCtx, x, y, photoW, photoH);
+                        
+                        // Optional: Cut lines (light gray)
+                        outCtx.strokeStyle = "#ddd";
+                        outCtx.lineWidth = 1;
+                        outCtx.strokeRect(x, y, photoW, photoH);
+                    }
+                }
+                save(outCanvas, `passport_sheet_${currentStandard.id}.jpg`);
+            } else {
+                // Single Photo
+                outCanvas.width = currentStandard.width * dpiScale;
+                outCanvas.height = currentStandard.height * dpiScale;
+                drawClippedTo(outCtx, 0, 0, outCanvas.width, outCanvas.height);
+                save(outCanvas, `passport_photo_${currentStandard.id}.jpg`);
+            }
+        }
+
+        function drawClippedTo(oCtx, targetX, targetY, targetW, targetH) {
+            oCtx.save();
+            
+            // Clip to target area
+            oCtx.beginPath();
+            oCtx.rect(targetX, targetY, targetW, targetH);
+            oCtx.clip();
+
+            // Match workspace scale/pos to output scale
+            // Workspace canvas.width = std.width * 10
+            // Output targetW = std.width * 11.811
+            const conversion = targetW / canvas.width;
+
+            oCtx.filter = `brightness(${filters.brightness}%) contrast(${filters.contrast}%)`;
+            oCtx.translate(targetX + targetW / 2 + pos.x * conversion, targetY + targetH / 2 + pos.y * conversion);
+            oCtx.rotate((rotation * Math.PI) / 180);
+            oCtx.scale(scale * conversion, scale * conversion);
+            oCtx.drawImage(img, -img.width / 2, -img.height / 2);
+            
+            oCtx.restore();
+        }
+
+        function save(cvs, name) {
+            const link = document.createElement('a');
+            link.download = name;
+            link.href = cvs.toDataURL('image/jpeg', 0.95);
+            link.click();
+        }
+    </script>
+</body>
+</html>

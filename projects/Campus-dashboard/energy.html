@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Control | Smart Campus</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <!-- D3 -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <style>
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #333;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .control-row:last-child { border-bottom: none; }
+        .control-info h3 { font-size: 1rem; margin-bottom: 0.2rem; }
+        .control-info p { font-size: 0.8rem; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebarContainer"></aside>
+        <main class="main-content">
+            <header class="top-header" id="headerContainer"></header>
+
+            <h1 style="margin-bottom: 1.5rem;">Energy Management</h1>
+
+            <div class="dashboard-grid">
+                <!-- Large Real-time Chart -->
+                <div class="chart-container large">
+                    <div class="chart-header">
+                        <h2><i class="fa-solid fa-bolt"></i> Real-Time Power Grid</h2>
+                    </div>
+                    <div id="realtime-chart" class="viz-area"></div>
+                </div>
+
+                <!-- Controls -->
+                <div class="chart-container large">
+                    <div class="chart-header">
+                        <h2><i class="fa-solid fa-toggle-on"></i> Zone Controls</h2>
+                    </div>
+                    <div id="controlsList">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/db.js"></script>
+    <script src="js/shared.js"></script>
+    <script>
+        // Setup Real-time Chart
+        const width = document.getElementById('realtime-chart').clientWidth;
+        const height = 300;
+        const svg = d3.select("#realtime-chart").append("svg").attr("width", "100%").attr("height", height);
+        
+        let data = d3.range(40).map(() => 50); // initial data
+        
+        const x = d3.scaleLinear().domain([0, 39]).range([0, width]);
+        const y = d3.scaleLinear().domain([0, 100]).range([height, 0]);
+        const line = d3.line().x((d, i) => x(i)).y(d => y(d)).curve(d3.curveBasis);
+
+        const path = svg.append("path")
+            .datum(data)
+            .attr("fill", "none")
+            .attr("stroke", "#22d3ee")
+            .attr("stroke-width", 2)
+            .attr("d", line);
+
+        setInterval(() => {
+            data.push(Math.floor(Math.random() * 40) + 30);
+            data.shift();
+            path.attr("d", line);
+        }, 500);
+
+        // Setup Controls
+        const zones = [
+            { id: 'north-hall', label: 'North Hall Lighting', sub: 'Main Corridor & Lobby' },
+            { id: 'library-main', label: 'Library HVAC', sub: 'Central Cooling System' },
+            { id: 'dorms-ac', label: 'Dormitory AC Units', sub: 'Blocks A through D' },
+            { id: 'science-lab', label: 'Science Lab Equipment', sub: 'High Voltage lines' }
+        ];
+
+        const settings = DB.get(DB.ENERGY);
+        const list = document.getElementById('controlsList');
+
+        zones.forEach(z => {
+            const div = document.createElement('div');
+            div.className = 'control-row';
+            const isOn = settings[z.id];
+            
+            div.innerHTML = `
+                <div class="control-info">
+                    <h3>${z.label}</h3>
+                    <p>${z.sub}</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" ${isOn ? 'checked' : ''} onchange="toggleEnergy('${z.id}', this.checked)">
+                    <span class="slider"></span>
+                </label>
+            `;
+            list.appendChild(div);
+        });
+
+        window.toggleEnergy = (id, state) => {
+            settings[id] = state;
+            DB.set(DB.ENERGY, settings);
+        };
+    </script>
+</body>
+</html>

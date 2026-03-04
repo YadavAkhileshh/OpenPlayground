@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusSpace Pro 🎧</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0b0e14;
+            color: #f1f5f9;
+            min-height: 100vh;
+            overflow: hidden;
+            transition: background 0.5s ease;
+        }
+
+        .focus-mode-active {
+            background: #050505 !important;
+        }
+
+        .meet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+            padding: 12px;
+            height: 100%;
+            align-content: start;
+        }
+
+        .video-container {
+            position: relative;
+            background: #1a1d23;
+            border-radius: 16px;
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
+            border: 2px solid transparent;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-container.speaking {
+            border-color: #3b82f6;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .avatar-circle {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: #2563eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            z-index: 3;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+
+        .control-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            background: rgba(45, 51, 61, 0.6);
+            backdrop-filter: blur(4px);
+            color: #cbd5e1;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .control-btn:hover {
+            background: #3e4551;
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        .control-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #60a5fa;
+        }
+
+        .control-btn.danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        #toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 100;
+            opacity: 0;
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        .todo-item.done span {
+            text-decoration: line-through;
+            color: #64748b;
+        }
+
+        .audio-wave {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 12px;
+        }
+        .audio-wave span {
+            width: 2px;
+            background: #3b82f6;
+            animation: wave 0.5s ease-in-out infinite alternate;
+        }
+        @keyframes wave {
+            0% { height: 2px; }
+            100% { height: 12px; }
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <div id="toast">Copied!</div>
+
+    <!-- Header -->
+    <header id="main-header" class="h-14 flex items-center justify-between px-6 bg-[#0b0e14]/80 backdrop-blur-md border-b border-white/5 z-50">
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 bg-blue-600/10 px-3 py-1.5 rounded-lg border border-blue-500/20">
+                <span id="room-id-display" class="text-xs font-bold tracking-widest text-blue-400">#STUDY_HALL</span>
+                <button onclick="copyRoomCode()" class="hover:text-blue-200 text-blue-400/60 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+            </div>
+            <div id="connection-indicator" class="flex items-center gap-2 px-2 py-1 rounded bg-slate-800/40 border border-white/5">
+                <div id="connection-dot" class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div>
+                <span id="connection-text" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">Connecting</span>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <div class="bg-slate-900/80 px-4 py-1.5 rounded-full flex items-center gap-3 border border-white/10 shadow-inner">
+                <span id="timer-display" class="text-xl font-black tabular-nums tracking-tight text-white">25:00</span>
+                <div class="h-4 w-[1px] bg-white/10"></div>
+                <span id="timer-status" class="w-2 h-2 rounded-full bg-slate-600"></span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <button onclick="toggleFocusMode()" id="focus-toggle" class="text-[10px] font-bold bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 px-3 py-1.5 rounded-lg border border-indigo-500/20 transition-all">FOCUS MODE</button>
+            <div class="h-6 w-[1px] bg-white/5"></div>
+            <button onclick="changeName()" class="flex items-center gap-3 group">
+                <div class="text-right hidden sm:block">
+                    <div id="display-name" class="text-xs font-bold text-slate-200">Student</div>
+                    <div id="participant-count" class="text-[9px] text-slate-500 uppercase font-bold">1 online</div>
+                </div>
+                <div id="self-emoji-preview" class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-lg border border-white/10 shadow-lg">🦊</div>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        <!-- Main Workspace -->
+        <section class="flex-1 flex flex-col relative overflow-hidden">
+            <!-- Background Music & Ambient -->
+            <div id="music-player" class="absolute top-4 left-4 z-40 bg-[#1a1d23]/90 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-2xl w-64">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="audio-wave" id="music-wave" style="display: none">
+                            <span></span><span style="animation-delay: 0.1s"></span><span style="animation-delay: 0.2s"></span>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase text-slate-400">Study Radio</span>
+                    </div>
+                    <span id="track-name" class="text-[10px] text-blue-400 font-medium">Lofi Beats</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleMusic()" id="music-btn-play" class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center hover:bg-blue-500 transition-colors">
+                        <svg id="play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <svg id="pause-icon" class="hidden" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </button>
+                    <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5" class="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                </div>
+                <div class="mt-3 grid grid-cols-3 gap-2">
+                    <button onclick="playAmbient('rain')" class="text-[10px] p-1 rounded bg-white/5 hover:bg-white/10 border border-white/5">🌧️ Rain</button>
+                    <button onclick="playAmbient('fire')" class="text-[10px] p-1 rounded bg-white/5 hover:bg-white/10 border border-white/5">🔥 Fire</button>
+                    <button onclick="playAmbient('forest')" class="text-[10px] p-1 rounded bg-white/5 hover:bg-white/10 border border-white/5">🍃 Wind</button>
+                </div>
+            </div>
+
+            <div id="video-grid" class="meet-grid overflow-y-auto custom-scrollbar pt-20"></div>
+        </section>
+
+        <!-- Sidebar (Todo & Chat) -->
+        <aside id="sidebar" class="w-80 border-l border-white/5 flex flex-col bg-[#0b0e14] z-50">
+            <!-- Tabs -->
+            <div class="flex border-b border-white/5">
+                <button onclick="switchTab('chat')" id="tab-chat" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-b-2 border-blue-500 text-blue-400">Chat</button>
+                <button onclick="switchTab('todo')" id="tab-todo" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-b-2 border-transparent text-slate-500 hover:text-slate-300">Shared Tasks</button>
+            </div>
+
+            <!-- Chat Content -->
+            <div id="content-chat" class="flex-1 flex flex-col overflow-hidden">
+                <div id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar"></div>
+                <div class="p-4 border-t border-white/5">
+                    <form id="chat-form" class="flex gap-2">
+                        <input type="text" id="chat-input" placeholder="Say something..." class="flex-1 bg-slate-800/50 border border-white/5 rounded-xl px-4 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-slate-200">
+                    </form>
+                </div>
+            </div>
+
+            <!-- Todo Content -->
+            <div id="content-todo" class="flex-1 flex flex-col overflow-hidden hidden">
+                <div id="todo-list" class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar"></div>
+                <div class="p-4 border-t border-white/5">
+                    <form id="todo-form" class="flex gap-2">
+                        <input type="text" id="todo-input" placeholder="Add shared task..." class="flex-1 bg-slate-800/50 border border-white/5 rounded-xl px-4 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none text-slate-200">
+                        <button type="submit" class="bg-blue-600 p-2 rounded-xl hover:bg-blue-500">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Controls -->
+    <footer id="main-footer" class="h-20 bg-[#0b0e14]/90 backdrop-blur-md border-t border-white/5 flex items-center justify-between px-8 z-50">
+        <div class="flex items-center gap-4 text-xs font-medium text-slate-500">
+            <div class="flex flex-col">
+                <span id="clock-now" class="text-white font-bold text-sm">--:--</span>
+                <span class="text-[10px] uppercase font-black text-slate-600">Local Time</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button onclick="toggleMic()" id="mic-btn" class="control-btn" title="Toggle Mic">
+                <svg id="mic-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+            </button>
+            <button onclick="toggleVideo()" id="video-btn" class="control-btn active" title="Toggle Camera">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+            </button>
+            <button onclick="toggleScreenShare()" id="screen-btn" class="control-btn" title="Share Screen">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="14" x="3" y="3" rx="2" ry="2"/><path d="M17 21H7"/><path d="M12 17v4"/></svg>
+            </button>
+            <button onclick="toggleHand()" id="hand-btn" class="control-btn" title="Raise Hand">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v5"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v10"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+            </button>
+            
+            <div class="w-[1px] h-6 bg-white/10 mx-1"></div>
+            
+            <button onclick="toggleReactionMenu()" id="react-btn" class="control-btn" title="Reactions">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            </button>
+            <button onclick="toggleTimer()" id="timer-btn" class="control-btn" title="Start Pomodoro">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </button>
+
+            <div id="reaction-container" class="reaction-menu hidden">
+                <button onclick="sendReaction('👏')" class="hover:scale-125 transition-transform text-xl">👏</button>
+                <button onclick="sendReaction('🔥')" class="hover:scale-125 transition-transform text-xl">🔥</button>
+                <button onclick="sendReaction('❤️')" class="hover:scale-125 transition-transform text-xl">❤️</button>
+                <button onclick="sendReaction('😂')" class="hover:scale-125 transition-transform text-xl">😂</button>
+                <button onclick="sendReaction('👍')" class="hover:scale-125 transition-transform text-xl">👍</button>
+            </div>
+
+            <div class="w-[1px] h-6 bg-white/10 mx-1"></div>
+
+            <button onclick="leaveMeeting()" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition-all font-black text-[10px] tracking-widest px-6 py-3 rounded-xl border border-red-500/20">LEAVE</button>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button onclick="toggleSidebar()" class="control-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
+        </div>
+    </footer>
+
+    <audio id="bg-audio" loop crossorigin="anonymous"></audio>
+    <audio id="ambient-audio" loop crossorigin="anonymous"></audio>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, serverTimestamp, addDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'zoom-study-v2';
+
+        // Local State
+        let state = {
+            roomCode: localStorage.getItem('zoom_room_v2') || 'GLOBAL_HALL',
+            user: {
+                id: null,
+                name: localStorage.getItem('zoom_name_v2') || `Student_${Math.floor(Math.random()*1000)}`,
+                emoji: ['🦊', '🐱', '🐼', '🐨', '🐯', '🦁', '🐻', '🐰'][Math.floor(Math.random()*8)],
+                isMuted: false,
+                isVideoOff: false,
+                isSharing: false,
+                handRaised: false,
+                isSpeaking: false
+            },
+            timer: { minutes: 25, seconds: 0, isRunning: false },
+            participants: {},
+            isFocusMode: false,
+            currentTab: 'chat'
+        };
+
+        const bgAudio = document.getElementById('bg-audio');
+        const ambientAudio = document.getElementById('ambient-audio');
+        const videoGrid = document.getElementById('video-grid');
+        const chatBox = document.getElementById('chat-box');
+        const todoList = document.getElementById('todo-list');
+        const timerDisplay = document.getElementById('timer-display');
+
+        async function init() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth failed:", err);
+            }
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    state.user.id = user.uid;
+                    document.getElementById('room-id-display').innerText = `#${state.roomCode}`;
+                    document.getElementById('display-name').innerText = state.user.name;
+                    document.getElementById('self-emoji-preview').innerText = state.user.emoji;
+                    
+                    updateStatusUI('online');
+                    syncUser();
+                    listenToRoom();
+                    startClock();
+                }
+            });
+        }
+
+        async function syncUser() {
+            if (!auth.currentUser) return;
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', `meet_${state.roomCode}`, auth.currentUser.uid);
+            await setDoc(ref, {
+                ...state.user,
+                lastSeen: serverTimestamp()
+            });
+        }
+
+        function listenToRoom() {
+            if (!auth.currentUser) return;
+
+            // Participants
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', `meet_${state.roomCode}`), (snapshot) => {
+                const parts = {};
+                snapshot.forEach(doc => parts[doc.id] = doc.data());
+                state.participants = parts;
+                renderVideos();
+                document.getElementById('participant-count').innerText = `${Object.keys(parts).length} online`;
+            }, (err) => console.log(err));
+
+            // Timer
+            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', `timers_${state.roomCode}`, 'current'), (doc) => {
+                if (doc.exists()) {
+                    state.timer = { ...state.timer, ...doc.data() };
+                    updateTimerUI();
+                }
+            }, (err) => console.log(err));
+
+            // Chat
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', `chat_${state.roomCode}`), (snapshot) => {
+                const msgs = [];
+                snapshot.forEach(doc => msgs.push(doc.data()));
+                msgs.sort((a, b) => (a.time || 0) - (b.time || 0));
+                renderChat(msgs);
+            }, (err) => console.log(err));
+
+            // Todos
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', `todo_${state.roomCode}`), (snapshot) => {
+                const items = [];
+                snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+                items.sort((a, b) => (a.time || 0) - (b.time || 0));
+                renderTodos(items);
+            }, (err) => console.log(err));
+        }
+
+        // --- Video Rendering ---
+        function renderVideos() {
+            videoGrid.innerHTML = '';
+            Object.entries(state.participants).forEach(([id, p]) => {
+                const isSelf = id === auth.currentUser?.uid;
+                const container = document.createElement('div');
+                container.className = `video-container ${p.isSpeaking ? 'speaking' : ''} ${p.handRaised ? 'border-[#fbbf24] shadow-[0_0_20px_rgba(251,191,36,0.2)]' : ''}`;
+                
+                container.innerHTML = `
+                    <div class="camera-feed" style="display: ${p.isVideoOff || p.isSharing ? 'none' : 'block'}"></div>
+                    ${p.isSharing ? `<div class="screen-share-overlay">
+                        <svg class="mb-2" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="14" x="3" y="3" rx="2"/><path d="M17 21H7"/><path d="M12 17v4"/></svg>
+                        <span class="tracking-widest">LIVE STREAM</span>
+                    </div>` : ''}
+                    <div class="avatar-circle" style="display: ${p.isVideoOff && !p.isSharing ? 'flex' : 'none'}">${p.emoji}</div>
+                    
+                    ${p.handRaised ? `<div class="absolute top-3 right-3 bg-yellow-400 text-black px-2 py-1 rounded-full z-10 text-[10px] font-black flex items-center gap-1 shadow-xl">✋ HELP!</div>` : ''}
+                    
+                    <div class="absolute bottom-3 left-3 flex items-center gap-2 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 z-10">
+                        <span class="text-[10px] font-bold text-white uppercase tracking-tighter">${isSelf ? 'You' : p.name}</span>
+                        ${p.isMuted ? '<svg class="text-red-500" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V5a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2"/></svg>' : ''}
+                    </div>
+                `;
+                videoGrid.appendChild(container);
+            });
+        }
+
+        // --- UI Interactions ---
+        window.switchTab = (tab) => {
+            state.currentTab = tab;
+            document.getElementById('content-chat').classList.toggle('hidden', tab !== 'chat');
+            document.getElementById('content-todo').classList.toggle('hidden', tab !== 'todo');
+            document.getElementById('tab-chat').className = `flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-b-2 transition-colors ${tab === 'chat' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-500'}`;
+            document.getElementById('tab-todo').className = `flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-b-2 transition-colors ${tab === 'todo' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-500'}`;
+        };
+
+        window.toggleFocusMode = () => {
+            state.isFocusMode = !state.isFocusMode;
+            document.body.classList.toggle('focus-mode-active', state.isFocusMode);
+            document.getElementById('main-header').style.display = state.isFocusMode ? 'none' : 'flex';
+            document.getElementById('main-footer').style.display = state.isFocusMode ? 'none' : 'flex';
+            document.getElementById('sidebar').style.display = state.isFocusMode ? 'none' : 'flex';
+            document.getElementById('music-player').classList.toggle('opacity-20', state.isFocusMode);
+            
+            if(state.isFocusMode) {
+                showToast("Focus Mode Active. Press ESC to exit.");
+            }
+        };
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && state.isFocusMode) toggleFocusMode();
+        });
+
+        // --- Music System ---
+        const stations = [
+            "https://stream.zeno.fm/0r0xa792kwzuv", // Lofi Girl
+            "https://icecast.walmradio.com:8000/lofi"
+        ];
+        let isMusicPlaying = false;
+        window.toggleMusic = () => {
+            isMusicPlaying = !isMusicPlaying;
+            if (isMusicPlaying) {
+                bgAudio.src = stations[0];
+                bgAudio.play();
+                document.getElementById('play-icon').classList.add('hidden');
+                document.getElementById('pause-icon').classList.remove('hidden');
+                document.getElementById('music-wave').style.display = 'flex';
+            } else {
+                bgAudio.pause();
+                document.getElementById('play-icon').classList.remove('hidden');
+                document.getElementById('pause-icon').classList.add('hidden');
+                document.getElementById('music-wave').style.display = 'none';
+            }
+        };
+
+        document.getElementById('volume-slider').oninput = (e) => {
+            bgAudio.volume = e.target.value;
+            ambientAudio.volume = e.target.value * 0.7;
+        };
+
+        window.playAmbient = (type) => {
+            const urls = {
+                rain: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // Placeholder for lo-fi loops
+                fire: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+                forest: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'
+            };
+            if(ambientAudio.src.includes(type) && !ambientAudio.paused) {
+                ambientAudio.pause();
+            } else {
+                ambientAudio.src = `https://assets.mixkit.co/active_storage/sfx/2422/2422-preview.mp3`; // Rain loop
+                ambientAudio.play();
+            }
+        };
+
+        // --- Shared Tasks ---
+        document.getElementById('todo-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('todo-input');
+            if (!input.value.trim() || !auth.currentUser) return;
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `todo_${state.roomCode}`), {
+                text: input.value, done: false, time: Date.now(), user: state.user.name
+            });
+            input.value = '';
+        };
+
+        window.toggleTodo = async (id, currentStatus) => {
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', `todo_${state.roomCode}`, id);
+            await updateDoc(ref, { done: !currentStatus });
+        };
+
+        function renderTodos(items) {
+            todoList.innerHTML = '';
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = `todo-item flex items-center gap-3 p-3 bg-white/5 border border-white/5 rounded-xl transition-all ${item.done ? 'done opacity-50' : ''}`;
+                div.innerHTML = `
+                    <button onclick="toggleTodo('${item.id}', ${item.done})" class="w-5 h-5 rounded border-2 border-blue-500/40 flex items-center justify-center">
+                        ${item.done ? '<div class="w-2.5 h-2.5 bg-blue-500 rounded-sm"></div>' : ''}
+                    </button>
+                    <span class="flex-1 text-xs font-medium text-slate-300">${item.text}</span>
+                    <span class="text-[8px] text-slate-600 uppercase font-black">${item.user}</span>
+                `;
+                todoList.appendChild(div);
+            });
+        }
+
+        // --- Core Helpers ---
+        window.toggleMic = () => { state.user.isMuted = !state.user.isMuted; syncUser(); document.getElementById('mic-btn').classList.toggle('danger', state.user.isMuted); };
+        window.toggleVideo = () => { state.user.isVideoOff = !state.user.isVideoOff; syncUser(); document.getElementById('video-btn').classList.toggle('active', !state.user.isVideoOff); };
+        window.toggleScreenShare = () => { state.user.isSharing = !state.user.isSharing; syncUser(); document.getElementById('screen-btn').classList.toggle('active', state.user.isSharing); };
+        window.toggleHand = () => { state.user.handRaised = !state.user.handRaised; syncUser(); document.getElementById('hand-btn').classList.toggle('active', state.user.handRaised); };
+        
+        window.toggleReactionMenu = () => document.getElementById('reaction-container').classList.toggle('hidden');
+        window.sendReaction = async (emoji) => {
+            if (!auth.currentUser) return;
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `chat_${state.roomCode}`), {
+                user: state.user.name, text: `${emoji}`, time: Date.now(), isReaction: true
+            });
+            toggleReactionMenu();
+        };
+
+        window.toggleTimer = async () => {
+            if (!auth.currentUser) return;
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', `timers_${state.roomCode}`, 'current');
+            await setDoc(ref, { isRunning: !state.timer.isRunning, minutes: 25, seconds: 0 });
+        };
+
+        setInterval(() => {
+            if (!state.timer.isRunning) return;
+            if (state.timer.seconds === 0) {
+                if (state.timer.minutes === 0) { state.timer.isRunning = false; updateTimerUI(); return; }
+                state.timer.minutes--; state.timer.seconds = 59;
+            } else { state.timer.seconds--; }
+            updateTimerUI();
+        }, 1000);
+
+        function updateTimerUI() {
+            const m = state.timer.minutes.toString().padStart(2, '0');
+            const s = state.timer.seconds.toString().padStart(2, '0');
+            timerDisplay.innerText = `${m}:${s}`;
+            document.getElementById('timer-status').className = `w-2 h-2 rounded-full ${state.timer.isRunning ? 'bg-green-500 animate-pulse' : 'bg-slate-600'}`;
+            document.getElementById('timer-btn').classList.toggle('active', state.timer.isRunning);
+        }
+
+        window.copyRoomCode = () => {
+            const el = document.createElement('textarea');
+            el.value = state.roomCode; document.body.appendChild(el); el.select();
+            document.execCommand('copy'); document.body.removeChild(el);
+            showToast("Room ID Copied!");
+        };
+
+        window.changeName = () => {
+            const n = prompt("What's your name?", state.user.name);
+            if (n) { state.user.name = n; localStorage.setItem('zoom_name_v2', n); syncUser(); document.getElementById('display-name').innerText = n; }
+        };
+
+        window.leaveMeeting = () => { if(confirm("End session?")) { localStorage.removeItem('zoom_room_v2'); window.location.reload(); } };
+
+        function renderChat(messages) {
+            chatBox.innerHTML = '';
+            messages.forEach(m => {
+                const div = document.createElement('div');
+                if (m.isReaction) {
+                    div.className = "flex justify-center my-1";
+                    div.innerHTML = `<span class="bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full text-[10px] border border-blue-500/20 font-bold">${m.user}: ${m.text}</span>`;
+                } else {
+                    div.innerHTML = `<div class="text-[9px] font-black text-slate-500 mb-0.5 uppercase tracking-tighter">${m.user}</div>
+                                     <div class="text-xs bg-white/5 p-2.5 rounded-xl border border-white/5 text-slate-200">${m.text}</div>`;
+                }
+                chatBox.appendChild(div);
+            });
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function updateStatusUI(s) {
+            const dot = document.getElementById('connection-dot');
+            dot.className = `w-1.5 h-1.5 rounded-full ${s === 'online' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-yellow-500 animate-pulse'}`;
+            document.getElementById('connection-text').innerText = s === 'online' ? 'Connected' : 'Connecting';
+        }
+
+        function startClock() {
+            const update = () => document.getElementById('clock-now').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            update(); setInterval(update, 1000);
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(-10px)';
+            setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(0)'; }, 2000);
+        }
+
+        document.getElementById('chat-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            if (!input.value.trim() || !auth.currentUser) return;
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `chat_${state.roomCode}`), {
+                user: state.user.name, text: input.value, time: Date.now()
+            });
+            input.value = '';
+        };
+
+        window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('hidden');
+
+        init();
+    </script>
+</body>
+</html>

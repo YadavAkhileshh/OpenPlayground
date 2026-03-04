@@ -1,0 +1,841 @@
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AURA AI Counselor | HIGH PERF</title>
+
+    <style>
+
+        :root {
+
+            --bg: #000505;
+
+            --iris-primary: #00ffcc;
+               /* Aqua */
+
+            --iris-secondary: #50c878;
+               /* Emerald */
+
+            --iris-accent: #ffffff;
+
+            --crisis-color: #ff3333;
+
+        }
+
+        body {
+
+            margin: 0;
+
+            background-color: var(--bg);
+
+            overflow: hidden;
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: center;
+
+            justify-content: center;
+
+            height: 100vh;
+
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+            color: #888;
+
+        }
+
+             /* The Viewport... */
+
+        #interface-container {
+
+            position: relative;
+
+            width: 100%;
+
+            height: 100%;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+        }
+
+        canvas {
+
+            z-index: 1;
+
+            filter: blur(0.5px) contrast(1.2);
+
+        }
+
+             /* Overlays */
+
+        #ui-layer {
+
+            position: absolute;
+
+            bottom: 12%;
+
+            z-index: 10;
+
+            text-align: center;
+
+            pointer-events: none;
+
+            width: 100%;
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: center;
+
+        }
+
+        #status-display {
+
+            font-size: 0.8rem;
+
+            letter-spacing: 4px;
+
+            text-transform: uppercase;
+
+            color: var(--iris-primary);
+
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
+
+            margin-bottom: 20px;
+
+            transition: color 0.5s;
+
+            background: rgba(0,0,0,0.3);
+
+            padding: 5px 15px;
+
+            border-radius: 20px;
+
+            border: 1px solid rgba(0,255,204,0.1);
+
+        }
+
+        #transcript {
+
+            font-size: 1.2rem;
+
+            color: rgba(255, 255, 255, 0.9);
+
+            max-width: 80%;
+
+            width: 600px;
+
+            min-height: 24px;
+
+            font-weight: 300;
+
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+
+            line-height: 1.4;
+
+        }
+
+        /* Initialization of Overlay */
+
+        #start-screen {
+
+            position: absolute;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            background: rgba(0, 5, 5, 0.95);
+
+            z-index: 100;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+            align-items: center;
+
+            transition: opacity 0.8s ease;
+
+        }
+
+        h1 {
+
+            color: white;
+
+            font-weight: 200;
+
+            letter-spacing: 8px;
+
+            margin-bottom: 10px;
+
+        }
+
+        p { color: #666; max-width: 400px; text-align: center; line-height: 1.5; }
+
+        button {
+
+            margin-top: 30px;
+
+            padding: 15px 50px;
+
+            background: transparent;
+
+            border: 1px solid var(--iris-primary);
+
+            color: var(--iris-primary);
+
+            font-size: 1rem;
+
+            letter-spacing: 3px;
+
+            cursor: pointer;
+
+            transition: 0.3s all ease;
+
+            text-transform: uppercase;
+
+        }
+
+        button:hover {
+
+            background: var(--iris-primary);
+
+            color: black;
+
+            box-shadow: 0 0 40px var(--iris-primary);
+
+        }
+
+            /* Disclaimer Footer */
+
+        .disclaimer {
+
+            position: absolute;
+
+            bottom: 10px;
+
+            font-size: 0.7rem;
+
+            color: #333;
+
+            width: 100%;
+
+            text-align: center;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div id="start-screen">
+
+        <h1>AURA AI</h1>
+
+        <p>Advanced User Response Agent</p>
+
+        <p style="font-size: 0.8rem; margin-top: 20px;">
+
+            <strong>Safety Notice:</strong> This is an AI simulation. 
+
+            It is not a licensed medical professional. 
+
+            If you are in crisis, please contact local emergency services immediately.
+
+        </p>
+
+        <button onclick="bootSystem()">Initialize Connection</button>
+
+    </div>
+
+    <div id="interface-container">
+
+        <canvas id="bio-eye"></canvas>
+
+        
+
+        <div id="ui-layer">
+
+            <div id="status-display">SYSTEM OFFLINE</div>
+
+            <div id="transcript"></div>
+
+        </div>
+
+    </div>
+
+    
+
+    <div class="disclaimer">AI generated content can be unpredictable. Use discretion.</div>
+
+    <script>
+
+     /** CONFIGURATION & STATE */
+
+        const CONFIG = {
+
+            voiceLang: 'en-GB', 
+
+            crisisKeywords: ['kill myself', 'suicide', 'end my life', 'die', 'hurt myself', 'overdose'],
+
+            crisisResponse: "I am detecting signals of severe distress. I care about your safety. Please, I urge you to call emergency services or a suicide prevention hotline immediately.",
+
+            silenceThreshold: 800 
+  // ms to wait after speech stops before sending (Faster than default 2000ms)
+
+        };
+
+        const STATE = {
+
+            idle: 0,
+
+            listening: 1,
+
+            thinking: 2,
+
+            speaking: 3,
+
+            crisis: 4
+
+        };
+
+        let currentMode = STATE.idle;
+
+        let audioContext;
+
+        let memory = []; 
+     // Session context
+
+        let silenceTimer = null; 
+  // Timer for custom speech detection
+
+        let currentTranscript = "";
+
+     // Canvas Setup
+
+        const canvas = document.getElementById('bio-eye');
+
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+
+        let time = 0;
+
+     /** ADVANCED VISUAL PHYSICS */
+
+        class Filament {
+
+            constructor(angle, length, speed) {
+
+                this.angle = angle;
+
+                this.baseLength = length;
+
+                this.speed = speed;
+
+                this.offset = Math.random() * Math.PI * 2;
+
+                this.color = Math.random() > 0.5 ? '#00ffcc' : '#50c878';
+
+            }
+
+            draw(cx, cy, radius, mode) {
+
+                let volatility = 1;
+
+                let surge = 0;
+
+                
+
+                if (mode === STATE.speaking) { volatility = 3; surge = 10; }
+
+                else if (mode === STATE.thinking) { volatility = 0.5; surge = -5; }
+
+                else if (mode === STATE.listening) { volatility = 1.5; surge = 5; }
+
+                else if (mode === STATE.crisis) { this.color = '#ff0000'; volatility = 8; }
+
+                const movement = Math.sin(time * this.speed + this.offset) * (10 * volatility);
+
+                const currentLen = this.baseLength + movement + surge;
+
+                
+
+                const x1 = cx + Math.cos(this.angle) * (radius * 0.3); 
+
+                const y1 = cy + Math.sin(this.angle) * (radius * 0.3);
+
+                
+
+                const cpX = cx + Math.cos(this.angle + (time * 0.1)) * (currentLen * 0.6);
+
+                const cpY = cy + Math.sin(this.angle + (time * 0.1)) * (currentLen * 0.6);
+
+                
+
+                const x2 = cx + Math.cos(this.angle) * currentLen;
+
+                const y2 = cy + Math.sin(this.angle) * currentLen;
+
+                ctx.beginPath();
+
+                ctx.moveTo(x1, y1);
+
+                ctx.quadraticCurveTo(cpX, cpY, x2, y2);
+
+                
+
+                ctx.strokeStyle = this.color;
+
+                ctx.globalAlpha = (mode === STATE.speaking) ? 0.6 : 0.3;
+
+                ctx.lineWidth = 1.5;
+
+                ctx.stroke();
+
+            }
+
+        }
+
+        const filaments = [];
+
+        const numFilaments = 180;
+
+        function initVisuals() {
+
+            window.addEventListener('resize', resize);
+
+            resize();
+
+            for(let i=0; i<numFilaments; i++) {
+
+                const angle = (Math.PI * 2 / numFilaments) * i;
+
+                const len = 100 + Math.random() * 80;
+
+                const speed = 0.5 + Math.random();
+
+                filaments.push(new Filament(angle, len, speed));
+
+            }
+
+            animate();
+
+        }
+
+        function resize() {
+
+            width = canvas.width = window.innerWidth;
+
+            height = canvas.height = window.innerHeight;
+
+        }
+
+        function animate() {
+
+            ctx.fillStyle = 'rgba(0, 5, 5, 0.2)'; 
+
+            ctx.fillRect(0, 0, width, height);
+
+            
+
+            const cx = width / 2;
+
+            const cy = height / 2;
+
+            
+
+            ctx.globalCompositeOperation = 'screen';
+
+            filaments.forEach(f => f.draw(cx, cy, 200, currentMode));
+
+            ctx.globalCompositeOperation = 'source-over';
+
+            ctx.fillStyle = '#000000';
+
+            ctx.beginPath();
+
+            
+
+            let pupilSize = 40;
+
+            if (currentMode === STATE.speaking) pupilSize = 35 + Math.sin(time * 5) * 5;
+
+            if (currentMode === STATE.listening) pupilSize = 50;
+
+            if (currentMode === STATE.crisis) pupilSize = 20; 
+
+            
+
+            ctx.arc(cx, cy, pupilSize, 0, Math.PI * 2);
+
+            ctx.fill();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+
+            ctx.beginPath();
+
+            ctx.ellipse(cx - 20, cy - 20, 10, 6, Math.PI / 4, 0, Math.PI*2);
+
+            ctx.fill();
+
+            time += 0.05;
+
+            requestAnimationFrame(animate);
+
+        }
+
+           /** THE BRAIN */
+
+        async function queryBrain(userInput) {
+
+               // Safety Check
+
+            for (let word of CONFIG.crisisKeywords) {
+
+                if (userInput.toLowerCase().includes(word)) {
+
+                    currentMode = STATE.crisis;
+
+                    document.documentElement.style.setProperty('--iris-primary', '#ff0000');
+
+                    return CONFIG.crisisResponse;
+
+                }
+
+            }
+
+// Immediately switch to thinking mode (Visual feedback)
+
+            currentMode = STATE.thinking;
+
+            updateStatus("PROCESSING...");
+
+       // Limit memory size for speed
+
+            const context = memory.slice(-3).map(m => `User: ${m.user}\nAI: ${m.ai}`).join('\n');
+
+            const systemPrompt = "You are Aura, an AI counselor. Be wise, empathetic, and very concise (1-2 sentences max).";
+
+            const prompt = `${systemPrompt}\n${context}\nUser: ${userInput}\nAI:`;
+
+            
+
+            try {
+
+           // Pollinations API (GET)  
+ // Added cachebuster to ensure no stale checks
+
+                const url = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?seed=${Math.floor(Math.random() * 1000)}`;
+
+                const response = await fetch(url);
+
+                
+
+                if (!response.ok) throw new Error("Net error");
+
+                
+
+                const data = await response.text();
+
+                
+
+                memory.push({ user: userInput, ai: data });
+
+                if (memory.length > 5) memory.shift(); 
+
+                
+
+                return data;
+
+            } catch (err) {
+
+                console.error(err);
+
+                return "I am sensing a disturbance in the network. Please try again.";
+
+            }
+
+        }
+
+        async function warmUpBrain() {
+
+   // Sends a silent request to wake up the serverless function
+
+            try {
+
+                fetch(`https://text.pollinations.ai/${encodeURIComponent("Hi")}`);
+
+                console.log("Neural Net Warmup Initiated");
+
+            } catch(e) {}
+
+        }
+
+      /** AUDIO SYS (OPTIMIZED) */
+
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        let recognition;
+
+        let synth = window.speechSynthesis;
+
+        function setupAudio() {
+
+            if (!Recognition) return alert("Browser not supported. Please use Chrome.");
+
+            
+
+            recognition = new Recognition();
+
+            recognition.continuous = true; 
+
+            recognition.lang = 'en-US'; 
+
+            recognition.interimResults = true; 
+
+            recognition.onstart = () => {
+
+                if(currentMode !== STATE.speaking) {
+
+                    currentMode = STATE.listening;
+
+                    updateStatus("LISTENING...");
+
+                }
+
+            };
+
+         // Custom Silence Logic
+
+            recognition.onresult = async (event) => {
+
+    // Clear existing timer if user is still talking
+
+                clearTimeout(silenceTimer);
+
+                const results = event.results;
+
+                const lastResult = results[results.length - 1];
+
+                currentTranscript = lastResult[0].transcript;
+
+     // Update UI immediately (Feels faster)
+
+                document.getElementById('transcript').innerText = `"${currentTranscript}"`;
+
+   // Set a timer: If silence for X ms, assume done.
+
+                silenceTimer = setTimeout(async () => {
+
+                    recognition.stop();
+               // Force stop
+
+                    processUserSpeech(currentTranscript);
+
+                }, CONFIG.silenceThreshold);
+
+            };
+
+            recognition.onend = () => {
+
+     // Ensure we don't restart immediately if we are processing
+
+                if (currentMode === STATE.listening) {
+
+                    recognition.start();
+
+                }
+
+            };
+
+        }
+
+        async function processUserSpeech(text) {
+
+            if (!text || text.trim().length < 1) {
+
+       // False alarm, restart listening
+
+                currentMode = STATE.listening;
+
+                try { recognition.start(); } catch(e){}
+
+                return;
+
+            }
+
+            currentMode = STATE.thinking;
+
+            updateStatus("ANALYZING...");
+
+            
+
+            const answer = await queryBrain(text);
+
+            speak(answer);
+
+        }
+
+        function speak(text) {
+
+            synth.cancel();
+
+            currentMode = STATE.speaking;
+
+            updateStatus("RESPONDING...");
+
+            
+
+            const utter = new SpeechSynthesisUtterance(text);
+
+            
+
+         // Voice Selection logic
+
+            const voices = synth.getVoices();
+
+            let voice = voices.find(v => v.name.includes("Google UK English Female"));
+
+            if (!voice) voice = voices.find(v => v.lang === "en-GB" && v.name.includes("Female"));
+
+            if (!voice) voice = voices.find(v => v.lang === "en-GB");
+
+            
+
+            if (voice) utter.voice = voice;
+
+            utter.pitch = 1.0; 
+
+            utter.rate = 0.9; 
+
+            utter.onend = () => {
+
+                currentMode = STATE.listening;
+
+                updateStatus("LISTENING...");
+
+                document.documentElement.style.setProperty('--iris-primary', '#00ffcc');
+
+                currentTranscript = "";
+              // Reset buffer
+
+                
+
+    // Small delay to prevent self-hearing
+
+                setTimeout(() => {
+
+                    try { recognition.start(); } catch(e){}
+
+                }, 100);
+
+            };
+
+            synth.speak(utter);
+
+            document.getElementById('transcript').innerText = text;
+
+        }
+
+                 /** UTILS */
+
+        function updateStatus(text) {
+
+            const el = document.getElementById('status-display');
+
+            el.innerText = text;
+
+            if (currentMode === STATE.crisis) el.style.color = 'red';
+
+            else el.style.color = 'var(--iris-primary)';
+
+        }
+
+        function bootSystem() {
+
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+
+            audioContext = new AudioContext();
+
+            
+
+            warmUpBrain(); 
+          // Warm up API
+
+            synth.getVoices(); 
+          // Warm up Voice
+
+            const startScreen = document.getElementById('start-screen');
+
+            startScreen.style.opacity = 0;
+
+            setTimeout(() => {
+
+                startScreen.style.display = 'none';
+
+            }, 800);
+
+            initVisuals();
+
+            setupAudio();
+
+            
+
+         // Initial Greeting
+
+            currentMode = STATE.speaking; 
+
+            setTimeout(() => {
+
+                speak("I am Aura. I am listening.");
+
+            }, 1000);
+
+        }
+
+             // Interrupt Logic
+
+        canvas.addEventListener('click', () => {
+
+            if (currentMode === STATE.speaking) {
+
+                synth.cancel();
+
+                currentMode = STATE.listening;
+
+                updateStatus("INTERRUPTED");
+
+                try { recognition.start(); } catch(e){}
+
+            }
+
+        });
+
+    </script>
+
+</body>
+
+</html>
+

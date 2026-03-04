@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Variable Name Suggestor 🏷️</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #373060;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-family: 'Fira Code', monospace;
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff9a9e, #fad0c4, #fad0c4, #a1c4fd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #b0b7d6;
+            max-width: 700px;
+            margin: 0 auto 20px;
+        }
+
+        /* Main Layout */
+        .main-content {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+            }
+        }
+
+        /* Input Panel */
+        .input-panel {
+            flex: 1;
+            min-width: 400px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ff9a9e;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Code Editor */
+        .code-editor {
+            flex: 1;
+            background: #1e1e3f;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .editor-header {
+            background: #2d2b55;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .editor-title {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            color: #a599e9;
+        }
+
+        .language-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+        }
+
+        .code-area {
+            height: 300px;
+            padding: 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            tab-size: 4;
+            color: #f8f8f2;
+            background: #1e1e3f;
+            resize: vertical;
+        }
+
+        .code-area:focus {
+            outline: none;
+        }
+
+        /* Variable Input */
+        .variable-input {
+            margin-top: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #ff9a9e;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #b0b7d6;
+            font-size: 0.9rem;
+        }
+
+        /* Context Options */
+        .context-options {
+            margin-top: 20px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .option-btn {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .option-btn:hover {
+            background: rgba(255, 154, 158, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .option-btn.active {
+            background: rgba(255, 154, 158, 0.3);
+            border-color: #ff9a9e;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #ff9a9e, #a1c4fd);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Suggestions Panel */
+        .suggestions-panel {
+            flex: 2;
+            min-width: 500px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Suggestion Cards */
+        .suggestion-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .suggestion-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .suggestion-card:hover {
+            transform: translateY(-5px);
+            border-color: #ff9a9e;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .suggestion-card.best {
+            background: linear-gradient(135deg, rgba(255, 154, 158, 0.2), rgba(161, 196, 253, 0.2));
+            border-color: #ff9a9e;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .variable-name {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #a1c4fd;
+        }
+
+        .score-badge {
+            background: rgba(255, 154, 158, 0.3);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .card-body {
+            margin-bottom: 15px;
+        }
+
+        .suggestion-desc {
+            color: #b0b7d6;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .suggestion-details {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 0.8rem;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #a599e9;
+        }
+
+        .card-footer {
+            display: flex;
+            gap: 10px;
+        }
+
+        .card-btn {
+            flex: 1;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .card-btn:hover {
+            background: rgba(255, 154, 158, 0.3);
+        }
+
+        .card-btn.primary {
+            background: rgba(161, 196, 253, 0.3);
+        }
+
+        /* Naming Patterns */
+        .patterns-section {
+            margin-top: 30px;
+        }
+
+        .patterns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .pattern-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .pattern-name {
+            font-family: 'Fira Code', monospace;
+            font-size: 1rem;
+            color: #ff9a9e;
+            margin-bottom: 5px;
+        }
+
+        .pattern-desc {
+            font-size: 0.8rem;
+            color: #b0b7d6;
+        }
+
+        /* History Panel */
+        .history-panel {
+            margin-top: 30px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            background: rgba(255, 154, 158, 0.1);
+            transform: translateX(5px);
+        }
+
+        .history-name {
+            font-family: 'Fira Code', monospace;
+            color: #a1c4fd;
+        }
+
+        .history-context {
+            font-size: 0.8rem;
+            color: #b0b7d6;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #b0b7d6;
+            font-size: 0.9rem;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            max-width: 300px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ff9a9e;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Badge Colors */
+        .badge-green {
+            background: rgba(80, 250, 123, 0.3);
+            color: #50fa7b;
+        }
+
+        .badge-blue {
+            background: rgba(161, 196, 253, 0.3);
+            color: #a1c4fd;
+        }
+
+        .badge-purple {
+            background: rgba(189, 147, 249, 0.3);
+            color: #bd93f9;
+        }
+
+        .badge-orange {
+            background: rgba(255, 184, 108, 0.3);
+            color: #ffb86c;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .input-panel, .suggestions-panel {
+                padding: 20px;
+                min-width: 100%;
+            }
+            
+            .suggestion-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .patterns-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animation for new suggestions */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .suggestion-card {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Syntax highlighting in code */
+        .code-keyword {
+            color: #ff79c6;
+        }
+
+        .code-function {
+            color: #50fa7b;
+        }
+
+        .code-variable {
+            color: #f1fa8c;
+            background: rgba(241, 250, 140, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .code-string {
+            color: #f1fa8c;
+        }
+
+        .code-number {
+            color: #bd93f9;
+        }
+
+        .code-comment {
+            color: #6272a4;
+        }
+
+        /* Rating Stars */
+        .rating {
+            display: flex;
+            gap: 2px;
+            margin-top: 5px;
+        }
+
+        .star {
+            color: #ffb86c;
+            font-size: 0.8rem;
+        }
+
+        .star.empty {
+            color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-tag"></i> Variable Name Suggestor</h1>
+            <p class="subtitle">Get intelligent, descriptive variable names based on context, purpose, and programming best practices. No more foo, bar, or temp!</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Input Panel -->
+            <div class="input-panel">
+                <h2 class="section-title"><i class="fas fa-code"></i> Code Context</h2>
+                
+                <div class="code-editor">
+                    <div class="editor-header">
+                        <div class="editor-title">code_context.js</div>
+                        <select class="language-select" id="languageSelect">
+                            <option value="javascript">JavaScript</option>
+                            <option value="python">Python</option>
+                            <option value="java">Java</option>
+                            <option value="typescript">TypeScript</option>
+                            <option value="cpp">C++</option>
+                        </select>
+                    </div>
+                    <textarea class="code-area" id="codeArea" placeholder="// Paste or type your code here...
+// The AI will analyze the context and suggest variable names
+
+function processUserData() {
+    // Need variable for user input
+    let x = document.getElementById('input').value;
+    
+    // Need variable for processed result
+    let y = x.toUpperCase();
+    
+    // Need variable for storing final output
+    let z = [];
+    
+    return z;
+}
+
+// Or describe what you need:
+// "I need a variable to store API response data"
+// "Variable for counting successful operations"
+// "Name for a function that validates email addresses""></textarea>
+                </div>
+
+                <div class="variable-input">
+                    <h2 class="section-title"><i class="fas fa-keyboard"></i> Describe Your Variable</h2>
+                    <div class="input-group">
+                        <div style="flex: 1;">
+                            <label class="input-label">What does this variable store or represent?</label>
+                            <input type="text" class="input-field" id="purposeInput" placeholder="e.g., 'user email address', 'API response data', 'number of retries'" value="user email address">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <div style="flex: 1;">
+                            <label class="input-label">Data type or structure</label>
+                            <input type="text" class="input-field" id="typeInput" placeholder="e.g., 'string', 'array of objects', 'boolean flag'" value="string">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="context-options">
+                    <h2 class="section-title"><i class="fas fa-sliders-h"></i> Naming Preferences</h2>
+                    <div class="options-grid" id="optionsGrid">
+                        <!-- Options will be added dynamically -->
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="analyzeBtn">
+                        <i class="fas fa-magic"></i> Analyze & Suggest
+                    </button>
+                    <button class="btn btn-secondary" id="clearBtn">
+                        <i class="fas fa-redo"></i> Clear & Reset
+                    </button>
+                    <button class="btn btn-secondary" id="examplesBtn">
+                        <i class="fas fa-lightbulb"></i> Show Examples
+                    </button>
+                    <button class="btn btn-secondary" id="historyBtn">
+                        <i class="fas fa-history"></i> View History
+                    </button>
+                </div>
+            </div>
+
+            <!-- Suggestions Panel -->
+            <div class="suggestions-panel">
+                <div class="suggestions-header">
+                    <h2 class="section-title"><i class="fas fa-lightbulb"></i> Suggested Variable Names</h2>
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                        <div id="suggestionCount" style="color: #b0b7d6; font-size: 0.9rem;">0 suggestions generated</div>
+                        <div id="loadingIndicator" style="display: none;">
+                            <div class="loading"></div>
+                            <span style="margin-left: 10px; color: #ff9a9e;">Analyzing context...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="suggestion-cards" id="suggestionCards">
+                    <!-- Suggestions will be added here -->
+                    <div style="text-align: center; padding: 40px; color: #6272a4;">
+                        <i class="fas fa-tags" style="font-size: 3rem; margin-bottom: 20px; display: block;"></i>
+                        <h3>No Suggestions Yet</h3>
+                        <p>Enter your code context and click "Analyze & Suggest" to get intelligent variable name suggestions.</p>
+                    </div>
+                </div>
+
+                <div class="patterns-section">
+                    <h2 class="section-title"><i class="fas fa-shapes"></i> Naming Patterns & Conventions</h2>
+                    <div class="patterns-grid" id="patternsGrid">
+                        <!-- Patterns will be added dynamically -->
+                    </div>
+                </div>
+
+                <div class="history-panel" id="historyPanel" style="display: none;">
+                    <h2 class="section-title"><i class="fas fa-history"></i> Recent Suggestions</h2>
+                    <div class="history-list" id="historyList">
+                        <!-- History items will be added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Variable Name Suggestor 🏷️ | Never struggle with naming variables again | Made with <i class="fas fa-heart" style="color:#ff9a9e;"></i></p>
+        </footer>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const codeArea = document.getElementById('codeArea');
+            const purposeInput = document.getElementById('purposeInput');
+            const typeInput = document.getElementById('typeInput');
+            const languageSelect = document.getElementById('languageSelect');
+            const optionsGrid = document.getElementById('optionsGrid');
+            const suggestionCards = document.getElementById('suggestionCards');
+            const patternsGrid = document.getElementById('patternsGrid');
+            const historyPanel = document.getElementById('historyPanel');
+            const historyList = document.getElementById('historyList');
+            const suggestionCount = document.getElementById('suggestionCount');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            // Buttons
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const examplesBtn = document.getElementById('examplesBtn');
+            const historyBtn = document.getElementById('historyBtn');
+            
+            // State
+            let preferences = {
+                casing: 'camelCase',
+                descriptive: true,
+                concise: true,
+                languageConventions: true,
+                includeType: false,
+                usePrefixes: true,
+                usePlurals: true,
+                addComments: true
+            };
+            
+            let suggestionHistory = [];
+            let currentSuggestions = [];
+            
+            // Initialize
+            function init() {
+                // Create options
+                createOptions();
+                
+                // Create naming patterns
+                createNamingPatterns();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                // Load history from localStorage
+                loadHistory();
+                
+                // Show example
+                showDefaultExample();
+            }
+            
+            // Create preference options
+            function createOptions() {
+                const options = [
+                    { id: 'camelCase', icon: 'fas fa-font', label: 'camelCase', group: 'casing', active: true },
+                    { id: 'snake_case', icon: 'fas fa-underline', label: 'snake_case', group: 'casing' },
+                    { id: 'PascalCase', icon: 'fas fa-text-height', label: 'PascalCase', group: 'casing' },
+                    { id: 'descriptive', icon: 'fas fa-align-left', label: 'Descriptive', active: true },
+                    { id: 'concise', icon: 'fas fa-compress', label: 'Concise', active: true },
+                    { id: 'languageConventions', icon: 'fas fa-code', label: 'Language Conventions', active: true },
+                    { id: 'includeType', icon: 'fas fa-cube', label: 'Include Type' },
+                    { id: 'usePrefixes', icon: 'fas fa-hashtag', label: 'Use Prefixes', active: true },
+                    { id: 'usePlurals', icon: 'fas fa-copy', label: 'Use Plurals', active: true }
+                ];
+                
+                optionsGrid.innerHTML = '';
+                
+                options.forEach(option => {
+                    const optionBtn = document.createElement('button');
+                    optionBtn.className = `option-btn ${option.active ? 'active' : ''}`;
+                    optionBtn.dataset.option = option.id;
+                    optionBtn.dataset.group = option.group;
+                    
+                    optionBtn.innerHTML = `
+                        <i class="${option.icon}"></i>
+                        ${option.label}
+                    `;
+                    
+                    optionBtn.addEventListener('click', function() {
+                        // Handle radio groups
+                        if (option.group) {
+                            document.querySelectorAll(`.option-btn[data-group="${option.group}"]`).forEach(btn => {
+                                btn.classList.remove('active');
+                            });
+                        }
+                        
+                        this.classList.toggle('active');
+                        
+                        // Update preferences
+                        preferences[option.id] = this.classList.contains('active');
+                    });
+                    
+                    optionsGrid.appendChild(optionBtn);
+                });
+            }
+            
+            // Create naming patterns
+            function createNamingPatterns() {
+                const patterns = [
+                    { name: 'is/has/can', desc: 'Boolean flags: isActive, hasPermission, canEdit' },
+                    { name: 'get/set', desc: 'Accessors: getValue, setValue, getUserData' },
+                    { name: 'count/total', desc: 'Counters: itemCount, totalUsers, errorCount' },
+                    { name: 'min/max', desc: 'Boundaries: minValue, maxLength, minPrice' },
+                    { name: 'prev/next', desc: 'Navigation: prevPage, nextItem, previousValue' },
+                    { name: 'temp/cache', desc: 'Temporaries: tempValue, cachedData, bufferSize' },
+                    { name: 'list/array', desc: 'Collections: userList, itemArray, dataSet' },
+                    { name: 'map/dict', desc: 'Mappings: userMap, configDict, settingsLookup' }
+                ];
+                
+                patternsGrid.innerHTML = '';
+                
+                patterns.forEach(pattern => {
+                    const patternCard = document.createElement('div');
+                    patternCard.className = 'pattern-card';
+                    
+                    patternCard.innerHTML = `
+                        <div class="pattern-name">${pattern.name}</div>
+                        <div class="pattern-desc">${pattern.desc}</div>
+                    `;
+                    
+                    patternsGrid.appendChild(patternCard);
+                });
+            }
+            
+            // Setup event listeners
+            function setupEventListeners() {
+                // Buttons
+                analyzeBtn.addEventListener('click', analyzeAndSuggest);
+                clearBtn.addEventListener('click', clearAll);
+                examplesBtn.addEventListener('click', showExamples);
+                historyBtn.addEventListener('click', toggleHistory);
+                
+                // Language change
+                languageSelect.addEventListener('change', function() {
+                    updateLanguageConventions(this.value);
+                });
+                
+                // Code area syntax highlighting (simple)
+                codeArea.addEventListener('input', function() {
+                    highlightCodeSimple(this.value);
+                });
+                
+                // Load example on focus if empty
+                codeArea.addEventListener('focus', function() {
+                    if (this.value.trim() === '') {
+                        showDefaultExample();
+                    }
+                });
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', function(e) {
+                    // Ctrl/Cmd + Enter to analyze
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        analyzeAndSuggest();
+                    }
+                    
+                    // Ctrl/Cmd + K to clear
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                        e.preventDefault();
+                        clearAll();
+                    }
+                });
+            }
+            
+            // Update language conventions
+            function updateLanguageConventions(language) {
+                // Update casing preference based on language
+                const casingOptions = {
+                    'javascript': 'camelCase',
+                    'python': 'snake_case',
+                    'java': 'camelCase',
+                    'typescript': 'camelCase',
+                    'cpp': 'camelCase'
+                };
+                
+                const preferredCasing = casingOptions[language] || 'camelCase';
+                
+                // Update UI
+                document.querySelectorAll('.option-btn[data-group="casing"]').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.option === preferredCasing) {
+                        btn.classList.add('active');
+                    }
+                });
+                
+                // Update preferences
+                preferences.camelCase = preferredCasing === 'camelCase';
+                preferences.snake_case = preferredCasing === 'snake_case';
+                preferences.PascalCase = preferredCasing === 'PascalCase';
+            }
+            
+            // Show default example
+            function showDefaultExample() {
+                const exampleCode = `// Example: User registration validation
+function validateRegistration(userData) {
+    // Need variable for email validation result
+    let emailValid = checkEmail(userData.email);
+    
+    // Need variable for password strength score
+    let pwdScore = calculatePasswordStrength(userData.password);
+    
+    // Need variable to store validation errors
+    let errors = [];
+    
+    if (!emailValid) {
+        errors.push("Invalid email format");
+    }
+    
+    if (pwdScore < 8) {
+        errors.push("Password too weak");
+    }
+    
+    // Need variable for final validation result
+    let isValid = errors.length === 0;
+    
+    return { isValid, errors };
+}`;
+                
+                codeArea.value = exampleCode;
+                purposeInput.value = "user email address";
+                typeInput.value = "string";
+                highlightCodeSimple(exampleCode);
+            }
+            
+            // Simple code highlighting
+            function highlightCodeSimple(code) {
+                // This is a very simple highlighting for demo purposes
+                // In a real app, you'd use a proper syntax highlighter
+                const lines = code.split('\n');
+                let highlighted = '';
+                
+                lines.forEach(line => {
+                    let highlightedLine = line;
+                    
+                    // Highlight comments
+                    if (line.includes('//')) {
+                        highlightedLine = line.replace(/\/\/.*/, '<span class="code-comment">$&</span>');
+                    }
+                    
+                    // Highlight keywords (very basic)
+                    const keywords = ['function', 'if', 'else', 'return', 'let', 'const', 'var', 'for', 'while'];
+                    keywords.forEach(keyword => {
+                        const regex = new RegExp(`\\b${keyword}\\b`, 'g');
+                        highlightedLine = highlightedLine.replace(regex, `<span class="code-keyword">${keyword}</span>`);
+                    });
+                    
+                    // Highlight strings
+                    highlightedLine = highlightedLine.replace(/["'][^"']*["']/g, '<span class="code-string">$&</span>');
+                    
+                    // Highlight numbers
+                    highlightedLine = highlightedLine.replace(/\b\d+\b/g, '<span class="code-number">$&</span>');
+                    
+                    highlighted += highlightedLine + '\n';
+                });
+                
+                // Update the display (we need a separate display element for this)
+                // For now, we'll just keep it simple and not do live highlighting
+            }
+            
+            // Analyze and suggest
+            function analyzeAndSuggest() {
+                const code = codeArea.value.trim();
+                const purpose = purposeInput.value.trim();
+                const dataType = typeInput.value.trim();
+                
+                if (!code && !purpose) {
+                    showTooltip(purposeInput, "Please enter code context or describe the variable purpose");
+                    return;
+                }
+                
+                // Show loading
+                loadingIndicator.style.display = 'flex';
+                analyzeBtn.disabled = true;
+                
+                // Simulate AI analysis (in real app, this would call an API)
+                setTimeout(() => {
+                    generateSuggestions(code, purpose, dataType);
+                    loadingIndicator.style.display = 'none';
+                    analyzeBtn.disabled = false;
+                }, 800);
+            }
+            
+            // Generate suggestions
+            function generateSuggestions(code, purpose, dataType) {
+                // Clear previous suggestions
+                suggestionCards.innerHTML = '';
+                currentSuggestions = [];
+                
+                // Analyze the context
+                const context = analyzeContext(code, purpose, dataType);
+                
+                // Generate suggestions based on context
+                const suggestions = createSuggestions(context);
+                
+                // Sort by score
+                suggestions.sort((a, b) => b.score - a.score);
+                
+                // Display suggestions
+                suggestions.forEach((suggestion, index) => {
+                    const isBest = index === 0;
+                    createSuggestionCard(suggestion, isBest);
+                    currentSuggestions.push(suggestion);
+                });
+                
+                // Update count
+                suggestionCount.textContent = `${suggestions.length} suggestions generated`;
+                
+                // Add to history
+                addToHistory(context, suggestions[0]);
+                
+                // Hide history panel if showing
+                historyPanel.style.display = 'none';
+            }
+            
+            // Analyze context
+            function analyzeContext(code, purpose, dataType) {
+                const context = {
+                    purpose: purpose.toLowerCase(),
+                    dataType: dataType.toLowerCase(),
+                    language: languageSelect.value,
+                    codeContext: code,
+                    preferences: { ...preferences }
+                };
+                
+                // Extract keywords from purpose
+                const purposeWords = purpose.toLowerCase().split(/[\s,._-]+/).filter(word => word.length > 2);
+                
+                // Extract potential variable names from code
+                const codeVariables = extractVariablesFromCode(code);
+                
+                // Determine variable category
+                const categories = determineCategories(purpose, dataType);
+                
+                return {
+                    ...context,
+                    keywords: purposeWords,
+                    existingVariables: codeVariables,
+                    categories: categories,
+                    casing: getCurrentCasing()
+                };
+            }
+            
+            // Extract variables from code
+            function extractVariablesFromCode(code) {
+                const variablePatterns = [
+                    /(?:let|const|var)\s+(\w+)/g,  // JavaScript
+                    /def\s+\w+\s*\(([^)]*)\)/g,    // Python function params
+                    /(\w+)\s*=/g                   // Assignment
+                ];
+                
+                const variables = new Set();
+                
+                variablePatterns.forEach(pattern => {
+                    let match;
+                    while ((match = pattern.exec(code)) !== null) {
+                        if (match[1]) {
+                            variables.add(match[1]);
+                        }
+                    }
+                });
+                
+                return Array.from(variables);
+            }
+            
+            // Determine variable categories
+            function determineCategories(purpose, dataType) {
+                const categories = [];
+                
+                // Purpose-based categories
+                const purposeLower = purpose.toLowerCase();
+                if (purposeLower.includes('count') || purposeLower.includes('number') || purposeLower.includes('total')) {
+                    categories.push('counter');
+                }
+                if (purposeLower.includes('flag') || purposeLower.includes('check') || purposeLower.includes('valid')) {
+                    categories.push('boolean');
+                }
+                if (purposeLower.includes('list') || purposeLower.includes('array') || purposeLower.includes('collection')) {
+                    categories.push('collection');
+                }
+                if (purposeLower.includes('temp') || purposeLower.includes('cache') || purposeLower.includes('buffer')) {
+                    categories.push('temporary');
+                }
+                if (purposeLower.includes('result') || purposeLower.includes('output') || purposeLower.includes('response')) {
+                    categories.push('result');
+                }
+                if (purposeLower.includes('error') || purposeLower.includes('exception') || purposeLower.includes('fail')) {
+                    categories.push('error');
+                }
+                
+                // Data type categories
+                if (dataType.includes('bool') || dataType === 'boolean') {
+                    categories.push('boolean');
+                }
+                if (dataType.includes('array') || dataType.includes('list') || dataType.includes('[]')) {
+                    categories.push('collection');
+                }
+                if (dataType.includes('object') || dataType.includes('dict') || dataType.includes('map')) {
+                    categories.push('object');
+                }
+                if (dataType.includes('string') || dataType.includes('text')) {
+                    categories.push('string');
+                }
+                if (dataType.includes('number') || dataType.includes('int') || dataType.includes('float')) {
+                    categories.push('number');
+                }
+                
+                // Default category
+                if (categories.length === 0) {
+                    categories.push('general');
+                }
+                
+                return [...new Set(categories)]; // Remove duplicates
+            }
+            
+            // Get current casing preference
+            function getCurrentCasing() {
+                if (preferences.camelCase) return 'camelCase';
+                if (preferences.snake_case) return 'snake_case';
+                if (preferences.PascalCase) return 'PascalCase';
+                return 'camelCase';
+            }
+            
+            // Create suggestions
+            function createSuggestions(context) {
+                const suggestions = [];
+                const baseNames = generateBaseNames(context);
+                
+                baseNames.forEach(baseName => {
+                    // Apply casing
+                    let variableName = applyCasing(baseName, context.casing);
+                    
+                    // Apply prefixes/suffixes based on category
+                    variableName = applyAffixes(variableName, context);
+                    
+                    // Generate variations
+                    const variations = generateVariations(variableName, context);
+                    
+                    variations.forEach(variation => {
+                        const suggestion = createSuggestionObject(variation, context);
+                        suggestions.push(suggestion);
+                    });
+                });
+                
+                return suggestions;
+            }
+            
+            // Generate base names from keywords
+            function generateBaseNames(context) {
+                const { keywords, categories } = context;
+                const baseNames = new Set();
+                
+                // Generate from keywords
+                keywords.forEach(keyword => {
+                    baseNames.add(keyword);
+                    
+                    // Add common variations
+                    if (keyword.endsWith('s')) {
+                        baseNames.add(keyword.slice(0, -1)); // Singular
+                    } else {
+                        baseNames.add(keyword + 's'); // Plural
+                    }
+                    
+                    // Add common prefixes/suffixes
+                    if (categories.includes('boolean')) {
+                        baseNames.add('is' + capitalize(keyword));
+                        baseNames.add('has' + capitalize(keyword));
+                        baseNames.add('can' + capitalize(keyword));
+                    }
+                    
+                    if (categories.includes('counter')) {
+                        baseNames.add(keyword + 'Count');
+                        baseNames.add(keyword + 'Total');
+                        baseNames.add('num' + capitalize(keyword));
+                    }
+                });
+                
+                // Add category-specific names
+                if (categories.includes('boolean')) {
+                    baseNames.add('isValid');
+                    baseNames.add('hasValue');
+                    baseNames.add('canProceed');
+                }
+                
+                if (categories.includes('counter')) {
+                    baseNames.add('count');
+                    baseNames.add('total');
+                    baseNames.add('number');
+                }
+                
+                if (categories.includes('collection')) {
+                    baseNames.add('list');
+                    baseNames.add('array');
+                    baseNames.add('items');
+                }
+                
+                if (categories.includes('result')) {
+                    baseNames.add('result');
+                    baseNames.add('output');
+                    baseNames.add('response');
+                }
+                
+                if (categories.includes('error')) {
+                    baseNames.add('error');
+                    baseNames.add('exception');
+                    baseNames.add('failure');
+                }
+                
+                return Array.from(baseNames).filter(name => name.length <= 30);
+            }
+            
+            // Apply casing
+            function applyCasing(name, casing) {
+                switch (casing) {
+                    case 'camelCase':
+                        return toCamelCase(name);
+                    case 'snake_case':
+                        return toSnakeCase(name);
+                    case 'PascalCase':
+                        return toPascalCase(name);
+                    default:
+                        return name;
+                }
+            }
+            
+            function toCamelCase(str) {
+                return str.replace(/[_-](\w)/g, (_, c) => c.toUpperCase())
+                          .replace(/^\w/, c => c.toLowerCase());
+            }
+            
+            function toSnakeCase(str) {
+                return str.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
+            }
+            
+            function toPascalCase(str) {
+                return str.replace(/[_-](\w)/g, (_, c) => c.toUpperCase())
+                          .replace(/^\w/, c => c.toUpperCase());
+            }
+            
+            function capitalize(str) {
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+            
+            // Apply affixes (prefixes/suffixes)
+            function applyAffixes(name, context) {
+                let result = name;
+                const { categories, preferences } = context;
+                
+                if (preferences.usePrefixes) {
+                    if (categories.includes('boolean')) {
+                        if (!name.startsWith('is') && !name.startsWith('has') && !name.startsWith('can')) {
+                            result = 'is' + capitalize(result);
+                        }
+                    }
+                    
+                    if (categories.includes('counter')) {
+                        if (!name.includes('Count') && !name.includes('Total') && !name.startsWith('num')) {
+                            result = result + 'Count';
+                        }
+                    }
+                }
+                
+                if (preferences.includeType) {
+                    if (context.dataType && !result.toLowerCase().includes(context.dataType.toLowerCase())) {
+                        result = result + capitalize(context.dataType);
+                    }
+                }
+                
+                return result;
+            }
+            
+            // Generate variations
+            function generateVariations(baseName, context) {
+                const variations = [baseName];
+                
+                // Abbreviated version
+                if (baseName.length > 12) {
+                    const abbreviated = abbreviate(baseName);
+                    if (abbreviated !== baseName) {
+                        variations.push(abbreviated);
+                    }
+                }
+                
+                // With type hint
+                if (context.preferences.includeType && context.dataType) {
+                    const withType = baseName + capitalize(context.dataType);
+                    variations.push(withType);
+                }
+                
+                // Plural/singular variations
+                if (context.preferences.usePlurals) {
+                    if (baseName.endsWith('s') && !context.categories.includes('boolean')) {
+                        variations.push(baseName.slice(0, -1));
+                    } else if (context.categories.includes('collection')) {
+                        variations.push(baseName + 's');
+                    }
+                }
+                
+                return variations.slice(0, 3); // Limit to 3 variations
+            }
+            
+            // Abbreviate long names
+            function abbreviate(name) {
+                // Common abbreviations
+                const abbreviations = {
+                    'configuration': 'config',
+                    'initialization': 'init',
+                    'application': 'app',
+                    'information': 'info',
+                    'database': 'db',
+                    'temporary': 'temp',
+                    'maximum': 'max',
+                    'minimum': 'min',
+                    'average': 'avg',
+                    'parameter': 'param',
+                    'reference': 'ref',
+                    'utility': 'util'
+                };
+                
+                let result = name;
+                Object.entries(abbreviations).forEach(([full, short]) => {
+                    const regex = new RegExp(full, 'gi');
+                    result = result.replace(regex, short);
+                });
+                
+                return result !== name ? result : name;
+            }
+            
+            // Create suggestion object
+            function createSuggestionObject(name, context) {
+                const score = calculateScore(name, context);
+                const description = generateDescription(name, context);
+                const language = context.language;
+                
+                return {
+                    name: name,
+                    score: score,
+                    description: description,
+                    language: language,
+                    categories: context.categories,
+                    dataType: context.dataType,
+                    purpose: context.purpose,
+                    casing: context.casing
+                };
+            }
+            
+            // Calculate suggestion score
+            function calculateScore(name, context) {
+                let score = 50; // Base score
+                
+                // Length score (prefer 5-20 chars)
+                const length = name.length;
+                if (length >= 5 && length <= 20) {
+                    score += 20;
+                } else if (length < 3) {
+                    score -= 30;
+                } else if (length > 30) {
+                    score -= 20;
+                }
+                
+                // Descriptive score
+                if (context.preferences.descriptive) {
+                    const matchesPurpose = context.keywords.some(keyword => 
+                        name.toLowerCase().includes(keyword)
+                    );
+                    if (matchesPurpose) score += 25;
+                }
+                
+                // Conciseness score
+                if (context.preferences.concise && length <= 15) {
+                    score += 15;
+                }
+                
+                // Language conventions score
+                if (context.preferences.languageConventions) {
+                    if (isConventional(name, context.language, context.categories)) {
+                        score += 20;
+                    }
+                }
+                
+                // Avoid existing variables
+                if (context.existingVariables.includes(name)) {
+                    score -= 40;
+                }
+                
+                // Ensure score is between 0-100
+                return Math.max(0, Math.min(100, score));
+            }
+            
+            // Check if name follows conventions
+            function isConventional(name, language, categories) {
+                // Language-specific conventions
+                if (language === 'python' && name.includes('_')) {
+                    return true;
+                }
+                
+                if ((language === 'javascript' || language === 'java') && /^[a-z][a-zA-Z0-9]*$/.test(name)) {
+                    return true;
+                }
+                
+                // Category conventions
+                if (categories.includes('boolean') && /^(is|has|can)[A-Z]/.test(name)) {
+                    return true;
+                }
+                
+                if (categories.includes('counter') && /(Count|Total|Num)$/.test(name)) {
+                    return true;
+                }
+                
+                return false;
+            }
+            
+            // Generate description
+            function generateDescription(name, context) {
+                const { purpose, categories, dataType } = context;
+                
+                let desc = `Stores ${purpose}`;
+                
+                if (dataType) {
+                    desc += ` (${dataType})`;
+                }
+                
+                if (categories.includes('boolean')) {
+                    desc += `. Boolean flag indicating ${purpose}`;
+                } else if (categories.includes('counter')) {
+                    desc += `. Counts the number of ${purpose}`;
+                } else if (categories.includes('collection')) {
+                    desc += `. Collection/array of ${purpose}`;
+                } else if (categories.includes('result')) {
+                    desc += `. Result/output from ${purpose}`;
+                }
+                
+                return desc;
+            }
+            
+            // Create suggestion card
+            function createSuggestionCard(suggestion, isBest) {
+                const card = document.createElement('div');
+                card.className = `suggestion-card ${isBest ? 'best' : ''}`;
+                
+                // Calculate star rating (1-5 stars)
+                const starCount = Math.ceil(suggestion.score / 20);
+                let starsHTML = '';
+                for (let i = 1; i <= 5; i++) {
+                    starsHTML += `<i class="fas fa-star ${i <= starCount ? '' : 'empty'}"></i>`;
+                }
+                
+                // Determine badge color based on score
+                let badgeClass = 'badge-blue';
+                if (suggestion.score >= 80) badgeClass = 'badge-green';
+                else if (suggestion.score >= 60) badgeClass = 'badge-blue';
+                else if (suggestion.score >= 40) badgeClass = 'badge-purple';
+                else badgeClass = 'badge-orange';
+                
+                // Format categories
+                const categoriesHTML = suggestion.categories.map(cat => 
+                    `<span style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 10px; font-size: 0.7rem;">${cat}</span>`
+                ).join(' ');
+                
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="variable-name">${suggestion.name}</div>
+                        <div class="score-badge ${badgeClass}">${suggestion.score}/100</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="suggestion-desc">${suggestion.description}</div>
+                        <div class="rating">${starsHTML}</div>
+                        <div class="suggestion-details">
+                            <div class="detail-item">
+                                <i class="fas fa-code"></i>
+                                <span>${suggestion.language}</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-font"></i>
+                                <span>${suggestion.casing}</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-tag"></i>
+                                <span>${suggestion.dataType || 'N/A'}</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            ${categoriesHTML}
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="card-btn" onclick="copyToClipboard('${suggestion.name}')">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                        <button class="card-btn primary" onclick="insertVariable('${suggestion.name}')">
+                            <i class="fas fa-code"></i> Insert in Code
+                        </button>
+                        <button class="card-btn" onclick="regenerateVariation('${suggestion.name}')">
+                            <i class="fas fa-sync-alt"></i> Variation
+                        </button>
+                    </div>
+                `;
+                
+                suggestionCards.appendChild(card);
+            }
+            
+            // Add to history
+            function addToHistory(context, bestSuggestion) {
+                const historyItem = {
+                    id: Date.now(),
+                    timestamp: new Date().toISOString(),
+                    context: context,
+                    suggestion: bestSuggestion
+                };
+                
+                suggestionHistory.unshift(historyItem); // Add to beginning
+                
+                // Keep only last 10 items
+                if (suggestionHistory.length > 10) {
+                    suggestionHistory = suggestionHistory.slice(0, 10);
+                }
+                
+                // Save to localStorage
+                saveHistory();
+                
+                // Update history display
+                updateHistoryDisplay();
+            }
+            
+            // Update history display
+            function updateHistoryDisplay() {
+                historyList.innerHTML = '';
+                
+                suggestionHistory.forEach(item => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    
+                    historyItem.innerHTML = `
+                        <div>
+                            <div class="history-name">${item.suggestion.name}</div>
+                            <div class="history-context">${item.context.purpose}</div>
+                        </div>
+                        <div style="color: #6272a4; font-size: 0.8rem;">
+                            ${new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                    `;
+                    
+                    historyItem.addEventListener('click', () => {
+                        // Load this suggestion back
+                        loadFromHistory(item);
+                    });
+                    
+                    historyList.appendChild(historyItem);
+                });
+            }
+            
+            // Load from history
+            function loadFromHistory(historyItem) {
+                purposeInput.value = historyItem.context.purpose;
+                typeInput.value = historyItem.context.dataType;
+                codeArea.value = historyItem.context.codeContext;
+                
+                // Show the suggestion again
+                suggestionCards.innerHTML = '';
+                createSuggestionCard(historyItem.suggestion, true);
+                suggestionCount.textContent = '1 suggestion loaded from history';
+                
+                // Hide history panel
+                historyPanel.style.display = 'none';
+            }
+            
+            // Save history to localStorage
+            function saveHistory() {
+                try {
+                    localStorage.setItem('variableNameHistory', JSON.stringify(suggestionHistory));
+                } catch (e) {
+                    console.warn('Could not save history to localStorage');
+                }
+            }
+            
+            // Load history from localStorage
+            function loadHistory() {
+                try {
+                    const saved = localStorage.getItem('variableNameHistory');
+                    if (saved) {
+                        suggestionHistory = JSON.parse(saved);
+                        updateHistoryDisplay();
+                    }
+                } catch (e) {
+                    console.warn('Could not load history from localStorage');
+                }
+            }
+            
+            // Clear all
+            function clearAll() {
+                codeArea.value = '';
+                purposeInput.value = '';
+                typeInput.value = '';
+                suggestionCards.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #6272a4;">
+                        <i class="fas fa-tags" style="font-size: 3rem; margin-bottom: 20px; display: block;"></i>
+                        <h3>No Suggestions Yet</h3>
+                        <p>Enter your code context and click "Analyze & Suggest" to get intelligent variable name suggestions.</p>
+                    </div>
+                `;
+                suggestionCount.textContent = '0 suggestions generated';
+                historyPanel.style.display = 'none';
+                
+                showTooltip(clearBtn, "Cleared all inputs and suggestions");
+            }
+            
+            // Show examples
+            function showExamples() {
+                const examples = [
+                    { code: "// Need variable for API response data\nlet x = await fetch('/api/users');", purpose: "API response data", type: "object" },
+                    { code: "// Count successful operations\nlet y = 0;\nfor (let op of operations) {\n  if (op.success) y++;\n}", purpose: "number of successful operations", type: "integer" },
+                    { code: "// Validate user input\nfunction validate(input) {\n  let z = input.length > 0;\n  return z;\n}", purpose: "input validation result", type: "boolean" }
+                ];
+                
+                const randomExample = examples[Math.floor(Math.random() * examples.length)];
+                
+                codeArea.value = randomExample.code;
+                purposeInput.value = randomExample.purpose;
+                typeInput.value = randomExample.type;
+                
+                showTooltip(examplesBtn, "Loaded example. Click 'Analyze & Suggest' to see recommendations.");
+            }
+            
+            // Toggle history panel
+            function toggleHistory() {
+                if (historyPanel.style.display === 'none') {
+                    historyPanel.style.display = 'block';
+                    updateHistoryDisplay();
+                } else {
+                    historyPanel.style.display = 'none';
+                }
+            }
+            
+            // Show tooltip
+            function showTooltip(element, text) {
+                const rect = element.getBoundingClientRect();
+                const tooltip = document.getElementById('tooltip');
+                tooltip.textContent = text;
+                tooltip.style.left = `${rect.left + window.scrollX}px`;
+                tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                tooltip.classList.add('show');
+                
+                setTimeout(() => {
+                    tooltip.classList.remove('show');
+                }, 2000);
+            }
+            
+            // Global functions for button clicks
+            window.copyToClipboard = function(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showTooltip(document.activeElement, `Copied: ${text}`);
+                });
+            };
+            
+            window.insertVariable = function(name) {
+                const cursorPos = codeArea.selectionStart;
+                const text = codeArea.value;
+                const before = text.substring(0, cursorPos);
+                const after = text.substring(cursorPos);
+                
+                // Find the last variable declaration before cursor
+                const lines = before.split('\n');
+                const lastLine = lines[lines.length - 1];
+                
+                if (lastLine.includes('let ') || lastLine.includes('const ') || lastLine.includes('var ')) {
+                    // Insert at end of current line
+                    const newText = before + name + after;
+                    codeArea.value = newText;
+                    codeArea.focus();
+                    codeArea.setSelectionRange(cursorPos + name.length, cursorPos + name.length);
+                } else {
+                    // Insert as new line
+                    const newText = before + `let ${name} = ...;\n` + after;
+                    codeArea.value = newText;
+                    codeArea.focus();
+                    codeArea.setSelectionRange(cursorPos + `let ${name} = `.length, cursorPos + `let ${name} = `.length);
+                }
+                
+                showTooltip(document.activeElement, `Inserted: ${name}`);
+            };
+            
+            window.regenerateVariation = function(baseName) {
+                // Generate a new variation
+                const context = analyzeContext(codeArea.value, purposeInput.value, typeInput.value);
+                const newVariation = generateVariations(baseName, context)[0];
+                
+                // Replace in suggestions
+                const card = document.activeElement.closest('.suggestion-card');
+                if (card) {
+                    const nameElement = card.querySelector('.variable-name');
+                    nameElement.textContent = newVariation;
+                    showTooltip(card, `Generated variation: ${newVariation}`);
+                }
+            };
+            
+            // Initialize the application
+            init();
+        });
+    </script>
+</body>
+</html>

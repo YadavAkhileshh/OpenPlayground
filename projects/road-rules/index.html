@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Rules Learning Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 25px 0;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            color: white;
+            text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3);
+            margin-bottom: 15px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #e0f7fa;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .game-panel {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #26d0ce;
+            font-size: 1.8rem;
+            color: #1a2980;
+        }
+
+        .panel-title i {
+            color: #1a2980;
+            font-size: 2rem;
+        }
+
+        .road-canvas-container {
+            flex-grow: 1;
+            position: relative;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #e8f5e9;
+            min-height: 400px;
+            margin-bottom: 20px;
+            border: 3px solid #1a2980;
+        }
+
+        #roadCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 15px;
+        }
+
+        button {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            color: white;
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(26, 41, 128, 0.3);
+        }
+
+        .secondary-btn {
+            background: linear-gradient(135deg, #FF512F, #F09819);
+            color: white;
+        }
+
+        .secondary-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(255, 81, 47, 0.3);
+        }
+
+        .danger-btn {
+            background: linear-gradient(135deg, #FF416C, #FF4B2B);
+            color: white;
+        }
+
+        .danger-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(255, 65, 108, 0.3);
+        }
+
+        .quiz-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .quiz-question {
+            font-size: 1.5rem;
+            color: #1a2980;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .quiz-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .quiz-option {
+            padding: 20px;
+            background: #f5f7fa;
+            border-radius: 15px;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .quiz-option:hover {
+            transform: translateY(-5px);
+            border-color: #26d0ce;
+            background: #e8f5e9;
+        }
+
+        .quiz-option.selected {
+            border-color: #1a2980;
+            background: #d1e8ff;
+            box-shadow: 0 5px 15px rgba(26, 41, 128, 0.2);
+        }
+
+        .quiz-option.correct {
+            border-color: #4CAF50;
+            background: #e8f5e9;
+        }
+
+        .quiz-option.incorrect {
+            border-color: #FF416C;
+            background: #ffe8ec;
+        }
+
+        .quiz-option i {
+            font-size: 1.5rem;
+        }
+
+        .quiz-feedback {
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            display: none;
+        }
+
+        .quiz-feedback.correct {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 5px solid #4CAF50;
+            display: block;
+        }
+
+        .quiz-feedback.incorrect {
+            background: #ffe8ec;
+            color: #c62828;
+            border-left: 5px solid #FF416C;
+            display: block;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #1a2980;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.2rem;
+            color: #555;
+        }
+
+        .rules-list {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .rules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .rule-card {
+            background: #f5f7fa;
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 5px solid #26d0ce;
+            transition: transform 0.3s ease;
+        }
+
+        .rule-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .rule-icon {
+            font-size: 2rem;
+            color: #1a2980;
+            margin-bottom: 15px;
+        }
+
+        .rule-title {
+            font-weight: 700;
+            color: #1a2980;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+
+        .rule-description {
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .scenario-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .scenario-title {
+            color: #1a2980;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .scenario-text {
+            background: #f5f7fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        .scenario-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .scenario-action {
+            padding: 15px 25px;
+            background: #26d0ce;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .scenario-action:hover {
+            background: #1a2980;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(26, 41, 128, 0.2);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            animation: modalAppear 0.5s ease;
+        }
+
+        @keyframes modalAppear {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-title {
+            font-size: 2.5rem;
+            color: #1a2980;
+            margin-bottom: 20px;
+        }
+
+        .modal-text {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .level-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            color: white;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .quiz-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-traffic-light"></i> Road Rules Learning Game</h1>
+            <p class="subtitle">Learn road safety rules through interactive scenarios, quizzes, and games. Perfect for new drivers and pedestrians!</p>
+        </header>
+        
+        <div class="game-container">
+            <div class="game-panel">
+                <div class="panel-title">
+                    <i class="fas fa-road"></i>
+                    <h2>Interactive Road Scenario</h2>
+                </div>
+                
+                <div class="road-canvas-container">
+                    <canvas id="roadCanvas"></canvas>
+                </div>
+                
+                <div class="controls">
+                    <button class="primary-btn" id="startBtn">
+                        <i class="fas fa-play"></i> Start Scenario
+                    </button>
+                    <button class="secondary-btn" id="pauseBtn">
+                        <i class="fas fa-pause"></i> Pause
+                    </button>
+                    <button class="danger-btn" id="resetBtn">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+            </div>
+            
+            <div class="game-panel">
+                <div class="panel-title">
+                    <i class="fas fa-graduation-cap"></i>
+                    <h2>Road Rules Quiz</h2>
+                </div>
+                
+                <div class="quiz-container">
+                    <div class="quiz-question" id="quizQuestion">
+                        What should you do when approaching a pedestrian crossing with people waiting to cross?
+                    </div>
+                    
+                    <div class="quiz-options" id="quizOptions">
+                        <div class="quiz-option" data-option="1">
+                            <i class="far fa-circle"></i>
+                            <span>Speed up to cross before they start walking</span>
+                        </div>
+                        <div class="quiz-option" data-option="2">
+                            <i class="far fa-circle"></i>
+                            <span>Slow down and be prepared to stop</span>
+                        </div>
+                        <div class="quiz-option" data-option="3">
+                            <i class="far fa-circle"></i>
+                            <span>Honk to alert them you're coming</span>
+                        </div>
+                        <div class="quiz-option" data-option="4">
+                            <i class="far fa-circle"></i>
+                            <span>Change lanes to avoid them</span>
+                        </div>
+                    </div>
+                    
+                    <button class="primary-btn" id="submitQuizBtn">
+                        <i class="fas fa-check-circle"></i> Submit Answer
+                    </button>
+                    
+                    <div class="quiz-feedback" id="quizFeedback"></div>
+                </div>
+                
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-value" id="score">0</div>
+                        <div class="stat-label">Score</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="level">1</div>
+                        <div class="stat-label">Level</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="correctAnswers">0</div>
+                        <div class="stat-label">Correct Answers</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="rules-list">
+            <div class="panel-title">
+                <i class="fas fa-book"></i>
+                <h2>Essential Road Rules</h2>
+            </div>
+            
+            <div class="rules-grid" id="rulesGrid">
+                <!-- Rules will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="scenario-container">
+            <div class="panel-title">
+                <i class="fas fa-crosshairs"></i>
+                <h2>Safety Scenario</h2>
+            </div>
+            
+            <div class="scenario-text" id="scenarioText">
+                You're driving at night on a wet road. Suddenly, a deer jumps onto the road about 50 meters ahead. What should you do?
+            </div>
+            
+            <div class="scenario-actions">
+                <button class="scenario-action" data-action="swerve">
+                    Swerve to avoid the deer
+                </button>
+                <button class="scenario-action" data-action="brake">
+                    Brake firmly but don't lock wheels
+                </button>
+                <button class="scenario-action" data-action="honk">
+                    Honk and continue at same speed
+                </button>
+                <button class="scenario-action" data-action="accelerate">
+                    Accelerate to pass quickly
+                </button>
+            </div>
+            
+            <div class="quiz-feedback" id="scenarioFeedback"></div>
+        </div>
+    </div>
+    
+    <!-- Level Up Modal -->
+    <div class="modal" id="levelUpModal">
+        <div class="modal-content">
+            <div class="modal-title">🎉 Level Up! 🎉</div>
+            <div class="level-badge">Level <span id="newLevel">2</span></div>
+            <div class="modal-text" id="levelUpMessage">
+                Congratulations! You've mastered the basic road rules. Keep learning to become a road safety expert!
+            </div>
+            <button class="primary-btn" id="continueBtn">
+                <i class="fas fa-arrow-right"></i> Continue Learning
+            </button>
+        </div>
+    </div>
+    
+    <!-- Game Over Modal -->
+    <div class="modal" id="gameOverModal">
+        <div class="modal-content">
+            <div class="modal-title">🏆 Game Complete! 🏆</div>
+            <div class="modal-text">
+                You've completed all the road safety challenges with a final score of <span id="finalScore">0</span>!
+            </div>
+            <div class="modal-text">
+                <strong>Road Safety Tip:</strong> Always remember that safety is more important than speed. Your good decisions save lives!
+            </div>
+            <button class="primary-btn" id="restartBtn">
+                <i class="fas fa-redo"></i> Play Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const gameState = {
+            score: 0,
+            level: 1,
+            correctAnswers: 0,
+            totalQuestions: 0,
+            isGameActive: false,
+            currentScenario: 0,
+            playerCar: {
+                x: 150,
+                y: 300,
+                width: 60,
+                height: 100,
+                speed: 0,
+                maxSpeed: 5,
+                color: '#1a2980'
+            },
+            obstacles: [],
+            pedestrians: [],
+            trafficLights: []
+        };
+
+        // DOM Elements
+        const canvas = document.getElementById('roadCanvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const submitQuizBtn = document.getElementById('submitQuizBtn');
+        const quizOptions = document.querySelectorAll('.quiz-option');
+        const quizFeedback = document.getElementById('quizFeedback');
+        const scenarioActions = document.querySelectorAll('.scenario-action');
+        const scenarioFeedback = document.getElementById('scenarioFeedback');
+        const levelUpModal = document.getElementById('levelUpModal');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const continueBtn = document.getElementById('continueBtn');
+        const restartBtn = document.getElementById('restartBtn');
+
+        // Game Data
+        const roadRules = [
+            {
+                icon: 'fas fa-traffic-light',
+                title: 'Traffic Signals',
+                description: 'Red means stop, yellow means prepare to stop, and green means go if the intersection is clear.'
+            },
+            {
+                icon: 'fas fa-walking',
+                title: 'Pedestrian Crossings',
+                description: 'Always yield to pedestrians at crosswalks. Stop before the crosswalk line, not on it.'
+            },
+            {
+                icon: 'fas fa-car-side',
+                title: 'Safe Following Distance',
+                description: 'Maintain at least 3 seconds of following distance between you and the vehicle ahead.'
+            },
+            {
+                icon: 'fas fa-school',
+                title: 'School Zones',
+                description: 'Reduce speed in school zones during posted hours. Watch for children crossing.'
+            },
+            {
+                icon: 'fas fa-ban',
+                title: 'No Parking Zones',
+                description: 'Never park within 5 meters of a fire hydrant or in front of driveways.'
+            },
+            {
+                icon: 'fas fa-arrows-alt-h',
+                title: 'Lane Discipline',
+                description: 'Use the left lane for passing only. Return to the right lane when safe.'
+            },
+            {
+                icon: 'fas fa-snowflake',
+                title: 'Weather Conditions',
+                description: 'Reduce speed by 1/3 on wet roads and by 1/2 on snowy or icy roads.'
+            },
+            {
+                icon: 'fas fa-eye',
+                title: 'Blind Spots',
+                description: 'Always check blind spots by looking over your shoulder before changing lanes.'
+            }
+        ];
+
+        const quizQuestions = [
+            {
+                question: "What should you do when approaching a pedestrian crossing with people waiting to cross?",
+                options: [
+                    "Speed up to cross before they start walking",
+                    "Slow down and be prepared to stop",
+                    "Honk to alert them you're coming",
+                    "Change lanes to avoid them"
+                ],
+                correct: 2,
+                explanation: "You must slow down and be prepared to stop for pedestrians at crosswalks. They have the right of way."
+            },
+            {
+                question: "When can you make a U-turn at an intersection?",
+                options: [
+                    "Always, if no cars are coming",
+                    "Only when there's a 'U-turn permitted' sign",
+                    "Never at intersections",
+                    "Only at night when traffic is light"
+                ],
+                correct: 2,
+                explanation: "U-turns are only permitted where specifically allowed by signs. Otherwise, they're illegal at intersections."
+            },
+            {
+                question: "What's the minimum following distance in good weather conditions?",
+                options: [
+                    "1 second",
+                    "2 seconds",
+                    "3 seconds",
+                    "4 seconds"
+                ],
+                correct: 3,
+                explanation: "Maintain at least 3 seconds of following distance to allow time to react to sudden stops."
+            },
+            {
+                question: "When should you use your headlights?",
+                options: [
+                    "Only at night",
+                    "When it's raining, foggy, or dark",
+                    "Only on highways",
+                    "When you want to see better"
+                ],
+                correct: 2,
+                explanation: "Use headlights from sunset to sunrise, in bad weather, and whenever visibility is reduced."
+            },
+            {
+                question: "What does a flashing yellow traffic light mean?",
+                options: [
+                    "Stop and proceed when safe",
+                    "Slow down and proceed with caution",
+                    "Prepare to stop",
+                    "Speed up to clear intersection"
+                ],
+                correct: 2,
+                explanation: "A flashing yellow light means slow down and proceed with caution through the intersection."
+            }
+        ];
+
+        const scenarios = [
+            {
+                text: "You're driving at night on a wet road. Suddenly, a deer jumps onto the road about 50 meters ahead. What should you do?",
+                options: [
+                    {action: "swerve", correct: false, feedback: "Swerving could cause you to lose control on wet roads or hit another vehicle."},
+                    {action: "brake", correct: true, feedback: "Correct! Brake firmly but don't lock wheels. It's safer to hit the deer than to swerve dangerously."},
+                    {action: "honk", correct: false, feedback: "Honking won't help as deer may freeze or move unpredictably."},
+                    {action: "accelerate", correct: false, feedback: "Accelerating reduces your reaction time and increases impact force."}
+                ]
+            },
+            {
+                text: "You approach an intersection where the traffic lights are out completely. What should you do?",
+                options: [
+                    {action: "swerve", correct: false, feedback: "Treat it as a four-way stop. Each driver should stop completely and proceed in order of arrival."},
+                    {action: "brake", correct: true, feedback: "Correct! Treat it as a four-way stop. The first to arrive goes first. If simultaneous, yield to the right."},
+                    {action: "honk", correct: false, feedback: "Honking creates confusion. Use standard right-of-way rules instead."},
+                    {action: "accelerate", correct: false, feedback: "Never accelerate through an intersection with non-working traffic lights."}
+                ]
+            },
+            {
+                text: "You're on a multi-lane highway and want to exit, but you're in the left lane with heavy traffic. What should you do?",
+                options: [
+                    {action: "swerve", correct: false, feedback: "Never swerve across multiple lanes. This is extremely dangerous."},
+                    {action: "brake", correct: false, feedback: "Sudden braking on a highway can cause a chain-reaction crash."},
+                    {action: "honk", correct: false, feedback: "Honking won't create space for you to change lanes safely."},
+                    {action: "accelerate", correct: true, feedback: "Correct! Miss the exit and take the next one. It's never worth risking an accident."}
+                ]
+            }
+        ];
+
+        // Initialize Canvas
+        function initCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+
+        // Draw Road Scene
+        function drawRoad() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw road
+            ctx.fillStyle = '#555';
+            ctx.fillRect(0, canvas.height / 3, canvas.width, canvas.height / 3);
+            
+            // Draw road markings
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([20, 20]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, canvas.height / 3);
+            ctx.lineTo(canvas.width / 2, canvas.height * 2 / 3);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Draw sidewalk
+            ctx.fillStyle = '#777';
+            ctx.fillRect(0, 0, canvas.width, canvas.height / 3);
+            ctx.fillRect(0, canvas.height * 2 / 3, canvas.width, canvas.height / 3);
+            
+            // Draw player car
+            ctx.fillStyle = gameState.playerCar.color;
+            ctx.fillRect(
+                gameState.playerCar.x - gameState.playerCar.width / 2,
+                gameState.playerCar.y - gameState.playerCar.height / 2,
+                gameState.playerCar.width,
+                gameState.playerCar.height
+            );
+            
+            // Draw car details
+            ctx.fillStyle = '#26d0ce';
+            ctx.fillRect(
+                gameState.playerCar.x - gameState.playerCar.width / 2 + 5,
+                gameState.playerCar.y - gameState.playerCar.height / 2 + 5,
+                gameState.playerCar.width - 10,
+                gameState.playerCar.height - 10
+            );
+            
+            // Draw obstacles if game is active
+            if (gameState.isGameActive) {
+                drawObstacles();
+            }
+            
+            // Draw traffic light
+            drawTrafficLight();
+        }
+
+        function drawTrafficLight() {
+            const lightX = canvas.width - 100;
+            const lightY = 100;
+            
+            // Draw pole
+            ctx.fillStyle = '#333';
+            ctx.fillRect(lightX - 10, lightY, 20, 150);
+            
+            // Draw light box
+            ctx.fillStyle = '#000';
+            ctx.fillRect(lightX - 30, lightY - 80, 60, 170);
+            
+            // Draw lights
+            const lights = ['#ff0000', '#ffff00', '#00ff00'];
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.arc(lightX, lightY - 50 + i * 50, 20, 0, Math.PI * 2);
+                ctx.fillStyle = lights[i];
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        function drawObstacles() {
+            // Draw random obstacles for demonstration
+            ctx.fillStyle = '#ff416c';
+            ctx.fillRect(200, 150, 40, 40);
+            
+            ctx.fillStyle = '#FF9800';
+            ctx.beginPath();
+            ctx.arc(300, 200, 25, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw pedestrian
+            ctx.fillStyle = '#1a2980';
+            ctx.beginPath();
+            ctx.arc(400, 180, 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw pedestrian crossing lines
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.moveTo(350 + i * 20, canvas.height / 3);
+                ctx.lineTo(350 + i * 20, canvas.height * 2 / 3);
+                ctx.stroke();
+            }
+        }
+
+        // Initialize Game
+        function initGame() {
+            initCanvas();
+            populateRules();
+            loadQuizQuestion(0);
+            loadScenario(0);
+            updateStats();
+            drawRoad();
+            
+            // Event Listeners
+            window.addEventListener('resize', initCanvas);
+            
+            startBtn.addEventListener('click', startGame);
+            pauseBtn.addEventListener('click', pauseGame);
+            resetBtn.addEventListener('click', resetGame);
+            
+            submitQuizBtn.addEventListener('click', submitQuiz);
+            
+            quizOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    quizOptions.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                });
+            });
+            
+            scenarioActions.forEach(action => {
+                action.addEventListener('click', handleScenarioAction);
+            });
+            
+            continueBtn.addEventListener('click', () => {
+                levelUpModal.style.display = 'none';
+            });
+            
+            restartBtn.addEventListener('click', restartGame);
+            
+            // Keyboard controls for the road game
+            document.addEventListener('keydown', handleKeyDown);
+        }
+
+        // Game Functions
+        function startGame() {
+            if (!gameState.isGameActive) {
+                gameState.isGameActive = true;
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Resume';
+                startBtn.classList.remove('primary-btn');
+                startBtn.classList.add('secondary-btn');
+                gameLoop();
+            }
+        }
+
+        function pauseGame() {
+            gameState.isGameActive = false;
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Resume';
+            startBtn.classList.remove('secondary-btn');
+            startBtn.classList.add('primary-btn');
+        }
+
+        function resetGame() {
+            gameState.playerCar.x = 150;
+            gameState.playerCar.y = 300;
+            gameState.playerCar.speed = 0;
+            gameState.isGameActive = false;
+            startBtn.innerHTML = '<i class="fas fa-play"></i> Start Scenario';
+            startBtn.classList.remove('secondary-btn');
+            startBtn.classList.add('primary-btn');
+            drawRoad();
+        }
+
+        function gameLoop() {
+            if (!gameState.isGameActive) return;
+            
+            // Move player car based on speed
+            gameState.playerCar.x += gameState.playerCar.speed;
+            
+            // Keep car on road
+            if (gameState.playerCar.x < 50) gameState.playerCar.x = 50;
+            if (gameState.playerCar.x > canvas.width - 50) gameState.playerCar.x = canvas.width - 50;
+            
+            drawRoad();
+            
+            // Continue game loop
+            requestAnimationFrame(gameLoop);
+        }
+
+        function handleKeyDown(e) {
+            if (!gameState.isGameActive) return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                    gameState.playerCar.speed = -gameState.playerCar.maxSpeed;
+                    break;
+                case 'ArrowRight':
+                    gameState.playerCar.speed = gameState.playerCar.maxSpeed;
+                    break;
+                case ' ':
+                    gameState.playerCar.speed = 0;
+                    break;
+            }
+        }
+
+        // Quiz Functions
+        let currentQuestionIndex = 0;
+        let selectedOption = null;
+
+        function loadQuizQuestion(index) {
+            if (index >= quizQuestions.length) {
+                showGameComplete();
+                return;
+            }
+            
+            const question = quizQuestions[index];
+            document.getElementById('quizQuestion').textContent = question.question;
+            
+            quizOptions.forEach((option, i) => {
+                option.querySelector('span').textContent = question.options[i];
+                option.classList.remove('selected', 'correct', 'incorrect');
+            });
+            
+            quizFeedback.className = 'quiz-feedback';
+            quizFeedback.textContent = '';
+            selectedOption = null;
+            currentQuestionIndex = index;
+        }
+
+        function submitQuiz() {
+            if (selectedOption === null) {
+                quizFeedback.className = 'quiz-feedback incorrect';
+                quizFeedback.textContent = 'Please select an answer first!';
+                quizFeedback.style.display = 'block';
+                return;
+            }
+            
+            const question = quizQuestions[currentQuestionIndex];
+            const isCorrect = (selectedOption === question.correct);
+            
+            // Update stats
+            gameState.totalQuestions++;
+            if (isCorrect) {
+                gameState.score += 100;
+                gameState.correctAnswers++;
+                quizFeedback.className = 'quiz-feedback correct';
+                quizFeedback.textContent = `✓ Correct! ${question.explanation}`;
+                
+                // Check for level up
+                if (gameState.correctAnswers % 3 === 0) {
+                    gameState.level++;
+                    showLevelUp();
+                }
+            } else {
+                quizFeedback.className = 'quiz-feedback incorrect';
+                quizFeedback.textContent = `✗ Incorrect. ${question.explanation}`;
+            }
+            
+            // Highlight correct/incorrect answers
+            quizOptions.forEach((option, i) => {
+                option.classList.remove('selected');
+                if (i + 1 === question.correct) {
+                    option.classList.add('correct');
+                } else if (i + 1 === selectedOption) {
+                    option.classList.add('incorrect');
+                }
+            });
+            
+            updateStats();
+            
+            // Load next question after delay
+            setTimeout(() => {
+                loadQuizQuestion(currentQuestionIndex + 1);
+            }, 3000);
+        }
+
+        // Scenario Functions
+        let currentScenarioIndex = 0;
+
+        function loadScenario(index) {
+            if (index >= scenarios.length) {
+                currentScenarioIndex = 0;
+                index = 0;
+            }
+            
+            const scenario = scenarios[index];
+            document.getElementById('scenarioText').textContent = scenario.text;
+            scenarioFeedback.className = 'quiz-feedback';
+            scenarioFeedback.textContent = '';
+            currentScenarioIndex = index;
+        }
+
+        function handleScenarioAction(e) {
+            const action = e.target.dataset.action;
+            const scenario = scenarios[currentScenarioIndex];
+            const option = scenario.options.find(opt => opt.action === action);
+            
+            scenarioFeedback.style.display = 'block';
+            
+            if (option.correct) {
+                scenarioFeedback.className = 'quiz-feedback correct';
+                scenarioFeedback.textContent = `✓ ${option.feedback}`;
+                gameState.score += 50;
+                updateStats();
+            } else {
+                scenarioFeedback.className = 'quiz-feedback incorrect';
+                scenarioFeedback.textContent = `✗ ${option.feedback}`;
+            }
+            
+            // Load next scenario after delay
+            setTimeout(() => {
+                loadScenario(currentScenarioIndex + 1);
+            }, 3000);
+        }
+
+        // UI Functions
+        function populateRules() {
+            const rulesGrid = document.getElementById('rulesGrid');
+            rulesGrid.innerHTML = '';
+            
+            roadRules.forEach(rule => {
+                const ruleCard = document.createElement('div');
+                ruleCard.className = 'rule-card';
+                ruleCard.innerHTML = `
+                    <div class="rule-icon">
+                        <i class="${rule.icon}"></i>
+                    </div>
+                    <div class="rule-title">${rule.title}</div>
+                    <div class="rule-description">${rule.description}</div>
+                `;
+                rulesGrid.appendChild(ruleCard);
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('level').textContent = gameState.level;
+            document.getElementById('correctAnswers').textContent = gameState.correctAnswers;
+        }
+
+        function showLevelUp() {
+            document.getElementById('newLevel').textContent = gameState.level;
+            document.getElementById('levelUpMessage').textContent = 
+                gameState.level === 2 ? "Congratulations! You've mastered the basic road rules. Keep learning to become a road safety expert!" :
+                gameState.level === 3 ? "Great progress! You're becoming a road safety pro. Remember: Safety first, always!" :
+                "Expert level achieved! You're now a road safety champion. Share your knowledge with others!";
+            
+            levelUpModal.style.display = 'flex';
+        }
+
+        function showGameComplete() {
+            document.getElementById('finalScore').textContent = gameState.score;
+            gameOverModal.style.display = 'flex';
+        }
+
+        function restartGame() {
+            gameState.score = 0;
+            gameState.level = 1;
+            gameState.correctAnswers = 0;
+            gameState.totalQuestions = 0;
+            
+            currentQuestionIndex = 0;
+            currentScenarioIndex = 0;
+            
+            updateStats();
+            loadQuizQuestion(0);
+            loadScenario(0);
+            resetGame();
+            
+            gameOverModal.style.display = 'none';
+            levelUpModal.style.display = 'none';
+        }
+
+        // Quiz option selection
+        quizOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                quizOptions.forEach(opt => {
+                    opt.classList.remove('selected');
+                    opt.querySelector('i').className = 'far fa-circle';
+                });
+                
+                this.classList.add('selected');
+                this.querySelector('i').className = 'fas fa-dot-circle';
+                selectedOption = parseInt(this.dataset.option);
+            });
+        });
+
+        // Initialize the game when page loads
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>

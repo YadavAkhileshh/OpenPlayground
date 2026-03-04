@@ -1,0 +1,133 @@
+@import url('https://fonts.cdnfonts.com/css/retro-mario');
+@property --x0 {syntax: "<number>";initial-value: 0;inherits: true}
+@property --x1 {syntax: "<number>";initial-value: 0;inherits: true}
+@property --y0 {syntax: "<number>";initial-value: 1;inherits: true}
+@property --y1 {syntax: "<number>";initial-value: 1;inherits: true}
+@property --p {syntax: "<integer>";initial-value: 1;inherits: true}
+
+html {
+  --b: 50px; /* control the block size */
+  --s: 80px; /* control the jump of mario */
+  --t: 20px; /* control the movment of the block */
+  --nc: 2153; /* keep this as big as possible. What it does? It's a secret ... */  
+  animation: --y0 linear both,--x0 linear both;
+  animation-timeline: scroll(y self), scroll(x self);
+  --_i: calc(round(var(--x0)*(100vw - var(--b)),var(--b))/var(--b));
+  background: 
+    url(https://assets.codepen.io/1480814/bgmario.png?v=1) 
+    0 100%/calc(11*var(--b)) repeat-x fixed #5c94fc;
+  container-type: scroll-state;
+  font-family: 'Retro Mario', sans serif;
+  scrollbar-width: none;
+}
+@keyframes --y0 {to {--y0: var(--nc)}}
+@keyframes --x0 {to {--x0: 1}}
+
+body {
+  display: grid;
+  height: calc(100vh + calc(var(--nc)*40px));
+  width: 500vw;
+  margin: 0;
+}
+body:before {
+  content:"";
+  width: var(--b);
+  aspect-ratio: 2/3;
+  background: url(https://assets.codepen.io/1480814/mario-a.png) 0/auto 100% no-repeat;
+  margin-top: auto;
+  position: sticky;
+  bottom: calc(2*var(--b));
+  left: 0;
+  transition: --y1 .4s,--x1 0s .3s;
+  --y1: var(--y0);
+  --x1: var(--x0);
+  --j: min(abs(var(--y0) - var(--y1)),1);
+  --i: calc(min(abs(var(--x0) - var(--x1))*9e9,1) + var(--j)*9e9);
+  translate: calc((100vw - var(--b))*var(--x0)) calc(-1*var(--j)*var(--s));
+  animation: m .4s steps(2,jump-none) infinite;
+  scale: sign(var(--x0) - var(--x1)  + .001) 1; /* remove it from v144 */
+  @container scroll-state(scrolled: left) {scale: -1 1;}
+}
+@keyframes m {
+  0% {background-position: max(var(--i)*100%/3,100%) 0}
+  to {background-position: max(var(--i)*200%/3,100%) 0}
+}
+
+wall,coin {
+  position: absolute;
+}
+:is(wall,coin):after,
+coin:before {
+  content: "";
+  position: fixed;
+  bottom: calc(3.5*var(--b));
+  height: var(--b);
+  aspect-ratio: 1;
+  --p: attr(p type(<integer>));
+  --y1: var(--y0);
+  --j: min(abs(var(--y0) - var(--y1)),1);
+  left: calc(var(--p)*var(--b));
+  background: url(https://assets.codepen.io/1480814/block.png) 50%/auto 100% no-repeat;
+  transition: --y1 .4s;
+  translate: if(style(--p: var(--_i)): 0 min(-1*var(--j)*var(--s),var(--t) - var(--s));else: 0 min(var(--t) - var(--s)););
+}
+coin:after {
+  background-position: 100%;
+}
+coin:before {
+  background: url(https://assets.codepen.io/1480814/ccc.png) 0 50%/600% auto no-repeat;
+  animation: c .5s steps(6,jump-none) infinite;
+  scale: .6;
+  transition: --y1 1s;
+  translate: if(style(--p: var(--_i)): 0 min(-2*var(--j)*var(--s),var(--t) - var(--s));else: 0 min(var(--t) - var(--s)););
+}
+@keyframes c {to {background-position-x: 100%}}
+
+html:not(:has(:focus-within)):after {
+  content:"🖱️ Click to start";
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items:center;
+  font-size: 60px;
+  pointer-events: none;
+  background: rgb(255 255 255/.4);
+}
+html:before {
+  content: "Instructions: \a ⬅️➡️ left/right to move \a ⬇️ down to jump";
+  font-family: system-ui,sans-serif;
+  font-size: 20px;
+  font-weight: bold; 
+  white-space: pre;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  padding: 0 5px;
+  background: #fff;
+}
+body:after {
+  content: "Mini CSS Mario";
+  position: fixed;
+  inset: 50px 0 auto;
+  width: fit-content;
+  margin: auto;
+  color: #ffccc5;
+  font-size: 50px;
+  text-shadow: 5px 5px #000;
+  padding: 20px 30px;
+  background: #994e00;
+  border: 3px solid;
+}
+
+@supports not (animation-range: 0 100%)  {
+  html:after {
+    content:"Use Chrome to explore this world"!important;
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items:center;
+    font-size: 60px;
+    pointer-events: none;
+    background: #fff!important;
+  }
+}

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>PolyCube</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- ── HEADER ──────────────────────────────────────── -->
+      <header class="header">
+        <div class="logo">
+          Poly<span class="dot">·</span>Cube
+          <span class="sub">// SOLVER ENGINE</span>
+        </div>
+        <div class="header-badges">
+          <span class="badge">LBL ALGO</span>
+          <span class="badge">3D CSS</span>
+          <span class="badge status" id="statusBadge">READY</span>
+        </div>
+        <button class="menu-toggle" id="menuToggle" aria-label="Menu">☰</button>
+      </header>
+
+      <!-- ── MAIN ───────────────────────────────────────── -->
+      <div class="main">
+        <!-- LEFT: CUBE AREA -->
+        <div class="cube-area">
+          <div class="thinking-overlay" id="thinkingOverlay">
+            <div class="think-ring"></div>
+            <div class="think-title">COMPUTING SOLUTION</div>
+            <div class="think-sub" id="thinkSub">Analyzing cube state...</div>
+            <div class="phase-track" id="phaseTrack">
+              <div class="phase-pip" id="pip-cross">
+                <div class="phase-pip-dot"></div>
+                <div class="phase-pip-label">CROSS</div>
+              </div>
+              <div class="phase-connector" id="con-1"></div>
+              <div class="phase-pip" id="pip-f2l">
+                <div class="phase-pip-dot"></div>
+                <div class="phase-pip-label">F2L</div>
+              </div>
+              <div class="phase-connector" id="con-2"></div>
+              <div class="phase-pip" id="pip-oll">
+                <div class="phase-pip-dot"></div>
+                <div class="phase-pip-label">OLL</div>
+              </div>
+              <div class="phase-connector" id="con-3"></div>
+              <div class="phase-pip" id="pip-pll">
+                <div class="phase-pip-dot"></div>
+                <div class="phase-pip-label">PLL</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="scene-container">
+            <div class="scene" id="scene">
+              <div class="cube-root" id="cubeRoot"></div>
+            </div>
+            <div class="drag-hint" id="dragHint">
+              ⟷ DRAG TO ROTATE · PINCH TO ZOOM
+            </div>
+          </div>
+
+          <div class="net-section">
+            <div class="net-title">CUBE UNFOLDED</div>
+            <div class="net-view" id="netView"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: CONTROL PANEL -->
+        <div class="control-panel" id="controlPanel">
+          <!-- Tab navigation (shown on mobile) -->
+          <nav class="cp-tabs" id="cpTabs" role="tablist">
+            <button
+              class="cp-tab active"
+              data-tab="controls"
+              onclick="switchTab('controls',this)"
+            >
+              ⚙ CTRL
+            </button>
+            <button
+              class="cp-tab"
+              data-tab="moves"
+              onclick="switchTab('moves',this)"
+            >
+              ⬡ MOVES
+            </button>
+            <button
+              class="cp-tab"
+              data-tab="solution"
+              onclick="switchTab('solution',this)"
+            >
+              ▶ SOLVE
+            </button>
+            <button
+              class="cp-tab"
+              data-tab="info"
+              onclick="switchTab('info',this)"
+            >
+              ? INFO
+            </button>
+          </nav>
+
+          <div class="cp-body">
+            <!-- ═══ CONTROLS PANE ═══ -->
+            <div class="cp-pane active" id="pane-controls">
+              <!-- Stats -->
+              <div class="cp-section">
+                <div class="section-header">
+                  <span class="section-label c">CUBE STATE</span>
+                </div>
+                <div class="stats-grid">
+                  <div class="stat-card">
+                    <div class="stat-val" id="statMoves">0</div>
+                    <div class="stat-label">MOVES</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-val o" id="statSolLen">—</div>
+                    <div class="stat-label">SOL LEN</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-val g" id="statStep">—</div>
+                    <div class="stat-label">STEP</div>
+                  </div>
+                  <div class="stat-card" id="statusCard">
+                    <div
+                      class="stat-val p"
+                      id="statStatus"
+                      style="font-size: 13px"
+                    >
+                      READY
+                    </div>
+                    <div class="stat-label">STATUS</div>
+                  </div>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" id="progressFill"></div>
+                </div>
+              </div>
+
+              <!-- Main controls -->
+              <div class="cp-section">
+                <div class="section-header">
+                  <span class="section-label o">CONTROLS</span>
+                </div>
+                <div class="ctrl-grid" style="margin-bottom: 8px">
+                  <button class="btn warning lg" onclick="scrambleCube()">
+                    ⚄ SCRAMBLE
+                  </button>
+                  <button
+                    class="btn primary lg"
+                    id="solveBtn"
+                    onclick="solveCube()"
+                  >
+                    ▶ SOLVE
+                  </button>
+                  <button class="btn danger lg" onclick="resetCube()">
+                    ↺ RESET
+                  </button>
+                </div>
+                <div class="ctrl-grid four" style="margin-bottom: 8px">
+                  <button
+                    class="btn sm"
+                    onclick="stepSolve()"
+                    id="stepBtn"
+                    disabled
+                  >
+                    › STEP
+                  </button>
+                  <button
+                    class="btn sm success"
+                    onclick="autoPlay()"
+                    id="autoBtn"
+                    disabled
+                  >
+                    ⏵ AUTO
+                  </button>
+                  <button
+                    class="btn sm danger"
+                    onclick="stopAuto()"
+                    id="stopBtn"
+                    disabled
+                  >
+                    ⏹ STOP
+                  </button>
+                  <button class="btn sm" onclick="copySolution()" id="copyBtn">
+                    ⎘ COPY
+                  </button>
+                </div>
+                <div class="speed-row">
+                  <span class="speed-lbl">SLOW</span>
+                  <input
+                    type="range"
+                    id="speedSlider"
+                    min="80"
+                    max="1400"
+                    value="450"
+                    step="40"
+                    oninput="setSpeed(this.value)"
+                  />
+                  <span
+                    class="speed-lbl"
+                    style="text-align: right"
+                    id="speedLabel"
+                    >450ms</span
+                  >
+                </div>
+              </div>
+
+              <!-- Scramble display -->
+              <div class="cp-section">
+                <div class="section-header">
+                  <span class="section-label">SCRAMBLE</span>
+                </div>
+                <div class="scramble-box" id="scrambleBox">
+                  Press SCRAMBLE to generate a sequence
+                </div>
+              </div>
+            </div>
+            <!-- /pane-controls -->
+
+            <!-- ═══ MOVES PANE ═══ -->
+            <div class="cp-pane" id="pane-moves">
+              <!-- Manual moves -->
+              <div class="cp-section">
+                <div class="section-header">
+                  <span class="section-label y">MANUAL MOVES</span>
+                </div>
+                <div class="move-group-labels">
+                  <div class="mgl u">U</div>
+                  <div class="mgl u">U</div>
+                  <div class="mgl u">U</div>
+                  <div class="mgl d">D</div>
+                  <div class="mgl d">D</div>
+                  <div class="mgl d">D</div>
+                </div>
+                <div class="move-grid" id="moveGrid"></div>
+                <div style="height: 8px"></div>
+                <div class="ctrl-grid" style="margin-bottom: 4px">
+                  <button
+                    class="btn sm"
+                    onclick="undoMove()"
+                    id="undoBtn"
+                    disabled
+                  >
+                    ← UNDO
+                  </button>
+                  <button
+                    class="btn sm"
+                    onclick="redoMove()"
+                    id="redoBtn"
+                    disabled
+                  >
+                    REDO →
+                  </button>
+                  <button class="btn sm danger" onclick="clearHistory()">
+                    ✕ CLEAR
+                  </button>
+                </div>
+              </div>
+
+              <!-- History -->
+              <div class="cp-section">
+                <div class="section-header">
+                  <span class="section-label">MOVE HISTORY</span>
+                  <span
+                    id="histCount"
+                    style="font-size: 9px; color: var(--text-dim)"
+                    >0 moves</span
+                  >
+                </div>
+                <div class="history-wrap" id="historyWrap"></div>
+              </div>
+            </div>
+            <!-- /pane-moves -->
+
+            <!-- ═══ SOLUTION PANE ═══ -->
+            <div class="cp-pane" id="pane-solution">
+              <div
+                class="cp-section"
+                style="flex: 1; display: flex; flex-direction: column"
+              >
+                <div class="section-header">
+                  <span class="section-label g">SOLUTION STEPS</span>
+                </div>
+                <div class="sol-actions">
+                  <button
+                    class="btn sm success"
+                    onclick="autoPlay()"
+                    id="autoBtn2"
+                  >
+                    ⏵ AUTO PLAY
+                  </button>
+                  <button class="btn sm" onclick="stepSolve()" id="stepBtn2">
+                    › STEP
+                  </button>
+                  <button class="btn sm warning" onclick="stopAuto()">
+                    ⏹ STOP
+                  </button>
+                </div>
+                <div id="solutionList" class="solution-list">
+                  <div class="empty-state">
+                    <div class="empty-icon">🧩</div>
+                    <div>Press SOLVE to compute the solution</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- /pane-solution -->
+
+            <!-- ═══ INFO PANE ═══ -->
+            <div class="cp-pane" id="pane-info">
+              <div class="cp-section">
+                <div class="section-header">
+                  <span class="section-label c">KEYBOARD SHORTCUTS</span>
+                </div>
+                <div class="shortcuts-grid">
+                  <div class="shortcut-row">
+                    <span class="shortcut-key">SPC</span
+                    ><span class="shortcut-desc">Play/Stop</span>
+                  </div>
+                  <div class="shortcut-row">
+                    <span class="shortcut-key">→</span
+                    ><span class="shortcut-desc">Step forward</span>
+                  </div>
+                  <div class="shortcut-row">
+                    <span class="shortcut-key">⌘Z</span
+                    ><span class="shortcut-desc">Undo move</span>
+                  </div>
+                  <div class="shortcut-row">
+                    <span class="shortcut-key">⌘Y</span
+                    ><span class="shortcut-desc">Redo move</span>
+                  </div>
+                  <div class="shortcut-row">
+                    <span class="shortcut-key">U/I</span
+                    ><span class="shortcut-desc">U / U'</span>
+                  </div>
+                  <div class="shortcut-row">
+                    <span class="shortcut-key">D/E</span
+                    ><span class="shortcut-desc">D / D'</span>
+                  </div>
+                  <div class="shortcut-row">
+                    <span class="shortcut-key">F/V</span
+                    ><span class="shortcut-desc">F / F'</span>
+                  </div>
+                  <div class="shortcut-row">
+                    <span class="shortcut-key">B/N</span
+                    ><span class="shortcut-desc">B / B'</span>
+                  </div>
+                  <div class="shortcut-row">
+                    <span class="shortcut-key">L/K</span
+                    ><span class="shortcut-desc">L / L'</span>
+                  </div>
+                  <div class="shortcut-row">
+                    <span class="shortcut-key">R/T</span
+                    ><span class="shortcut-desc">R / R'</span>
+                  </div>
+                </div>
+              </div>
+              <div class="cp-section">
+                <div class="section-header">
+                  <span class="section-label o">SOLVER ALGORITHM</span>
+                </div>
+                <div
+                  style="
+                    font-size: 10px;
+                    color: var(--text-mid);
+                    line-height: 1.8;
+                    letter-spacing: 0.5px;
+                  "
+                >
+                  <p style="margin-bottom: 8px">
+                    Uses the
+                    <span style="color: var(--cyan)">Layer-by-Layer (LBL)</span>
+                    method:
+                  </p>
+                  <p>
+                    ① <span style="color: var(--yellow)">WHITE CROSS</span> —
+                    Solve top cross edges
+                  </p>
+                  <p>
+                    ② <span style="color: var(--orange)">F2L</span> — Insert 4
+                    corner-edge pairs
+                  </p>
+                  <p>
+                    ③ <span style="color: var(--pink)">OLL</span> — Orient last
+                    layer faces
+                  </p>
+                  <p>
+                    ④ <span style="color: var(--cyan)">PLL</span> — Permute last
+                    layer pieces
+                  </p>
+                  <p style="margin-top: 8px; color: var(--text-dim)">
+                    Typical solution: 50–120 moves
+                  </p>
+                </div>
+              </div>
+              <div class="cp-section">
+                <div class="section-header">
+                  <span class="section-label g">COLOR KEY</span>
+                </div>
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 6px;
+                  "
+                >
+                  <div style="display: flex; align-items: center; gap: 6px">
+                    <div
+                      style="
+                        width: 16px;
+                        height: 16px;
+                        background: var(--cube-white);
+                        border-radius: 3px;
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                      "
+                    ></div>
+                    <span style="font-size: 9px; color: var(--text-mid)"
+                      >White (U)</span
+                    >
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px">
+                    <div
+                      style="
+                        width: 16px;
+                        height: 16px;
+                        background: var(--cube-yellow);
+                        border-radius: 3px;
+                      "
+                    ></div>
+                    <span style="font-size: 9px; color: var(--text-mid)"
+                      >Yellow (D)</span
+                    >
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px">
+                    <div
+                      style="
+                        width: 16px;
+                        height: 16px;
+                        background: var(--cube-green);
+                        border-radius: 3px;
+                      "
+                    ></div>
+                    <span style="font-size: 9px; color: var(--text-mid)"
+                      >Green (F)</span
+                    >
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px">
+                    <div
+                      style="
+                        width: 16px;
+                        height: 16px;
+                        background: var(--cube-blue);
+                        border-radius: 3px;
+                      "
+                    ></div>
+                    <span style="font-size: 9px; color: var(--text-mid)"
+                      >Blue (B)</span
+                    >
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px">
+                    <div
+                      style="
+                        width: 16px;
+                        height: 16px;
+                        background: var(--cube-orange);
+                        border-radius: 3px;
+                      "
+                    ></div>
+                    <span style="font-size: 9px; color: var(--text-mid)"
+                      >Orange (L)</span
+                    >
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px">
+                    <div
+                      style="
+                        width: 16px;
+                        height: 16px;
+                        background: var(--cube-red);
+                        border-radius: 3px;
+                      "
+                    ></div>
+                    <span style="font-size: 9px; color: var(--text-mid)"
+                      >Red (R)</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- /pane-info -->
+          </div>
+          <!-- /cp-body -->
+        </div>
+        <!-- /control-panel -->
+      </div>
+      <!-- /main -->
+    </div>
+    <!-- /app -->
+
+    <!-- SOLVED BANNER -->
+    <div class="solved-banner" id="solvedBanner">
+      <div class="solved-title">✓ CUBE SOLVED!</div>
+      <div class="solved-sub" id="solvedSub">CONGRATULATIONS</div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

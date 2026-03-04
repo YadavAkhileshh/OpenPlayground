@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌎 capital city quiz · geography</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1b4c5c;
+            background: linear-gradient(145deg, #2b5f6e, #154150);
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.2rem;
+            color: #f0f2e9;
+        }
+
+        .quiz-container {
+            max-width: 850px;
+            width: 100%;
+            background: rgba(25, 48, 56, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 4rem;
+            padding: 2.2rem 2.5rem 2.8rem;
+            box-shadow: 0 40px 70px -15px #0b222a, 0 0 0 1px #5d827a inset, 0 0 0 2px rgba(220, 210, 150, 0.1);
+            border: 1px solid #cdb180;
+        }
+
+        /* header */
+        .game-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            border-bottom: 1px dashed #7d9f8e;
+            padding-bottom: 1rem;
+        }
+
+        .title h1 {
+            font-size: 2.8rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            background: linear-gradient(145deg, #f2e4c7, #cfe2cf);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .score-board {
+            background: #144e55;
+            border: 3px solid #f0cf91;
+            padding: 0.5rem 2rem;
+            border-radius: 60px;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ffefc0;
+            box-shadow: 0 6px 0 #0a3338;
+        }
+
+        /* continent filter */
+        .continent-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+            border-bottom: 1px solid #608174;
+            padding-bottom: 1.5rem;
+        }
+
+        .continent-btn {
+            background: #255d61;
+            border: 2px solid #7b9b84;
+            color: #f2e2c3;
+            padding: 0.6rem 1.6rem;
+            border-radius: 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .continent-btn.active {
+            background: #dbb46a;
+            border-color: #fcefbb;
+            color: #1f3c3c;
+            box-shadow: 0 0 18px #fdd48b;
+        }
+
+        .continent-btn:hover {
+            background: #39838a;
+            color: white;
+        }
+
+        /* main quiz card */
+        .question-card {
+            background: #234d57e6;
+            border-radius: 3.5rem;
+            padding: 2rem 2.2rem;
+            border: 1px solid #cdaf79;
+            box-shadow: 0 20px 30px -10px #08212b;
+            margin-bottom: 2rem;
+        }
+
+        .country-header {
+            display: flex;
+            justify-content: space-between;
+            color: #d5cdab;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .country-name {
+            font-size: 2.5rem;
+            font-weight: 600;
+            line-height: 1.2;
+            margin-bottom: 1.8rem;
+            color: #fff6e0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .country-name span {
+            font-size: 2rem;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .city-option {
+            background: #1b5057;
+            border: 2px solid #6e8f82;
+            border-radius: 60px;
+            padding: 1rem 0.8rem 1rem 1.8rem;
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: #f2e7d2;
+            cursor: pointer;
+            transition: 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .city-option:hover:not(:disabled) {
+            background: #2f7781;
+            border-color: #f0cb86;
+            transform: scale(1.01);
+        }
+
+        .city-option.selected-correct {
+            background: #1e7945;
+            border-color: #bef5a8;
+        }
+
+        .city-option.selected-wrong {
+            background: #ac5555;
+            border-color: #ffbaba;
+            text-decoration: line-through wavy #ffc6c6;
+        }
+
+        .city-option.correct-highlight {
+            background: #1e7945;
+            border-color: #bef5a8;
+        }
+
+        .city-option:disabled {
+            opacity: 0.9;
+            cursor: not-allowed;
+        }
+
+        .option-letter {
+            background: #0b3e47;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: #ffeaaf;
+            border: 2px solid #9c956b;
+        }
+
+        .feedback-area {
+            background: #18444ec0;
+            border-radius: 3rem;
+            padding: 1.3rem 2rem;
+            font-size: 1.2rem;
+            border-left: 10px solid #deb887;
+            color: #f7efd6;
+            margin-top: 0.5rem;
+        }
+
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+        }
+
+        .next-btn, .reset-btn {
+            background: #3e766b;
+            border: none;
+            color: #fdf3da;
+            font-size: 1.4rem;
+            padding: 0.8rem 2.5rem;
+            border-radius: 60px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 2px solid #eac487;
+            transition: 0.1s;
+        }
+
+        .next-btn:hover, .reset-btn:hover {
+            background: #579e8f;
+            border-color: #ffe1a3;
+        }
+
+        .reset-btn {
+            background: #5b5e41;
+        }
+
+        .footer-stats {
+            display: flex;
+            justify-content: space-between;
+            color: #bfcfb3;
+            margin-top: 1.8rem;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="game-header">
+            <div class="title">
+                <h1>
+                    <span>🌍</span> capital city quiz
+                </h1>
+            </div>
+            <div class="score-board" id="scoreDisplay">0/0</div>
+        </div>
+
+        <!-- continent filters -->
+        <div class="continent-bar" id="continentFilters">
+            <button class="continent-btn active" data-continent="all">🌎 all</button>
+            <button class="continent-btn" data-continent="europe">🇪🇺 europe</button>
+            <button class="continent-btn" data-continent="asia">🌏 asia</button>
+            <button class="continent-btn" data-continent="africa">🌍 africa</button>
+            <button class="continent-btn" data-continent="americas">🌎 americas</button>
+            <button class="continent-btn" data-continent="oceania">🌊 oceania</button>
+        </div>
+
+        <!-- main quiz card -->
+        <div class="question-card">
+            <div class="country-header">
+                <span id="regionTag">world</span>
+                <span id="questionCounter">question 1 / 5</span>
+            </div>
+            <div class="country-name" id="countryDisplay">
+                <span>🏳️</span> France
+            </div>
+            <div class="options-grid" id="optionsContainer">
+                <!-- dynamic options -->
+            </div>
+            <div class="feedback-area" id="feedbackMessage">select a capital above</div>
+        </div>
+
+        <!-- action buttons -->
+        <div class="action-row">
+            <button class="reset-btn" id="resetBtn">⟲ new game</button>
+            <button class="next-btn" id="nextBtn">next →</button>
+        </div>
+
+        <div class="footer-stats">
+            <span id="remainingSpan">5 remaining</span>
+            <span id="correctSpan">✅ 0 correct</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- CAPITAL CITY DATASET ----------
+            const capitals = [
+                { country: "France", capital: "Paris", continent: "europe" },
+                { country: "Germany", capital: "Berlin", continent: "europe" },
+                { country: "Italy", capital: "Rome", continent: "europe" },
+                { country: "Spain", capital: "Madrid", continent: "europe" },
+                { country: "United Kingdom", capital: "London", continent: "europe" },
+                { country: "Japan", capital: "Tokyo", continent: "asia" },
+                { country: "China", capital: "Beijing", continent: "asia" },
+                { country: "India", capital: "New Delhi", continent: "asia" },
+                { country: "Thailand", capital: "Bangkok", continent: "asia" },
+                { country: "South Korea", capital: "Seoul", continent: "asia" },
+                { country: "Egypt", capital: "Cairo", continent: "africa" },
+                { country: "South Africa", capital: "Pretoria", continent: "africa" }, // administrative
+                { country: "Nigeria", capital: "Abuja", continent: "africa" },
+                { country: "Kenya", capital: "Nairobi", continent: "africa" },
+                { country: "Morocco", capital: "Rabat", continent: "africa" },
+                { country: "United States", capital: "Washington, D.C.", continent: "americas" },
+                { country: "Canada", capital: "Ottawa", continent: "americas" },
+                { country: "Brazil", capital: "Brasília", continent: "americas" },
+                { country: "Argentina", capital: "Buenos Aires", continent: "americas" },
+                { country: "Mexico", capital: "Mexico City", continent: "americas" },
+                { country: "Australia", capital: "Canberra", continent: "oceania" },
+                { country: "New Zealand", capital: "Wellington", continent: "oceania" },
+                { country: "Fiji", capital: "Suva", continent: "oceania" },
+                { country: "Papua New Guinea", capital: "Port Moresby", continent: "oceania" }
+            ];
+
+            // ----- DOM elements -----
+            const continentBtns = document.querySelectorAll('.continent-btn');
+            const countryDisplay = document.getElementById('countryDisplay');
+            const optionsContainer = document.getElementById('optionsContainer');
+            const feedbackEl = document.getElementById('feedbackMessage');
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            const questionCounter = document.getElementById('questionCounter');
+            const regionTag = document.getElementById('regionTag');
+            const nextBtn = document.getElementById('nextBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const remainingSpan = document.getElementById('remainingSpan');
+            const correctSpan = document.getElementById('correctSpan');
+
+            // ----- state -----
+            let currentContinent = 'all';
+            let questionList = [];        // list of { country, capital, continent } for current quiz
+            let currentIndex = 0;
+            let userAnswers = [];          // selected capital index (0-3) per question, -1 = unanswered
+            let optionsPerQuestion = [];    // array of arrays: 4 city names per question
+
+            // ----- helper: shuffle array (Fisher–Yates)
+            function shuffleArray(arr) {
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                return arr;
+            }
+
+            // ----- build question list: filter by continent, shuffle, pick up to 5 -----
+            function buildQuestionList(continent) {
+                let filtered = continent === 'all' 
+                    ? [...capitals] 
+                    : capitals.filter(c => c.continent === continent);
+                if (filtered.length === 0) return [];
+                filtered = shuffleArray(filtered);
+                return filtered.slice(0, 5); // max 5 questions
+            }
+
+            // ----- generate 4 options for a given correct capital (1 correct + 3 random others, shuffled) -----
+            function generateOptions(correctCapital, excludeCountry, allCapitalsPool) {
+                // pool of all capitals (string) except the correct one from the same country? we need other capital names
+                const otherCapitals = allCapitalsPool
+                    .filter(item => item.capital !== correctCapital) // exclude exact same capital
+                    .map(item => item.capital);
+                // remove duplicates by converting to Set and back
+                const uniqueOthers = [...new Set(otherCapitals)];
+                // take 3 random from uniqueOthers
+                let distractors = [];
+                if (uniqueOthers.length >= 3) {
+                    const shuffled = shuffleArray([...uniqueOthers]);
+                    distractors = shuffled.slice(0, 3);
+                } else {
+                    // fallback (should not happen)
+                    distractors = ["London", "Tokyo", "Cairo"];
+                }
+                let opts = [correctCapital, ...distractors];
+                return shuffleArray(opts);
+            }
+
+            // ----- reset quiz for current continent -----
+            function resetQuiz() {
+                questionList = buildQuestionList(currentContinent);
+                currentIndex = 0;
+                userAnswers = new Array(questionList.length).fill(-1);
+                
+                // pre-generate options for each question (to keep consistent during quiz)
+                optionsPerQuestion = [];
+                const allCapitalsList = capitals; // reference
+                for (let i = 0; i < questionList.length; i++) {
+                    const q = questionList[i];
+                    const opts = generateOptions(q.capital, q.country, allCapitalsList);
+                    optionsPerQuestion.push(opts);
+                }
+
+                renderQuestion();
+                updateScoreAndCounters();
+            }
+
+            // ----- update score and footer -----
+            function recalcScore() {
+                let correctCount = 0;
+                for (let i = 0; i < questionList.length; i++) {
+                    if (userAnswers[i] === -1) continue;
+                    const selectedCity = optionsPerQuestion[i][userAnswers[i]];
+                    if (selectedCity === questionList[i].capital) correctCount++;
+                }
+                return correctCount;
+            }
+
+            function updateScoreAndCounters() {
+                const correct = recalcScore();
+                const total = questionList.length;
+                scoreDisplay.textContent = `${correct}/${total}`;
+                correctSpan.innerHTML = `✅ ${correct} correct`;
+                const answered = userAnswers.filter(a => a !== -1).length;
+                const left = total - answered;
+                remainingSpan.textContent = `${left} remaining`;
+            }
+
+            // ----- render current question -----
+            function renderQuestion() {
+                if (!questionList.length) {
+                    countryDisplay.innerHTML = `<span>🏳️</span> No countries in this region`;
+                    optionsContainer.innerHTML = '';
+                    feedbackEl.textContent = 'Try another continent filter.';
+                    nextBtn.disabled = true;
+                    regionTag.textContent = currentContinent;
+                    questionCounter.textContent = `0/0`;
+                    return;
+                }
+
+                const q = questionList[currentIndex];
+                countryDisplay.innerHTML = `<span>🏳️</span> ${q.country}`;
+                regionTag.textContent = q.continent;
+                questionCounter.textContent = `question ${currentIndex+1} / ${questionList.length}`;
+
+                const opts = optionsPerQuestion[currentIndex];
+                const answered = userAnswers[currentIndex] !== -1;
+                const selectedIdx = userAnswers[currentIndex];
+                const correctCapital = q.capital;
+
+                // build options html
+                let htmlStr = '';
+                opts.forEach((city, idx) => {
+                    let extraClass = 'city-option';
+                    if (answered) {
+                        if (city === correctCapital) extraClass += ' correct-highlight';
+                        if (idx === selectedIdx && city === correctCapital) extraClass += ' selected-correct';
+                        else if (idx === selectedIdx && city !== correctCapital) extraClass += ' selected-wrong';
+                    }
+                    const letter = String.fromCharCode(65 + idx); // A, B, C, D
+                    htmlStr += `
+                        <div class="${extraClass}" data-opt-index="${idx}" data-city="${city}">
+                            <span class="option-letter">${letter}</span>
+                            <span>${city}</span>
+                        </div>
+                    `;
+                });
+                optionsContainer.innerHTML = htmlStr;
+
+                // attach click listeners if not answered
+                if (!answered) {
+                    document.querySelectorAll('.city-option').forEach(opt => {
+                        opt.addEventListener('click', optionClickHandler);
+                    });
+                    feedbackEl.textContent = '🗺️ select a capital';
+                } else {
+                    // show feedback
+                    const isCorrect = (selectedIdx !== -1 && opts[selectedIdx] === correctCapital);
+                    if (isCorrect) {
+                        feedbackEl.innerHTML = `✅ correct! the capital of ${q.country} is ${correctCapital}.`;
+                    } else {
+                        feedbackEl.innerHTML = `❌ the capital of ${q.country} is ${correctCapital}.`;
+                    }
+                }
+
+                // enable next (unless finished)
+                nextBtn.disabled = (questionList.length === 0);
+            }
+
+            // ----- option click handler -----
+            function optionClickHandler(e) {
+                const row = e.currentTarget;
+                const selectedIdx = parseInt(row.dataset.optIndex, 10);
+                const q = questionList[currentIndex];
+                const opts = optionsPerQuestion[currentIndex];
+
+                // store answer
+                userAnswers[currentIndex] = selectedIdx;
+
+                // re-render to show correct/wrong
+                renderQuestion();
+                updateScoreAndCounters();
+            }
+
+            // ----- next question -----
+            function goToNext() {
+                if (questionList.length === 0) return;
+                if (currentIndex < questionList.length - 1) {
+                    currentIndex++;
+                    renderQuestion();
+                } else {
+                    // end of quiz
+                    const totalCorrect = recalcScore();
+                    feedbackEl.innerHTML = `🏁 quiz complete! you got ${totalCorrect} out of ${questionList.length} correct. use "new game" to restart.`;
+                    nextBtn.disabled = true;
+                }
+                updateScoreAndCounters();
+            }
+
+            // ----- change continent -----
+            function setContinent(continent) {
+                currentContinent = continent;
+                continentBtns.forEach(btn => {
+                    if (btn.dataset.continent === continent) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                });
+                resetQuiz(); // rebuild with new continent
+            }
+
+            // ----- event listeners -----
+            continentBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    setContinent(btn.dataset.continent);
+                });
+            });
+
+            nextBtn.addEventListener('click', goToNext);
+
+            resetBtn.addEventListener('click', () => {
+                setContinent(currentContinent); // same continent reshuffle
+            });
+
+            // initialize with 'all'
+            setContinent('all');
+        })();
+    </script>
+</body>
+</html>

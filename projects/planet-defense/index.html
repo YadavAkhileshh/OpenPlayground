@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Planet Defense Game</title>
+
+<style>
+/* ---------------- BODY ---------------- */
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:radial-gradient(circle,#020024,#090979,#000000);
+  font-family:Arial, sans-serif;
+  color:white;
+}
+
+/* ---------------- GAME AREA ---------------- */
+#game{
+  width:600px;
+  height:500px;
+  background:black;
+  border:3px solid cyan;
+  border-radius:15px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 0 20px cyan;
+}
+
+/* ---------------- INFO PANEL ---------------- */
+#info{
+  position:absolute;
+  top:10px;
+  left:10px;
+  font-size:18px;
+}
+
+/* ---------------- PLANET ---------------- */
+#planet{
+  width:100px;
+  height:100px;
+  background:radial-gradient(circle at 30% 30%,#00f,#003);
+  border-radius:50%;
+  position:absolute;
+  bottom:10px;
+  left:250px;
+  box-shadow:0 0 20px blue;
+}
+
+/* ---------------- SHIELD ---------------- */
+#shield{
+  width:120px;
+  height:20px;
+  background:cyan;
+  position:absolute;
+  bottom:120px;
+  left:240px;
+  border-radius:10px;
+  box-shadow:0 0 15px cyan;
+}
+
+/* ---------------- ASTEROID ---------------- */
+.asteroid{
+  width:40px;
+  height:40px;
+  background:gray;
+  border-radius:50%;
+  position:absolute;
+  top:-40px;
+  box-shadow:0 0 10px orange;
+}
+
+/* ---------------- GAME OVER ---------------- */
+#gameOver{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.9);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  font-size:30px;
+}
+
+button{
+  padding:10px 20px;
+  border:none;
+  border-radius:10px;
+  background:cyan;
+  font-size:18px;
+  cursor:pointer;
+  margin-top:15px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+  <div id="info">
+    Score: <span id="score">0</span><br>
+    Lives: <span id="lives">3</span>
+  </div>
+
+  <div id="planet"></div>
+  <div id="shield"></div>
+
+  <div id="gameOver">
+    <div id="overText">Game Over</div>
+    <button onclick="restartGame()">Restart</button>
+  </div>
+
+</div>
+
+<script>
+/* ---------------- VARIABLES ---------------- */
+const game = document.getElementById("game");
+const shield = document.getElementById("shield");
+const scoreEl = document.getElementById("score");
+const livesEl = document.getElementById("lives");
+const gameOverScreen = document.getElementById("gameOver");
+
+let shieldX = 240;
+let score = 0;
+let lives = 3;
+let asteroids = [];
+let gameRunning = true;
+
+/* ---------------- KEYBOARD CONTROL ---------------- */
+document.addEventListener("keydown", moveShield);
+
+function moveShield(e){
+  if(!gameRunning) return;
+
+  if(e.key === "ArrowLeft"){
+    shieldX -= 20;
+  }
+  if(e.key === "ArrowRight"){
+    shieldX += 20;
+  }
+
+  if(shieldX < 0) shieldX = 0;
+  if(shieldX > 480) shieldX = 480;
+
+  shield.style.left = shieldX + "px";
+}
+
+/* ---------------- CREATE ASTEROID ---------------- */
+function createAsteroid(){
+  if(!gameRunning) return;
+
+  const asteroid = document.createElement("div");
+  asteroid.classList.add("asteroid");
+
+  let x = Math.random() * 560;
+  asteroid.style.left = x + "px";
+
+  game.appendChild(asteroid);
+
+  asteroids.push({
+    element: asteroid,
+    x: x,
+    y: -40,
+    speed: 2 + Math.random() * 3
+  });
+}
+
+/* ---------------- UPDATE ASTEROIDS ---------------- */
+function updateAsteroids(){
+  if(!gameRunning) return;
+
+  asteroids.forEach((a,index)=>{
+    a.y += a.speed;
+    a.element.style.top = a.y + "px";
+
+    // Collision with shield
+    let shieldRect = shield.getBoundingClientRect();
+    let asteroidRect = a.element.getBoundingClientRect();
+
+    if(
+      asteroidRect.bottom >= shieldRect.top &&
+      asteroidRect.left < shieldRect.right &&
+      asteroidRect.right > shieldRect.left
+    ){
+      // Hit asteroid
+      score++;
+      scoreEl.innerText = score;
+      game.removeChild(a.element);
+      asteroids.splice(index,1);
+    }
+
+    // Missed asteroid
+    else if(a.y > 500){
+      lives--;
+      livesEl.innerText = lives;
+      game.removeChild(a.element);
+      asteroids.splice(index,1);
+
+      if(lives <= 0){
+        endGame();
+      }
+    }
+  });
+}
+
+/* ---------------- GAME LOOP ---------------- */
+function gameLoop(){
+  if(!gameRunning) return;
+  updateAsteroids();
+  requestAnimationFrame(gameLoop);
+}
+
+/* ---------------- END GAME ---------------- */
+function endGame(){
+  gameRunning = false;
+  gameOverScreen.style.display = "flex";
+  document.getElementById("overText").innerText =
+    "💥 Game Over\nScore: " + score;
+}
+
+/* ---------------- RESTART GAME ---------------- */
+function restartGame(){
+  score = 0;
+  lives = 3;
+  asteroids.forEach(a => game.removeChild(a.element));
+  asteroids = [];
+  shieldX = 240;
+
+  scoreEl.innerText = score;
+  livesEl.innerText = lives;
+  shield.style.left = shieldX + "px";
+
+  gameOverScreen.style.display = "none";
+  gameRunning = true;
+
+  gameLoop();
+}
+
+/* ---------------- START GAME ---------------- */
+setInterval(createAsteroid,1000);
+gameLoop();
+</script>
+
+</body>
+</html>

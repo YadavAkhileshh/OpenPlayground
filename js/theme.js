@@ -3,7 +3,7 @@
  * Handles theme persistence and system preference detection
  */
 
-(function () {
+(() => {
     const themeToggle = document.getElementById('themeToggle');
     const html = document.documentElement;
 
@@ -12,7 +12,7 @@
     html.setAttribute('data-theme', savedTheme);
 
     // Toggle theme function
-    function toggleTheme() {
+    const toggleTheme = () => {
         const currentTheme = html.getAttribute('data-theme');
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
 

@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Emotion Map</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            color: #444;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(245,247,250,0.9) 100%);
+            border-radius: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 3.2rem;
+            color: #5a67d8;
+            margin-bottom: 15px;
+            font-weight: 700;
+            background: linear-gradient(45deg, #5a67d8, #805ad5, #d53f8c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #718096;
+            max-width: 800px;
+            margin: 0 auto 20px;
+        }
+
+        .app-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .emotion-map {
+            flex: 2;
+            min-width: 300px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(245,247,250,0.95) 100%);
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            position: relative;
+            min-height: 700px;
+            overflow: hidden;
+        }
+
+        .emotion-info {
+            flex: 1;
+            min-width: 300px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(245,247,250,0.95) 100%);
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.8rem;
+            color: #4a5568;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #edf2f7;
+        }
+
+        .emotion-wheel {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            margin: 0 auto;
+        }
+
+        .emotion-node {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: white;
+            text-align: center;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+            padding: 5px;
+        }
+
+        .emotion-node:hover {
+            transform: scale(1.15);
+            z-index: 10;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .emotion-node.active {
+            transform: scale(1.2);
+            z-index: 20;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
+            border: 3px solid white;
+        }
+
+        .connection-line {
+            position: absolute;
+            background-color: rgba(200, 200, 200, 0.3);
+            height: 2px;
+            transform-origin: 0 0;
+            z-index: 0;
+        }
+
+        .emotion-category {
+            position: absolute;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #4a5568;
+            z-index: 5;
+        }
+
+        .selected-emotion {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 25px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #5a67d8 0%, #805ad5 100%);
+            color: white;
+            box-shadow: 0 10px 20px rgba(90, 103, 216, 0.2);
+        }
+
+        .selected-emotion-icon {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+        }
+
+        .selected-emotion-name {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .selected-emotion-desc {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .info-section {
+            margin-bottom: 30px;
+        }
+
+        .info-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.3rem;
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .info-title i {
+            color: #5a67d8;
+        }
+
+        .info-list {
+            list-style-type: none;
+        }
+
+        .info-item {
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            background-color: #f7fafc;
+            border-left: 4px solid;
+            transition: all 0.2s;
+        }
+
+        .info-item:hover {
+            transform: translateX(5px);
+            background-color: #edf2f7;
+        }
+
+        .causes-item { border-left-color: #e53e3e; }
+        .effects-item { border-left-color: #3182ce; }
+        .coping-item { border-left-color: #38a169; }
+
+        .intensity-slider {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f7fafc;
+            border-radius: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 10px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #c6f6d5, #fefcbf, #fed7d7);
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #5a67d8;
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .intensity-value {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #5a67d8;
+            min-width: 60px;
+        }
+
+        .intensity-description {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #718096;
+            text-align: center;
+        }
+
+        .emotion-journal {
+            margin-top: auto;
+            padding: 20px;
+            background-color: #f7fafc;
+            border-radius: 15px;
+        }
+
+        .journal-title {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            resize: vertical;
+            min-height: 100px;
+            transition: all 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #5a67d8;
+            box-shadow: 0 0 0 3px rgba(90, 103, 216, 0.1);
+        }
+
+        .journal-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #5a67d8 0%, #805ad5 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .journal-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(90, 103, 216, 0.3);
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: #a0aec0;
+            padding: 40px;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #e2e8f0;
+        }
+
+        .empty-state h3 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: #718096;
+        }
+
+        .category-label {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: white;
+            text-align: center;
+            opacity: 0.9;
+            z-index: 2;
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: #718096;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .emotion-map, .emotion-info {
+                min-width: 100%;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .emotion-wheel {
+                height: 500px;
+            }
+            
+            .emotion-node {
+                width: 65px;
+                height: 65px;
+                font-size: 0.8rem;
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(90, 103, 216, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(90, 103, 216, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(90, 103, 216, 0); }
+        }
+
+        .color-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .emotion-intensity {
+            display: inline-block;
+            padding: 3px 10px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-heart"></i> Interactive Emotion Map</h1>
+            <p class="subtitle">Explore the landscape of human emotions. Click on any emotion to understand its causes, effects, and healthy coping strategies.</p>
+            
+            <div class="color-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #e53e3e;"></div>
+                    <span>Primary Emotions</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #3182ce;"></div>
+                    <span>Secondary Emotions</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #38a169;"></div>
+                    <span>Positive Emotions</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #d69e2e;"></div>
+                    <span>Complex Emotions</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="app-container">
+            <div class="emotion-map">
+                <h2 class="section-title">Emotion Wheel</h2>
+                <div class="emotion-wheel" id="emotionWheel">
+                    <!-- Emotion nodes will be dynamically added here -->
+                </div>
+            </div>
+
+            <div class="emotion-info">
+                <div class="selected-emotion" id="selectedEmotion">
+                    <div class="empty-state" id="emptyEmotionState">
+                        <i class="fas fa-heartbeat"></i>
+                        <h3>Select an Emotion</h3>
+                        <p>Click on any emotion in the wheel to explore its details</p>
+                    </div>
+                    
+                    <div id="activeEmotionInfo" style="display: none;">
+                        <div class="selected-emotion-icon" id="emotionIcon">
+                            <i class="fas fa-smile"></i>
+                        </div>
+                        <div class="selected-emotion-name" id="emotionName">Joy</div>
+                        <div class="selected-emotion-desc" id="emotionDescription">A feeling of great pleasure and happiness</div>
+                        <div class="emotion-intensity" id="emotionIntensity">Medium Intensity</div>
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <div class="info-title">
+                        <i class="fas fa-search"></i>
+                        <span>Common Causes</span>
+                    </div>
+                    <ul class="info-list" id="causesList">
+                        <li class="info-item causes-item">Select an emotion to see its common causes</li>
+                    </ul>
+                </div>
+                
+                <div class="info-section">
+                    <div class="info-title">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Typical Effects</span>
+                    </div>
+                    <ul class="info-list" id="effectsList">
+                        <li class="info-item effects-item">Select an emotion to see its typical effects</li>
+                    </ul>
+                </div>
+                
+                <div class="info-section">
+                    <div class="info-title">
+                        <i class="fas fa-hands-helping"></i>
+                        <span>Healthy Coping Strategies</span>
+                    </div>
+                    <ul class="info-list" id="copingList">
+                        <li class="info-item coping-item">Select an emotion to see coping strategies</li>
+                    </ul>
+                </div>
+                
+                <div class="intensity-slider">
+                    <div class="slider-label">
+                        <span>Emotion Intensity</span>
+                        <span class="intensity-value" id="intensityValue">50%</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" min="1" max="100" value="50" class="slider" id="intensitySlider">
+                    </div>
+                    <div class="intensity-description" id="intensityDescription">Moderate intensity - noticeable but manageable</div>
+                </div>
+                
+                <div class="emotion-journal">
+                    <div class="journal-title">Emotion Journal</div>
+                    <textarea id="journalEntry" placeholder="How are you feeling today? Reflect on your emotions..."></textarea>
+                    <button class="journal-btn" id="saveJournalBtn">
+                        <i class="fas fa-save"></i> Save Reflection
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Interactive Emotion Map &copy; 2026 | Understanding emotions is the first step to emotional wellbeing</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const emotionWheel = document.getElementById('emotionWheel');
+        const selectedEmotion = document.getElementById('selectedEmotion');
+        const emptyEmotionState = document.getElementById('emptyEmotionState');
+        const activeEmotionInfo = document.getElementById('activeEmotionInfo');
+        const emotionIcon = document.getElementById('emotionIcon');
+        const emotionName = document.getElementById('emotionName');
+        const emotionDescription = document.getElementById('emotionDescription');
+        const emotionIntensity = document.getElementById('emotionIntensity');
+        const causesList = document.getElementById('causesList');
+        const effectsList = document.getElementById('effectsList');
+        const copingList = document.getElementById('copingList');
+        const intensitySlider = document.getElementById('intensitySlider');
+        const intensityValue = document.getElementById('intensityValue');
+        const intensityDescription = document.getElementById('intensityDescription');
+        const journalEntry = document.getElementById('journalEntry');
+        const saveJournalBtn = document.getElementById('saveJournalBtn');
+
+        // Emotion Database
+        const emotions = {
+            joy: {
+                name: "Joy",
+                description: "A feeling of great pleasure and happiness",
+                icon: "fas fa-smile",
+                color: "#38a169",
+                category: "positive",
+                intensity: "medium",
+                causes: [
+                    "Achieving a personal goal",
+                    "Spending time with loved ones",
+                    "Experiencing something beautiful",
+                    "Unexpected positive events",
+                    "Engaging in favorite activities"
+                ],
+                effects: [
+                    "Increased energy and motivation",
+                    "Improved immune system function",
+                    "Enhanced creativity and problem-solving",
+                    "Strengthened social bonds",
+                    "Greater resilience to stress"
+                ],
+                coping: [
+                    "Savor and prolong joyful moments",
+                    "Express gratitude for what brings you joy",
+                    "Share your happiness with others",
+                    "Engage in activities that bring you joy regularly",
+                    "Practice mindfulness to fully experience joy"
+                ]
+            },
+            sadness: {
+                name: "Sadness",
+                description: "A feeling of sorrow or unhappiness",
+                icon: "fas fa-sad-tear",
+                color: "#3182ce",
+                category: "primary",
+                intensity: "medium",
+                causes: [
+                    "Loss of a loved one or relationship",
+                    "Disappointment or failure",
+                    "Loneliness or isolation",
+                    "Unmet expectations",
+                    "Witnessing suffering of others"
+                ],
+                effects: [
+                    "Low energy and motivation",
+                    "Withdrawal from social activities",
+                    "Difficulty concentrating",
+                    "Changes in appetite or sleep",
+                    "Tearfulness or emotional sensitivity"
+                ],
+                coping: [
+                    "Allow yourself to feel and express sadness",
+                    "Talk to a trusted friend or therapist",
+                    "Engage in gentle self-care activities",
+                    "Write about your feelings in a journal",
+                    "Give yourself time to heal without judgment"
+                ]
+            },
+            anger: {
+                name: "Anger",
+                description: "A strong feeling of annoyance, displeasure, or hostility",
+                icon: "fas fa-angry",
+                color: "#e53e3e",
+                category: "primary",
+                intensity: "high",
+                causes: [
+                    "Perceived injustice or unfair treatment",
+                    "Frustration with obstacles or limitations",
+                    "Feeling threatened or attacked",
+                    "Violation of personal boundaries",
+                    "Unmet needs or expectations"
+                ],
+                effects: [
+                    "Increased heart rate and blood pressure",
+                    "Tension in muscles, especially jaw and fists",
+                    "Impulsive or aggressive behavior",
+                    "Difficulty thinking clearly",
+                    "Strained relationships"
+                ],
+                coping: [
+                    "Take deep breaths and count to ten before reacting",
+                    "Express your feelings using 'I' statements",
+                    "Engage in physical activity to release tension",
+                    "Identify the underlying need or hurt",
+                    "Practice relaxation techniques like meditation"
+                ]
+            },
+            fear: {
+                name: "Fear",
+                description: "An unpleasant emotion caused by threat of danger, pain, or harm",
+                icon: "fas fa-surprise",
+                color: "#805ad5",
+                category: "primary",
+                intensity: "high",
+                causes: [
+                    "Real or perceived threat to safety",
+                    "Uncertainty about the future",
+                    "Traumatic past experiences",
+                    "Fear of failure or rejection",
+                    "Unknown or unfamiliar situations"
+                ],
+                effects: [
+                    "Increased alertness and vigilance",
+                    "Rapid heartbeat and breathing",
+                    "Tension and readiness to flee",
+                    "Narrowed focus on the threat",
+                    "Avoidance of feared situations"
+                ],
+                coping: [
+                    "Practice grounding techniques (5-4-3-2-1 method)",
+                    "Challenge catastrophic thinking with facts",
+                    "Gradually expose yourself to feared situations",
+                    "Develop a safety plan for realistic threats",
+                    "Practice self-compassion for your fears"
+                ]
+            },
+            surprise: {
+                name: "Surprise",
+                description: "A brief emotional state following an unexpected event",
+                icon: "fas fa-surprise",
+                color: "#d69e2e",
+                category: "primary",
+                intensity: "varies",
+                causes: [
+                    "Unexpected news or events",
+                    "Sudden changes or revelations",
+                    "Unexpected encounters",
+                    "Surprise gifts or celebrations",
+                    "Plot twists in stories or movies"
+                ],
+                effects: [
+                    "Brief heightened alertness",
+                    "Increased curiosity and attention",
+                    "Physical startle response",
+                    "Rapid assessment of the situation",
+                    "Quick emotional shift (positive or negative)"
+                ],
+                coping: [
+                    "Take a moment to process the surprise",
+                    "Assess whether the surprise is positive or threatening",
+                    "Allow yourself to experience the emotion fully",
+                    "Share your surprise with others if appropriate",
+                    "Use surprises as opportunities for growth"
+                ]
+            },
+            disgust: {
+                name: "Disgust",
+                description: "A feeling of revulsion or profound disapproval",
+                icon: "fas fa-grimace",
+                color: "#38a169",
+                category: "primary",
+                intensity: "medium",
+                causes: [
+                    "Offensive tastes, smells, or sights",
+                    "Moral violations or unethical behavior",
+                    "Contamination or impurity",
+                    "Certain foods or substances",
+                    "Actions that violate personal values"
+                ],
+                effects: [
+                    "Physical recoil or withdrawal",
+                    "Nausea or gagging reflex",
+                    "Desire to avoid or eliminate the source",
+                    "Judgment or condemnation",
+                    "Strong aversive reactions"
+                ],
+                coping: [
+                    "Remove yourself from the source if possible",
+                    "Practice mindfulness without judgment",
+                    "Examine if the disgust is rational or cultural",
+                    "Use humor to diffuse intense disgust",
+                    "Set healthy boundaries when needed"
+                ]
+            },
+            love: {
+                name: "Love",
+                description: "A complex emotion of strong affection and attachment",
+                icon: "fas fa-heart",
+                color: "#e53e3e",
+                category: "positive",
+                intensity: "high",
+                causes: [
+                    "Deep connection with another person",
+                    "Shared experiences and vulnerability",
+                    "Biological and hormonal factors",
+                    "Compatibility and mutual understanding",
+                    "Consistent care and attention"
+                ],
+                effects: [
+                    "Feelings of warmth and security",
+                    "Increased oxytocin and bonding",
+                    "Motivation to care for others",
+                    "Greater life satisfaction",
+                    "Improved physical and mental health"
+                ],
+                coping: [
+                    "Express love through words and actions",
+                    "Practice active listening in relationships",
+                    "Set healthy boundaries even in love",
+                    "Balance giving and receiving love",
+                    "Cultivate self-love alongside love for others"
+                ]
+            },
+            anxiety: {
+                name: "Anxiety",
+                description: "A feeling of worry, nervousness, or unease about future events",
+                icon: "fas fa-exclamation-triangle",
+                color: "#d69e2e",
+                category: "complex",
+                intensity: "high",
+                causes: [
+                    "Uncertainty about the future",
+                    "Past traumatic experiences",
+                    "Genetic predisposition",
+                    "High stress or pressure",
+                    "Perfectionism or high expectations"
+                ],
+                effects: [
+                    "Racing thoughts and worry",
+                    "Physical symptoms (sweating, trembling)",
+                    "Difficulty sleeping or concentrating",
+                    "Avoidance of anxiety-provoking situations",
+                    "Irritability or restlessness"
+                ],
+                coping: [
+                    "Practice deep breathing and relaxation techniques",
+                    "Challenge anxious thoughts with evidence",
+                    "Break tasks into manageable steps",
+                    "Establish a consistent routine",
+                    "Limit caffeine and practice regular exercise"
+                ]
+            },
+            guilt: {
+                name: "Guilt",
+                description: "A feeling of responsibility for a wrong or offense",
+                icon: "fas fa-user-slash",
+                color: "#805ad5",
+                category: "complex",
+                intensity: "medium",
+                causes: [
+                    "Actions that harm others",
+                    "Violation of personal values",
+                    "Failure to meet expectations",
+                    "Survivor's guilt in certain situations",
+                    "Unresolved past mistakes"
+                ],
+                effects: [
+                    "Self-criticism and negative self-talk",
+                    "Desire to make amends or confess",
+                    "Withdrawal from social situations",
+                    "Physical tension or discomfort",
+                    "Rumination on past actions"
+                ],
+                coping: [
+                    "Assess if guilt is proportional to the situation",
+                    "Make amends when appropriate and possible",
+                    "Practice self-forgiveness and compassion",
+                    "Learn from mistakes without dwelling on them",
+                    "Consider if guilt is teaching you something valuable"
+                ]
+            },
+            shame: {
+                name: "Shame",
+                description: "A painful feeling of humiliation or distress caused by consciousness of wrong or foolish behavior",
+                icon: "fas fa-user-injured",
+                color: "#3182ce",
+                category: "complex",
+                intensity: "high",
+                causes: [
+                    "Perceived failure or inadequacy",
+                    "Social rejection or criticism",
+                    "Violation of cultural or social norms",
+                    "Childhood experiences of shaming",
+                    "Internalized negative beliefs"
+                ],
+                effects: [
+                    "Desire to hide or disappear",
+                    "Intense self-criticism and worthlessness",
+                    "Withdrawal from social connection",
+                    "Defensive or aggressive behavior",
+                    "Difficulty receiving positive feedback"
+                ],
+                coping: [
+                    "Share your experience with a trusted person",
+                    "Separate your actions from your worth as a person",
+                    "Practice self-compassion and acceptance",
+                    "Challenge the belief that you are fundamentally flawed",
+                    "Recognize shame as a universal human experience"
+                ]
+            },
+            jealousy: {
+                name: "Jealousy",
+                description: "A complex emotion involving feelings of insecurity, fear, and envy",
+                icon: "fas fa-eye",
+                color: "#e53e3e",
+                category: "complex",
+                intensity: "medium",
+                causes: [
+                    "Perceived threat to a relationship",
+                    "Fear of loss or abandonment",
+                    "Low self-esteem or insecurity",
+                    "Comparison with others",
+                    "Past experiences of betrayal"
+                ],
+                effects: [
+                    "Suspicion and mistrust",
+                    "Possessiveness or controlling behavior",
+                    "Anxiety and emotional turmoil",
+                    "Conflict in relationships",
+                    "Obsessive thoughts or checking behaviors"
+                ],
+                coping: [
+                    "Communicate your feelings without accusation",
+                    "Work on building self-esteem and self-worth",
+                    "Examine evidence for your jealous thoughts",
+                    "Practice trust in your relationships",
+                    "Focus on your own growth rather than comparing"
+                ]
+            },
+            gratitude: {
+                name: "Gratitude",
+                description: "A feeling of thankfulness and appreciation",
+                icon: "fas fa-hands",
+                color: "#38a169",
+                category: "positive",
+                intensity: "medium",
+                causes: [
+                    "Recognition of blessings in life",
+                    "Acts of kindness from others",
+                    "Overcoming challenges or difficulties",
+                    "Mindfulness and present-moment awareness",
+                    "Reflection on positive experiences"
+                ],
+                effects: [
+                    "Increased happiness and life satisfaction",
+                    "Improved physical health",
+                    "Stronger relationships and social bonds",
+                    "Greater resilience to stress",
+                    "Reduced materialism and envy"
+                ],
+                coping: [
+                    "Keep a daily gratitude journal",
+                    "Express thanks to people in your life",
+                    "Practice mindfulness of small blessings",
+                    "Reframe challenges as opportunities for growth",
+                    "Share your gratitude with others"
+                ]
+            },
+            hope: {
+                name: "Hope",
+                description: "A feeling of expectation and desire for a particular thing to happen",
+                icon: "fas fa-dove",
+                color: "#5a67d8",
+                category: "positive",
+                intensity: "medium",
+                causes: [
+                    "Belief in positive possibilities",
+                    "Past experiences of overcoming challenges",
+                    "Supportive relationships",
+                    "Clear goals and aspirations",
+                    "Spiritual or philosophical beliefs"
+                ],
+                effects: [
+                    "Increased motivation and perseverance",
+                    "Improved coping with difficulties",
+                    "Greater optimism about the future",
+                    "Enhanced problem-solving abilities",
+                    "Reduced anxiety and depression"
+                ],
+                coping: [
+                    "Set realistic but meaningful goals",
+                    "Visualize positive outcomes",
+                    "Surround yourself with hopeful people",
+                    "Take small steps toward your aspirations",
+                    "Practice self-compassion during setbacks"
+                ]
+            }
+        };
+
+        // State variables
+        let selectedEmotionKey = null;
+        let currentIntensity = 50;
+        let journalEntries = JSON.parse(localStorage.getItem('emotionJournal')) || [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createEmotionWheel();
+            setupEventListeners();
+            
+            // Select first emotion by default
+            selectEmotion('joy');
+        });
+
+        // Create emotion wheel
+        function createEmotionWheel() {
+            const centerX = 300;
+            const centerY = 300;
+            const radius = 220;
+            
+            // Create category labels first (so they appear behind emotion nodes)
+            const categories = [
+                { name: "Primary", angle: 0, color: "#e53e3e", radius: 100 },
+                { name: "Positive", angle: 90, color: "#38a169", radius: 100 },
+                { name: "Complex", angle: 180, color: "#d69e2e", radius: 100 },
+                { name: "Secondary", angle: 270, color: "#3182ce", radius: 100 }
+            ];
+            
+            categories.forEach(category => {
+                const angleRad = (category.angle * Math.PI) / 180;
+                const x = centerX + Math.cos(angleRad) * category.radius;
+                const y = centerY + Math.sin(angleRad) * category.radius;
+                
+                const categoryEl = document.createElement('div');
+                categoryEl.className = 'category-label';
+                categoryEl.textContent = category.name;
+                categoryEl.style.left = `${x - 60}px`;
+                categoryEl.style.top = `${y - 60}px`;
+                categoryEl.style.backgroundColor = category.color;
+                categoryEl.style.opacity = '0.8';
+                
+                emotionWheel.appendChild(categoryEl);
+            });
+            
+            // Create emotion nodes
+            const emotionKeys = Object.keys(emotions);
+            const angleStep = (2 * Math.PI) / emotionKeys.length;
+            
+            emotionKeys.forEach((emotionKey, index) => {
+                const emotion = emotions[emotionKey];
+                const angle = index * angleStep;
+                const distance = radius + (Math.random() * 40 - 20); // Slight variation
+                
+                const x = centerX + Math.cos(angle) * distance;
+                const y = centerY + Math.sin(angle) * distance;
+                
+                // Create emotion node
+                const emotionNode = document.createElement('div');
+                emotionNode.className = 'emotion-node';
+                emotionNode.textContent = emotion.name;
+                emotionNode.style.left = `${x - 40}px`;
+                emotionNode.style.top = `${y - 40}px`;
+                emotionNode.style.backgroundColor = emotion.color;
+                emotionNode.dataset.emotion = emotionKey;
+                
+                // Add hover effect
+                emotionNode.addEventListener('click', function() {
+                    selectEmotion(emotionKey);
+                });
+                
+                emotionWheel.appendChild(emotionNode);
+                
+                // Create connection lines to center
+                const line = document.createElement('div');
+                line.className = 'connection-line';
+                line.style.left = `${centerX}px`;
+                line.style.top = `${centerY}px`;
+                
+                const length = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+                line.style.width = `${length}px`;
+                
+                const lineAngle = Math.atan2(y - centerY, x - centerX);
+                line.style.transform = `rotate(${lineAngle}rad)`;
+                
+                emotionWheel.appendChild(line);
+            });
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Intensity slider
+            intensitySlider.addEventListener('input', function() {
+                currentIntensity = parseInt(this.value);
+                intensityValue.textContent = `${currentIntensity}%`;
+                updateIntensityDescription();
+                
+                // If an emotion is selected, update its intensity display
+                if (selectedEmotionKey) {
+                    updateEmotionIntensityDisplay();
+                }
+            });
+            
+            // Save journal button
+            saveJournalBtn.addEventListener('click', saveJournalEntry);
+        }
+
+        // Select an emotion
+        function selectEmotion(emotionKey) {
+            selectedEmotionKey = emotionKey;
+            const emotion = emotions[emotionKey];
+            
+            // Update UI
+            emptyEmotionState.style.display = 'none';
+            activeEmotionInfo.style.display = 'block';
+            
+            // Update emotion info
+            emotionIcon.innerHTML = `<i class="${emotion.icon}"></i>`;
+            emotionName.textContent = emotion.name;
+            emotionDescription.textContent = emotion.description;
+            
+            // Update emotion color in selected display
+            selectedEmotion.style.background = `linear-gradient(135deg, ${emotion.color} 0%, ${adjustColor(emotion.color, 20)} 100%)`;
+            
+            // Update lists
+            updateList(causesList, emotion.causes, 'causes-item');
+            updateList(effectsList, emotion.effects, 'effects-item');
+            updateList(copingList, emotion.coping, 'coping-item');
+            
+            // Update intensity display
+            updateEmotionIntensityDisplay();
+            
+            // Update emotion nodes
+            document.querySelectorAll('.emotion-node').forEach(node => {
+                node.classList.remove('active', 'pulse');
+                if (node.dataset.emotion === emotionKey) {
+                    node.classList.add('active', 'pulse');
+                }
+            });
+            
+            // Update journal placeholder
+            journalEntry.placeholder = `How are you experiencing ${emotion.name.toLowerCase()} today?...`;
+        }
+
+        // Update a list element
+        function updateList(listElement, items, className) {
+            listElement.innerHTML = '';
+            
+            items.forEach(item => {
+                const listItem = document.createElement('li');
+                listItem.className = `info-item ${className}`;
+                listItem.textContent = item;
+                listElement.appendChild(listItem);
+            });
+        }
+
+        // Update emotion intensity display
+        function updateEmotionIntensityDisplay() {
+            let intensityText = "";
+            
+            if (currentIntensity < 25) {
+                intensityText = "Mild Intensity";
+            } else if (currentIntensity < 50) {
+                intensityText = "Low-Moderate Intensity";
+            } else if (currentIntensity < 75) {
+                intensityText = "Moderate Intensity";
+            } else {
+                intensityText = "High Intensity";
+            }
+            
+            emotionIntensity.textContent = intensityText;
+        }
+
+        // Update intensity description
+        function updateIntensityDescription() {
+            let description = "";
+            
+            if (currentIntensity < 20) {
+                description = "Barely noticeable - subtle emotional experience";
+            } else if (currentIntensity < 40) {
+                description = "Mild intensity - present but not overwhelming";
+            } else if (currentIntensity < 60) {
+                description = "Moderate intensity - noticeable but manageable";
+            } else if (currentIntensity < 80) {
+                description = "Strong intensity - significantly impacts mood and behavior";
+            } else {
+                description = "Intense - may feel overwhelming and requires coping strategies";
+            }
+            
+            intensityDescription.textContent = description;
+        }
+
+        // Save journal entry
+        function saveJournalEntry() {
+            const entry = journalEntry.value.trim();
+            
+            if (!entry) {
+                alert("Please write something in your journal before saving.");
+                return;
+            }
+            
+            if (!selectedEmotionKey) {
+                alert("Please select an emotion first.");
+                return;
+            }
+            
+            const journalEntryObj = {
+                emotion: selectedEmotionKey,
+                intensity: currentIntensity,
+                text: entry,
+                date: new Date().toISOString(),
+                timestamp: Date.now()
+            };
+            
+            journalEntries.unshift(journalEntryObj);
+            
+            // Keep only last 50 entries
+            if (journalEntries.length > 50) {
+                journalEntries = journalEntries.slice(0, 50);
+            }
+            
+            localStorage.setItem('emotionJournal', JSON.stringify(journalEntries));
+            
+            // Clear and show confirmation
+            journalEntry.value = '';
+            
+            // Show temporary confirmation
+            const originalText = saveJournalBtn.innerHTML;
+            saveJournalBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+            saveJournalBtn.style.background = 'linear-gradient(135deg, #38a169 0%, #2f855a 100%)';
+            
+            setTimeout(() => {
+                saveJournalBtn.innerHTML = originalText;
+                saveJournalBtn.style.background = '';
+            }, 2000);
+            
+            // Optional: Show notification
+            showNotification('Journal entry saved successfully!');
+        }
+
+        // Show notification
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.position = 'fixed';
+            notification.style.bottom = '20px';
+            notification.style.right = '20px';
+            notification.style.backgroundColor = '#38a169';
+            notification.style.color = 'white';
+            notification.style.padding = '15px 25px';
+            notification.style.borderRadius = '10px';
+            notification.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.2)';
+            notification.style.zIndex = '1000';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.5s';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 500);
+            }, 3000);
+        }
+
+        // Helper function to adjust color brightness
+        function adjustColor(color, amount) {
+            let usePound = false;
+            
+            if (color[0] === "#") {
+                color = color.slice(1);
+                usePound = true;
+            }
+            
+            const num = parseInt(color, 16);
+            let r = (num >> 16) + amount;
+            let g = ((num >> 8) & 0x00FF) + amount;
+            let b = (num & 0x0000FF) + amount;
+            
+            r = Math.min(Math.max(0, r), 255);
+            g = Math.min(Math.max(0, g), 255);
+            b = Math.min(Math.max(0, b), 255);
+            
+            return (usePound ? "#" : "") + (b | (g << 8) | (r << 16)).toString(16).padStart(6, '0');
+        }
+
+        // Initialize intensity description
+        updateIntensityDescription();
+    </script>
+</body>
+</html>

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snapshot Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Permanent+Marker&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .camera-container {
+            aspect-ratio: 4/3;
+            background: #1e293b;
+            position: relative;
+            overflow: hidden;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        video, #uploadPreview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        video { transform: scaleX(-1); }
+
+        .shutter-btn {
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .shutter-btn:active {
+            transform: scale(0.9);
+        }
+
+        .flash-overlay {
+            position: absolute;
+            inset: 0;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        @keyframes flashEffect {
+            0% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+
+        /* Frame Styles */
+        .polaroid-frame {
+            background: #fff;
+            padding: 1rem;
+            padding-bottom: 3.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-radius: 4px;
+            transform: rotate(-2deg);
+            max-width: 320px;
+            margin: auto;
+            position: relative;
+            animation: develop 2s ease-out;
+        }
+
+        .modern-frame {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border-radius: 1rem;
+            max-width: 340px;
+            margin: auto;
+            animation: develop 1.5s ease-out;
+        }
+
+        .film-frame {
+            background: #111;
+            padding: 2rem 0.5rem;
+            border-left: 12px dashed #333;
+            border-right: 12px dashed #333;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            max-width: 300px;
+            margin: auto;
+            animation: develop 2s ease-in-out;
+        }
+
+        .polaroid-image, .modern-image, .film-image {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            background: #eee;
+        }
+
+        .polaroid-caption {
+            font-family: 'Permanent Marker', cursive;
+            color: #334155;
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .modern-caption {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #fff;
+            text-align: right;
+            margin-top: 0.5rem;
+            opacity: 0.7;
+        }
+
+        .film-caption {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            color: #f59e0b;
+            text-align: center;
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        @keyframes develop {
+            0% { filter: grayscale(1) brightness(2) contrast(0.5); opacity: 0; transform: translateY(20px); }
+            100% { filter: grayscale(0) brightness(1) contrast(1); opacity: 1; transform: translateY(0); }
+        }
+
+        .hidden-canvas {
+            display: none;
+        }
+        
+        .message-box {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #3b82f6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 100;
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <header class="mb-8 text-center">
+        <h1 class="text-4xl font-light tracking-tighter mb-2">SNAP<span class="font-bold text-blue-500">SHOT</span></h1>
+        <p class="text-slate-400">Capture or upload moments into a timeless frame</p>
+    </header>
+
+    <main class="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        
+        <!-- Viewfinder Section -->
+        <div class="space-y-6">
+            <div class="camera-container border-4 border-slate-800">
+                <video id="viewfinder" autoplay playsinline></video>
+                <img id="uploadPreview" class="hidden" alt="Upload preview">
+                <div id="flash" class="flash-overlay"></div>
+                
+                <!-- Controls Overlay -->
+                <div class="absolute bottom-4 left-0 right-0 flex justify-center items-center gap-6">
+                    <button id="snapBtn" class="shutter-btn w-20 h-20 bg-white rounded-full border-8 border-slate-300 flex items-center justify-center shadow-xl">
+                        <div class="w-12 h-12 bg-red-500 rounded-full"></div>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs text-slate-500 uppercase font-bold px-1">Filter</label>
+                    <select id="filterSelect" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="none">Natural</option>
+                        <option value="grayscale(100%)">Noir</option>
+                        <option value="sepia(80%)">Vintage</option>
+                        <option value="brightness(1.2) contrast(1.1) saturate(1.3)">Vivid</option>
+                        <option value="hue-rotate(90deg)">Psychedelic</option>
+                        <option value="contrast(1.5) brightness(0.9) grayscale(0.5)">Cinematic</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs text-slate-500 uppercase font-bold px-1">Frame Style</label>
+                    <select id="frameStyleSelect" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="polaroid">Classic Polaroid</option>
+                        <option value="modern">Modern Glass</option>
+                        <option value="film">Film Strip</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-center gap-3">
+                <input type="file" id="fileInput" accept="image/*" class="hidden">
+                <button id="uploadBtn" class="flex items-center gap-2 bg-blue-600/20 text-blue-400 px-4 py-2 rounded-lg border border-blue-500/30 hover:bg-blue-600/30 text-sm transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Upload Pic
+                </button>
+                <button id="switchCamera" class="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 hover:bg-slate-700 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Flip Camera
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <div class="flex flex-col items-center justify-center space-y-8 bg-slate-900/50 p-8 rounded-3xl border border-slate-800 min-h-[500px]">
+            <div id="resultContainer" class="w-full flex flex-col items-center">
+                <div class="text-slate-500 italic text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Snap or upload to see the magic
+                </div>
+            </div>
+
+            <div id="actionBtns" class="hidden flex gap-4">
+                <button id="downloadBtn" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-full font-semibold transition flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Save Photo
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Gallery Preview (Bottom) -->
+    <div class="w-full max-w-4xl mt-12">
+        <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+            <span class="w-2 h-2 bg-blue-500 rounded-full"></span> Recent Snaps
+        </h3>
+        <div id="gallery" class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            <!-- Snaps go here -->
+        </div>
+    </div>
+
+    <canvas id="hiddenCanvas" class="hidden-canvas"></canvas>
+    <div id="messageBox" class="message-box"></div>
+
+    <script>
+        const video = document.getElementById('viewfinder');
+        const uploadPreview = document.getElementById('uploadPreview');
+        const snapBtn = document.getElementById('snapBtn');
+        const flash = document.getElementById('flash');
+        const canvas = document.getElementById('hiddenCanvas');
+        const resultContainer = document.getElementById('resultContainer');
+        const actionBtns = document.getElementById('actionBtns');
+        const filterSelect = document.getElementById('filterSelect');
+        const frameStyleSelect = document.getElementById('frameStyleSelect');
+        const switchBtn = document.getElementById('switchCamera');
+        const gallery = document.getElementById('gallery');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const messageBox = document.getElementById('messageBox');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInput = document.getElementById('fileInput');
+
+        let stream = null;
+        let facingMode = 'user';
+        let lastCapturedData = null;
+        let isUploadMode = false;
+
+        async function initCamera() {
+            isUploadMode = false;
+            uploadPreview.classList.add('hidden');
+            video.classList.remove('hidden');
+
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode },
+                    audio: false
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                showMessage("Camera access denied or not available");
+                console.error("Camera Error:", err);
+            }
+        }
+
+        function showMessage(text) {
+            messageBox.textContent = text;
+            messageBox.style.display = 'block';
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 3000);
+        }
+
+        filterSelect.addEventListener('change', () => {
+            const el = isUploadMode ? uploadPreview : video;
+            el.style.filter = filterSelect.value;
+        });
+
+        switchBtn.addEventListener('click', () => {
+            facingMode = facingMode === 'user' ? 'environment' : 'user';
+            initCamera();
+        });
+
+        // Handle File Upload
+        uploadBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                isUploadMode = true;
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                video.classList.add('hidden');
+                uploadPreview.src = event.target.result;
+                uploadPreview.classList.remove('hidden');
+                uploadPreview.style.filter = filterSelect.value;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        snapBtn.addEventListener('click', () => {
+            flash.style.animation = 'none';
+            void flash.offsetWidth; 
+            flash.style.animation = 'flashEffect 0.4s ease-out';
+
+            const ctx = canvas.getContext('2d');
+            const source = isUploadMode ? uploadPreview : video;
+            
+            // Handle aspect ratio for canvas
+            if (isUploadMode) {
+                canvas.width = uploadPreview.naturalWidth;
+                canvas.height = uploadPreview.naturalHeight;
+            } else {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                if (facingMode === 'user') {
+                    ctx.translate(canvas.width, 0);
+                    ctx.scale(-1, 1);
+                }
+            }
+
+            ctx.filter = filterSelect.value;
+            ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+
+            const dataUrl = canvas.toDataURL('image/jpeg');
+            const currentStyle = frameStyleSelect.value;
+            
+            displayResult(dataUrl, currentStyle);
+            addToGallery(dataUrl, currentStyle);
+        });
+
+        function displayResult(imgData, style) {
+            resultContainer.innerHTML = '';
+            
+            const frame = document.createElement('div');
+            frame.className = `${style}-frame`;
+            
+            const img = document.createElement('img');
+            img.src = imgData;
+            img.className = `${style}-image`;
+            
+            const caption = document.createElement('div');
+            caption.className = `${style}-caption`;
+            const date = new Date();
+            const timeStr = `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+            
+            if (style === 'polaroid') {
+                caption.textContent = `${date.toLocaleDateString()} ${timeStr}`;
+            } else if (style === 'modern') {
+                caption.textContent = `SHOT ON SNAPSHOT PRO // ${timeStr}`;
+            } else {
+                caption.textContent = `SCENE NO. ${Math.floor(Math.random() * 999)} - ${date.getFullYear()}`;
+            }
+            
+            frame.appendChild(img);
+            frame.appendChild(caption);
+            resultContainer.appendChild(frame);
+            
+            actionBtns.classList.remove('hidden');
+            lastCapturedData = imgData;
+        }
+
+        function addToGallery(imgData, style) {
+            const thumb = document.createElement('div');
+            thumb.className = 'flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border-2 border-slate-700 cursor-pointer hover:border-blue-500 transition relative group';
+            thumb.innerHTML = `
+                <img src="${imgData}" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-blue-500/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                    <span class="text-[10px] font-bold uppercase">${style}</span>
+                </div>
+            `;
+            thumb.onclick = () => displayResult(imgData, style);
+            gallery.prepend(thumb);
+        }
+
+        downloadBtn.addEventListener('click', () => {
+            if (!lastCapturedData) return;
+            const link = document.createElement('a');
+            link.href = lastCapturedData;
+            link.download = `snapshot-${Date.now()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showMessage("Photo saved!");
+        });
+
+        window.onload = initCamera;
+    </script>
+</body>
+</html>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hole.io Advanced</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #1a1a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+        }
+        .ui-overlay {
+            position: absolute;
+            pointer-events: none;
+            color: white;
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 10;
+        }
+        .score-card {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px 25px;
+            border-radius: 50px;
+            border: 2px solid #3b82f6;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        #victory-screen {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            border: 4px solid #fbbf24;
+            z-index: 100;
+            pointer-events: auto;
+        }
+        .joystick-base {
+            position: absolute;
+            bottom: 50px;
+            left: 50px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: none;
+        }
+        .joystick-stick {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: #3b82f6;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="ui-overlay">
+        <div class="score-card">
+            <div class="text-xs uppercase tracking-widest text-blue-400">Score</div>
+            <div id="score" class="text-3xl font-bold">0</div>
+        </div>
+        <div class="score-card text-right">
+            <div class="text-xs uppercase tracking-widest text-yellow-400">Size</div>
+            <div id="size-label" class="text-3xl font-bold">1.0x</div>
+        </div>
+    </div>
+
+    <div id="victory-screen">
+        <h1 class="text-5xl font-black text-yellow-400 mb-4">CITY DEVOURED!</h1>
+        <p class="text-xl mb-6">You have become the Ultimate Singularity.</p>
+        <button onclick="location.reload()" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-full transition-transform active:scale-95 pointer-events-auto">
+            PLAY AGAIN
+        </button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="joystick" class="joystick-base">
+        <div id="stick" class="joystick-stick"></div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const sizeEl = document.getElementById('size-label');
+    const victoryScreen = document.getElementById('victory-screen');
+
+    // Game Config
+    const CONFIG = {
+        worldSize: 4000,
+        initialHoleSize: 40,
+        growthRate: 0.15,
+        friction: 0.95,
+        speed: 0.8,
+        itemCount: 450,
+        colors: {
+            ground: '#2c3e50',
+            grid: '#34495e',
+            holeInner: '#000000',
+            holeEdge: '#3b82f6'
+        }
+    };
+
+    let width, height;
+    let score = 0;
+    let gameActive = true;
+    
+    // Player State
+    const player = {
+        x: CONFIG.worldSize / 2,
+        y: CONFIG.worldSize / 2,
+        radius: CONFIG.initialHoleSize,
+        vx: 0,
+        vy: 0,
+        targetRadius: CONFIG.initialHoleSize
+    };
+
+    // Camera
+    const camera = {
+        x: 0,
+        y: 0,
+        zoom: 1
+    };
+
+    // Input state
+    const input = {
+        x: 0,
+        y: 0,
+        active: false,
+        touchId: null,
+        startX: 0,
+        startY: 0
+    };
+
+    // Game Objects
+    let items = [];
+
+    class Item {
+        constructor() {
+            this.reset();
+        }
+
+        reset() {
+            this.x = Math.random() * CONFIG.worldSize;
+            this.y = Math.random() * CONFIG.worldSize;
+            
+            // Randomly determine type
+            const r = Math.random();
+            if (r < 0.5) {
+                this.type = 'prop'; // Small: Hydrants, trash cans
+                this.size = 15 + Math.random() * 10;
+                this.points = 10;
+                this.color = '#e74c3c';
+                this.height = 10;
+            } else if (r < 0.8) {
+                this.type = 'car'; // Medium: Cars, vans
+                this.size = 35 + Math.random() * 15;
+                this.points = 50;
+                this.color = '#f1c40f';
+                this.height = 25;
+            } else if (r < 0.95) {
+                this.type = 'house'; // Large
+                this.size = 80 + Math.random() * 40;
+                this.points = 200;
+                this.color = '#9b59b6';
+                this.height = 60;
+            } else {
+                this.type = 'skyscraper'; // Huge
+                this.size = 180 + Math.random() * 100;
+                this.points = 1000;
+                this.color = '#ecf0f1';
+                this.height = 200;
+            }
+
+            this.isFalling = false;
+            this.fallProgress = 0;
+        }
+
+        draw() {
+            const screenX = (this.x - camera.x) * camera.zoom + width / 2;
+            const screenY = (this.y - camera.y) * camera.zoom + height / 2;
+            const scaledSize = this.size * camera.zoom;
+            const scaledHeight = this.height * camera.zoom;
+
+            // Simple Culling
+            if (screenX + scaledSize < 0 || screenX - scaledSize > width || 
+                screenY + scaledSize < 0 || screenY - scaledSize > height) return;
+
+            // Draw shadow/base
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath();
+            ctx.ellipse(screenX, screenY, scaledSize/2, scaledSize/3, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw 3D-ish box
+            const bounce = this.isFalling ? (1 - this.fallProgress) : 1;
+            const h = scaledHeight * bounce;
+            const alpha = this.isFalling ? (1 - this.fallProgress) : 1;
+
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = this.color;
+            
+            // Draw facade
+            ctx.fillRect(screenX - scaledSize/2, screenY - scaledSize/2 - h, scaledSize, scaledSize);
+            
+            // Draw "3D" side
+            ctx.fillStyle = 'rgba(0,0,0,0.15)';
+            ctx.beginPath();
+            ctx.moveTo(screenX - scaledSize/2, screenY - scaledSize/2 - h);
+            ctx.lineTo(screenX + scaledSize/2, screenY - scaledSize/2 - h);
+            ctx.lineTo(screenX + scaledSize/2, screenY + scaledSize/2);
+            ctx.lineTo(screenX - scaledSize/2, screenY + scaledSize/2);
+            ctx.closePath();
+            ctx.fill();
+
+            // Windows for buildings
+            if (this.type === 'house' || this.type === 'skyscraper') {
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                const rows = this.type === 'house' ? 2 : 8;
+                const cols = 3;
+                for(let r=0; r<rows; r++) {
+                    for(let c=0; c<cols; c++) {
+                        ctx.fillRect(
+                            screenX - scaledSize/2 + 5 + (c * (scaledSize/cols)),
+                            screenY - scaledSize/2 - h + 5 + (r * (scaledHeight/rows)),
+                            scaledSize/cols - 10,
+                            5
+                        );
+                    }
+                }
+            }
+
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    function init() {
+        resize();
+        items = Array.from({ length: CONFIG.itemCount }, () => new Item());
+        
+        // Input Listeners
+        window.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
+        window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+        window.addEventListener('mouseup', handleEnd);
+
+        window.addEventListener('touchstart', e => {
+            const touch = e.touches[0];
+            handleStart(touch.clientX, touch.clientY);
+        });
+        window.addEventListener('touchmove', e => {
+            const touch = e.touches[0];
+            handleMove(touch.clientX, touch.clientY);
+        });
+        window.addEventListener('touchend', handleEnd);
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    function handleStart(x, y) {
+        input.active = true;
+        input.startX = x;
+        input.startY = y;
+        document.getElementById('joystick').style.display = 'block';
+        document.getElementById('joystick').style.left = (x - 60) + 'px';
+        document.getElementById('joystick').style.top = (y - 60) + 'px';
+    }
+
+    function handleMove(x, y) {
+        if (!input.active) return;
+        const dx = x - input.startX;
+        const dy = y - input.startY;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const maxDist = 50;
+        
+        const angle = Math.atan2(dy, dx);
+        const clampedDist = Math.min(dist, maxDist);
+        
+        input.x = Math.cos(angle) * (clampedDist / maxDist);
+        input.y = Math.sin(angle) * (clampedDist / maxDist);
+
+        document.getElementById('stick').style.transform = `translate(calc(-50% + ${input.x * 30}px), calc(-50% + ${input.y * 30}px))`;
+    }
+
+    function handleEnd() {
+        input.active = false;
+        input.x = 0;
+        input.y = 0;
+        document.getElementById('joystick').style.display = 'none';
+    }
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    }
+
+    function update() {
+        if (!gameActive) return;
+
+        // Player Movement
+        player.vx += input.x * CONFIG.speed;
+        player.vy += input.y * CONFIG.speed;
+        player.vx *= CONFIG.friction;
+        player.vy *= CONFIG.friction;
+
+        player.x += player.vx;
+        player.y += player.vy;
+
+        // World Bounds
+        player.x = Math.max(0, Math.min(CONFIG.worldSize, player.x));
+        player.y = Math.max(0, Math.min(CONFIG.worldSize, player.y));
+
+        // Smooth growth
+        if (player.radius < player.targetRadius) {
+            player.radius += 0.5;
+        }
+
+        // Camera follow
+        camera.x += (player.x - camera.x) * 0.1;
+        camera.y += (player.y - camera.y) * 0.1;
+        
+        // Dynamic Zoom (gets wider as you get bigger)
+        const targetZoom = Math.max(0.4, 1.5 - (player.radius / 300));
+        camera.zoom += (targetZoom - camera.zoom) * 0.05;
+
+        // Collision Check
+        let itemsRemaining = 0;
+        items.forEach(item => {
+            if (item.isFalling) {
+                item.fallProgress += 0.05;
+                if (item.fallProgress >= 1) {
+                    score += item.points;
+                    player.targetRadius += item.size * CONFIG.growthRate;
+                    item.reset(); // In this version, items respawn for endless play, or keep track to win
+                }
+            } else {
+                itemsRemaining++;
+                const dx = item.x - player.x;
+                const dy = item.y - player.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                // If fully inside hole or mostly inside
+                if (dist < player.radius * 0.8 && item.size < player.radius * 1.5) {
+                    item.isFalling = true;
+                }
+            }
+        });
+
+        // UI Update
+        scoreEl.innerText = Math.floor(score);
+        sizeEl.innerText = (player.radius / CONFIG.initialHoleSize).toFixed(1) + 'x';
+
+        // Win Condition: Over 500 radius (huge)
+        if (player.radius > 800 && gameActive) {
+            triggerVictory();
+        }
+    }
+
+    function triggerVictory() {
+        gameActive = false;
+        victoryScreen.style.display = 'block';
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, width, height);
+
+        // Draw Ground
+        ctx.fillStyle = CONFIG.colors.ground;
+        ctx.fillRect(0, 0, width, height);
+
+        // Draw Grid
+        ctx.strokeStyle = CONFIG.colors.grid;
+        ctx.lineWidth = 1;
+        const gridSize = 100 * camera.zoom;
+        const offsetX = (-camera.x * camera.zoom + width / 2) % gridSize;
+        const offsetY = (-camera.y * camera.zoom + height / 2) % gridSize;
+
+        ctx.beginPath();
+        for (let x = offsetX; x < width; x += gridSize) {
+            ctx.moveTo(x, 0); ctx.lineTo(x, height);
+        }
+        for (let y = offsetY; y < height; y += gridSize) {
+            ctx.moveTo(0, y); ctx.lineTo(width, y);
+        }
+        ctx.stroke();
+
+        // Sort items by Y for depth (Painter's algorithm)
+        const sortedItems = [...items].sort((a, b) => a.y - b.y);
+
+        // Draw Items (Back)
+        sortedItems.forEach(item => {
+            if (item.y < player.y) item.draw();
+        });
+
+        // Draw Hole
+        const hX = (player.x - camera.x) * camera.zoom + width / 2;
+        const hY = (player.y - camera.y) * camera.zoom + height / 2;
+        const hR = player.radius * camera.zoom;
+
+        // Hole Shadow
+        const grad = ctx.createRadialGradient(hX, hY, hR * 0.8, hX, hY, hR);
+        grad.addColorStop(0, 'black');
+        grad.addColorStop(1, 'transparent');
+        
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(hX, hY, hR * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner Hole
+        ctx.fillStyle = CONFIG.colors.holeInner;
+        ctx.beginPath();
+        ctx.ellipse(hX, hY, hR, hR * 0.6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Blue Ring
+        ctx.strokeStyle = CONFIG.colors.holeEdge;
+        ctx.lineWidth = 4 * camera.zoom;
+        ctx.stroke();
+
+        // Draw Items (Front)
+        sortedItems.forEach(item => {
+            if (item.y >= player.y) item.draw();
+        });
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    window.addEventListener('resize', resize);
+    init();
+
+</script>
+</body>
+</html>

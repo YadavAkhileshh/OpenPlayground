@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SSG Pro | Static Site Generator</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+
+body{
+font-family:Inter, sans-serif;
+background:#0f172a;
+color:#f8fafc;
+height:100vh;
+margin:0;
+overflow:hidden;
+display:flex;
+flex-direction:column;
+}
+
+.code-font{font-family:'Fira Code', monospace;}
+
+.custom-scrollbar::-webkit-scrollbar{width:6px;}
+.custom-scrollbar::-webkit-scrollbar-thumb{
+background:#334155;
+border-radius:10px;
+}
+
+.tab-active{
+border-bottom:2px solid #3b82f6;
+color:#3b82f6;
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header class="h-16 border-b border-slate-700 flex items-center justify-between px-6 bg-slate-900 shrink-0">
+
+<div class="flex items-center gap-3">
+<div class="bg-blue-600 p-2 rounded-lg">
+<i data-lucide="layers" class="text-white w-5 h-5"></i>
+</div>
+<h1 class="text-xl font-bold">SSG<span class="text-blue-500">PRO</span></h1>
+</div>
+
+<div class="flex gap-3">
+<button onclick="buildProject()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">
+Build Site
+</button>
+
+<button onclick="exportProject()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded">
+Export ZIP
+</button>
+</div>
+
+</header>
+
+<!-- MAIN -->
+<main class="flex flex-1 overflow-hidden">
+
+<!-- LEFT SIDEBAR -->
+<aside class="w-64 border-r border-slate-800 bg-slate-900 flex flex-col">
+
+<div class="p-4 flex justify-between items-center">
+<span class="text-xs text-slate-400">FILES</span>
+<button onclick="createNewFile()">+</button>
+</div>
+
+<div id="file-list" class="flex-1 overflow-y-auto custom-scrollbar px-2"></div>
+
+</aside>
+
+
+<!-- CENTER -->
+<section class="flex-1 flex flex-col bg-slate-950">
+
+<!-- FILE BAR -->
+<div class="h-12 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-900">
+
+<div id="active-filename" class="text-sm">
+index.md
+</div>
+
+<div class="flex gap-4 text-xs">
+<button onclick="setView('edit')" id="btn-edit" class="tab-active">Editor</button>
+<button onclick="setView('preview')" id="btn-preview">Live Preview</button>
+</div>
+
+</div>
+
+
+<!-- EDITOR -->
+<div class="flex-1 relative">
+
+<textarea
+id="editor"
+oninput="updateActiveFileContent(this.value)"
+class="w-full h-full bg-transparent p-6 outline-none resize-none code-font text-sm"
+placeholder="Write Markdown..."
+></textarea>
+
+<div id="preview" class="hidden absolute inset-0 bg-white overflow-auto p-8 text-black"></div>
+
+</div>
+
+</section>
+
+
+<!-- RIGHT SIDEBAR -->
+<aside class="w-80 border-l border-slate-800 bg-slate-900 p-6">
+
+<h3 class="text-sm font-bold mb-4">Project Settings</h3>
+
+<label class="text-xs text-slate-400">Site Title</label>
+<input id="conf-title" value="My Awesome Site"
+class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 mb-4">
+
+<label class="text-xs text-slate-400">Author</label>
+<input id="conf-author" value="Admin"
+class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2">
+
+
+<h3 class="text-sm font-bold mt-8 mb-3">Build Output</h3>
+
+<div id="console"
+class="bg-black rounded p-3 text-xs text-green-400 h-48 overflow-auto">
+> System ready.
+</div>
+
+</aside>
+
+</main>
+
+
+<!-- TOAST -->
+<div id="toast"
+class="fixed bottom-6 right-6 bg-blue-600 px-6 py-3 rounded translate-y-24 transition">
+Build Successful!
+</div>
+
+
+<script>
+
+/* ---------------- STATE ---------------- */
+
+let projectFiles = [
+{
+id:1,
+name:"index.md",
+type:"page",
+content:"# Hello World\nWelcome to SSG Pro"
+}
+];
+
+let activeFileId = 1;
+
+
+/* ---------------- UTIL ---------------- */
+
+function log(msg){
+const el = document.getElementById("console");
+el.innerHTML += "<div>> "+msg+"</div>";
+el.scrollTop = el.scrollHeight;
+}
+
+
+/* ---------------- FILE UI ---------------- */
+
+function renderFileList(){
+
+const list = document.getElementById("file-list");
+list.innerHTML="";
+
+projectFiles.forEach(file=>{
+
+const div = document.createElement("div");
+
+div.className="px-3 py-2 text-xs rounded cursor-pointer hover:bg-slate-800";
+
+div.innerText=file.name;
+
+div.onclick=()=>selectFile(file.id);
+
+list.appendChild(div);
+
+});
+
+lucide.createIcons();
+}
+
+
+function selectFile(id){
+
+activeFileId=id;
+
+const file = projectFiles.find(f=>f.id===id);
+
+document.getElementById("editor").value=file.content;
+document.getElementById("active-filename").innerText=file.name;
+}
+
+
+/* ---------------- UPDATE ---------------- */
+
+function updateActiveFileContent(val){
+
+const file = projectFiles.find(f=>f.id===activeFileId);
+
+if(file) file.content=val;
+}
+
+
+/* ---------------- VIEW ---------------- */
+
+function setView(v){
+
+const editor = document.getElementById("editor");
+const preview = document.getElementById("preview");
+
+if(v==="preview"){
+
+editor.style.display="none";
+preview.style.display="block";
+
+renderPreview();
+
+}else{
+
+editor.style.display="block";
+preview.style.display="none";
+
+}
+
+}
+
+
+function renderPreview(){
+
+const file = projectFiles.find(f=>f.id===activeFileId);
+
+const html = marked.parse(file.content);
+
+document.getElementById("preview").innerHTML=html;
+}
+
+
+/* ---------------- BUILD ---------------- */
+
+function buildProject(){
+
+log("Building site...");
+
+setTimeout(()=>{
+
+log("Build completed.");
+
+const toast = document.getElementById("toast");
+
+toast.classList.remove("translate-y-24");
+
+setTimeout(()=>{
+toast.classList.add("translate-y-24");
+},2000);
+
+},600);
+
+}
+
+
+/* ---------------- EXPORT ---------------- */
+
+function exportProject(){
+
+log("Export feature coming soon.");
+
+}
+
+
+/* ---------------- NEW FILE ---------------- */
+
+function createNewFile(){
+
+const name = prompt("File name");
+
+if(!name) return;
+
+projectFiles.push({
+id:Date.now(),
+name:name,
+type:"page",
+content:"# New File"
+});
+
+renderFileList();
+
+}
+
+
+/* ---------------- INIT ---------------- */
+
+window.onload=()=>{
+lucide.createIcons();
+renderFileList();
+selectFile(1);
+};
+
+</script>
+
+</body>
+</html>

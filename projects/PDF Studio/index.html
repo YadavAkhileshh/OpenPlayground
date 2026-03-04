@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate PDF Multi-Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- pdf-lib for core PDF manipulation -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <!-- pdf.js for PDF to Image rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Lucide for icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s ease;
+        }
+        .drop-zone.active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .tool-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .tool-card:hover {
+            transform: translateY(-2px);
+        }
+        #pdf-canvas-container {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 font-sans">
+
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="bg-red-500 p-1.5 rounded-lg">
+                    <i data-lucide="file-text" class="text-white w-6 h-6"></i>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight text-slate-900">PDF<span class="text-red-500 text-sm align-top ml-0.5">Studio</span></h1>
+            </div>
+            <div class="hidden md:flex gap-6 text-sm font-medium text-slate-600">
+                <a href="javascript:void(0)" onclick="showTool('merge')" class="hover:text-red-500">Merge</a>
+                <a href="javascript:void(0)" onclick="showTool('split')" class="hover:text-red-500">Split</a>
+                <a href="javascript:void(0)" onclick="showTool('img2pdf')" class="hover:text-red-500">Image to PDF</a>
+                <a href="javascript:void(0)" onclick="showTool('pdf2img')" class="hover:text-red-500">PDF to Image</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h2 class="text-4xl font-extrabold text-slate-900 mb-4">Complete PDF Toolbox</h2>
+            <p class="text-slate-600 text-lg max-w-2xl mx-auto">More power, same privacy. All processing happens in your browser—no servers, no tracking.</p>
+        </header>
+
+        <!-- Tool Selection Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <!-- Merge Tool -->
+            <div onclick="showTool('merge')" class="tool-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:border-red-200 hover:shadow-md">
+                <div class="bg-red-100 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                    <i data-lucide="combine" class="text-red-600"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-1">Merge PDF</h3>
+                <p class="text-sm text-slate-500">Combine multiple PDF documents into one.</p>
+            </div>
+
+            <!-- Split Tool -->
+            <div onclick="showTool('split')" class="tool-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-200 hover:shadow-md">
+                <div class="bg-blue-100 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                    <i data-lucide="scissors" class="text-blue-600"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-1">Split PDF</h3>
+                <p class="text-sm text-slate-500">Extract pages or separate a file.</p>
+            </div>
+
+            <!-- Image to PDF -->
+            <div onclick="showTool('img2pdf')" class="tool-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-200 hover:shadow-md">
+                <div class="bg-emerald-100 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                    <i data-lucide="image" class="text-emerald-600"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-1">Image to PDF</h3>
+                <p class="text-sm text-slate-500">Convert JPG/PNG images into a PDF document.</p>
+            </div>
+
+            <!-- PDF to Image -->
+            <div onclick="showTool('pdf2img')" class="tool-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:border-orange-200 hover:shadow-md">
+                <div class="bg-orange-100 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                    <i data-lucide="file-image" class="text-orange-600"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-1">PDF to Image</h3>
+                <p class="text-sm text-slate-500">Export PDF pages as high-quality PNG images.</p>
+            </div>
+
+            <!-- Delete Pages -->
+            <div onclick="showTool('delete')" class="tool-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:border-red-400 hover:shadow-md">
+                <div class="bg-red-50 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                    <i data-lucide="eraser" class="text-red-600"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-1">Delete Pages</h3>
+                <p class="text-sm text-slate-500">Remove specific pages from your document.</p>
+            </div>
+
+            <!-- Edit/Annotate -->
+            <div onclick="showTool('edit')" class="tool-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:border-purple-200 hover:shadow-md">
+                <div class="bg-purple-100 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
+                    <i data-lucide="rotate-cw" class="text-purple-600"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-1">Rotate & Stamp</h3>
+                <p class="text-sm text-slate-500">Rotate pages or add custom text stamps.</p>
+            </div>
+        </div>
+
+        <!-- Dynamic Tool Container -->
+        <div id="active-tool" class="hidden bg-white border border-slate-200 rounded-3xl shadow-xl p-8 mb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="tool-title" class="text-2xl font-bold">Tool Name</h2>
+                <button onclick="hideTool()" class="text-slate-400 hover:text-slate-600 p-2">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <div id="tool-interface" class="space-y-6">
+                <div id="drop-zone" class="drop-zone rounded-2xl p-12 text-center flex flex-col items-center justify-center cursor-pointer bg-slate-50/50">
+                    <i data-lucide="upload-cloud" class="w-12 h-12 text-slate-300 mb-4"></i>
+                    <p id="drop-text" class="text-slate-600 font-medium">Click to upload or drag & drop files</p>
+                    <p id="drop-subtext" class="text-xs text-slate-400 mt-2">Maximum file size: 50MB</p>
+                    <input type="file" id="pdf-input" class="hidden">
+                </div>
+
+                <div id="file-queue-container" class="hidden space-y-3">
+                    <h4 class="font-semibold text-slate-700 text-sm">Selected Files:</h4>
+                    <div id="file-queue" class="space-y-2"></div>
+                </div>
+
+                <div id="options-area" class="bg-slate-50 rounded-xl p-6 hidden border border-slate-200"></div>
+
+                <div class="flex justify-end gap-3">
+                    <button onclick="hideTool()" class="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-all">Cancel</button>
+                    <button id="process-btn" onclick="processPDF()" class="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                        Process Files
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="success-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl scale-in-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="check" class="text-green-600 w-8 h-8"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Success!</h3>
+                <p id="success-msg" class="text-slate-500 mb-6">Your file is ready.</p>
+                <button onclick="closeModal()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold">Done</button>
+            </div>
+        </div>
+
+        <div id="pdf-canvas-container"></div>
+    </main>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        let currentTool = null;
+        let selectedFiles = [];
+        const { PDFDocument, rgb, degrees } = PDFLib;
+
+        lucide.createIcons();
+
+        function showTool(tool) {
+            currentTool = tool;
+            selectedFiles = [];
+            const container = document.getElementById('active-tool');
+            const title = document.getElementById('tool-title');
+            const options = document.getElementById('options-area');
+            const queue = document.getElementById('file-queue-container');
+            const input = document.getElementById('pdf-input');
+            const subtext = document.getElementById('drop-subtext');
+            
+            container.classList.remove('hidden');
+            queue.classList.add('hidden');
+            document.getElementById('file-queue').innerHTML = '';
+            
+            input.value = '';
+            input.accept = (tool === 'img2pdf') ? "image/png, image/jpeg" : "application/pdf";
+            input.multiple = (tool === 'merge' || tool === 'img2pdf');
+            subtext.innerText = (tool === 'img2pdf') ? "Supported: JPG, PNG" : "Supported: PDF";
+
+            switch(tool) {
+                case 'merge':
+                    title.innerText = "Merge PDF Files";
+                    options.innerHTML = `<p class="text-sm text-slate-600">Files will be merged in the order they appear above.</p>`;
+                    options.classList.remove('hidden');
+                    break;
+                case 'split':
+                    title.innerText = "Split PDF Pages";
+                    options.innerHTML = `
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">Start Page</label><input type="number" id="split-start" value="1" min="1" class="w-full border p-2 rounded-lg"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">End Page</label><input type="number" id="split-end" value="1" min="1" class="w-full border p-2 rounded-lg"></div>
+                        </div>`;
+                    options.classList.remove('hidden');
+                    break;
+                case 'delete':
+                    title.innerText = "Delete Specific Pages";
+                    options.innerHTML = `<div><label class="block text-xs font-bold text-slate-500 mb-1">Pages to remove (comma separated, e.g. 1, 3, 5)</label><input type="text" id="delete-pages" placeholder="e.g. 2, 4" class="w-full border p-2 rounded-lg"></div>`;
+                    options.classList.remove('hidden');
+                    break;
+                case 'img2pdf':
+                    title.innerText = "Convert Images to PDF";
+                    options.innerHTML = `<p class="text-sm text-slate-600">Each image will become one page in the resulting PDF.</p>`;
+                    options.classList.remove('hidden');
+                    break;
+                case 'pdf2img':
+                    title.innerText = "Convert PDF to Images";
+                    options.innerHTML = `<p class="text-sm text-slate-600">Each page will be downloaded as a separate PNG image.</p>`;
+                    options.classList.remove('hidden');
+                    break;
+                case 'edit':
+                    title.innerText = "Rotate & Stamp";
+                    options.innerHTML = `
+                        <div class="space-y-4">
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">Rotation</label><select id="rotate-val" class="w-full border p-2 rounded-lg"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">Stamp Text</label><input type="text" id="stamp-text" placeholder="e.g. CONFIDENTIAL" class="w-full border p-2 rounded-lg"></div>
+                        </div>`;
+                    options.classList.remove('hidden');
+                    break;
+            }
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideTool() {
+            document.getElementById('active-tool').classList.add('hidden');
+            currentTool = null;
+        }
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('pdf-input');
+
+        dropZone.onclick = () => fileInput.click();
+        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('active'); };
+        dropZone.ondragleave = () => dropZone.classList.remove('active');
+        dropZone.ondrop = (e) => { e.preventDefault(); dropZone.classList.remove('active'); handleFiles(e.dataTransfer.files); };
+        fileInput.onchange = (e) => handleFiles(e.target.files);
+
+        function handleFiles(files) {
+            const queueList = document.getElementById('file-queue');
+            const queueContainer = document.getElementById('file-queue-container');
+            const validFiles = Array.from(files).filter(f => {
+                if(currentTool === 'img2pdf') return f.type.startsWith('image/');
+                return f.type === 'application/pdf';
+            });
+            
+            if(validFiles.length === 0) return;
+
+            if (currentTool === 'merge' || currentTool === 'img2pdf') {
+                selectedFiles = [...selectedFiles, ...validFiles];
+            } else {
+                selectedFiles = [validFiles[0]];
+            }
+
+            queueList.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 text-sm";
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <i data-lucide="${file.type.startsWith('image/') ? 'image' : 'file'}" class="w-4 h-4 text-red-500 flex-shrink-0"></i>
+                        <span class="truncate font-medium">${file.name}</span>
+                        <span class="text-slate-400 text-xs">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                    </div>
+                    <button onclick="removeFile(${index})" class="text-slate-400 hover:text-red-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+                queueList.appendChild(item);
+            });
+
+            queueContainer.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            handleFiles([]);
+            if (selectedFiles.length === 0) document.getElementById('file-queue-container').classList.add('hidden');
+        }
+
+        async function processPDF() {
+            if (selectedFiles.length === 0) return;
+            const btn = document.getElementById('process-btn');
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+
+            try {
+                if (currentTool === 'merge') {
+                    const bytes = await mergePDFs(selectedFiles);
+                    downloadFile(bytes, 'merged.pdf', 'application/pdf');
+                } else if (currentTool === 'split') {
+                    const start = parseInt(document.getElementById('split-start').value);
+                    const end = parseInt(document.getElementById('split-end').value);
+                    const bytes = await splitPDF(selectedFiles[0], start, end);
+                    downloadFile(bytes, 'split.pdf', 'application/pdf');
+                } else if (currentTool === 'delete') {
+                    const pageStr = document.getElementById('delete-pages').value;
+                    const pages = pageStr.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p));
+                    const bytes = await deletePages(selectedFiles[0], pages);
+                    downloadFile(bytes, 'modified.pdf', 'application/pdf');
+                } else if (currentTool === 'img2pdf') {
+                    const bytes = await imagesToPdf(selectedFiles);
+                    downloadFile(bytes, 'converted.pdf', 'application/pdf');
+                } else if (currentTool === 'pdf2img') {
+                    await pdfToImages(selectedFiles[0]);
+                } else if (currentTool === 'edit') {
+                    const rotation = parseInt(document.getElementById('rotate-val').value);
+                    const stamp = document.getElementById('stamp-text').value;
+                    const bytes = await editPDF(selectedFiles[0], rotation, stamp);
+                    downloadFile(bytes, 'edited.pdf', 'application/pdf');
+                }
+
+                document.getElementById('success-modal').classList.remove('hidden');
+            } catch (err) {
+                console.error(err);
+                alert("Processing failed: " + err.message);
+            } finally {
+                btn.innerText = "Process Files";
+                btn.disabled = false;
+            }
+        }
+
+        async function mergePDFs(files) {
+            const mergedPdf = await PDFDocument.create();
+            for (const file of files) {
+                const pdf = await PDFDocument.load(await file.arrayBuffer());
+                const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                copiedPages.forEach(p => mergedPdf.addPage(p));
+            }
+            return await mergedPdf.save();
+        }
+
+        async function splitPDF(file, start, end) {
+            const pdf = await PDFDocument.load(await file.arrayBuffer());
+            const count = pdf.getPageCount();
+            const s = Math.max(1, start) - 1, e = Math.min(count, end) - 1;
+            const newPdf = await PDFDocument.create();
+            const range = Array.from({length: (e - s + 1)}, (_, i) => s + i);
+            const copiedPages = await newPdf.copyPages(pdf, range);
+            copiedPages.forEach(p => newPdf.addPage(p));
+            return await newPdf.save();
+        }
+
+        async function deletePages(file, pagesToRemove) {
+            const pdf = await PDFDocument.load(await file.arrayBuffer());
+            // Sort descending to avoid index shift
+            const sorted = [...new Set(pagesToRemove)].sort((a,b) => b - a);
+            sorted.forEach(p => {
+                if(p > 0 && p <= pdf.getPageCount()) pdf.removePage(p - 1);
+            });
+            return await pdf.save();
+        }
+
+        async function imagesToPdf(files) {
+            const pdf = await PDFDocument.create();
+            for (const file of files) {
+                const bytes = await file.arrayBuffer();
+                let img;
+                if (file.type === 'image/png') img = await pdf.embedPng(bytes);
+                else img = await pdf.embedJpg(bytes);
+                
+                const page = pdf.addPage([img.width, img.height]);
+                page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+            }
+            return await pdf.save();
+        }
+
+        async function pdfToImages(file) {
+            const data = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({data});
+            const pdf = await loadingTask.promise;
+            
+            for (let i = 1; i <= pdf.getPageCount(); i++) {
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 2.0 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                await page.render({ canvasContext: context, viewport }).promise;
+                const dataUrl = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = `page_${i}.png`;
+                link.click();
+            }
+        }
+
+        async function editPDF(file, rotation, stamp) {
+            const pdf = await PDFDocument.load(await file.arrayBuffer());
+            const pages = pdf.getPages();
+            pages.forEach(p => {
+                if(rotation) p.setRotation(degrees(rotation));
+                if(stamp) {
+                    const {width} = p.getSize();
+                    p.drawText(stamp, { x: width - 150, y: 30, size: 20, color: rgb(0.8, 0.1, 0.1), opacity: 0.4 });
+                }
+            });
+            return await pdf.save();
+        }
+
+        function downloadFile(bytes, filename, type) {
+            const blob = new Blob([bytes], { type });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function closeModal() {
+            document.getElementById('success-modal').classList.add('hidden');
+            hideTool();
+        }
+    </script>
+</body>
+</html>

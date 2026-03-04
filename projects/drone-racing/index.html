@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DRONE RACING LEAGUE · 3D Neon Circuit</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Orbitron', 'Arial', sans-serif;
+            background-color: #0a0c18;
+            color: white;
+        }
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            background: rgba(0, 15, 30, 0.7);
+            backdrop-filter: blur(12px);
+            border: 2px solid #00ffff;
+            border-radius: 40px;
+            padding: 12px 32px;
+            display: flex;
+            gap: 40px;
+            border-left: 6px solid #ff00ff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+            pointer-events: none;
+        }
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .hud-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #88ffff;
+            letter-spacing: 2px;
+        }
+        .hud-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #speed-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(20, 0, 30, 0.8);
+            backdrop-filter: blur(16px);
+            border: 2px solid #ff00ff;
+            border-radius: 50px;
+            padding: 18px 32px;
+            z-index: 50;
+            border-right: 6px solid #ffff00;
+            text-align: center;
+            min-width: 180px;
+        }
+        .speed-value {
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #ffaa00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .speed-unit {
+            font-size: 1rem;
+            color: #aaddff;
+        }
+        #lap-counter {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(0, 20, 30, 0.8);
+            backdrop-filter: blur(8px);
+            border: 2px solid #00ffff;
+            border-radius: 40px;
+            padding: 12px 28px;
+            z-index: 50;
+            border-left: 4px solid #ff00ff;
+            font-size: 1.4rem;
+        }
+        #controls-tip {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            border: 1px solid #6a8fff;
+            border-radius: 30px;
+            padding: 10px 22px;
+            color: #b0d0ff;
+            font-size: 0.9rem;
+            z-index: 50;
+        }
+        .ring-count {
+            position: absolute;
+            top: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            border-radius: 60px;
+            padding: 8px 30px;
+            border: 2px solid #ffaa00;
+            color: #ffdd88;
+            font-size: 1.4rem;
+            z-index: 50;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body>
+    <div id="hud">
+        <div class="hud-item">
+            <span class="hud-label">position</span>
+            <span class="hud-value" id="position">3rd</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">best lap</span>
+            <span class="hud-value" id="bestLap">1:24.7</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">battery</span>
+            <span class="hud-value" id="battery">98%</span>
+        </div>
+    </div>
+    <div id="speed-panel">
+        <div class="speed-value" id="speed">487</div>
+        <div class="speed-unit">KM/H</div>
+    </div>
+    <div id="lap-counter">
+        <span style="color:#88ddff;">LAP</span> <span id="lapCurrent">1</span>/3
+    </div>
+    <div class="ring-count" id="ringDisplay">⏺️ 0/8 RINGS</div>
+    <div id="controls-tip">
+        <kbd>WASD</kbd> move · <kbd>🖱️</kbd> look · <kbd>SHIFT</kbd> boost
+    </div>
+
+    <!-- Import Three.js and add-ons -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- SCENE SETUP ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0c18);
+        scene.fog = new THREE.FogExp2(0x0a0c18, 0.0015);
+        
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 15);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.left = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // --- CONTROLS (First-person style) ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+        controls.enableZoom = true;
+        controls.maxPolarAngle = Math.PI / 2; // prevent going under ground
+        controls.minDistance = 5;
+        controls.maxDistance = 30;
+        controls.target.set(0, 2, 0);
+        
+        // --- LIGHTING ---
+        const ambient = new THREE.AmbientLight(0x404060);
+        scene.add(ambient);
+        
+        const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+        dirLight.position.set(10, 30, 20);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        const d = 30;
+        dirLight.shadow.camera.left = -d;
+        dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d;
+        dirLight.shadow.camera.bottom = -d;
+        dirLight.shadow.camera.near = 1;
+        dirLight.shadow.camera.far = 50;
+        scene.add(dirLight);
+        
+        // Colored point lights for neon effect
+        const colors = [0x00ffff, 0xff00ff, 0xffff00, 0x00ffaa];
+        for (let i = 0; i < 8; i++) {
+            const light = new THREE.PointLight(colors[Math.floor(Math.random() * colors.length)], 0.8, 30);
+            light.position.set(
+                (Math.random() - 0.5) * 40,
+                5 + Math.random() * 10,
+                (Math.random() - 0.5) * 40
+            );
+            scene.add(light);
+        }
+        
+        // --- GROUND with grid ---
+        const gridHelper = new THREE.GridHelper(100, 40, 0x00ffff, 0x440066);
+        gridHelper.position.y = -0.5;
+        scene.add(gridHelper);
+        
+        // --- RACING TRACK (a large circle with neon edges) ---
+        const trackRadius = 25;
+        const trackLength = 2 * Math.PI * trackRadius;
+        
+        // Track base (translucent)
+        const trackBaseGeo = new THREE.TorusGeometry(trackRadius, 2, 32, 64);
+        const trackBaseMat = new THREE.MeshStandardMaterial({ color: 0x224488, emissive: 0x112244, transparent: true, opacity: 0.3 });
+        const trackBase = new THREE.Mesh(trackBaseGeo, trackBaseMat);
+        trackBase.rotation.x = Math.PI / 2;
+        trackBase.position.y = -0.2;
+        scene.add(trackBase);
+        
+        // Track edges (neon)
+        const trackEdgeMat = new THREE.LineBasicMaterial({ color: 0x00ffff });
+        for (let r = trackRadius - 1.5; r <= trackRadius + 1.5; r += 3) {
+            const points = [];
+            for (let i = 0; i <= 64; i++) {
+                const angle = (i / 64) * Math.PI * 2;
+                points.push(new THREE.Vector3(r * Math.cos(angle), 0, r * Math.sin(angle)));
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.LineLoop(geo, trackEdgeMat);
+            line.position.y = 0.1;
+            scene.add(line);
+        }
+        
+        // --- NEON RINGS (gates) ---
+        const rings = [];
+        const ringCount = 8;
+        for (let i = 0; i < ringCount; i++) {
+            const angle = (i / ringCount) * Math.PI * 2;
+            const x = trackRadius * Math.cos(angle);
+            const z = trackRadius * Math.sin(angle);
+            
+            const ringGroup = new THREE.Group();
+            
+            // Main ring
+            const ringGeo = new THREE.TorusGeometry(1.2, 0.1, 8, 24);
+            const ringMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0x442200 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = Math.PI / 2;
+            ringGroup.add(ring);
+            
+            // Inner glow
+            const innerRingGeo = new THREE.TorusGeometry(1.0, 0.05, 6, 16);
+            const innerRingMat = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x442200 });
+            const innerRing = new THREE.Mesh(innerRingGeo, innerRingMat);
+            innerRing.rotation.x = Math.PI / 2;
+            ringGroup.add(innerRing);
+            
+            ringGroup.position.set(x, 2 + Math.sin(i * 2) * 1, z);
+            
+            // Store metadata
+            ringGroup.userData = { collected: false, index: i, angle: angle };
+            scene.add(ringGroup);
+            rings.push(ringGroup);
+            
+            // Add floating label
+            const div = document.createElement('div');
+            div.textContent = `GATE ${i+1}`;
+            div.style.color = '#ffaa00';
+            div.style.fontSize = '16px';
+            div.style.fontWeight = 'bold';
+            div.style.textShadow = '0 0 10px #ffaa00';
+            const label = new CSS2DObject(div);
+            label.position.set(0, 2.5, 0);
+            ringGroup.add(label);
+        }
+        
+        // --- DRONE (player) ---
+        const droneGroup = new THREE.Group();
+        
+        // Body
+        const bodyGeo = new THREE.BoxGeometry(1.2, 0.3, 1.8);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x44aaff, emissive: 0x113366 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.castShadow = true;
+        body.receiveShadow = true;
+        droneGroup.add(body);
+        
+        // Rotors (4)
+        const rotorGeo = new THREE.BoxGeometry(1.0, 0.1, 0.3);
+        const rotorMat = new THREE.MeshStandardMaterial({ color: 0xccccff });
+        const positions = [
+            [-0.8, 0.2, 0.8], [0.8, 0.2, 0.8],
+            [-0.8, 0.2, -0.8], [0.8, 0.2, -0.8]
+        ];
+        positions.forEach(pos => {
+            const rotor = new THREE.Mesh(rotorGeo, rotorMat);
+            rotor.position.set(pos[0], pos[1], pos[2]);
+            rotor.castShadow = true;
+            droneGroup.add(rotor);
+        });
+        
+        // Cockpit
+        const cockpitGeo = new THREE.SphereGeometry(0.3, 6);
+        const cockpitMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, emissive: 0x112244 });
+        const cockpit = new THREE.Mesh(cockpitGeo, cockpitMat);
+        cockpit.position.set(0, 0.2, 0.4);
+        droneGroup.add(cockpit);
+        
+        droneGroup.position.set(trackRadius, 1.5, 0);
+        droneGroup.rotation.y = Math.PI/2;
+        scene.add(droneGroup);
+        
+        // Drone label
+        const droneDiv = document.createElement('div');
+        droneDiv.textContent = '⚡ RACER-7';
+        droneDiv.style.background = '#112233';
+        droneDiv.style.color = '#88ddff';
+        droneDiv.style.border = '2px solid #00ffff';
+        droneDiv.style.borderRadius = '20px';
+        droneDiv.style.padding = '2px 12px';
+        const droneLabel = new CSS2DObject(droneDiv);
+        droneLabel.position.set(0, 1.5, 0);
+        droneGroup.add(droneLabel);
+        
+        // --- OPPONENT DRONES (AI) ---
+        const opponents = [];
+        for (let i = 0; i < 3; i++) {
+            const oppGroup = new THREE.Group();
+            
+            const oppBody = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.3, 1.5), new THREE.MeshStandardMaterial({ color: 0xff44aa, emissive: 0x331122 }));
+            oppBody.castShadow = true;
+            oppGroup.add(oppBody);
+            
+            const oppRotor = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 0.3), new THREE.MeshStandardMaterial({ color: 0xffaacc }));
+            oppRotor.position.set(0.6, 0.2, 0.6);
+            oppGroup.add(oppRotor.clone().position.set(-0.6, 0.2, 0.6));
+            oppGroup.add(oppRotor.clone().position.set(0.6, 0.2, -0.6));
+            oppGroup.add(oppRotor.clone().position.set(-0.6, 0.2, -0.6));
+            
+            const startAngle = (i / 3) * Math.PI * 2;
+            oppGroup.position.set(
+                trackRadius * Math.cos(startAngle),
+                1.5,
+                trackRadius * Math.sin(startAngle)
+            );
+            oppGroup.userData = { angle: startAngle, speed: 0.01 + Math.random() * 0.005 };
+            scene.add(oppGroup);
+            opponents.push(oppGroup);
+        }
+        
+        // --- BOOST PADS (floating) ---
+        const boostPads = [];
+        for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2 + 0.5;
+            const x = trackRadius * Math.cos(angle);
+            const z = trackRadius * Math.sin(angle);
+            
+            const padGeo = new THREE.BoxGeometry(1.5, 0.2, 1.5);
+            const padMat = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0x442200 });
+            const pad = new THREE.Mesh(padGeo, padMat);
+            pad.position.set(x, 0.8, z);
+            pad.castShadow = true;
+            scene.add(pad);
+            boostPads.push(pad);
+        }
+        
+        // --- STARS / AMBIENT PARTICLES ---
+        const starsGeo = new THREE.BufferGeometry();
+        const starsCount = 800;
+        const starsPos = new Float32Array(starsCount * 3);
+        for (let i = 0; i < starsCount*3; i+=3) {
+            starsPos[i] = (Math.random() - 0.5) * 150;
+            starsPos[i+1] = (Math.random() - 0.5) * 80;
+            starsPos[i+2] = (Math.random() - 0.5) * 150;
+        }
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+        const starsMat = new THREE.PointsMaterial({ color: 0x88aaff, size: 0.2, transparent: true });
+        const stars = new THREE.Points(starsGeo, starsMat);
+        scene.add(stars);
+        
+        // --- GAME STATE ---
+        let droneAngle = 0; // radian position on track
+        const trackR = trackRadius;
+        let speed = 0.2;
+        let baseSpeed = 0.2;
+        let lap = 1;
+        let ringsCollected = 0;
+        let ringStatus = rings.map(r => false);
+        
+        // UI elements
+        const speedDisplay = document.getElementById('speed');
+        const lapDisplay = document.getElementById('lapCurrent');
+        const ringDisplay = document.getElementById('ringDisplay');
+        const batteryDisplay = document.getElementById('battery');
+        
+        // --- ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // --- DRONE MOVEMENT (keyboard handled below, but we update position based on angle) ---
+            // Convert keyboard input to angle change (left/right) and speed (forward/back)
+            // We'll handle with event listeners outside
+            
+            // Update drone position based on current angle
+            droneGroup.position.x = trackR * Math.cos(droneAngle);
+            droneGroup.position.z = trackR * Math.sin(droneAngle);
+            
+            // Orient drone along track tangent
+            droneGroup.rotation.y = droneAngle + Math.PI/2;
+            
+            // Simple height bob
+            droneGroup.position.y = 1.5 + Math.sin(Date.now() * 0.01) * 0.1;
+            
+            // Move opponents (simple circular motion)
+            opponents.forEach(opp => {
+                opp.userData.angle += opp.userData.speed;
+                opp.position.x = trackR * Math.cos(opp.userData.angle);
+                opp.position.z = trackR * Math.sin(opp.userData.angle);
+                opp.rotation.y = opp.userData.angle + Math.PI/2;
+            });
+            
+            // Check ring collisions
+            rings.forEach((ring, idx) => {
+                if (!ring.userData.collected) {
+                    const dist = droneGroup.position.distanceTo(ring.position);
+                    if (dist < 2.5) {
+                        ring.userData.collected = true;
+                        ring.visible = false; // hide ring
+                        ringsCollected++;
+                        ringStatus[idx] = true;
+                        
+                        // Update UI
+                        ringDisplay.innerHTML = `⏺️ ${ringsCollected}/${ringCount} RINGS`;
+                        
+                        // Speed boost
+                        speed += 0.05;
+                    }
+                }
+            });
+            
+            // Check boost pads
+            boostPads.forEach(pad => {
+                const dist = droneGroup.position.distanceTo(pad.position);
+                if (dist < 2.0) {
+                    // visual feedback
+                    pad.material.emissive.setHex(0x884400);
+                    speed = Math.min(0.6, speed + 0.1);
+                } else {
+                    pad.material.emissive.setHex(0x442200);
+                }
+            });
+            
+            // Lap counting (simple: crossing start line near angle 0)
+            const startThreshold = 0.2;
+            if (droneAngle < -Math.PI + startThreshold && droneAngle > -Math.PI - startThreshold) {
+                // crossed start line
+                if (lap < 3) {
+                    lap++;
+                    lapDisplay.innerText = lap;
+                } else {
+                    // race finished
+                }
+            }
+            
+            // Update HUD speed
+            speedDisplay.innerText = Math.floor(speed * 1000);
+            
+            // Battery slowly drains (just for effect)
+            let batteryVal = 98 - (Date.now() * 0.001) % 10;
+            batteryDisplay.innerText = Math.max(0, Math.floor(batteryVal)) + '%';
+            
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // --- KEYBOARD CONTROLS for drone movement ---
+        const keyState = { w: false, s: false, a: false, d: false, shift: false };
+        
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (key === 'w') keyState.w = true;
+            if (key === 's') keyState.s = true;
+            if (key === 'a') keyState.a = true;
+            if (key === 'd') keyState.d = true;
+            if (key === 'shift') keyState.shift = true;
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            if (key === 'w') keyState.w = false;
+            if (key === 's') keyState.s = false;
+            if (key === 'a') keyState.a = false;
+            if (key === 'd') keyState.d = false;
+            if (key === 'shift') keyState.shift = false;
+        });
+        
+        // Movement update in animation loop (we'll add a separate loop to modify droneAngle)
+        function movementLoop() {
+            // Speed decay
+            speed *= 0.995;
+            speed = Math.max(0.15, Math.min(0.8, speed));
+            
+            // Forward/back
+            if (keyState.w) {
+                speed += 0.01;
+            }
+            if (keyState.s) {
+                speed -= 0.015;
+            }
+            
+            // Left/right (change angle)
+            if (keyState.a) {
+                droneAngle -= speed * 0.03;
+            }
+            if (keyState.d) {
+                droneAngle += speed * 0.03;
+            }
+            
+            // Boost
+            if (keyState.shift) {
+                speed += 0.02;
+            }
+            
+            // Keep angle within range
+            droneAngle = droneAngle % (2 * Math.PI);
+            
+            requestAnimationFrame(movementLoop);
+        }
+        movementLoop();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

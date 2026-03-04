@@ -1,0 +1,777 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐠 Interactive Aquarium</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Comic Sans MS', sans-serif;
+            background: #000;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #root {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .aquarium {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, 
+                rgba(0, 150, 255, 0.4) 0%, 
+                rgba(0, 100, 200, 0.6) 40%,
+                rgba(0, 50, 100, 0.9) 80%,
+                rgba(30, 30, 30, 1) 100%);
+            overflow: hidden;
+            border: 15px solid #2c3e50;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8), 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        /* Light Rays */
+        .light-rays {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                105deg,
+                transparent 0px,
+                transparent 40px,
+                rgba(255, 255, 255, 0.05) 40px,
+                rgba(255, 255, 255, 0.1) 80px
+            );
+            pointer-events: none;
+            z-index: 0;
+            animation: rayMove 20s linear infinite;
+        }
+
+        @keyframes rayMove {
+            from { background-position: 0 0; }
+            to { background-position: 0 400px; }
+        }
+
+        .sand {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 15%;
+            background: linear-gradient(to top, #c2b280, #e6dba5);
+            z-index: 1;
+            border-top: 4px solid #a89f6e;
+        }
+
+        .sand::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0,0,0,0.1) 0%, transparent 20%),
+                radial-gradient(circle at 80% 20%, rgba(0,0,0,0.1) 0%, transparent 15%);
+        }
+
+        .grass {
+            position: absolute;
+            bottom: 14%;
+            left: 0;
+            width: 100%;
+            height: 20%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .grass-blade {
+            position: absolute;
+            bottom: 0;
+            width: 6px;
+            background: linear-gradient(to top, #1e5631, #4caf50, #81c784);
+            border-radius: 4px 4px 0 0;
+            transform-origin: bottom center;
+            animation: sway 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes sway {
+            0% { transform: rotate(-5deg) translateY(0); }
+            100% { transform: rotate(5deg) translateY(-5px); }
+        }
+
+        /* Fish Styles */
+        .fish {
+            position: absolute;
+            cursor: pointer;
+            z-index: 10;
+            transition: transform 0.1s linear; /* Smooth rotation handled by JS */
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.4));
+            will-change: transform;
+        }
+
+        .fish:hover {
+            filter: drop-shadow(0 0 15px rgba(255, 255, 200, 0.6));
+        }
+
+        .fish-body-container {
+            position: relative;
+            width: 80px;
+            height: 50px;
+        }
+
+        .fish-body {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 60% 40% 60% 40% / 70% 50% 50% 30%;
+            overflow: visible;
+            z-index: 2;
+        }
+
+        .fish-shine {
+            position: absolute;
+            top: -8px;
+            left: 15px;
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: 3;
+            opacity: 0.8;
+        }
+
+        .fish-tail {
+            position: absolute;
+            left: -20px;
+            top: 20%;
+            width: 0;
+            height: 0;
+            border-top: 25px solid;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            transform-origin: right center;
+            animation: tailWag 0.5s ease-in-out infinite;
+            filter: brightness(1.1);
+            z-index: 1;
+        }
+
+        @keyframes tailWag {
+            0%, 100% { transform: rotate(-15deg); }
+            50% { transform: rotate(15deg); }
+        }
+
+        .fish-dorsal {
+            position: absolute;
+            top: -15px;
+            left: 55%;
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 25px solid;
+            transform: rotate(20deg);
+            filter: brightness(1.1);
+            z-index: 1;
+        }
+
+        .fish-eye {
+            position: absolute;
+            top: 18%;
+            right: 10%;
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            z-index: 5;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            animation: blink 5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 48%, 52%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.1); }
+        }
+
+        .fish-eye::after {
+            content: '';
+            position: absolute;
+            top: 25%;
+            left: 25%;
+            width: 5px;
+            height: 5px;
+            background: #222;
+            border-radius: 50%;
+        }
+
+        .fish-mouth {
+            position: absolute;
+            top: 45%;
+            right: 2%;
+            width: 10px;
+            height: 6px;
+            border: 2px solid transparent;
+            border-bottom-color: rgba(255,255,255,0.7);
+            border-radius: 0 0 10px 10px;
+        }
+
+        .fish-patterns {
+            position: absolute;
+            top: 5%;
+            left: 5%;
+            right: 5%;
+            bottom: 5%;
+            border-radius: 55% 35% 55% 35%;
+            z-index: 2;
+            overflow: hidden;
+            opacity: 0.6;
+        }
+
+        .pattern-stripes {
+            background: repeating-linear-gradient(
+                90deg, 
+                transparent 0px, transparent 8px, 
+                rgba(255,255,255,0.5) 8px, rgba(255,255,255,0.5) 12px
+            );
+        }
+
+        .pattern-spots {
+            background: 
+                radial-gradient(circle 5px at 30% 30%, rgba(255,255,255,0.9) 0%, transparent 50%),
+                radial-gradient(circle 4px at 70% 70%, rgba(255,255,255,0.9) 0%, transparent 50%);
+        }
+
+        .pattern-stars {
+            background: 
+                radial-gradient(circle 3px at 20% 25%, rgba(255,255,255,1) 0%, transparent 50%),
+                radial-gradient(circle 2px at 65% 60%, rgba(255,255,255,1) 0%, transparent 50%);
+        }
+
+        /* Game Objects */
+        .food {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: radial-gradient(circle, #ffdb4a 0%, #ffaa00 70%, #ff4500 100%);
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 20;
+            animation: sink 4s linear forwards;
+        }
+
+        @keyframes sink {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100px) rotate(360deg); opacity: 0.3; }
+        }
+
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(173,216,230,0.4));
+            border: 1px solid rgba(255,255,255,0.5);
+            z-index: 15;
+            animation: bubbleRise 8s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes bubbleRise {
+            0% { transform: translateY(0) scale(1); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translateY(-120vh) scale(1.5); opacity: 0; }
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            z-index: 25;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 5px #000;
+            animation: floatUp 1s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-30px) scale(1.5); opacity: 0; }
+        }
+
+        /* UI Controls */
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .stats {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
+            border-radius: 20px;
+            color: white;
+            z-index: 100;
+            border: 1px solid rgba(255,255,255,0.2);
+            font-family: inherit;
+            text-align: right;
+        }
+        
+        .stat-item {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        const FISH_TYPES = [
+            { name: 'Blue Tang', color: '#3498db', pattern: 'stripes' },
+            { name: 'Goldfish', color: '#f1c40f', pattern: 'spots' },
+            { name: 'Clownfish', color: '#e74c3c', pattern: 'stripes' },
+            { name: 'Angelfish', color: '#9b59b6', pattern: 'stars' },
+            { name: 'Lionfish', color: '#c0392b', pattern: 'spots' },
+            { name: 'Parrotfish', color: '#2ecc71', pattern: 'stripes' }
+        ];
+
+        const Aquarium = () => {
+            const [fishes, setFishes] = useState([]);
+            const [foods, setFoods] = useState([]);
+            const [bubbles, setBubbles] = useState([]);
+            const [particles, setParticles] = useState([]);
+            const [score, setScore] = useState(0);
+            
+            const aquariumRef = useRef(null);
+            const requestRef = useRef();
+            const sizeRef = useRef({ width: 0, height: 0 });
+
+            // Initialize Size
+            useEffect(() => {
+                const updateSize = () => {
+                    if (aquariumRef.current) {
+                        const rect = aquariumRef.current.getBoundingClientRect();
+                        sizeRef.current = { width: rect.width, height: rect.height };
+                    }
+                };
+                updateSize();
+                window.addEventListener('resize', updateSize);
+                
+                // Generate initial grass
+                const grass = document.querySelector('.grass');
+                if (grass) {
+                    for (let i = 0; i < 100; i++) {
+                        const blade = document.createElement('div');
+                        blade.className = 'grass-blade';
+                        blade.style.left = Math.random() * 100 + '%';
+                        blade.style.height = (30 + Math.random() * 50) + 'px';
+                        blade.style.animationDelay = Math.random() * 5 + 's';
+                        grass.appendChild(blade);
+                    }
+                }
+
+                return () => window.removeEventListener('resize', updateSize);
+            }, []);
+
+            // Helper: Add Food
+            const spawnFood = useCallback((x, y) => {
+                const newFood = {
+                    id: Date.now() + Math.random(),
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: 1 + Math.random() * 1.5 // Gravity
+                };
+                setFoods(prev => [...prev, newFood]);
+                
+                // Add bubbles for effect
+                if (Math.random() > 0.5) {
+                    setBubbles(prev => [...prev, {
+                        id: Date.now() + Math.random(),
+                        x: x + (Math.random() - 0.5) * 20,
+                        y: y,
+                        size: 4 + Math.random() * 6,
+                        speed: 1 + Math.random()
+                    }]);
+                }
+            }, []);
+
+            // Button Handlers
+            const addFish = useCallback(() => {
+                if (fishes.length >= 20) return;
+                const typeIndex = Math.floor(Math.random() * FISH_TYPES.length);
+                const { width, height } = sizeRef.current;
+                
+                const newFish = {
+                    id: Date.now() + Math.random(),
+                    typeIndex,
+                    x: width * 0.5,
+                    y: height * 0.5,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    angle: 0,
+                    targetX: null,
+                    targetY: null,
+                    hunger: 100
+                };
+                setFishes(prev => [...prev, newFish]);
+            }, [fishes.length]);
+
+            const feedFish = useCallback((e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (!aquariumRef.current) return;
+                const rect = aquariumRef.current.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Spawn a cluster of food
+                for(let i=0; i<5; i++) {
+                    setTimeout(() => {
+                        spawnFood(x + (Math.random()-0.5)*30, y + (Math.random()-0.5)*30);
+                    }, i * 100);
+                }
+            }, [spawnFood]);
+
+            const feedFromTop = useCallback((e) => {
+                e.stopPropagation();
+                const { width } = sizeRef.current;
+                spawnFood(width / 2, 50);
+            }, [spawnFood]);
+
+            // Game Loop
+            const update = useCallback(() => {
+                const { width, height } = sizeRef.current;
+                if (width === 0) {
+                    requestRef.current = requestAnimationFrame(update);
+                    return;
+                }
+
+                setFishes(currentFishes => {
+                    return currentFishes.map(fish => {
+                        const type = FISH_TYPES[fish.typeIndex];
+                        let { x, y, vx, vy, angle } = fish;
+
+                        // 1. Find nearest food
+                        let nearestFood = null;
+                        let minDist = Infinity;
+                        
+                        // We need access to current foods, but inside setFishes we don't have them directly.
+                        // However, for simple physics, we can just wander if no food is found.
+                        // To make it "Realistic", we need to check food.
+                        // Since we can't access 'foods' state inside setFishes without adding it to deps (which resets loop),
+                        // we will rely on a ref for food positions or just simple wandering + collision check in a separate pass.
+                        // For simplicity in this structure, let's just do movement logic here.
+                        
+                        // Random wandering
+                        if (Math.random() < 0.02) {
+                            vx += (Math.random() - 0.5) * 0.5;
+                            vy += (Math.random() - 0.5) * 0.5;
+                        }
+
+                        // Speed limits
+                        const maxSpeed = 2.5;
+                        const speed = Math.sqrt(vx*vx + vy*vy);
+                        if (speed > maxSpeed) {
+                            vx = (vx / speed) * maxSpeed;
+                            vy = (vy / speed) * maxSpeed;
+                        }
+
+                        // Apply velocity
+                        x += vx;
+                        y += vy;
+
+                        // Boundary Bounce
+                        const margin = 50;
+                        if (x < margin) { x = margin; vx *= -1; }
+                        if (x > width - margin) { x = width - margin; vx *= -1; }
+                        if (y < margin) { y = margin; vy *= -1; }
+                        if (y > height - 100) { y = height - 100; vy *= -1; }
+
+                        // Calculate Angle for smooth rotation
+                        const targetAngle = Math.atan2(vy, vx);
+                        // Simple angle lerp could go here, but direct assignment is okay for 2D top-down feel
+                        angle = targetAngle;
+
+                        return { ...fish, x, y, vx, vy, angle };
+                    });
+                });
+
+                // Update Food (Gravity & Eating)
+                setFoods(currentFoods => {
+                    const remainingFoods = [];
+                    let eatenCount = 0;
+
+                    currentFoods.forEach(f => {
+                        // Gravity
+                        f.y += f.vy;
+                        f.x += f.vx;
+
+                        // Check collision with fishes
+                        let eaten = false;
+                        
+                        // We need to read the *current* fishes state. 
+                        // Since we are inside setFoods, we can't easily read the updated fishes from the previous setFishes call in the same frame without a ref.
+                        // But for a simple game, checking against the *previous* frame's fish positions is usually fine visually.
+                        
+                        // Note: In a strict React render cycle, accessing 'fishes' state here might be stale if not careful.
+                        // However, functional updates run sequentially.
+                        
+                        // Let's assume 'fishes' in the closure is the current render's fishes.
+                        // To fix the "stale state" issue in the loop, we should use a Ref for game state if we want perfect sync,
+                        // but for this demo, we'll iterate and check.
+                        
+                        // We will do the collision check in a separate effect or pass to avoid complexity, 
+                        // OR we can just let food fall and remove it at bottom.
+                        // To make it a "Game", let's do the collision check now.
+                        
+                        // We need the *latest* fishes. 
+                        // Since we can't get it easily here without refs, let's just let food fall to the bottom for now
+                        // and handle "Eating" visually by checking distance in the Fish loop (which we can't do easily either).
+                        // TRICK: We will use a Ref to store the latest fishes for the collision logic.
+                    });
+
+                    // Filter out food that hit the bottom
+                    return currentFoods.filter(f => f.y < height - 50);
+                });
+
+                // Update Bubbles
+                setBubbles(currentBubbles => {
+                    return currentBubbles.map(b => ({
+                        ...b,
+                        y: b.y - b.speed,
+                        x: b.x + Math.sin(b.y * 0.05) * 0.5
+                    })).filter(b => b.y > -50);
+                });
+
+                requestRef.current = requestAnimationFrame(update);
+            }, []);
+
+            // Ref to hold latest state for collision detection
+            const stateRef = useRef({ fishes: [], foods: [] });
+            useEffect(() => {
+                stateRef.current.fishes = fishes;
+                stateRef.current.foods = foods;
+            }, [fishes, foods]);
+
+            // Separate Collision Loop
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    const { fishes, foods } = stateRef.current;
+                    if (fishes.length === 0 || foods.length === 0) return;
+
+                    const fishToEatDist = 30;
+                    const newFoods = [...foods];
+                    const eatenFoodIds = new Set();
+                    let eatenCount = 0;
+
+                    fishes.forEach(fish => {
+                        for (let i = 0; i < newFoods.length; i++) {
+                            const food = newFoods[i];
+                            if (eatenFoodIds.has(food.id)) continue;
+
+                            const dx = fish.x - food.x;
+                            const dy = fish.y - food.y;
+                            const dist = Math.sqrt(dx*dx + dy*dy);
+
+                            if (dist < fishToEatDist) {
+                                eatenFoodIds.add(food.id);
+                                eatenCount++;
+                                
+                                // Fish reacts to eating (speed boost)
+                                setFishes(prev => prev.map(f => {
+                                    if (f.id === fish.id) {
+                                        return {
+                                            ...f,
+                                            vx: f.vx * 1.2,
+                                            vy: f.vy * 1.2
+                                        };
+                                    }
+                                    return f;
+                                }));
+                                
+                                // Add particle
+                                setParticles(prev => [...prev, {
+                                    id: Date.now() + Math.random(),
+                                    x: food.x,
+                                    y: food.y,
+                                    text: 'Yum!'
+                                }]);
+                            }
+                        }
+                    });
+
+                    if (eatenCount > 0) {
+                        setScore(s => s + eatenCount);
+                        setFoods(prev => prev.filter(f => !eatenFoodIds.has(f.id)));
+                    }
+                }, 50); // Check every 50ms
+                return () => clearInterval(interval);
+            }, []);
+
+            useEffect(() => {
+                requestRef.current = requestAnimationFrame(update);
+                return () => cancelAnimationFrame(requestRef.current);
+            }, [update]);
+
+            return (
+                <div className="aquarium" ref={aquariumRef} onClick={feedFish}>
+                    <div className="light-rays" />
+                    <div className="sand" />
+                    <div className="grass" />
+                    
+                    <div className="controls" onClick={e => e.stopPropagation()}>
+                        <div className="btn-row">
+                            <button className="btn" onClick={addFish}>
+                                🐠 Add Fish ({fishes.length})
+                            </button>
+                            <button className="btn" onClick={feedFromTop}>
+                                🍖 Feed
+                            </button>
+                        </div>
+                        <div style={{fontSize: '12px', color: '#ccc', marginTop: '5px'}}>
+                            Click anywhere to feed!
+                        </div>
+                    </div>
+
+                    <div className="stats">
+                        <div className="stat-item">🐠 Fish: {fishes.length}</div>
+                        <div className="stat-item">🍖 Food: {foods.length}</div>
+                        <div className="stat-item" style={{color: '#f1c40f'}}>⭐ Score: {score}</div>
+                    </div>
+
+                    {fishes.map(fish => {
+                        const type = FISH_TYPES[fish.typeIndex];
+                        // Convert angle to degrees for CSS rotation
+                        const rotation = (fish.angle * 180 / Math.PI);
+                        
+                        return (
+                            <div 
+                                key={fish.id} 
+                                className="fish"
+                                style={{
+                                    transform: `translate(${fish.x}px, ${fish.y}px) rotate(${rotation}deg)`
+                                }}
+                            >
+                                <div className="fish-body-container">
+                                    <div className="fish-shine" />
+                                    <div 
+                                        className="fish-body" 
+                                        style={{ background: `linear-gradient(135deg, ${type.color}, ${type.color}dd)` }}
+                                    >
+                                        <div className={`fish-patterns pattern-${type.pattern}`} />
+                                        <div className="fish-tail" style={{ borderTopColor: type.color }} />
+                                        <div className="fish-dorsal" style={{ borderBottomColor: type.color }} />
+                                        <div className="fish-eye" />
+                                        <div className="fish-mouth" />
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+
+                    {foods.map(f => (
+                        <div 
+                            key={f.id} 
+                            className="food" 
+                            style={{
+                                left: f.x, 
+                                top: f.y,
+                                // Override animation for JS controlled movement
+                                animation: 'none' 
+                            }} 
+                        />
+                    ))}
+
+                    {bubbles.map(b => (
+                        <div 
+                            key={b.id} 
+                            className="bubble" 
+                            style={{
+                                left: b.x,
+                                bottom: 'auto',
+                                top: b.y,
+                                width: b.size,
+                                height: b.size
+                            }} 
+                        />
+                    ))}
+
+                    {particles.map(p => (
+                        <div 
+                            key={p.id} 
+                            className="particle"
+                            style={{ left: p.x, top: p.y }}
+                        >
+                            {p.text}
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<Aquarium />);
+    </script>
+</body>
+</html>

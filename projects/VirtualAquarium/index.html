@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Aquarium 🐠</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #0a2647, #144272, #205295);
+            color: #e6f7ff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0 30px;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 3.2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #86e3ce, #d0e6a5, #ffdd94, #fa897b, #ccabd8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #b0e0e6;
+            margin-bottom: 15px;
+        }
+
+        .aquarium-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .aquarium {
+            flex: 3;
+            min-width: 300px;
+            height: 650px;
+            background: linear-gradient(to bottom, #1a6ea0, #1e90ff, #87ceeb);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                inset 0 0 50px rgba(0, 100, 200, 0.5),
+                0 20px 40px rgba(0, 0, 0, 0.4);
+            border: 8px solid #2c5282;
+            z-index: 1;
+        }
+
+        .aquarium::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 2%, transparent 3%),
+                radial-gradient(circle at 40% 60%, rgba(255, 255, 255, 0.1) 3%, transparent 4%),
+                radial-gradient(circle at 60% 40%, rgba(255, 255, 255, 0.1) 2%, transparent 3%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 3%, transparent 4%);
+            background-size: 100px 100px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .controls-panel {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(16, 42, 66, 0.85);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(64, 164, 244, 0.2);
+            z-index: 10;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #86e3ce;
+            border-bottom: 2px solid rgba(134, 227, 206, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .fish-types {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .fish-type-btn {
+            background: rgba(30, 60, 90, 0.8);
+            border: none;
+            border-radius: 12px;
+            padding: 15px 10px;
+            color: #e6f7ff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .fish-type-btn:hover {
+            transform: translateY(-5px);
+            background: rgba(40, 80, 120, 0.9);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .fish-type-btn.active {
+            background: rgba(64, 164, 244, 0.8);
+            box-shadow: 0 5px 15px rgba(64, 164, 244, 0.3);
+        }
+
+        .fish-type-btn i {
+            font-size: 1.8rem;
+        }
+
+        .slider-container {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #b0e0e6;
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #40a4f4;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(64, 164, 244, 0.5);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .add-fish-btn {
+            background: linear-gradient(to right, #86e3ce, #40a4f4);
+            color: #0a2647;
+        }
+
+        .add-fish-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(64, 164, 244, 0.4);
+        }
+
+        .clear-btn {
+            background: rgba(255, 100, 100, 0.9);
+            color: white;
+        }
+
+        .clear-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(255, 100, 100, 0.4);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 25px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #86e3ce;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #b0e0e6;
+        }
+
+        /* Aquarium elements */
+        .fish {
+            position: absolute;
+            z-index: 5;
+            transition: transform 0.5s ease;
+            filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.3));
+        }
+
+        .bubble {
+            position: absolute;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
+            border-radius: 50%;
+            z-index: 3;
+            opacity: 0.7;
+        }
+
+        .plant {
+            position: absolute;
+            z-index: 2;
+            bottom: 0;
+        }
+
+        .rock {
+            position: absolute;
+            z-index: 2;
+            bottom: 0;
+        }
+
+        .aquarium-floor {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(to bottom, #8b4513, #654321, #8b4513);
+            z-index: 1;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .click-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            z-index: 20;
+            pointer-events: none;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #86a8e7;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 1100px) {
+            .aquarium-container {
+                flex-direction: column;
+            }
+            
+            .aquarium {
+                height: 500px;
+            }
+            
+            .fish-types {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .fish-types {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .aquarium {
+                height: 450px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .fish-types {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-fish"></i> Virtual Aquarium 🐠</h1>
+            <p class="subtitle">Click anywhere in the aquarium to add fish! Watch them swim and bubbles float.</p>
+        </header>
+        
+        <div class="aquarium-container">
+            <div class="aquarium" id="aquarium">
+                <div class="aquarium-floor"></div>
+                <div class="click-hint" id="clickHint">
+                    <h3>Click anywhere to add fish!</h3>
+                    <p>Choose fish type and color below</p>
+                </div>
+                <!-- Fish, bubbles, and plants will be generated here -->
+            </div>
+            
+            <div class="controls-panel">
+                <h2><i class="fas fa-sliders-h"></i> Aquarium Controls</h2>
+                
+                <div class="fish-types">
+                    <button class="fish-type-btn active" data-type="clownfish">
+                        <i class="fas fa-fish" style="color: #FF6B6B;"></i>
+                        <span>Clownfish</span>
+                    </button>
+                    <button class="fish-type-btn" data-type="blue-tang">
+                        <i class="fas fa-fish" style="color: #4D96FF;"></i>
+                        <span>Blue Tang</span>
+                    </button>
+                    <button class="fish-type-btn" data-type="angelfish">
+                        <i class="fas fa-fish" style="color: #FFD93D;"></i>
+                        <span>Angelfish</span>
+                    </button>
+                    <button class="fish-type-btn" data-type="pufferfish">
+                        <i class="fas fa-fish" style="color: #6BCF7F;"></i>
+                        <span>Pufferfish</span>
+                    </button>
+                    <button class="fish-type-btn" data-type="betta">
+                        <i class="fas fa-fish" style="color: #FF78F0;"></i>
+                        <span>Betta</span>
+                    </button>
+                    <button class="fish-type-btn" data-type="seahorse">
+                        <i class="fas fa-horse-head" style="color: #9D65C9;"></i>
+                        <span>Seahorse</span>
+                    </button>
+                </div>
+                
+                <div class="slider-container">
+                    <label for="fishSpeed"><i class="fas fa-tachometer-alt"></i> Fish Speed</label>
+                    <input type="range" id="fishSpeed" min="1" max="10" value="5">
+                </div>
+                
+                <div class="slider-container">
+                    <label for="bubbleFrequency"><i class="fas fa-wind"></i> Bubble Frequency</label>
+                    <input type="range" id="bubbleFrequency" min="1" max="10" value="5">
+                </div>
+                
+                <div class="slider-container">
+                    <label for="fishSize"><i class="fas fa-expand-alt"></i> Fish Size</label>
+                    <input type="range" id="fishSize" min="1" max="10" value="5">
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="action-btn add-fish-btn" id="addFishBtn">
+                        <i class="fas fa-plus-circle"></i> Add Random Fish
+                    </button>
+                    <button class="action-btn clear-btn" id="clearBtn">
+                        <i class="fas fa-trash-alt"></i> Clear All Fish
+                    </button>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="fishCount">0</div>
+                        <div class="stat-label">Fish</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="bubbleCount">0</div>
+                        <div class="stat-label">Bubbles</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="clickCount">0</div>
+                        <div class="stat-label">Clicks</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Virtual Aquarium &copy; 2026 | Click to add fish, adjust settings, and watch them swim! 🐟</p>
+            <p>Fish swim smoothly with natural movement patterns. Bubbles auto-generate from plants and rocks.</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const aquarium = document.getElementById('aquarium');
+        const fishTypeButtons = document.querySelectorAll('.fish-type-btn');
+        const fishSpeedSlider = document.getElementById('fishSpeed');
+        const bubbleFrequencySlider = document.getElementById('bubbleFrequency');
+        const fishSizeSlider = document.getElementById('fishSize');
+        const addFishBtn = document.getElementById('addFishBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const clickHint = document.getElementById('clickHint');
+        const fishCountElement = document.getElementById('fishCount');
+        const bubbleCountElement = document.getElementById('bubbleCount');
+        const clickCountElement = document.getElementById('clickCount');
+
+        // Configuration
+        let currentFishType = 'clownfish';
+        let fishSpeed = 5;
+        let bubbleFrequency = 5;
+        let fishSize = 5;
+        let fishCount = 0;
+        let bubbleCount = 0;
+        let clickCount = 0;
+        let fishList = [];
+        let bubbleList = [];
+        let plants = [];
+        let rocks = [];
+
+        // Fish types with colors and characteristics
+        const fishConfigs = {
+            clownfish: {
+                colors: ['#FF6B6B', '#FF8E8E', '#FF5252'],
+                bodyShape: 'oval',
+                speedMultiplier: 1.0,
+                sizeRange: [30, 50]
+            },
+            'blue-tang': {
+                colors: ['#4D96FF', '#6BCBFF', '#357ABD'],
+                bodyShape: 'round',
+                speedMultiplier: 1.2,
+                sizeRange: [40, 60]
+            },
+            angelfish: {
+                colors: ['#FFD93D', '#FFE566', '#FFC107'],
+                bodyShape: 'triangle',
+                speedMultiplier: 0.9,
+                sizeRange: [35, 55]
+            },
+            pufferfish: {
+                colors: ['#6BCF7F', '#8DE2A1', '#4CAF50'],
+                bodyShape: 'circle',
+                speedMultiplier: 0.7,
+                sizeRange: [40, 60]
+            },
+            betta: {
+                colors: ['#FF78F0', '#FFA9E7', '#E91E63'],
+                bodyShape: 'flowing',
+                speedMultiplier: 1.1,
+                sizeRange: [25, 45]
+            },
+            seahorse: {
+                colors: ['#9D65C9', '#B57EDC', '#7B4CAB'],
+                bodyShape: 'seahorse',
+                speedMultiplier: 0.6,
+                sizeRange: [35, 55]
+            }
+        };
+
+        // Initialize the aquarium
+        function initAquarium() {
+            createPlants();
+            createRocks();
+            startBubbleGeneration();
+            updateStats();
+            
+            // Hide click hint after 5 seconds
+            setTimeout(() => {
+                clickHint.style.opacity = '0';
+                setTimeout(() => {
+                    clickHint.style.display = 'none';
+                }, 1000);
+            }, 5000);
+        }
+
+        // Create decorative plants
+        function createPlants() {
+            const plantPositions = [
+                {left: '5%', height: '120px', color: '#2E8B57'},
+                {left: '15%', height: '90px', color: '#3CB371'},
+                {left: '85%', height: '110px', color: '#20B2AA'},
+                {left: '75%', height: '80px', color: '#32CD32'},
+                {left: '35%', height: '150px', color: '#228B22'},
+                {left: '65%', height: '100px', color: '#66CDAA'}
+            ];
+            
+            plantPositions.forEach((plant, index) => {
+                const plantEl = document.createElement('div');
+                plantEl.className = 'plant';
+                plantEl.style.left = plant.left;
+                plantEl.style.height = plant.height;
+                plantEl.style.width = '40px';
+                plantEl.style.borderRadius = '20px 20px 0 0';
+                plantEl.style.background = `linear-gradient(to top, ${plant.color}, ${adjustColor(plant.color, 30)})`;
+                
+                // Add plant details
+                plantEl.innerHTML = `
+                    <div style="position: absolute; width: 100%; height: 20px; background: ${adjustColor(plant.color, -20)}; border-radius: 10px; bottom: 0;"></div>
+                    <div style="position: absolute; width: 60%; height: 15px; background: ${plant.color}; border-radius: 50%; top: -5px; left: 20%;"></div>
+                `;
+                
+                aquarium.appendChild(plantEl);
+                plants.push(plantEl);
+            });
+        }
+
+        // Create decorative rocks
+        function createRocks() {
+            const rockPositions = [
+                {left: '10%', size: '60px', color: '#696969'},
+                {left: '25%', size: '40px', color: '#808080'},
+                {left: '50%', size: '80px', color: '#A9A9A9'},
+                {left: '70%', size: '50px', color: '#708090'},
+                {left: '90%', size: '70px', color: '#778899'}
+            ];
+            
+            rockPositions.forEach((rock, index) => {
+                const rockEl = document.createElement('div');
+                rockEl.className = 'rock';
+                rockEl.style.left = rock.left;
+                rockEl.style.width = rock.size;
+                rockEl.style.height = rock.size;
+                rockEl.style.bottom = '10px';
+                rockEl.style.borderRadius = '50% 50% 30% 30%';
+                rockEl.style.background = `radial-gradient(circle at 30% 30%, ${adjustColor(rock.color, 30)}, ${rock.color})`;
+                rockEl.style.boxShadow = 'inset 0 -5px 10px rgba(0,0,0,0.3)';
+                
+                aquarium.appendChild(rockEl);
+                rocks.push(rockEl);
+            });
+        }
+
+        // Create a fish element
+        function createFish(type, x, y) {
+            const config = fishConfigs[type];
+            const size = config.sizeRange[0] + (fishSize / 10) * (config.sizeRange[1] - config.sizeRange[0]);
+            const color = config.colors[Math.floor(Math.random() * config.colors.length)];
+            const id = Date.now() + Math.random();
+            
+            const fishEl = document.createElement('div');
+            fishEl.className = 'fish';
+            fishEl.id = `fish-${id}`;
+            fishEl.style.width = `${size}px`;
+            fishEl.style.height = `${size * 0.6}px`;
+            fishEl.style.left = `${x}px`;
+            fishEl.style.top = `${y}px`;
+            
+            // Create fish body based on type
+            let fishBody = '';
+            switch(config.bodyShape) {
+                case 'oval':
+                    fishBody = `<div style="width: 100%; height: 100%; background: ${color}; border-radius: 50%; position: relative;">
+                        <div style="position: absolute; width: 30%; height: 30%; background: white; border-radius: 50%; top: 30%; left: 15%;"></div>
+                        <div style="position: absolute; width: 10%; height: 10%; background: black; border-radius: 50%; top: 35%; left: 20%;"></div>
+                        <div style="position: absolute; width: 40%; height: 20%; background: ${adjustColor(color, -30)}; border-radius: 50%; right: 5%; top: 40%;"></div>
+                    </div>`;
+                    break;
+                case 'round':
+                    fishBody = `<div style="width: 100%; height: 100%; background: ${color}; border-radius: 50%; position: relative;">
+                        <div style="position: absolute; width: 40%; height: 20%; background: ${adjustColor(color, -30)}; border-radius: 50%; left: -10%; top: 40%;"></div>
+                        <div style="position: absolute; width: 60%; height: 30%; background: ${adjustColor(color, -30)}; border-radius: 50%; right: -5%; top: 35%;"></div>
+                    </div>`;
+                    break;
+                case 'triangle':
+                    fishBody = `<div style="width: 100%; height: 100%; background: ${color}; clip-path: polygon(0% 50%, 100% 0%, 100% 100%); position: relative;">
+                        <div style="position: absolute; width: 30%; height: 20%; background: ${adjustColor(color, -30)}; border-radius: 50%; left: 10%; top: 40%;"></div>
+                        <div style="position: absolute; width: 50%; height: 30%; background: ${adjustColor(color, -30)}; clip-path: polygon(100% 0%, 100% 100%, 0% 50%); right: -20%; top: 35%;"></div>
+                    </div>`;
+                    break;
+                case 'circle':
+                    fishBody = `<div style="width: 100%; height: 100%; background: ${color}; border-radius: 50%; position: relative;">
+                        <div style="position: absolute; width: 80%; height: 80%; background: ${adjustColor(color, 20)}; border-radius: 50%; top: 10%; left: 10%;"></div>
+                        <div style="position: absolute; width: 30%; height: 30%; background: white; border-radius: 50%; top: 30%; left: 25%;"></div>
+                        <div style="position: absolute; width: 10%; height: 10%; background: black; border-radius: 50%; top: 35%; left: 30%;"></div>
+                    </div>`;
+                    break;
+                case 'flowing':
+                    fishBody = `<div style="width: 100%; height: 100%; background: ${color}; border-radius: 50% 40% 40% 50%; position: relative;">
+                        <div style="position: absolute; width: 60%; height: 80%; background: ${adjustColor(color, 20)}; border-radius: 50%; top: 10%; right: 5%;"></div>
+                        <div style="position: absolute; width: 80%; height: 40%; background: ${adjustColor(color, -30)}; border-radius: 50%; left: -30%; top: 30%;"></div>
+                    </div>`;
+                    break;
+                case 'seahorse':
+                    fishBody = `<div style="width: 100%; height: 100%; position: relative;">
+                        <div style="width: 60%; height: 100%; background: ${color}; border-radius: 40% 40% 40% 0; position: absolute; left: 0; top: 0;"></div>
+                        <div style="width: 50%; height: 30%; background: ${color}; border-radius: 50%; position: absolute; right: 0; top: 35%;"></div>
+                        <div style="width: 20%; height: 80%; background: ${adjustColor(color, -30)}; border-radius: 50%; position: absolute; left: 10%; top: 10%; transform: rotate(20deg);"></div>
+                    </div>`;
+                    break;
+            }
+            
+            fishEl.innerHTML = fishBody;
+            aquarium.appendChild(fishEl);
+            
+            // Fish movement properties
+            const fishObj = {
+                element: fishEl,
+                id: id,
+                type: type,
+                x: x,
+                y: y,
+                direction: Math.random() > 0.5 ? 1 : -1,
+                speed: (fishSpeed * config.speedMultiplier) / 5,
+                targetX: x + (Math.random() * 200 - 100),
+                targetY: y + (Math.random() * 100 - 50),
+                lastTurnTime: Date.now()
+            };
+            
+            fishList.push(fishObj);
+            fishCount++;
+            updateStats();
+            
+            return fishObj;
+        }
+
+        // Create a bubble
+        function createBubble(x, y, size = 10) {
+            const bubbleEl = document.createElement('div');
+            bubbleEl.className = 'bubble';
+            bubbleEl.style.width = `${size}px`;
+            bubbleEl.style.height = `${size}px`;
+            bubbleEl.style.left = `${x}px`;
+            bubbleEl.style.top = `${y}px`;
+            
+            aquarium.appendChild(bubbleEl);
+            
+            const bubbleObj = {
+                element: bubbleEl,
+                x: x,
+                y: y,
+                size: size,
+                speed: 0.5 + Math.random() * 1.5
+            };
+            
+            bubbleList.push(bubbleObj);
+            bubbleCount++;
+            updateStats();
+            
+            return bubbleObj;
+        }
+
+        // Start automatic bubble generation
+        function startBubbleGeneration() {
+            setInterval(() => {
+                // Generate bubbles from plants and rocks
+                if (bubbleFrequency > 0) {
+                    const sources = [...plants, ...rocks];
+                    const source = sources[Math.floor(Math.random() * sources.length)];
+                    
+                    if (source) {
+                        const rect = source.getBoundingClientRect();
+                        const aquariumRect = aquarium.getBoundingClientRect();
+                        
+                        const x = rect.left - aquariumRect.left + (rect.width / 2);
+                        const y = rect.top - aquariumRect.top;
+                        
+                        if (Math.random() < (bubbleFrequency / 10)) {
+                            createBubble(x, y, 5 + Math.random() * 15);
+                        }
+                    }
+                }
+            }, 500);
+        }
+
+        // Update fish movement
+        function updateFishMovement() {
+            const aquariumRect = aquarium.getBoundingClientRect();
+            const now = Date.now();
+            
+            fishList.forEach(fish => {
+                // Move toward target
+                const dx = fish.targetX - fish.x;
+                const dy = fish.targetY - fish.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < 10) {
+                    // Set new random target
+                    fish.targetX = Math.random() * (aquariumRect.width - 100) + 50;
+                    fish.targetY = Math.random() * (aquariumRect.height - 150) + 50;
+                    fish.lastTurnTime = now;
+                } else {
+                    // Move toward target
+                    fish.x += (dx / distance) * fish.speed;
+                    fish.y += (dy / distance) * fish.speed;
+                    
+                    // Flip direction if moving left/right
+                    if (dx > 0 && fish.direction === -1) {
+                        fish.direction = 1;
+                        fish.element.style.transform = 'scaleX(1)';
+                    } else if (dx < 0 && fish.direction === 1) {
+                        fish.direction = -1;
+                        fish.element.style.transform = 'scaleX(-1)';
+                    }
+                }
+                
+                // Keep fish within bounds
+                if (fish.x < 20) fish.x = 20;
+                if (fish.x > aquariumRect.width - 80) fish.x = aquariumRect.width - 80;
+                if (fish.y < 20) fish.y = 20;
+                if (fish.y > aquariumRect.height - 100) fish.y = aquariumRect.height - 100;
+                
+                // Update position
+                fish.element.style.left = `${fish.x}px`;
+                fish.element.style.top = `${fish.y}px`;
+                
+                // Randomly change target every few seconds
+                if (now - fish.lastTurnTime > 3000) {
+                    fish.targetX = Math.random() * (aquariumRect.width - 100) + 50;
+                    fish.targetY = Math.random() * (aquariumRect.height - 150) + 50;
+                    fish.lastTurnTime = now;
+                }
+            });
+        }
+
+        // Update bubble movement
+        function updateBubbleMovement() {
+            bubbleList.forEach((bubble, index) => {
+                bubble.y -= bubble.speed;
+                bubble.x += Math.sin(bubble.y / 50) * 0.5; // Slight horizontal movement
+                
+                // Update position
+                bubble.element.style.top = `${bubble.y}px`;
+                bubble.element.style.left = `${bubble.x}px`;
+                
+                // Remove bubble if it goes above the aquarium
+                if (bubble.y < -50) {
+                    bubble.element.remove();
+                    bubbleList.splice(index, 1);
+                    bubbleCount--;
+                    updateStats();
+                }
+            });
+        }
+
+        // Update statistics display
+        function updateStats() {
+            fishCountElement.textContent = fishCount;
+            bubbleCountElement.textContent = bubbleCount;
+            clickCountElement.textContent = clickCount;
+        }
+
+        // Helper function to adjust color brightness
+        function adjustColor(color, amount) {
+            let usePound = false;
+            
+            if (color[0] === "#") {
+                color = color.slice(1);
+                usePound = true;
+            }
+            
+            const num = parseInt(color, 16);
+            let r = (num >> 16) + amount;
+            let g = ((num >> 8) & 0x00FF) + amount;
+            let b = (num & 0x0000FF) + amount;
+            
+            r = Math.min(Math.max(0, r), 255);
+            g = Math.min(Math.max(0, g), 255);
+            b = Math.min(Math.max(0, b), 255);
+            
+            return (usePound ? "#" : "") + (b | (g << 8) | (r << 16)).toString(16).padStart(6, '0');
+        }
+
+        // Event listeners
+        fishTypeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                fishTypeButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                currentFishType = button.dataset.type;
+            });
+        });
+
+        fishSpeedSlider.addEventListener('input', () => {
+            fishSpeed = parseInt(fishSpeedSlider.value);
+        });
+
+        bubbleFrequencySlider.addEventListener('input', () => {
+            bubbleFrequency = parseInt(bubbleFrequencySlider.value);
+        });
+
+        fishSizeSlider.addEventListener('input', () => {
+            fishSize = parseInt(fishSizeSlider.value);
+        });
+
+        addFishBtn.addEventListener('click', () => {
+            const aquariumRect = aquarium.getBoundingClientRect();
+            const x = Math.random() * (aquariumRect.width - 100) + 50;
+            const y = Math.random() * (aquariumRect.height - 150) + 50;
+            
+            // Random fish type
+            const types = Object.keys(fishConfigs);
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            
+            createFish(randomType, x, y);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            fishList.forEach(fish => fish.element.remove());
+            fishList = [];
+            fishCount = 0;
+            updateStats();
+        });
+
+        // Add fish by clicking in the aquarium
+        aquarium.addEventListener('click', (e) => {
+            const rect = aquarium.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            createFish(currentFishType, x, y);
+            clickCount++;
+            updateStats();
+            
+            // Create bubbles at click location
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    createBubble(
+                        x + (Math.random() * 30 - 15),
+                        y + (Math.random() * 30 - 15),
+                        5 + Math.random() * 10
+                    );
+                }, i * 100);
+            }
+        });
+
+        // Animation loop
+        function animate() {
+            updateFishMovement();
+            updateBubbleMovement();
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize and start animation
+        window.addEventListener('load', () => {
+            initAquarium();
+            animate();
+            
+            // Add some initial fish
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    const aquariumRect = aquarium.getBoundingClientRect();
+                    const x = Math.random() * (aquariumRect.width - 100) + 50;
+                    const y = Math.random() * (aquariumRect.height - 150) + 50;
+                    
+                    const types = Object.keys(fishConfigs);
+                    const randomType = types[Math.floor(Math.random() * types.length)];
+                    
+                    createFish(randomType, x, y);
+                }, i * 300);
+            }
+        });
+    </script>
+</body>
+</html>

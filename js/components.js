@@ -9,6 +9,7 @@ class ComponentLoader {
             'header': './components/header.html',
             'hero': './components/hero.html',
             'projects': './components/projects.html',
+            'templates': './components/templates.html',
             'contribute': './components/contribute.html',
             'contributors': './components/contributors.html',
             'footer': './components/footer.html',
@@ -96,11 +97,23 @@ class ComponentLoader {
     }
 
     async loadAllComponents() {
+        // Load different components depending on the current page.
+        // Avoid loading index-only sections (hero/projects/contribute) on other pages like about.html.
+        const currentPath = window.location.pathname || '';
+        const isIndex = currentPath.endsWith('/') || currentPath.endsWith('index.html');
+
         const componentMap = [
             { name: 'header', selector: '#header-placeholder' },
             { name: 'hero', selector: '#hero-placeholder' },
             { name: 'projects', selector: '#projects-placeholder' },
+            { name: 'templates', selector: '#templates-placeholder' },
             { name: 'contribute', selector: '#contribute-placeholder' },
+            // Only inject the hero/projects/contribute sections on the homepage
+            ...(isIndex ? [
+                { name: 'hero', selector: '#hero-placeholder' },
+                { name: 'projects', selector: '#projects-placeholder' },
+                { name: 'contribute', selector: '#contribute-placeholder' }
+            ] : []),
             { name: 'footer', selector: '#footer-placeholder' },
             { name: 'chatbot', selector: '#chatbot-placeholder' }
         ];
@@ -312,7 +325,7 @@ class ComponentLoader {
 
     initializeSmoothScrolling() {
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
+            anchor.addEventListener('click', (e) => {
                 const targetId = this.getAttribute('href');
                 if (targetId === '#') return;
 
@@ -351,8 +364,8 @@ class ComponentLoader {
                 const linkHref = link.getAttribute('href');
                 const isCurrentPage = linkHref === currentPath ||
                     (currentPath.endsWith('/') && linkHref === 'index.html') ||
-                    (currentPath.includes('about') && linkHref === 'about.html') ||
-                    (currentPath.includes('bookmarks') && linkHref === 'bookmarks.html');
+                    (currentPath.includes('about') && linkHref === 'pages/about.html') ||
+                    (currentPath.includes('bookmarks') && linkHref === 'pages/bookmarks.html');
 
                 if (isCurrentPage) {
                     link.classList.add('active');

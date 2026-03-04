@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TripSync - Collaborative Trip Planner</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-route"></i>
+                    <h1>TripSync</h1>
+                </div>
+                <div class="header-actions">
+                    <button id="new-trip-btn" class="btn-primary">
+                        <i class="fas fa-plus"></i> New Trip
+                    </button>
+                    <div class="user-menu">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span class="user-name">You</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Trip Selection Sidebar -->
+            <aside class="trip-sidebar">
+                <div class="sidebar-header">
+                    <h3>My Trips</h3>
+                    <button id="refresh-trips" class="btn-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div id="trips-list" class="trips-list">
+                    <!-- Trips will be populated here -->
+                </div>
+            </aside>
+
+            <!-- Main Trip View -->
+            <div class="trip-content">
+                <!-- Trip Header -->
+                <div id="trip-header" class="trip-header hidden">
+                    <div class="trip-info">
+                        <h2 id="trip-title">Select a Trip</h2>
+                        <div class="trip-meta">
+                            <span id="trip-dates"></span>
+                            <span id="trip-location"></span>
+                        </div>
+                    </div>
+                    <div class="trip-actions">
+                        <button id="invite-btn" class="btn-secondary">
+                            <i class="fas fa-user-plus"></i> Invite
+                        </button>
+                        <button id="settings-btn" class="btn-secondary">
+                            <i class="fas fa-cog"></i> Settings
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Collaborators -->
+                <div id="collaborators-section" class="collaborators-section hidden">
+                    <h3>Travel Buddies</h3>
+                    <div id="collaborators-list" class="collaborators-list">
+                        <!-- Collaborators will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <div id="trip-navigation" class="trip-navigation hidden">
+                    <button class="tab-btn active" data-tab="itinerary">
+                        <i class="fas fa-calendar-alt"></i> Itinerary
+                    </button>
+                    <button class="tab-btn" data-tab="notes">
+                        <i class="fas fa-sticky-note"></i> Notes
+                    </button>
+                    <button class="tab-btn" data-tab="expenses">
+                        <i class="fas fa-dollar-sign"></i> Expenses
+                    </button>
+                    <button class="tab-btn" data-tab="packing">
+                        <i class="fas fa-suitcase"></i> Packing
+                    </button>
+                </div>
+
+                <!-- Tab Content -->
+                <div id="tab-content" class="tab-content">
+                    <!-- Itinerary Tab -->
+                    <div id="itinerary-tab" class="tab-panel active">
+                        <div class="panel-header">
+                            <h3>Trip Itinerary</h3>
+                            <button id="add-activity-btn" class="btn-primary">
+                                <i class="fas fa-plus"></i> Add Activity
+                            </button>
+                        </div>
+                        <div id="itinerary-calendar" class="itinerary-calendar">
+                            <!-- Calendar view will be populated here -->
+                        </div>
+                        <div id="activities-list" class="activities-list">
+                            <!-- Activities will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Notes Tab -->
+                    <div id="notes-tab" class="tab-panel">
+                        <div class="panel-header">
+                            <h3>Shared Notes</h3>
+                            <button id="add-note-btn" class="btn-primary">
+                                <i class="fas fa-plus"></i> Add Note
+                            </button>
+                        </div>
+                        <div id="notes-container" class="notes-container">
+                            <!-- Notes will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Expenses Tab -->
+                    <div id="expenses-tab" class="tab-panel">
+                        <div class="panel-header">
+                            <h3>Trip Expenses</h3>
+                            <button id="add-expense-btn" class="btn-primary">
+                                <i class="fas fa-plus"></i> Add Expense
+                            </button>
+                        </div>
+                        <div class="expenses-summary">
+                            <div class="expense-card">
+                                <h4>Total Budget</h4>
+                                <span id="total-budget">$0</span>
+                            </div>
+                            <div class="expense-card">
+                                <h4>Total Spent</h4>
+                                <span id="total-spent">$0</span>
+                            </div>
+                            <div class="expense-card">
+                                <h4>Remaining</h4>
+                                <span id="remaining-budget">$0</span>
+                            </div>
+                        </div>
+                        <div id="expenses-list" class="expenses-list">
+                            <!-- Expenses will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Packing Tab -->
+                    <div id="packing-tab" class="tab-panel">
+                        <div class="panel-header">
+                            <h3>Packing List</h3>
+                            <button id="add-item-btn" class="btn-primary">
+                                <i class="fas fa-plus"></i> Add Item
+                            </button>
+                        </div>
+                        <div id="packing-categories" class="packing-categories">
+                            <!-- Packing categories will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- New Trip Modal -->
+    <div id="new-trip-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Trip</h3>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="new-trip-form" class="modal-form">
+                <div class="form-group">
+                    <label for="trip-name">Trip Name</label>
+                    <input type="text" id="trip-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="trip-destination">Destination</label>
+                    <input type="text" id="trip-destination" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start-date">Start Date</label>
+                        <input type="date" id="start-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end-date">End Date</label>
+                        <input type="date" id="end-date" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="trip-description">Description (Optional)</label>
+                    <textarea id="trip-description" rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary modal-cancel">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Trip</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Activity Modal -->
+    <div id="activity-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Activity</h3>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="activity-form" class="modal-form">
+                <div class="form-group">
+                    <label for="activity-title">Activity Title</label>
+                    <input type="text" id="activity-title" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="activity-date">Date</label>
+                        <input type="date" id="activity-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="activity-time">Time</label>
+                        <input type="time" id="activity-time">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="activity-location">Location</label>
+                    <input type="text" id="activity-location">
+                </div>
+                <div class="form-group">
+                    <label for="activity-category">Category</label>
+                    <select id="activity-category">
+                        <option value="accommodation">Accommodation</option>
+                        <option value="transportation">Transportation</option>
+                        <option value="food">Food & Dining</option>
+                        <option value="activities">Activities</option>
+                        <option value="shopping">Shopping</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="activity-description">Description</label>
+                    <textarea id="activity-description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="activity-cost">Estimated Cost ($)</label>
+                    <input type="number" id="activity-cost" min="0" step="0.01">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary modal-cancel">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Activity</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Note Modal -->
+    <div id="note-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Note</h3>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="note-form" class="modal-form">
+                <div class="form-group">
+                    <label for="note-title">Note Title</label>
+                    <input type="text" id="note-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="note-content">Content</label>
+                    <textarea id="note-content" rows="5" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="note-category">Category</label>
+                    <select id="note-category">
+                        <option value="general">General</option>
+                        <option value="tips">Travel Tips</option>
+                        <option value="contacts">Important Contacts</option>
+                        <option value="reminders">Reminders</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary modal-cancel">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Note</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Invite Collaborator Modal -->
+    <div id="invite-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Invite Travel Buddy</h3>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="invite-form" class="modal-form">
+                <div class="form-group">
+                    <label for="invite-email">Email Address</label>
+                    <input type="email" id="invite-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="invite-message">Personal Message (Optional)</label>
+                    <textarea id="invite-message" rows="3" placeholder="Hey! Join me for this amazing trip..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary modal-cancel">Cancel</button>
+                    <button type="submit" class="btn-primary">Send Invite</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notifications -->
+    <div id="notifications" class="notifications">
+        <!-- Notifications will appear here -->
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+const CONSTANTS = {
+    SIDES: {
+        BID: 'BID',
+        ASK: 'ASK'
+    },
+    ORDER_TYPES: {
+        LIMIT: 'LIMIT',
+        MARKET: 'MARKET',
+        FOK: 'FILL_OR_KILL',
+        IOC: 'IMMEDIATE_OR_CANCEL'
+    },
+    ORDER_STATUS: {
+        NEW: 'NEW',
+        OPEN: 'OPEN',
+        FILLED: 'FILLED',
+        PARTIAL: 'PARTIAL',
+        CANCELED: 'CANCELED',
+        REJECTED: 'REJECTED'
+    },
+    EVENTS: {
+        SYSTEM_INIT: 'SYSTEM_INIT',
+        TICK: 'TICK',
+        ORDER_CREATED: 'ORDER_CREATED',
+        ORDER_CANCELED: 'ORDER_CANCELED',
+        TRADE_EXECUTED: 'TRADE_EXECUTED',
+        LOB_SNAPSHOT: 'LOB_SNAPSHOT',
+        FLASH_CRASH_TRIGGERED: 'FLASH_CRASH_TRIGGERED',
+        BOT_DEPLOYED: 'BOT_DEPLOYED',
+        BOT_REMOVED: 'BOT_REMOVED',
+        LOG: 'LOG',
+        MARKET_STATE_CHANGE: 'MARKET_STATE_CHANGE'
+    },
+    BOT_TYPES: {
+        MARKET_MAKER: 'MARKET_MAKER',
+        ARBITRAGE: 'ARBITRAGE',
+        MOMENTUM: 'MOMENTUM',
+        WHALE: 'WHALE',
+        NOISE: 'NOISE',
+        PREDATORY: 'PREDATORY',
+        SNIPER: 'SNIPER'
+    }
+};
+
+window.CONSTANTS = CONSTANTS;

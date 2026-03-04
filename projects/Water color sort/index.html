@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aqua Sort Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-color: #020617;
+            --tube-border: #1e293b;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --liquid-transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .game-container {
+            perspective: 1000px;
+        }
+
+        .tube {
+            width: 54px;
+            height: 190px;
+            border: 3px solid var(--tube-border);
+            border-top: 4px solid rgba(255,255,255,0.1);
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column-reverse;
+            overflow: hidden;
+            background: var(--glass-bg);
+            box-shadow: inset 0 0 15px rgba(255,255,255,0.05);
+        }
+
+        .tube.selected {
+            transform: translateY(-30px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+        }
+
+        .water-layer {
+            width: 100%;
+            height: 25%;
+            transition: height var(--liquid-transition), transform var(--liquid-transition);
+            position: relative;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Surface shine effect */
+        .water-layer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 30%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.2), transparent);
+            pointer-events: none;
+        }
+
+        @keyframes pulse-hint {
+            0%, 100% { border-color: #1e293b; }
+            50% { border-color: #fbbf24; box-shadow: 0 0 15px #fbbf24; }
+        }
+
+        .hint-active {
+            animation: pulse-hint 1s infinite;
+        }
+
+        .btn {
+            @apply px-4 py-2 rounded-xl font-semibold transition-all active:scale-95 flex items-center gap-2 disabled:opacity-30 disabled:pointer-events-none;
+        }
+
+        .btn-primary { @apply bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20; }
+        .btn-secondary { @apply bg-slate-800 hover:bg-slate-700 text-white border border-slate-700; }
+
+        #game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(65px, 1fr));
+            gap: 1.5rem;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .win-screen {
+            background: rgba(2, 6, 23, 0.9);
+            backdrop-filter: blur(8px);
+        }
+
+        /* Animated background pattern */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+            background-size: 40px 40px;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center">
+    <div class="bg-pattern"></div>
+
+    <!-- Header -->
+    <header class="w-full max-w-4xl px-6 py-8 flex justify-between items-end">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <div class="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
+                <h1 class="text-2xl font-black tracking-tighter uppercase">Aqua Sort Pro</h1>
+            </div>
+            <div class="flex gap-4">
+                <p id="level-display" class="text-slate-400 text-sm font-bold uppercase tracking-widest">Level 1</p>
+                <p id="moves-display" class="text-slate-500 text-sm font-bold uppercase tracking-widest">Moves: 0</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="undoMove()" id="undo-btn" class="btn btn-secondary" title="Undo Move">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            </button>
+            <button onclick="resetLevel()" class="btn btn-secondary" title="Restart">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Game Context Message -->
+    <div id="message-box" class="h-8 text-blue-400 font-bold text-sm tracking-wide transition-opacity opacity-0"></div>
+
+    <!-- Main Game Area -->
+    <main class="flex-grow flex items-center justify-center w-full game-container">
+        <div id="game-grid">
+            <!-- Tubes generated dynamically -->
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <footer class="w-full max-w-4xl p-8 flex justify-center gap-4">
+        <button onclick="showHint()" class="btn btn-secondary px-6">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+            Hint
+        </button>
+        <button onclick="addTube()" id="add-tube-btn" class="btn btn-primary px-6">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add Tube
+        </button>
+    </footer>
+
+    <!-- Level Win Overlay -->
+    <div id="win-overlay" class="fixed inset-0 win-screen hidden z-50 flex flex-col items-center justify-center p-6 text-center">
+        <div class="mb-6 space-y-2">
+            <p class="text-blue-400 font-bold tracking-[0.3em] uppercase">Victory</p>
+            <h2 class="text-7xl font-black italic tracking-tighter">PHENOMENAL</h2>
+        </div>
+        <div class="bg-white/5 border border-white/10 rounded-3xl p-8 w-full max-w-sm mb-8">
+            <div class="flex justify-between mb-4">
+                <span class="text-slate-400">Level Completed</span>
+                <span id="stat-level" class="font-bold">1</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-400">Total Moves</span>
+                <span id="stat-moves" class="font-bold">0</span>
+            </div>
+        </div>
+        <button onclick="nextLevel()" class="btn btn-primary px-12 py-4 text-lg rounded-2xl">
+            Continue Journey
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+    </div>
+
+    <script>
+        const COLORS = [
+            '#f87171', '#60a5fa', '#34d399', '#fbbf24', 
+            '#a78bfa', '#f472b6', '#22d3ee', '#fb923c',
+            '#818cf8', '#5eead4', '#c084fc', '#94a3b8'
+        ];
+
+        let state = {
+            level: parseInt(localStorage.getItem('aqua-sort-level')) || 1,
+            tubes: [],
+            selectedIdx: null,
+            isMoving: false,
+            moves: 0,
+            history: [], // For Undo
+            extraTubeUsed: false
+        };
+
+        const grid = document.getElementById('game-grid');
+        const levelDisplay = document.getElementById('level-display');
+        const movesDisplay = document.getElementById('moves-display');
+        const messageBox = document.getElementById('message-box');
+        const winOverlay = document.getElementById('win-overlay');
+        const undoBtn = document.getElementById('undo-btn');
+
+        function initLevel(levelNum) {
+            state.level = levelNum;
+            state.moves = 0;
+            state.selectedIdx = null;
+            state.isMoving = false;
+            state.history = [];
+            state.extraTubeUsed = false;
+            
+            localStorage.setItem('aqua-sort-level', levelNum);
+            winOverlay.classList.add('hidden');
+            
+            updateUI();
+
+            const colorCount = Math.min(3 + Math.floor(levelNum / 2), COLORS.length);
+            const emptyTubes = 2;
+
+            // Advanced Generation: Shuffle specifically to ensure solvability
+            // (Note: Simply shuffling units always keeps the puzzle theoretically solvable 
+            // as long as there is enough space, though some starting states are much harder)
+            let colorPool = [];
+            for (let i = 0; i < colorCount; i++) {
+                for (let j = 0; j < 4; j++) colorPool.push(COLORS[i]);
+            }
+            
+            // Randomize
+            for (let i = colorPool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [colorPool[i], colorPool[j]] = [colorPool[j], colorPool[i]];
+            }
+
+            state.tubes = [];
+            for (let i = 0; i < colorCount; i++) {
+                state.tubes.push(colorPool.slice(i * 4, (i + 1) * 4));
+            }
+            for (let i = 0; i < emptyTubes; i++) {
+                state.tubes.push([]);
+            }
+
+            render();
+        }
+
+        function render() {
+            grid.innerHTML = '';
+            
+            // Adaptive Grid
+            const tubeCount = state.tubes.length;
+            let cols = 3;
+            if (tubeCount > 10) cols = 5;
+            else if (tubeCount > 6) cols = 4;
+            grid.style.gridTemplateColumns = `repeat(${cols}, minmax(60px, 1fr))`;
+
+            state.tubes.forEach((tubeData, idx) => {
+                const tubeDiv = document.createElement('div');
+                tubeDiv.className = `tube ${state.selectedIdx === idx ? 'selected' : ''}`;
+                tubeDiv.onclick = () => handleTubeClick(idx);
+
+                tubeData.forEach(color => {
+                    const layer = document.createElement('div');
+                    layer.className = 'water-layer';
+                    layer.style.backgroundColor = color;
+                    tubeDiv.appendChild(layer);
+                });
+
+                grid.appendChild(tubeDiv);
+            });
+            
+            updateUI();
+        }
+
+        function updateUI() {
+            levelDisplay.innerText = `Level ${state.level}`;
+            movesDisplay.innerText = `Moves: ${state.moves}`;
+            undoBtn.disabled = state.history.length === 0;
+            document.getElementById('add-tube-btn').disabled = state.extraTubeUsed || state.tubes.length >= 14;
+        }
+
+        async function handleTubeClick(idx) {
+            if (state.isMoving) return;
+
+            if (state.selectedIdx === null) {
+                if (state.tubes[idx].length > 0) {
+                    state.selectedIdx = idx;
+                    render();
+                }
+            } else {
+                if (state.selectedIdx === idx) {
+                    state.selectedIdx = null;
+                    render();
+                } else {
+                    await attemptPour(state.selectedIdx, idx);
+                }
+            }
+        }
+
+        async function attemptPour(fromIdx, toIdx) {
+            const fromTube = state.tubes[fromIdx];
+            const toTube = state.tubes[toIdx];
+
+            if (fromTube.length === 0) {
+                state.selectedIdx = null;
+                render();
+                return;
+            }
+
+            const colorToMove = fromTube[fromTube.length - 1];
+
+            // Validation logic
+            const isToEmpty = toTube.length === 0;
+            const matchesColor = toTube[toTube.length - 1] === colorToMove;
+            const hasSpace = toTube.length < 4;
+
+            if (!hasSpace || (!isToEmpty && !matchesColor)) {
+                state.selectedIdx = null;
+                render();
+                showMessage("Incompatible pour!");
+                return;
+            }
+
+            // Save state for Undo BEFORE modifying
+            saveHistory();
+
+            state.isMoving = true;
+            
+            // Determine bulk move (all top layers of same color)
+            let layersToMove = 0;
+            const tempFrom = [...fromTube];
+            while (tempFrom.length > 0 && 
+                   tempFrom[tempFrom.length - 1] === colorToMove && 
+                   (toTube.length + layersToMove) < 4) {
+                tempFrom.pop();
+                layersToMove++;
+            }
+
+            // Execute move
+            for (let i = 0; i < layersToMove; i++) {
+                state.tubes[toIdx].push(state.tubes[fromIdx].pop());
+            }
+
+            state.moves++;
+            state.selectedIdx = null;
+            render();
+
+            // Wait for CSS transitions
+            await new Promise(r => setTimeout(r, 400));
+            state.isMoving = false;
+
+            checkWin();
+        }
+
+        function saveHistory() {
+            // Deep copy current tubes
+            const snapshot = state.tubes.map(t => [...t]);
+            state.history.push(snapshot);
+            if (state.history.length > 20) state.history.shift(); // Max 20 undo steps
+        }
+
+        function undoMove() {
+            if (state.history.length > 0 && !state.isMoving) {
+                state.tubes = state.history.pop();
+                state.moves--;
+                state.selectedIdx = null;
+                render();
+                showMessage("Move undone");
+            }
+        }
+
+        function checkWin() {
+            const isWon = state.tubes.every(tube => {
+                if (tube.length === 0) return true;
+                if (tube.length !== 4) return false;
+                const firstColor = tube[0];
+                return tube.every(c => c === firstColor);
+            });
+
+            if (isWon) {
+                document.getElementById('stat-level').innerText = state.level;
+                document.getElementById('stat-moves').innerText = state.moves;
+                winOverlay.classList.remove('hidden');
+                // Playful haptic or sound would go here
+            }
+        }
+
+        function nextLevel() {
+            initLevel(state.level + 1);
+        }
+
+        function resetLevel() {
+            initLevel(state.level);
+            showMessage("Level restarted");
+        }
+
+        function addTube() {
+            if (!state.extraTubeUsed) {
+                saveHistory();
+                state.tubes.push([]);
+                state.extraTubeUsed = true;
+                render();
+                showMessage("Emergency tube added!");
+            }
+        }
+
+        function showMessage(text) {
+            messageBox.innerText = text;
+            messageBox.style.opacity = '1';
+            setTimeout(() => {
+                messageBox.style.opacity = '0';
+            }, 2000);
+        }
+
+        function showHint() {
+            let moveFound = false;
+            for (let i = 0; i < state.tubes.length; i++) {
+                for (let j = 0; j < state.tubes.length; j++) {
+                    if (i === j) continue;
+                    const from = state.tubes[i];
+                    const to = state.tubes[j];
+                    if (from.length > 0 && to.length < 4) {
+                        const color = from[from.length - 1];
+                        if (to.length === 0 || to[to.length - 1] === color) {
+                            // Don't suggest moving from a tube that is already sorted/complete
+                            const isFromSorted = from.length === 4 && from.every(c => c === from[0]);
+                            if (isFromSorted) continue;
+
+                            // Highlight the hint
+                            const tubeEls = document.querySelectorAll('.tube');
+                            tubeEls[i].classList.add('hint-active');
+                            tubeEls[j].classList.add('hint-active');
+                            showMessage("Suggestion highlighted");
+                            
+                            setTimeout(() => {
+                                tubeEls[i]?.classList.remove('hint-active');
+                                tubeEls[j]?.classList.remove('hint-active');
+                            }, 2000);
+                            
+                            moveFound = true;
+                            break;
+                        }
+                    }
+                }
+                if (moveFound) break;
+            }
+            if (!moveFound) showMessage("No moves found. Add a tube?");
+        }
+
+        // Initialize on load
+        window.onload = () => initLevel(state.level);
+    </script>
+</body>
+</html>

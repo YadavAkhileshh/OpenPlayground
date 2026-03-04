@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>SDFChisel</title>
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/canvas.css">
+  <link rel="stylesheet" href="css/controls.css">
+  <link rel="stylesheet" href="css/overlay.css">
+  <link rel="stylesheet" href="css/animations.css">
+</head>
+
+<body>
+  <div id="app-root">
+    <header id="app-header">
+      <div class="header-brand">
+        <div class="brand-title">SDFChisel</div>
+      </div>
+      <div class="header-stats">
+        <div id="stat-fps" class="stat-item">FPS: 0</div>
+        <div id="stat-particles" class="stat-item active">Particles: 0</div>
+        <div id="stat-converged" class="stat-item">Converged: 0%</div>
+      </div>
+    </header>
+    <main id="main-layout">
+      <section id="canvas-section">
+        <canvas id="gradient-canvas"></canvas>
+        <canvas id="sdf-canvas"></canvas>
+        <div id="debug-panel">
+          <div class="debug-row"><span class="debug-key">Grid Res:</span><span id="info-gridres"
+              class="debug-val">-</span></div>
+          <div class="debug-row"><span class="debug-key">Hash Cells:</span><span id="info-hashcells"
+              class="debug-val">-</span></div>
+          <div class="debug-row"><span class="debug-key">Avg Force:</span><span id="info-force"
+              class="debug-val">-</span></div>
+          <div class="debug-row"><span class="debug-key">Avg ∇SDF:</span><span id="info-grad" class="debug-val">-</span>
+          </div>
+        </div>
+      </section>
+      <aside id="control-panel">
+        <div class="control-group">
+          <div class="group-label">Input</div>
+          <div class="input-wrapper">
+            <input type="text" id="text-input" class="text-field" value="SDF" maxlength="6" autocomplete="off"
+              spellcheck="false">
+            <button id="btn-chisel" class="btn-primary">CHISEL</button>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="group-label">Particles <span id="val-particles" class="label-value">5000</span></div>
+          <div class="slider-track-wrap">
+            <div class="slider-fill" id="fill-particles"></div>
+            <input type="range" id="slider-particles" class="slider" min="1000" max="15000" step="500" value="5000">
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="group-label">Speed <span id="val-speed" class="label-value">1.2</span></div>
+          <div class="slider-track-wrap">
+            <div class="slider-fill" id="fill-speed"></div>
+            <input type="range" id="slider-speed" class="slider" min="0.1" max="5.0" step="0.1" value="1.2">
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="group-label">Repulsion <span id="val-repulsion" class="label-value">3.0</span></div>
+          <div class="slider-track-wrap">
+            <div class="slider-fill" id="fill-repulsion"></div>
+            <input type="range" id="slider-repulsion" class="slider" min="1.0" max="6.0" step="0.1" value="3.0">
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="group-label">View Overlays</div>
+          <div class="toggle-list">
+            <label class="toggle-item">
+              <input type="checkbox" id="toggle-sdf" class="toggle-checkbox">
+              <div class="toggle-knob"></div><span class="toggle-text">SDF Heatmap</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="toggle-gradient" class="toggle-checkbox">
+              <div class="toggle-knob"></div><span class="toggle-text">Gradient Vectors</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="toggle-trails" class="toggle-checkbox" checked>
+              <div class="toggle-knob"></div><span class="toggle-text">Motion Trails</span>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="toggle-grid" class="toggle-checkbox">
+              <div class="toggle-knob"></div><span class="toggle-text">Spatial Hash Grid</span>
+            </label>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="action-row">
+            <button id="btn-scatter" class="btn-secondary">Scatter</button>
+            <button id="btn-pause" class="btn-secondary">Pause</button>
+            <button id="btn-reset" class="btn-secondary">Reset</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+    <footer id="app-footer">
+      <div class="footer-left"><span>Engine: SDF Gradient Descent</span><span
+          class="footer-sep">|</span><span>Collisions: Spatial Hash</span></div>
+      <div class="footer-right">
+        <div id="footer-sdf-status" class="status-badge running">Idle</div>
+      </div>
+    </footer>
+  </div>
+  <script src="js/utils/MathUtils.js"></script>
+  <script src="js/utils/Vec2.js"></script>
+  <script src="js/utils/Color.js"></script>
+  <script src="js/core/Config.js"></script>
+  <script src="js/core/EventBus.js"></script>
+  <script src="js/sdf/FontParser.js"></script>
+  <script src="js/sdf/BezierExtractor.js"></script>
+  <script src="js/sdf/GlyphRasterizer.js"></script>
+  <script src="js/sdf/DistanceField.js"></script>
+  <script src="js/sdf/GlyphCache.js"></script>
+  <script src="js/sdf/SDFSampler.js"></script>
+  <script src="js/sdf/SDFGenerator.js"></script>
+  <script src="js/gradient/NumericalGradient.js"></script>
+  <script src="js/gradient/PotentialMap.js"></script>
+  <script src="js/gradient/ForceField.js"></script>
+  <script src="js/gradient/GradientDescent.js"></script>
+  <script src="js/gradient/VectorField.js"></script>
+  <script src="js/gradient/GradientVisualizer.js"></script>
+  <script src="js/gradient/GradientEngine.js"></script>
+  <script src="js/spatial/HashUtils.js"></script>
+  <script src="js/spatial/GridCell.js"></script>
+  <script src="js/spatial/BucketManager.js"></script>
+  <script src="js/spatial/NeighborQuery.js"></script>
+  <script src="js/spatial/SpatialDebugger.js"></script>
+  <script src="js/spatial/SpatialHash.js"></script>
+  <script src="js/particles/Particle.js"></script>
+  <script src="js/particles/ParticlePool.js"></script>
+  <script src="js/particles/CollisionSolver.js"></script>
+  <script src="js/particles/ParticleEmitter.js"></script>
+  <script src="js/particles/ParticleState.js"></script>
+  <script src="js/particles/ParticleRenderer.js"></script>
+  <script src="js/particles/ParticleSystem.js"></script>
+  <script src="js/core/Renderer.js"></script>
+  <script src="js/core/UIController.js"></script>
+  <script src="js/core/AnimationLoop.js"></script>
+  <script src="js/main.js"></script>
+</body>
+
+</html>

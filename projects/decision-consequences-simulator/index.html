@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decision Simulator: Learn Through Consequences</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #7209b7;
+            --success: #4cc9f0;
+            --warning: #f72585;
+            --danger: #ef233c;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--gray);
+            max-width: 800px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 30px;
+            text-align: center;
+            animation: slideUp 0.8s ease-out;
+        }
+
+        .score-display {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 10px 0;
+            transition: var(--transition);
+        }
+
+        .score-label {
+            font-size: 1.1rem;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .scenarios-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .scenario-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            animation: fadeIn 0.8s ease-out;
+            opacity: 0;
+            transform: translateY(20px);
+            animation-fill-mode: forwards;
+        }
+
+        .scenario-card:nth-child(1) { animation-delay: 0.1s; }
+        .scenario-card:nth-child(2) { animation-delay: 0.2s; }
+        .scenario-card:nth-child(3) { animation-delay: 0.3s; }
+
+        .scenario-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .scenario-header {
+            padding: 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .scenario-icon {
+            font-size: 2rem;
+            background: rgba(255, 255, 255, 0.2);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .scenario-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .scenario-content {
+            padding: 25px;
+        }
+
+        .scenario-description {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            color: var(--dark);
+        }
+
+        .choices-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .choice-btn {
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            background: white;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .choice-btn:hover {
+            background: #f8f9fa;
+            border-color: var(--primary);
+        }
+
+        .choice-btn.selected {
+            background: rgba(67, 97, 238, 0.1);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .choice-icon {
+            font-size: 1.2rem;
+        }
+
+        .consequence-panel {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 15px;
+            display: none;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .consequence-panel.show {
+            display: block;
+        }
+
+        .consequence-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .consequence-text {
+            line-height: 1.6;
+        }
+
+        .feedback-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .feedback-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .feedback-content {
+            background: white;
+            border-radius: 25px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: var(--shadow);
+            animation: popIn 0.5s ease-out;
+            position: relative;
+        }
+
+        .feedback-title {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .feedback-score {
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--secondary);
+            margin: 20px 0;
+        }
+
+        .feedback-message {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .close-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .close-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-3px);
+        }
+
+        .reset-btn {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 20px;
+        }
+
+        .reset-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .scenario-progress {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 30px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        .bounce {
+            animation: bounce 2s;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .scenarios-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .score-display {
+                font-size: 2.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .scenario-card {
+                margin: 0 10px;
+            }
+            
+            .feedback-content {
+                padding: 25px;
+            }
+            
+            .feedback-title {
+                font-size: 1.6rem;
+            }
+            
+            .feedback-score {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-road"></i> Decision Simulator</h1>
+            <p class="subtitle">Experience the consequences of your choices in realistic scenarios. Improve your decision-making skills through interactive learning.</p>
+        </header>
+
+        <div class="hero">
+            <div class="stats-card">
+                <div class="score-label">Your Decision Score</div>
+                <div class="score-display" id="totalScore">100</div>
+                <p>Higher scores indicate better decision-making. Each choice affects your score!</p>
+            </div>
+        </div>
+
+        <div class="scenarios-container" id="scenariosContainer">
+            <!-- Scenarios will be dynamically inserted here -->
+        </div>
+
+        <div class="scenario-progress">
+            <div>
+                <span id="completedCount">0</span> of <span id="totalScenarios">3</span> scenarios completed
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+            <button class="reset-btn" id="resetBtn">
+                <i class="fas fa-redo"></i> Reset All Scenarios
+            </button>
+        </div>
+
+        <footer>
+            <p>Designed to improve decision-making skills through experiential learning.</p>
+            <p>Each scenario is based on real-life situations with meaningful consequences.</p>
+        </footer>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div class="feedback-modal" id="feedbackModal">
+        <div class="feedback-content">
+            <h2 class="feedback-title">Decision Analysis Complete!</h2>
+            <p class="feedback-message" id="feedbackMessage">Your decisions have been evaluated. Here's how you did:</p>
+            <div class="feedback-score" id="finalScore">100</div>
+            <p class="feedback-message" id="detailedFeedback">Based on your choices, you demonstrate good decision-making skills in some areas but could improve in others.</p>
+            <button class="close-btn" id="closeFeedbackBtn">Continue Exploring</button>
+            <br>
+            <button class="reset-btn" id="resetFromModalBtn">
+                <i class="fas fa-redo"></i> Try Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Scenario data
+        const scenarios = [
+            {
+                id: 1,
+                title: "Traffic Rules Dilemma",
+                icon: "fas fa-traffic-light",
+                color: "#4361ee",
+                description: "You're running late for an important meeting. At a traffic light, it turns yellow as you approach. What do you do?",
+                choices: [
+                    {
+                        id: "a",
+                        text: "Speed up to beat the red light",
+                        icon: "fas fa-running",
+                        consequence: {
+                            title: "🚨 Risky Decision",
+                            text: "You made it through the intersection but were caught by a traffic camera. You received a $250 fine and 2 points on your license. More importantly, you endangered pedestrians and other drivers.",
+                            scoreImpact: -30
+                        }
+                    },
+                    {
+                        id: "b",
+                        text: "Stop safely at the light",
+                        icon: "fas fa-stop-circle",
+                        consequence: {
+                            title: "✅ Safe Choice",
+                            text: "You arrived 5 minutes late to your meeting but explained the situation honestly. Your colleagues appreciated your commitment to safety. You avoided potential accidents and legal trouble.",
+                            scoreImpact: 20
+                        }
+                    },
+                    {
+                        id: "c",
+                        text: "Check carefully and proceed if clear",
+                        icon: "fas fa-eye",
+                        consequence: {
+                            title: "⚠️ Questionable Judgment",
+                            text: "You proceeded through the intersection but it was a close call. While you made your meeting on time, you set a dangerous precedent for yourself and confused other drivers about right-of-way.",
+                            scoreImpact: -10
+                        }
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "Exam Preparation Challenge",
+                icon: "fas fa-graduation-cap",
+                color: "#7209b7",
+                description: "Your final exam is tomorrow morning. You haven't studied as much as you should have. A friend offers you a leaked copy of the exam. What's your decision?",
+                choices: [
+                    {
+                        id: "a",
+                        text: "Accept the leaked exam and study from it",
+                        icon: "fas fa-file-contract",
+                        consequence: {
+                            title: "❌ Academic Dishonesty",
+                            text: "You used the leaked exam and got an A. However, the leak was discovered and you faced disciplinary action including course failure and permanent record notation. The short-term gain wasn't worth the long-term consequences.",
+                            scoreImpact: -40
+                        }
+                    },
+                    {
+                        id: "b",
+                        text: "Politely decline and study what you can",
+                        icon: "fas fa-handshake",
+                        consequence: {
+                            title: "✅ Ethical Decision",
+                            text: "You studied through the night focusing on key concepts. You scored a C+ on the exam but maintained your integrity. Your professor noted your honesty and offered extra credit opportunities.",
+                            scoreImpact: 30
+                        }
+                    },
+                    {
+                        id: "c",
+                        text: "Report the leak to your professor",
+                        icon: "fas fa-user-shield",
+                        consequence: {
+                            title: "🛡️ Responsible Action",
+                            text: "The professor postponed the exam and created a new one. You had extra time to study and scored a B. The university commended your integrity, enhancing your academic reputation.",
+                            scoreImpact: 40
+                        }
+                    }
+                ]
+            },
+            {
+                id: 3,
+                title: "Social Media Scenario",
+                icon: "fas fa-share-alt",
+                color: "#f72585",
+                description: "You see a controversial post about a colleague that could damage their reputation. You're not sure if it's true. How do you respond?",
+                choices: [
+                    {
+                        id: "a",
+                        text: "Share the post to warn others",
+                        icon: "fas fa-share",
+                        consequence: {
+                            title: "📢 Rash Decision",
+                            text: "The post went viral and damaged your colleague's reputation. It turned out to be false, and you're now facing a defamation lawsuit. Your own reputation suffered for spreading unverified information.",
+                            scoreImpact: -35
+                        }
+                    },
+                    {
+                        id: "b",
+                        text: "Ignore it and move on",
+                        icon: "fas fa-scroll",
+                        consequence: {
+                            title: "😐 Passive Approach",
+                            text: "The post gained some traction but fizzled out. You avoided direct conflict but missed an opportunity to support a colleague or address potential misinformation in your network.",
+                            scoreImpact: 5
+                        }
+                    },
+                    {
+                        id: "c",
+                        text: "Verify facts before taking any action",
+                        icon: "fas fa-search",
+                        consequence: {
+                            title: "✅ Responsible Approach",
+                            text: "You discovered the post was based on a misunderstanding. You privately messaged the colleague, who clarified the situation. You helped prevent the spread of misinformation and strengthened your professional relationship.",
+                            scoreImpact: 25
+                        }
+                    }
+                ]
+            }
+        ];
+
+        // Game state
+        let totalScore = 100;
+        let completedScenarios = [];
+        const maxScore = 100;
+        const minScore = 0;
+
+        // DOM elements
+        const scenariosContainer = document.getElementById('scenariosContainer');
+        const totalScoreElement = document.getElementById('totalScore');
+        const completedCountElement = document.getElementById('completedCount');
+        const totalScenariosElement = document.getElementById('totalScenarios');
+        const progressFillElement = document.getElementById('progressFill');
+        const resetBtn = document.getElementById('resetBtn');
+        const feedbackModal = document.getElementById('feedbackModal');
+        const finalScoreElement = document.getElementById('finalScore');
+        const feedbackMessageElement = document.getElementById('feedbackMessage');
+        const detailedFeedbackElement = document.getElementById('detailedFeedback');
+        const closeFeedbackBtn = document.getElementById('closeFeedbackBtn');
+        const resetFromModalBtn = document.getElementById('resetFromModalBtn');
+
+        // Initialize the app
+        function init() {
+            totalScenariosElement.textContent = scenarios.length;
+            renderScenarios();
+            updateProgress();
+            
+            // Event listeners
+            resetBtn.addEventListener('click', resetAll);
+            closeFeedbackBtn.addEventListener('click', () => {
+                feedbackModal.classList.remove('show');
+            });
+            resetFromModalBtn.addEventListener('click', () => {
+                feedbackModal.classList.remove('show');
+                resetAll();
+            });
+        }
+
+        // Render all scenarios
+        function renderScenarios() {
+            scenariosContainer.innerHTML = '';
+            
+            scenarios.forEach((scenario, index) => {
+                const scenarioCard = document.createElement('div');
+                scenarioCard.className = 'scenario-card';
+                scenarioCard.style.animationDelay = `${0.1 + (index * 0.1)}s`;
+                
+                // Check if scenario is completed
+                const isCompleted = completedScenarios.includes(scenario.id);
+                
+                scenarioCard.innerHTML = `
+                    <div class="scenario-header" style="background: ${scenario.color}">
+                        <div class="scenario-icon">
+                            <i class="${scenario.icon}"></i>
+                        </div>
+                        <div class="scenario-title">${scenario.title}</div>
+                    </div>
+                    <div class="scenario-content">
+                        <p class="scenario-description">${scenario.description}</p>
+                        <div class="choices-container" id="choices-${scenario.id}">
+                            ${scenario.choices.map(choice => `
+                                <button class="choice-btn" data-scenario="${scenario.id}" data-choice="${choice.id}" ${isCompleted ? 'disabled' : ''}>
+                                    <div class="choice-icon">
+                                        <i class="${choice.icon}"></i>
+                                    </div>
+                                    <div>${choice.text}</div>
+                                </button>
+                            `).join('')}
+                        </div>
+                        <div class="consequence-panel" id="consequence-${scenario.id}">
+                            <!-- Consequence will be inserted here -->
+                        </div>
+                    </div>
+                `;
+                
+                scenariosContainer.appendChild(scenarioCard);
+            });
+            
+            // Add event listeners to choice buttons
+            document.querySelectorAll('.choice-btn').forEach(button => {
+                button.addEventListener('click', handleChoice);
+            });
+        }
+
+        // Handle choice selection
+        function handleChoice(e) {
+            const scenarioId = parseInt(e.currentTarget.getAttribute('data-scenario'));
+            const choiceId = e.currentTarget.getAttribute('data-choice');
+            
+            // Get scenario and choice data
+            const scenario = scenarios.find(s => s.id === scenarioId);
+            const choice = scenario.choices.find(c => c.id === choiceId);
+            
+            // Mark scenario as completed
+            if (!completedScenarios.includes(scenarioId)) {
+                completedScenarios.push(scenarioId);
+            }
+            
+            // Update score with animation
+            updateScore(choice.consequence.scoreImpact);
+            
+            // Show consequence
+            showConsequence(scenarioId, choice);
+            
+            // Update UI
+            updateProgress();
+            
+            // Disable all choices in this scenario
+            document.querySelectorAll(`button[data-scenario="${scenarioId}"]`).forEach(btn => {
+                btn.disabled = true;
+            });
+            
+            // Mark selected choice
+            e.currentTarget.classList.add('selected');
+            
+            // Check if all scenarios are completed
+            if (completedScenarios.length === scenarios.length) {
+                setTimeout(showFinalFeedback, 1000);
+            }
+        }
+
+        // Show consequence for a choice
+        function showConsequence(scenarioId, choice) {
+            const consequencePanel = document.getElementById(`consequence-${scenarioId}`);
+            const consequence = choice.consequence;
+            
+            consequencePanel.innerHTML = `
+                <div class="consequence-title">
+                    <i class="fas fa-exclamation-circle"></i>
+                    ${consequence.title}
+                </div>
+                <div class="consequence-text">${consequence.text}</div>
+                <div class="consequence-title" style="margin-top: 15px; color: ${consequence.scoreImpact > 0 ? '#4cc9f0' : '#ef233c'}">
+                    <i class="fas fa-chart-line"></i>
+                    Score Impact: ${consequence.scoreImpact > 0 ? '+' : ''}${consequence.scoreImpact}
+                </div>
+            `;
+            
+            consequencePanel.classList.add('show');
+            
+            // Add animation effect
+            consequencePanel.style.animation = 'none';
+            setTimeout(() => {
+                consequencePanel.style.animation = 'slideIn 0.5s ease-out';
+            }, 10);
+        }
+
+        // Update score with animation
+        function updateScore(change) {
+            const oldScore = totalScore;
+            totalScore += change;
+            
+            // Keep score within bounds
+            totalScore = Math.max(minScore, Math.min(maxScore, totalScore));
+            
+            // Animate score change
+            animateScoreChange(oldScore, totalScore);
+            
+            // Visual feedback for score change
+            if (change > 0) {
+                totalScoreElement.style.color = '#4cc9f0';
+                setTimeout(() => {
+                    totalScoreElement.style.color = '#4361ee';
+                }, 800);
+            } else if (change < 0) {
+                totalScoreElement.style.color = '#ef233c';
+                totalScoreElement.classList.add('bounce');
+                setTimeout(() => {
+                    totalScoreElement.style.color = '#4361ee';
+                    totalScoreElement.classList.remove('bounce');
+                }, 800);
+            }
+        }
+
+        // Animate the score change
+        function animateScoreChange(start, end) {
+            const duration = 800;
+            const startTime = Date.now();
+            
+            function update() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function for smooth animation
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                
+                const currentScore = Math.round(start + (end - start) * easeOutQuart);
+                totalScoreElement.textContent = currentScore;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    totalScoreElement.textContent = end;
+                }
+            }
+            
+            requestAnimationFrame(update);
+        }
+
+        // Update progress bar and counter
+        function updateProgress() {
+            const completedCount = completedScenarios.length;
+            const totalCount = scenarios.length;
+            const progressPercentage = (completedCount / totalCount) * 100;
+            
+            completedCountElement.textContent = completedCount;
+            progressFillElement.style.width = `${progressPercentage}%`;
+        }
+
+        // Show final feedback modal
+        function showFinalFeedback() {
+            finalScoreElement.textContent = totalScore;
+            
+            // Determine feedback message based on score
+            let message, detailed;
+            
+            if (totalScore >= 130) {
+                message = "Outstanding Decision-Making!";
+                detailed = "You consistently made ethical, thoughtful choices that considered long-term consequences. Your decision-making skills are exemplary.";
+            } else if (totalScore >= 110) {
+                message = "Excellent Decision-Making!";
+                detailed = "You demonstrated strong judgment in most scenarios, balancing immediate needs with long-term consequences effectively.";
+            } else if (totalScore >= 90) {
+                message = "Good Decision-Making";
+                detailed = "You made generally good choices but could improve in considering secondary consequences of your decisions.";
+            } else if (totalScore >= 70) {
+                message = "Average Decision-Making";
+                detailed = "Your decisions were mixed, with some good choices balanced by some impulsive or short-sighted ones.";
+            } else {
+                message = "Needs Improvement";
+                detailed = "You tended to prioritize immediate gains over long-term consequences. Consider pausing to think through potential outcomes before deciding.";
+            }
+            
+            feedbackMessageElement.textContent = message;
+            detailedFeedbackElement.textContent = detailed;
+            
+            // Animate final score
+            finalScoreElement.classList.add('pulse');
+            
+            // Show modal
+            setTimeout(() => {
+                feedbackModal.classList.add('show');
+            }, 500);
+        }
+
+        // Reset all scenarios
+        function resetAll() {
+            totalScore = 100;
+            completedScenarios = [];
+            
+            totalScoreElement.textContent = totalScore;
+            totalScoreElement.classList.remove('pulse');
+            
+            updateProgress();
+            renderScenarios();
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

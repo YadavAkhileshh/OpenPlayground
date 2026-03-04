@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Four with AI Opponent</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #022720;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #f72585, #4cc9f0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 5px 15px rgba(247, 37, 133, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a9b7c6;
+            max-width: 800px;
+            margin: 0 auto 20px;
+            line-height: 1.6;
+        }
+        
+        .game-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        
+        .game-container {
+            flex: 1;
+            min-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .game-board {
+            background: linear-gradient(to bottom, #0d47a1, #1565c0);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .board-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 10px;
+            width: 500px;
+            height: 430px;
+            background: rgba(13, 71, 161, 0.7);
+            border-radius: 10px;
+            padding: 10px;
+            position: relative;
+        }
+        
+        .cell {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+        
+        .cell.empty {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .cell.player1 {
+            background: radial-gradient(circle at 30% 30%, #f72585, #b5179e);
+            box-shadow: 0 0 15px #f72585;
+        }
+        
+        .cell.player2 {
+            background: radial-gradient(circle at 30% 30%, #4cc9f0, #4361ee);
+            box-shadow: 0 0 15px #4cc9f0;
+        }
+        
+        .cell.winning {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .column-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            width: 500px;
+        }
+        
+        .column-header {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #4cc9f0;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .column-header:hover {
+            background: rgba(76, 201, 240, 0.2);
+            transform: translateY(-5px);
+        }
+        
+        .game-info {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+        
+        .player {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            border-radius: 15px;
+            width: 45%;
+            transition: all 0.3s ease;
+        }
+        
+        .player.active {
+            background: rgba(247, 37, 133, 0.2);
+            border: 2px solid #f72585;
+            transform: scale(1.05);
+        }
+        
+        .player-ai.active {
+            background: rgba(76, 201, 240, 0.2);
+            border: 2px solid #4cc9f0;
+        }
+        
+        .player-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .player1 .player-icon {
+            color: #f72585;
+        }
+        
+        .player2 .player-icon {
+            color: #4cc9f0;
+        }
+        
+        .player-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .player-score {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        
+        .status-message {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, #f72585, #b5179e);
+            color: white;
+            box-shadow: 0 5px 15px rgba(247, 37, 133, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(247, 37, 133, 0.6);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(to right, #4cc9f0, #4361ee);
+            color: white;
+            box-shadow: 0 5px 15px rgba(76, 201, 240, 0.4);
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(76, 201, 240, 0.6);
+        }
+        
+        .btn-reset {
+            background: linear-gradient(to right, #7209b7, #3a0ca3);
+            color: white;
+            grid-column: span 2;
+        }
+        
+        .btn-reset:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(114, 9, 183, 0.6);
+        }
+        
+        .ai-settings {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+        
+        .ai-settings h3 {
+            margin-bottom: 15px;
+            color: #4cc9f0;
+            font-size: 1.3rem;
+        }
+        
+        .difficulty-levels {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .difficulty-btn {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .difficulty-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .difficulty-btn.active {
+            border-color: #4cc9f0;
+            background: rgba(76, 201, 240, 0.2);
+            color: #4cc9f0;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #f72585;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #a9b7c6;
+        }
+        
+        .ai-thinking {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(76, 201, 240, 0.1);
+            border-radius: 10px;
+            border: 1px solid #4cc9f0;
+        }
+        
+        .ai-thinking.show {
+            display: flex;
+        }
+        
+        .thinking-dots {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .thinking-dots span {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4cc9f0;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        
+        .thinking-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        
+        .thinking-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { 
+                transform: scale(0);
+            } 40% { 
+                transform: scale(1.0);
+            }
+        }
+        
+        .token-drop {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #a9b7c6;
+            font-size: 0.9rem;
+            padding: 20px;
+        }
+        
+        .winning-line {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 5;
+            transform-origin: 0 0;
+        }
+        
+        @media (max-width: 1000px) {
+            .game-area {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .game-container, .game-info {
+                width: 100%;
+                min-width: auto;
+            }
+            
+            .board-grid {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 7/6;
+                max-width: 500px;
+            }
+            
+            .column-indicator {
+                width: 100%;
+                max-width: 500px;
+            }
+            
+            .column-header {
+                width: calc(100% / 7 - 10px);
+                max-width: 60px;
+                height: auto;
+                aspect-ratio: 1/1;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .board-grid {
+                gap: 5px;
+                padding: 5px;
+            }
+            
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-reset {
+                grid-column: span 1;
+            }
+            
+            .difficulty-levels {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-gamepad"></i> Connect Four AI</h1>
+            <p class="subtitle">Challenge our intelligent AI opponent in this classic strategy game. Connect four of your pieces horizontally, vertically, or diagonally to win!</p>
+        </header>
+        
+        <div class="game-area">
+            <div class="game-container">
+                <div class="column-indicator" id="columnIndicator">
+                    <div class="column-header" data-column="0">1</div>
+                    <div class="column-header" data-column="1">2</div>
+                    <div class="column-header" data-column="2">3</div>
+                    <div class="column-header" data-column="3">4</div>
+                    <div class="column-header" data-column="4">5</div>
+                    <div class="column-header" data-column="5">6</div>
+                    <div class="column-header" data-column="6">7</div>
+                </div>
+                
+                <div class="game-board">
+                    <div class="board-grid" id="gameBoard">
+                        <!-- Game board will be generated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="game-info">
+                <div class="player-info">
+                    <div class="player player1 active" id="player1">
+                        <div class="player-icon"><i class="fas fa-user"></i></div>
+                        <div class="player-name">PLAYER</div>
+                        <div class="player-score" id="playerScore">0</div>
+                    </div>
+                    
+                    <div class="player player2 player-ai" id="player2">
+                        <div class="player-icon"><i class="fas fa-robot"></i></div>
+                        <div class="player-name">AI OPPONENT</div>
+                        <div class="player-score" id="aiScore">0</div>
+                    </div>
+                </div>
+                
+                <div class="status-message" id="statusMessage">
+                    Your turn! Click a column to drop your piece.
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-primary" id="newGameBtn">
+                        <i class="fas fa-plus-circle"></i> New Game
+                    </button>
+                    <button class="btn btn-secondary" id="undoBtn">
+                        <i class="fas fa-undo"></i> Undo Move
+                    </button>
+                    <button class="btn btn-reset" id="resetScoreBtn">
+                        <i class="fas fa-redo"></i> Reset Scores
+                    </button>
+                </div>
+                
+                <div class="ai-thinking" id="aiThinking">
+                    <i class="fas fa-brain"></i>
+                    <span>AI is thinking...</span>
+                    <div class="thinking-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+                
+                <div class="ai-settings">
+                    <h3><i class="fas fa-sliders-h"></i> AI Difficulty</h3>
+                    <div class="difficulty-levels">
+                        <button class="difficulty-btn active" data-difficulty="easy">Easy</button>
+                        <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+                        <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+                        <button class="difficulty-btn" data-difficulty="expert">Expert</button>
+                    </div>
+                    <p style="color: #a9b7c6; font-size: 0.9rem; margin-top: 10px;">
+                        Higher difficulty = smarter AI with deeper lookahead
+                    </p>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="gamesPlayed">0</div>
+                        <div class="stat-label">Games Played</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="playerWins">0</div>
+                        <div class="stat-label">Player Wins</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="aiWins">0</div>
+                        <div class="stat-label">AI Wins</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="draws">0</div>
+                        <div class="stat-label">Draws</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Connect Four AI | Implemented with Minimax Algorithm with Alpha-Beta Pruning</p>
+            <p>Click a column number or directly on the game board to make your move</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Game constants and variables
+            const ROWS = 6;
+            const COLS = 7;
+            const PLAYER = 1;
+            const AI = 2;
+            const EMPTY = 0;
+            
+            let board = [];
+            let currentPlayer = PLAYER;
+            let gameOver = false;
+            let gameHistory = [];
+            let aiDifficulty = 'medium';
+            
+            // Statistics
+            let stats = {
+                gamesPlayed: 0,
+                playerWins: 0,
+                aiWins: 0,
+                draws: 0,
+                playerScore: 0,
+                aiScore: 0
+            };
+            
+            // DOM Elements
+            const gameBoard = document.getElementById('gameBoard');
+            const statusMessage = document.getElementById('statusMessage');
+            const player1Element = document.getElementById('player1');
+            const player2Element = document.getElementById('player2');
+            const playerScoreElement = document.getElementById('playerScore');
+            const aiScoreElement = document.getElementById('aiScore');
+            const newGameBtn = document.getElementById('newGameBtn');
+            const undoBtn = document.getElementById('undoBtn');
+            const resetScoreBtn = document.getElementById('resetScoreBtn');
+            const aiThinking = document.getElementById('aiThinking');
+            const columnIndicator = document.getElementById('columnIndicator');
+            const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+            const gamesPlayedElement = document.getElementById('gamesPlayed');
+            const playerWinsElement = document.getElementById('playerWins');
+            const aiWinsElement = document.getElementById('aiWins');
+            const drawsElement = document.getElementById('draws');
+            
+            // Initialize game
+            initGame();
+            
+            // Initialize the game board
+            function initGame() {
+                // Create empty board
+                board = [];
+                for (let row = 0; row < ROWS; row++) {
+                    board[row] = [];
+                    for (let col = 0; col < COLS; col++) {
+                        board[row][col] = EMPTY;
+                    }
+                }
+                
+                // Clear game history
+                gameHistory = [];
+                gameOver = false;
+                currentPlayer = PLAYER;
+                
+                // Update UI
+                updatePlayerTurn();
+                renderBoard();
+                
+                // Update status message
+                statusMessage.innerHTML = `Your turn! Click a column to drop your piece.`;
+                statusMessage.style.color = 'white';
+                
+                // Update player indicators
+                player1Element.classList.add('active');
+                player2Element.classList.remove('active');
+                
+                // Hide AI thinking indicator
+                aiThinking.classList.remove('show');
+            }
+            
+            // Render the game board
+            function renderBoard() {
+                gameBoard.innerHTML = '';
+                
+                for (let row = 0; row < ROWS; row++) {
+                    for (let col = 0; col < COLS; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        
+                        // Set cell state
+                        if (board[row][col] === PLAYER) {
+                            cell.classList.add('player1');
+                        } else if (board[row][col] === AI) {
+                            cell.classList.add('player2');
+                        } else {
+                            cell.classList.add('empty');
+                        }
+                        
+                        gameBoard.appendChild(cell);
+                    }
+                }
+            }
+            
+            // Update which player's turn it is
+            function updatePlayerTurn() {
+                if (currentPlayer === PLAYER) {
+                    player1Element.classList.add('active');
+                    player2Element.classList.remove('active');
+                } else {
+                    player1Element.classList.remove('active');
+                    player2Element.classList.add('active');
+                }
+            }
+            
+            // Make a move in a column
+            function makeMove(col) {
+                if (gameOver) return false;
+                
+                // Find the lowest empty row in the column
+                for (let row = ROWS - 1; row >= 0; row--) {
+                    if (board[row][col] === EMPTY) {
+                        // Save current board state to history
+                        gameHistory.push(JSON.parse(JSON.stringify(board)));
+                        
+                        // Place the piece
+                        board[row][col] = currentPlayer;
+                        
+                        // Animate the token drop
+                        animateTokenDrop(col, row, currentPlayer);
+                        
+                        // Check for win or draw
+                        if (checkWin(row, col)) {
+                            gameOver = true;
+                            setTimeout(() => {
+                                highlightWinningCells(row, col);
+                                handleGameEnd(currentPlayer);
+                            }, 600);
+                            return true;
+                        } else if (checkDraw()) {
+                            gameOver = true;
+                            setTimeout(() => {
+                                handleGameEnd(0); // 0 indicates a draw
+                            }, 600);
+                            return true;
+                        }
+                        
+                        // Switch player
+                        currentPlayer = currentPlayer === PLAYER ? AI : PLAYER;
+                        updatePlayerTurn();
+                        
+                        // Update status message
+                        if (currentPlayer === PLAYER) {
+                            statusMessage.innerHTML = `Your turn! Click a column to drop your piece.`;
+                        } else {
+                            statusMessage.innerHTML = `AI is thinking...`;
+                            aiThinking.classList.add('show');
+                            
+                            // AI makes a move after a short delay
+                            setTimeout(makeAIMove, 800);
+                        }
+                        
+                        return true;
+                    }
+                }
+                
+                return false; // Column is full
+            }
+            
+            // Animate token dropping into the board
+            function animateTokenDrop(col, row, player) {
+                const columnHeaders = document.querySelectorAll('.column-header');
+                const startPosition = columnHeaders[col].getBoundingClientRect();
+                const boardRect = gameBoard.getBoundingClientRect();
+                
+                // Calculate cell position
+                const cellWidth = boardRect.width / COLS;
+                const cellHeight = boardRect.height / ROWS;
+                const targetX = boardRect.left + col * cellWidth + cellWidth / 2;
+                const targetY = boardRect.top + row * cellHeight + cellHeight / 2;
+                
+                // Create token element
+                const token = document.createElement('div');
+                token.className = 'token-drop';
+                token.style.left = `${startPosition.left + startPosition.width / 2}px`;
+                token.style.top = `${startPosition.top + startPosition.height / 2}px`;
+                
+                if (player === PLAYER) {
+                    token.style.background = 'radial-gradient(circle at 30% 30%, #f72585, #b5179e)';
+                    token.style.boxShadow = '0 0 15px #f72585';
+                } else {
+                    token.style.background = 'radial-gradient(circle at 30% 30%, #4cc9f0, #4361ee)';
+                    token.style.boxShadow = '0 0 15px #4cc9f0';
+                }
+                
+                document.body.appendChild(token);
+                
+                // Animate token drop
+                token.animate([
+                    { 
+                        transform: `translate(0, 0) scale(1)`,
+                        opacity: 1
+                    },
+                    { 
+                        transform: `translate(${targetX - (startPosition.left + startPosition.width / 2)}px, ${targetY - (startPosition.top + startPosition.height / 2)}px) scale(1)`,
+                        opacity: 1
+                    }
+                ], {
+                    duration: 600,
+                    easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+                });
+                
+                // Remove token and update board after animation
+                setTimeout(() => {
+                    token.remove();
+                    renderBoard();
+                }, 600);
+            }
+            
+            // AI makes a move
+            function makeAIMove() {
+                if (gameOver) return;
+                
+                let col;
+                const difficultySettings = {
+                    easy: 2,   // Lookahead depth 2
+                    medium: 4, // Lookahead depth 4
+                    hard: 6,   // Lookahead depth 6
+                    expert: 8  // Lookahead depth 8
+                };
+                
+                const depth = difficultySettings[aiDifficulty] || 4;
+                
+                // Use minimax algorithm to find best move
+                col = getBestMove(depth);
+                
+                // Make the AI move
+                if (col !== undefined && makeMove(col)) {
+                    // Hide AI thinking indicator after move
+                    setTimeout(() => {
+                        aiThinking.classList.remove('show');
+                    }, 300);
+                }
+            }
+            
+            // Get the best move for AI using Minimax with Alpha-Beta pruning
+            function getBestMove(depth) {
+                let bestScore = -Infinity;
+                let bestMove = null;
+                
+                // Try each column
+                for (let col = 0; col < COLS; col++) {
+                    // Check if column is not full
+                    if (board[0][col] === EMPTY) {
+                        // Find the row where the piece would land
+                        let row;
+                        for (row = ROWS - 1; row >= 0; row--) {
+                            if (board[row][col] === EMPTY) break;
+                        }
+                        
+                        // Make the move
+                        board[row][col] = AI;
+                        
+                        // Calculate score for this move
+                        let score = minimax(depth - 1, -Infinity, Infinity, false);
+                        
+                        // Undo the move
+                        board[row][col] = EMPTY;
+                        
+                        // Update best move
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMove = col;
+                        }
+                    }
+                }
+                
+                // If no best move found, pick a random valid column
+                if (bestMove === null) {
+                    const validColumns = [];
+                    for (let col = 0; col < COLS; col++) {
+                        if (board[0][col] === EMPTY) validColumns.push(col);
+                    }
+                    if (validColumns.length > 0) {
+                        bestMove = validColumns[Math.floor(Math.random() * validColumns.length)];
+                    }
+                }
+                
+                return bestMove;
+            }
+            
+            // Minimax algorithm with Alpha-Beta pruning
+            function minimax(depth, alpha, beta, isMaximizing) {
+                // Check for terminal states
+                const winner = checkWinner();
+                if (winner === AI) return 1000 + depth; // Prefer faster wins
+                if (winner === PLAYER) return -1000 - depth; // Prefer slower losses
+                if (checkDraw() || depth === 0) return evaluateBoard();
+                
+                if (isMaximizing) {
+                    let maxEval = -Infinity;
+                    for (let col = 0; col < COLS; col++) {
+                        if (board[0][col] === EMPTY) {
+                            // Find the row where the piece would land
+                            let row;
+                            for (row = ROWS - 1; row >= 0; row--) {
+                                if (board[row][col] === EMPTY) break;
+                            }
+                            
+                            // Make the move
+                            board[row][col] = AI;
+                            const evalScore = minimax(depth - 1, alpha, beta, false);
+                            board[row][col] = EMPTY;
+                            
+                            maxEval = Math.max(maxEval, evalScore);
+                            alpha = Math.max(alpha, evalScore);
+                            if (beta <= alpha) break; // Alpha-beta pruning
+                        }
+                    }
+                    return maxEval;
+                } else {
+                    let minEval = Infinity;
+                    for (let col = 0; col < COLS; col++) {
+                        if (board[0][col] === EMPTY) {
+                            // Find the row where the piece would land
+                            let row;
+                            for (row = ROWS - 1; row >= 0; row--) {
+                                if (board[row][col] === EMPTY) break;
+                            }
+                            
+                            // Make the move
+                            board[row][col] = PLAYER;
+                            const evalScore = minimax(depth - 1, alpha, beta, true);
+                            board[row][col] = EMPTY;
+                            
+                            minEval = Math.min(minEval, evalScore);
+                            beta = Math.min(beta, evalScore);
+                            if (beta <= alpha) break; // Alpha-beta pruning
+                        }
+                    }
+                    return minEval;
+                }
+            }
+            
+            // Evaluate the current board state
+            function evaluateBoard() {
+                let score = 0;
+                
+                // Evaluate all possible 4-in-a-row positions
+                // Center column preference
+                for (let row = 0; row < ROWS; row++) {
+                    if (board[row][3] === AI) score += 3;
+                    else if (board[row][3] === PLAYER) score -= 3;
+                }
+                
+                // Evaluate horizontal, vertical, and diagonal lines
+                // This is a simplified evaluation - a full implementation would be more complex
+                score += evaluateLines();
+                
+                return score;
+            }
+            
+            // Evaluate all possible lines on the board
+            function evaluateLines() {
+                let score = 0;
+                
+                // Evaluate horizontal lines
+                for (let row = 0; row < ROWS; row++) {
+                    for (let col = 0; col < COLS - 3; col++) {
+                        score += evaluateWindow(row, col, 0, 1); // Horizontal
+                    }
+                }
+                
+                // Evaluate vertical lines
+                for (let row = 0; row < ROWS - 3; row++) {
+                    for (let col = 0; col < COLS; col++) {
+                        score += evaluateWindow(row, col, 1, 0); // Vertical
+                    }
+                }
+                
+                // Evaluate diagonal (positive slope)
+                for (let row = 0; row < ROWS - 3; row++) {
+                    for (let col = 0; col < COLS - 3; col++) {
+                        score += evaluateWindow(row, col, 1, 1); // Diagonal \
+                    }
+                }
+                
+                // Evaluate diagonal (negative slope)
+                for (let row = 3; row < ROWS; row++) {
+                    for (let col = 0; col < COLS - 3; col++) {
+                        score += evaluateWindow(row, col, -1, 1); // Diagonal /
+                    }
+                }
+                
+                return score;
+            }
+            
+            // Evaluate a window of 4 cells
+            function evaluateWindow(startRow, startCol, deltaRow, deltaCol) {
+                let aiCount = 0;
+                let playerCount = 0;
+                let emptyCount = 0;
+                
+                for (let i = 0; i < 4; i++) {
+                    const row = startRow + i * deltaRow;
+                    const col = startCol + i * deltaCol;
+                    
+                    if (board[row][col] === AI) aiCount++;
+                    else if (board[row][col] === PLAYER) playerCount++;
+                    else emptyCount++;
+                }
+                
+                // Score the window
+                if (aiCount === 4) return 100;
+                if (aiCount === 3 && emptyCount === 1) return 10;
+                if (aiCount === 2 && emptyCount === 2) return 5;
+                
+                if (playerCount === 4) return -100;
+                if (playerCount === 3 && emptyCount === 1) return -50;
+                if (playerCount === 2 && emptyCount === 2) return -10;
+                
+                return 0;
+            }
+            
+            // Check if there's a winner
+            function checkWinner() {
+                for (let row = 0; row < ROWS; row++) {
+                    for (let col = 0; col < COLS; col++) {
+                        if (board[row][col] !== EMPTY) {
+                            if (checkWin(row, col)) {
+                                return board[row][col];
+                            }
+                        }
+                    }
+                }
+                return null;
+            }
+            
+            // Check for a win starting from a specific position
+            function checkWin(row, col) {
+                const player = board[row][col];
+                if (player === EMPTY) return false;
+                
+                // Check horizontal
+                let count = 0;
+                for (let c = Math.max(0, col - 3); c <= Math.min(COLS - 1, col + 3); c++) {
+                    count = board[row][c] === player ? count + 1 : 0;
+                    if (count >= 4) return true;
+                }
+                
+                // Check vertical
+                count = 0;
+                for (let r = Math.max(0, row - 3); r <= Math.min(ROWS - 1, row + 3); r++) {
+                    count = board[r][col] === player ? count + 1 : 0;
+                    if (count >= 4) return true;
+                }
+                
+                // Check diagonal (positive slope)
+                count = 0;
+                let startR = row - Math.min(row, col);
+                let startC = col - Math.min(row, col);
+                while (startR < ROWS && startC < COLS) {
+                    count = board[startR][startC] === player ? count + 1 : 0;
+                    if (count >= 4) return true;
+                    startR++;
+                    startC++;
+                }
+                
+                // Check diagonal (negative slope)
+                count = 0;
+                startR = row + Math.min(ROWS - 1 - row, col);
+                startC = col - Math.min(ROWS - 1 - row, col);
+                while (startR >= 0 && startC < COLS) {
+                    count = board[startR][startC] === player ? count + 1 : 0;
+                    if (count >= 4) return true;
+                    startR--;
+                    startC++;
+                }
+                
+                return false;
+            }
+            
+            // Check if the board is full (draw)
+            function checkDraw() {
+                for (let col = 0; col < COLS; col++) {
+                    if (board[0][col] === EMPTY) return false;
+                }
+                return true;
+            }
+            
+            // Highlight the winning cells
+            function highlightWinningCells(row, col) {
+                const player = board[row][col];
+                
+                // This is a simplified version - a full implementation would
+                // find and highlight all 4 winning cells
+                const cells = document.querySelectorAll('.cell');
+                cells.forEach(cell => {
+                    const cellRow = parseInt(cell.dataset.row);
+                    const cellCol = parseInt(cell.dataset.col);
+                    
+                    if (board[cellRow][cellCol] === player) {
+                        cell.classList.add('winning');
+                    }
+                });
+            }
+            
+            // Handle game end (win or draw)
+            function handleGameEnd(winner) {
+                // Update statistics
+                stats.gamesPlayed++;
+                
+                if (winner === PLAYER) {
+                    stats.playerWins++;
+                    stats.playerScore += 10;
+                    statusMessage.innerHTML = `<span style="color:#f72585">Congratulations! You won!</span>`;
+                } else if (winner === AI) {
+                    stats.aiWins++;
+                    stats.aiScore += 10;
+                    statusMessage.innerHTML = `<span style="color:#4cc9f0">AI wins! Better luck next time!</span>`;
+                } else {
+                    stats.draws++;
+                    statusMessage.innerHTML = `<span style="color:#a9b7c6">It's a draw! The board is full.</span>`;
+                }
+                
+                // Update UI with new stats
+                updateStatsUI();
+                
+                // Hide AI thinking indicator
+                aiThinking.classList.remove('show');
+            }
+            
+            // Update statistics UI
+            function updateStatsUI() {
+                gamesPlayedElement.textContent = stats.gamesPlayed;
+                playerWinsElement.textContent = stats.playerWins;
+                aiWinsElement.textContent = stats.aiWins;
+                drawsElement.textContent = stats.draws;
+                playerScoreElement.textContent = stats.playerScore;
+                aiScoreElement.textContent = stats.aiScore;
+            }
+            
+            // Undo the last move
+            function undoMove() {
+                if (gameHistory.length === 0 || gameOver) return;
+                
+                // Restore previous board state
+                board = gameHistory.pop();
+                
+                // Switch player back
+                currentPlayer = currentPlayer === PLAYER ? AI : PLAYER;
+                
+                // Update UI
+                updatePlayerTurn();
+                renderBoard();
+                
+                // Update status message
+                if (currentPlayer === PLAYER) {
+                    statusMessage.innerHTML = `Your turn! Click a column to drop your piece.`;
+                } else {
+                    statusMessage.innerHTML = `AI is thinking...`;
+                }
+                
+                // Hide AI thinking indicator
+                aiThinking.classList.remove('show');
+            }
+            
+            // Reset scores and statistics
+            function resetScores() {
+                stats = {
+                    gamesPlayed: 0,
+                    playerWins: 0,
+                    aiWins: 0,
+                    draws: 0,
+                    playerScore: 0,
+                    aiScore: 0
+                };
+                
+                updateStatsUI();
+                initGame();
+            }
+            
+            // Event Listeners
+            
+            // Column headers for dropping pieces
+            columnIndicator.addEventListener('click', function(e) {
+                if (!e.target.classList.contains('column-header')) return;
+                if (currentPlayer !== PLAYER || gameOver) return;
+                
+                const col = parseInt(e.target.dataset.column);
+                makeMove(col);
+            });
+            
+            // Direct board clicks (for touch devices)
+            gameBoard.addEventListener('click', function(e) {
+                if (!e.target.classList.contains('cell')) return;
+                if (currentPlayer !== PLAYER || gameOver) return;
+                
+                const col = parseInt(e.target.dataset.col);
+                makeMove(col);
+            });
+            
+            // New game button
+            newGameBtn.addEventListener('click', initGame);
+            
+            // Undo button
+            undoBtn.addEventListener('click', undoMove);
+            
+            // Reset scores button
+            resetScoreBtn.addEventListener('click', resetScores);
+            
+            // Difficulty buttons
+            difficultyButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    difficultyButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    aiDifficulty = this.dataset.difficulty;
+                    
+                    // Show difficulty confirmation
+                    statusMessage.innerHTML = `AI difficulty set to <span style="color:#4cc9f0">${aiDifficulty.toUpperCase()}</span>`;
+                    setTimeout(() => {
+                        if (!gameOver) {
+                            statusMessage.innerHTML = currentPlayer === PLAYER 
+                                ? `Your turn! Click a column to drop your piece.` 
+                                : `AI is thinking...`;
+                        }
+                    }, 2000);
+                });
+            });
+            
+            // Load saved statistics from localStorage
+            function loadStats() {
+                const savedStats = localStorage.getItem('connectFourStats');
+                if (savedStats) {
+                    stats = JSON.parse(savedStats);
+                    updateStatsUI();
+                }
+            }
+            
+            // Save statistics to localStorage
+            function saveStats() {
+                localStorage.setItem('connectFourStats', JSON.stringify(stats));
+            }
+            
+            // Initialize
+            loadStats();
+            window.addEventListener('beforeunload', saveStats);
+        });
+    </script>
+</body>
+</html>

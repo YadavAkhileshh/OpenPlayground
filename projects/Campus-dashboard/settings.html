@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | Smart Campus</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .settings-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 600px;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: #fff;
+            outline: none;
+            transition: 0.3s;
+        }
+        .form-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        .btn-save {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-save:hover {
+            opacity: 0.9;
+        }
+        .profile-preview {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .profile-preview img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebarContainer"></aside>
+        <main class="main-content">
+            <header class="top-header" id="headerContainer"></header>
+
+            <h1 style="margin-bottom: 1.5rem;">Account Settings</h1>
+            
+            <div class="settings-card">
+                <div class="profile-preview">
+                    <img src="" alt="Profile" id="avatarPreview">
+                    <div>
+                        <h3 id="roleDisplay">Student</h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">Change your profile details below</p>
+                    </div>
+                </div>
+
+                <form id="settingsForm">
+                    <div class="form-group">
+                        <label>Display Name</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Email (Read-only)</label>
+                        <input type="email" id="email" disabled style="opacity: 0.6;">
+                    </div>
+
+                    <div class="form-group">
+                        <label>New Password (Optional)</label>
+                        <input type="password" id="password" placeholder="Leave blank to keep current">
+                    </div>
+
+                    <button type="submit" class="btn-save">Save Changes</button>
+                    <span id="msg" style="margin-left: 1rem; font-size: 0.9rem;"></span>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/db.js"></script>
+    <script src="js/shared.js"></script>
+    <script>
+        const user = DB.getUser();
+        
+        // Populate Form
+        document.getElementById('name').value = user.name;
+        document.getElementById('email').value = user.email;
+        document.getElementById('avatarPreview').src = user.avatar;
+        document.getElementById('roleDisplay').textContent = user.role;
+
+        document.getElementById('settingsForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const newName = document.getElementById('name').value;
+            const newPass = document.getElementById('password').value;
+            
+            const updates = { name: newName };
+            if (newPass) updates.password = newPass;
+
+            const res = DB.updateUser(user.id, updates);
+            
+            const msg = document.getElementById('msg');
+            if(res.success) {
+                msg.textContent = "Profile updated successfully!";
+                msg.style.color = "var(--success)";
+                
+                // Update Preview immediately
+                document.getElementById('avatarPreview').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(newName)}&background=random&color=fff`;
+            } else {
+                msg.textContent = res.message;
+                msg.style.color = "var(--danger)";
+            }
+        });
+    </script>
+</body>
+</html>

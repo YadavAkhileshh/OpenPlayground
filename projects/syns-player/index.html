@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👁️ Synesthesia Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #111;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', -apple-system, sans-serif;
+        }
+        
+        .player {
+            width: 800px;
+            background: #1a1a1a;
+            border-radius: 40px;
+            padding: 30px;
+            box-shadow: 0 30px 40px rgba(0,0,0,0.7), 0 0 0 2px #333, 0 0 0 5px #0ff3;
+        }
+        
+        .visualizer-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .viz-card {
+            aspect-ratio: 1;
+            background: #222;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s ease;
+            box-shadow: inset 0 0 20px #000;
+            font-size: 32px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+        
+        .freq-sliders {
+            display: flex;
+            gap: 30px;
+            width: 100%;
+        }
+        
+        .slider-group {
+            flex: 1;
+            text-align: center;
+            color: #0ff;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 2px;
+        }
+        
+        input[type=range] {
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, #f0f, #0ff, #ff0);
+            border-radius: 10px;
+            -webkit-appearance: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 20px cyan;
+            cursor: pointer;
+        }
+        
+        .master-play {
+            background: #0ff;
+            border: none;
+            color: black;
+            font-size: 28px;
+            padding: 20px 60px;
+            border-radius: 60px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 30px #0ff;
+            transition: 0.1s;
+            letter-spacing: 4px;
+        }
+        .master-play:active {
+            transform: scale(0.95);
+        }
+        
+        .spectrum-bars {
+            display: flex;
+            justify-content: space-between;
+            height: 100px;
+            margin: 30px 0;
+            gap: 5px;
+        }
+        .bar {
+            flex: 1;
+            background: linear-gradient(to top, #f0f, #0ff);
+            border-radius: 20px 20px 0 0;
+            transition: height 0.1s;
+            height: 20%;
+            align-self: flex-end;
+        }
+    </style>
+</head>
+<body>
+    <div class="player">
+        <div class="visualizer-grid" id="vizGrid">
+            <div class="viz-card" id="viz1">⚪</div>
+            <div class="viz-card" id="viz2">⚪</div>
+            <div class="viz-card" id="viz3">⚪</div>
+            <div class="viz-card" id="viz4">⚪</div>
+        </div>
+        
+        <div class="spectrum-bars" id="spectrum">
+            <div class="bar" style="height: 20%"></div>
+            <div class="bar" style="height: 45%"></div>
+            <div class="bar" style="height: 70%"></div>
+            <div class="bar" style="height: 30%"></div>
+            <div class="bar" style="height: 90%"></div>
+            <div class="bar" style="height: 55%"></div>
+            <div class="bar" style="height: 80%"></div>
+            <div class="bar" style="height: 25%"></div>
+        </div>
+        
+        <div class="controls">
+            <div class="freq-sliders">
+                <div class="slider-group">
+                    <div>BASS</div>
+                    <input type="range" id="bass" min="0" max="100" value="30">
+                </div>
+                <div class="slider-group">
+                    <div>MID</div>
+                    <input type="range" id="mid" min="0" max="100" value="50">
+                </div>
+                <div class="slider-group">
+                    <div>TREBLE</div>
+                    <input type="range" id="treble" min="0" max="100" value="70">
+                </div>
+            </div>
+            <button class="master-play" id="playBtn">▶ SYNESTHESIA</button>
+        </div>
+    </div>
+
+    <script>
+        const vizCards = [viz1, viz2, viz3, viz4].map(id => document.getElementById(id));
+        const bars = document.querySelectorAll('.bar');
+        const bass = document.getElementById('bass');
+        const mid = document.getElementById('mid');
+        const treble = document.getElementById('treble');
+        const playBtn = document.getElementById('playBtn');
+        
+        let isPlaying = false;
+        let animationId;
+        
+        // Visual effects based on "fake" audio sliders
+        function updateVisuals() {
+            if (!isPlaying) return;
+            
+            const bassVal = parseInt(bass.value) / 100;
+            const midVal = parseInt(mid.value) / 100;
+            const trebleVal = parseInt(treble.value) / 100;
+            
+            // Update grid cards
+            vizCards.forEach((card, i) => {
+                const hue = (i * 90 + Date.now() * 0.01) % 360;
+                const scale = 0.8 + (bassVal * 0.5) + (Math.sin(Date.now() * 0.01 + i) * 0.1);
+                card.style.transform = `scale(${scale})`;
+                card.style.background = `hsl(${hue}, 80%, 60%)`;
+                card.style.boxShadow = `0 0 ${20 + bassVal * 40}px hsl(${hue}, 80%, 70%)`;
+                
+                // Change emoji
+                const emojis = ['🔮', '🎵', '⚡', '💫', '🌈', '🎸'];
+                card.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            });
+            
+            // Update spectrum bars
+            bars.forEach((bar, i) => {
+                const randomFactor = 0.5 + Math.random() * 0.5;
+                let height = 20 + 
+                    (bassVal * 60 * (i < 2 ? 1 : 0.3)) + 
+                    (midVal * 40 * (i > 1 && i < 5 ? 1 : 0.3)) + 
+                    (trebleVal * 50 * (i > 4 ? 1 : 0.3));
+                
+                height = Math.min(95, height * randomFactor);
+                bar.style.height = height + '%';
+                
+                // Color shift
+                const hue = (i * 30 + Date.now() * 0.02) % 360;
+                bar.style.background = `linear-gradient(to top, hsl(${hue}, 90%, 60%), hsl(${hue + 40}, 90%, 70%))`;
+            });
+            
+            animationId = requestAnimationFrame(updateVisuals);
+        }
+        
+        playBtn.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            
+            if (isPlaying) {
+                playBtn.textContent = '⏸ SYNESTHESIA';
+                playBtn.style.background = '#f0f';
+                playBtn.style.boxShadow = '0 0 30px #f0f';
+                updateVisuals();
+            } else {
+                playBtn.textContent = '▶ SYNESTHESIA';
+                playBtn.style.background = '#0ff';
+                playBtn.style.boxShadow = '0 0 30px #0ff';
+                cancelAnimationFrame(animationId);
+                
+                // Reset
+                vizCards.forEach(card => {
+                    card.style.transform = 'scale(1)';
+                    card.style.background = '#222';
+                    card.style.boxShadow = 'inset 0 0 20px #000';
+                    card.textContent = '⚪';
+                });
+                
+                bars.forEach(bar => {
+                    bar.style.height = '20%';
+                    bar.style.background = 'linear-gradient(to top, #f0f, #0ff)';
+                });
+            }
+        });
+        
+        // Sliders affect animation even when paused? We'll just let them update once visuals restart
+    </script>
+</body>
+</html>

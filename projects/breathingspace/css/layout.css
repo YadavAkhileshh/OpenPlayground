@@ -1,0 +1,318 @@
+/**
+ * BreathingSpace - Layout and Breathing Orchestration
+ * 
+ * CORE RESPONSIBILITY:
+ * This file manages the structural arrangement of the meditative content 
+ * and the specific responsive behaviors of the 'Breathing units'.
+ * 
+ * BREATHING ENGINE INTEGRATION:
+ * The spatial variables (--breath-gap, --breath-padding) are updated 
+ * via Javascript, but the CSS transition layer handles the interpolation 
+ * on the GPU for maximum smoothness.
+ * 
+ * PERFORMANCE:
+ * We use 'will-change' to optimize compositing layers.
+ * Transforms are used over top/left for movement to avoid layout reflows.
+ */
+
+/* --- Primary Content Container --- */
+
+#breathing-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    padding: 20vh 10vw;
+    z-index: 10;
+    position: relative;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* --- The Breath Unit (Core Component) --- */
+
+.breath-unit {
+    width: 100%;
+    max-width: 720px;
+    text-align: center;
+
+    /* 
+       RHYTHMIC PROPERTIES 
+       These variables are the "lungs" of the layout.
+       They drift in response to the engine's pulse.
+    */
+    margin-bottom: var(--breath-gap);
+    padding-top: var(--breath-padding);
+    padding-bottom: var(--breath-padding);
+
+    /* Subtle 3D-like scale effect */
+    transform: scale(var(--breath-scale)) rotate(0.001deg);
+
+    /* 
+       SMOOTHING 
+       We use a very short linear transition to catch the 120fps updates 
+       from requestAnimationFrame without jitter.
+    */
+    transition:
+        margin-bottom 0.1s linear,
+        padding 0.1s linear,
+        transform 0.1s linear;
+
+    will-change: margin-bottom, padding, transform;
+}
+
+.subtitle {
+    font-weight: var(--font-weight-thin);
+    color: var(--text-muted);
+    letter-spacing: 0.2rem;
+    margin-top: -2rem;
+    margin-bottom: 4rem;
+}
+
+/* --- Fixed Navigation & Branding --- */
+
+.main-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+}
+
+.logo {
+    font-size: 0.9rem;
+    font-weight: 100;
+    letter-spacing: 0.6rem;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+#toggle-settings {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: color 0.4s ease;
+    border-radius: 50%;
+}
+
+#toggle-settings:hover {
+    color: var(--accent-primary);
+    background: var(--accent-muted);
+}
+
+/* --- Settings Overlay Panel --- */
+
+#settings-panel {
+    position: fixed;
+    top: 50%;
+    right: 3rem;
+    transform: translateY(-50%);
+    width: 320px;
+    padding: 3rem;
+    z-index: 500;
+    transition:
+        opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#settings-panel.hidden {
+    opacity: 0;
+    transform: translateY(-50%) translateX(100px);
+    pointer-events: none;
+}
+
+#settings-panel h3 {
+    font-weight: 300;
+    letter-spacing: 0.1rem;
+    margin-bottom: 2.5rem;
+    font-size: 1rem;
+}
+
+.setting-group {
+    margin-bottom: 2rem;
+}
+
+.label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+}
+
+.setting-group label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15rem;
+    color: var(--text-dim);
+}
+
+.range-hint {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+}
+
+/* Custom Range Input Styling */
+input[type="range"] {
+    width: 100%;
+    height: 3px;
+    background: var(--border-subtle);
+    border-radius: 5px;
+    outline: none;
+    accent-color: var(--accent-primary);
+}
+
+.panel-footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.reset-btn {
+    background: var(--accent-muted);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-dim);
+    padding: 0.8rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.reset-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.close-btn {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+/* --- Status & Progress Bar --- */
+
+.status-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 2rem 3rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    z-index: 100;
+    background: linear-gradient(to top, var(--bg-primary), transparent);
+}
+
+.heartbeat-container {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.heartbeat {
+    width: 6px;
+    height: 6px;
+    background: var(--accent-primary);
+    border-radius: 50%;
+    box-shadow: 0 0 15px var(--accent-primary);
+    transition: transform 0.1s linear;
+}
+
+.status-text {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2rem;
+    color: var(--text-muted);
+    flex-grow: 1;
+}
+
+.system-version {
+    font-size: 0.65rem;
+    font-family: monospace;
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+/* --- Environmental Overlays --- */
+
+#vignette {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at 50% 50%, transparent 40%, var(--bg-primary) 150%);
+    opacity: var(--vignette-opacity);
+    pointer-events: none;
+    z-index: 50;
+    transition: opacity 0.2s linear;
+}
+
+/* --- Responsive Adaptations --- */
+
+@media (max-width: 1024px) {
+    #settings-panel {
+        right: 2rem;
+        width: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+    html {
+        font-size: 14px;
+    }
+
+    #breathing-content {
+        padding: 15vh 8vw;
+    }
+
+    .main-header {
+        padding: 2rem;
+    }
+
+    #settings-panel {
+        top: auto;
+        bottom: 0;
+        right: 0;
+        width: 100%;
+        transform: none;
+        border-radius: 20px 20px 0 0;
+        padding: 2.5rem;
+    }
+
+    #settings-panel.hidden {
+        transform: translateY(100%);
+    }
+
+    .status-bar {
+        padding: 1.5rem 2rem;
+    }
+
+    .system-version {
+        display: none;
+    }
+}

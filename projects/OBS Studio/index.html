@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web OBS Studio - Final</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #1a1a1b;
+            color: #efeff1;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+        .canvas-container {
+            background-color: #000;
+            aspect-ratio: 16 / 9;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,0,0,0.7);
+            cursor: crosshair;
+            border: 2px solid #3a3a3e;
+        }
+        .panel {
+            background-color: #26262b;
+            border: 1px solid #3a3a3e;
+        }
+        .active-scene {
+            background-color: #4a4a4f !important;
+            border-left: 4px solid #00aaff !important;
+            font-weight: bold;
+        }
+        .source-item {
+            transition: all 0.1s;
+            border-left: 4px solid transparent;
+        }
+        .active-source {
+            background-color: #4a4a4f !important;
+            border-left: 4px solid #00aaff !important;
+        }
+        input[type=range] { accent-color: #00aaff; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #4a4a4f; border-radius: 2px; }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <!-- Header -->
+    <header class="h-8 bg-[#18181b] border-b border-[#3a3a3e] flex items-center px-4 text-[11px] space-x-4 select-none">
+        <div class="hover:bg-[#3a3a3e] px-2 py-1 cursor-default">File</div>
+        <div class="hover:bg-[#3a3a3e] px-2 py-1 cursor-default">Edit</div>
+        <div class="hover:bg-[#3a3a3e] px-2 py-1 cursor-default">View</div>
+        <div class="hover:bg-[#3a3a3e] px-2 py-1 cursor-default">Tools</div>
+        <div class="ml-auto text-gray-500">v29.1.3-Web</div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        <!-- Center Preview -->
+        <section class="flex-1 flex flex-col p-6 bg-[#0f0f12]">
+            <div class="flex-1 flex items-center justify-center relative">
+                <div class="canvas-container w-full max-w-5xl overflow-hidden rounded-sm">
+                    <canvas id="main-canvas" class="w-full h-full"></canvas>
+                    <!-- Improved No Signal Overlay with pointer-events-none -->
+                    <div id="no-signal" class="absolute inset-0 flex items-center justify-center text-gray-800 font-bold uppercase tracking-[0.2em] pointer-events-none text-3xl select-none">
+                        No Signal
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mixer -->
+            <div class="h-14 flex items-center justify-between px-6 mt-4 panel rounded-md">
+                <div class="flex items-center space-x-6">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Mic/Aux</span>
+                        <input type="range" class="w-40 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer mt-1">
+                    </div>
+                    <div class="w-64 h-3 bg-black rounded-sm flex overflow-hidden border border-gray-800">
+                        <div id="audio-peak" class="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 w-0 transition-all duration-100"></div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-6 text-xs font-mono">
+                    <div class="flex flex-col items-end">
+                        <span class="text-[9px] text-gray-500 uppercase">Recording</span>
+                        <span id="recording-timer" class="text-gray-300">00:00:00</span>
+                    </div>
+                    <div class="flex flex-col items-end">
+                        <span class="text-[9px] text-gray-500 uppercase">Performance</span>
+                        <span id="fps-display" class="text-green-500">60.00 FPS</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Sidebar -->
+        <aside class="w-80 panel border-l flex flex-col">
+            <!-- Scenes Tab -->
+            <div class="h-1/3 flex flex-col border-b border-[#3a3a3e]">
+                <div class="p-2 bg-[#18181b] text-[10px] font-bold uppercase text-gray-400 flex justify-between">
+                    <span>Scenes</span>
+                    <span class="text-blue-500">Active</span>
+                </div>
+                <div id="scenes-list" class="flex-1 overflow-y-auto p-1 space-y-1"></div>
+                <div class="p-1 flex border-t border-[#3a3a3e] space-x-1">
+                    <button onclick="addScene()" class="flex-1 bg-[#3a3a3e] hover:bg-[#4a4a4f] py-1 rounded text-sm">+</button>
+                    <button onclick="removeSelectedScene()" class="flex-1 bg-[#3a3a3e] hover:bg-[#4a4a4f] py-1 rounded text-sm">-</button>
+                </div>
+            </div>
+
+            <!-- Sources Tab -->
+            <div class="h-1/3 flex flex-col border-b border-[#3a3a3e]">
+                <div class="p-2 bg-[#18181b] text-[10px] font-bold uppercase text-gray-400">Sources</div>
+                <div id="sources-list" class="flex-1 overflow-y-auto p-1 space-y-1"></div>
+                <div class="p-1 flex border-t border-[#3a3a3e] space-x-1">
+                    <button id="btn-add-source-ui" class="flex-1 bg-[#3a3a3e] hover:bg-[#4a4a4f] py-1 rounded text-sm">+</button>
+                    <button onclick="removeSelectedSource()" class="flex-1 bg-[#3a3a3e] hover:bg-[#4a4a4f] py-1 rounded text-sm">-</button>
+                    <button onclick="toggleVisibility()" class="flex-1 bg-[#3a3a3e] hover:bg-[#4a4a4f] py-1 rounded text-sm">👁</button>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="p-4 space-y-3 bg-[#18181b]">
+                <button id="btn-stream" onclick="toggleStream()" class="w-full bg-[#00aaff] hover:bg-[#0088cc] text-white font-bold py-2.5 rounded text-sm transition-all uppercase tracking-wider">Start Streaming</button>
+                <button id="btn-record" onclick="toggleRecord()" class="w-full bg-[#3a3a3e] hover:bg-[#4a4a4f] text-white font-bold py-2.5 rounded text-sm transition-all uppercase tracking-wider">Start Recording</button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="bg-[#26262b] hover:bg-[#3a3a3e] text-[10px] py-2 rounded border border-[#3a3a3e] uppercase">Virtual Cam</button>
+                    <button onclick="location.reload()" class="bg-[#26262b] hover:bg-red-900/20 text-[10px] py-2 rounded border border-[#3a3a3e] uppercase">Exit</button>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Source Modal -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black/90 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-[#26262b] w-full max-w-xs rounded-xl border border-[#3a3a3e] p-5 shadow-2xl">
+            <h3 class="font-bold mb-4 text-center text-blue-400">Add Source</h3>
+            <div class="space-y-2">
+                <button onclick="addSource('webcam')" class="w-full p-3 bg-[#18181b] border border-[#3a3a3e] hover:border-blue-500 rounded-lg text-left flex items-center transition-all">
+                    <span class="mr-4 text-xl">📷</span> 
+                    <div class="flex flex-col"><span class="text-sm">Video Capture</span><span class="text-[10px] text-gray-500">Webcam / Camera</span></div>
+                </button>
+                <button onclick="addSource('screen')" class="w-full p-3 bg-[#18181b] border border-[#3a3a3e] hover:border-blue-500 rounded-lg text-left flex items-center transition-all">
+                    <span class="mr-4 text-xl">🖥️</span> 
+                    <div class="flex flex-col"><span class="text-sm">Display Capture</span><span class="text-[10px] text-gray-500">Entire Screen / Window</span></div>
+                </button>
+                <button onclick="addSource('color')" class="w-full p-3 bg-[#18181b] border border-[#3a3a3e] hover:border-blue-500 rounded-lg text-left flex items-center transition-all">
+                    <span class="mr-4 text-xl">🎨</span> 
+                    <div class="flex flex-col"><span class="text-sm">Color Source</span><span class="text-[10px] text-gray-500">Solid Background</span></div>
+                </button>
+                <button onclick="addSource('text')" class="w-full p-3 bg-[#18181b] border border-[#3a3a3e] hover:border-blue-500 rounded-lg text-left flex items-center transition-all">
+                    <span class="mr-4 text-xl">📄</span> 
+                    <div class="flex flex-col"><span class="text-sm">Text Source</span><span class="text-[10px] text-gray-500">Overlay Text</span></div>
+                </button>
+            </div>
+            <button onclick="closeModal()" class="w-full mt-6 text-gray-400 text-xs hover:text-white uppercase tracking-widest">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Hidden Storage for Media -->
+    <div id="asset-pool" style="display:none"></div>
+
+    <script>
+        const canvas = document.getElementById('main-canvas');
+        const ctx = canvas.getContext('2d');
+        const assetPool = document.getElementById('asset-pool');
+        
+        let scenes = [{ id: 1, name: "Main Scene", sources: [] }];
+        let activeSceneId = 1;
+        let selectedSourceIndex = -1;
+        let isRecording = false, isStreaming = false;
+        let recordStartTime = 0;
+
+        // Internal 1080p rendering
+        canvas.width = 1920; 
+        canvas.height = 1080;
+
+        function renderUI() {
+            renderScenes();
+            renderSources();
+        }
+
+        function renderScenes() {
+            const list = document.getElementById('scenes-list');
+            list.innerHTML = '';
+            scenes.forEach(s => {
+                const div = document.createElement('div');
+                div.className = `p-2 text-sm cursor-pointer rounded select-none ${s.id === activeSceneId ? 'active-scene' : 'hover:bg-[#3a3a3e]'}`;
+                div.innerText = s.name;
+                div.onclick = (e) => { 
+                    e.stopPropagation();
+                    activeSceneId = s.id; 
+                    selectedSourceIndex = -1; 
+                    renderUI(); 
+                };
+                list.appendChild(div);
+            });
+        }
+
+        function renderSources() {
+            const list = document.getElementById('sources-list');
+            list.innerHTML = '';
+            const scene = scenes.find(s => s.id === activeSceneId);
+            if (!scene) return;
+
+            scene.sources.forEach((s, i) => {
+                const div = document.createElement('div');
+                div.className = `source-item p-2 text-xs cursor-pointer rounded flex justify-between items-center select-none ${selectedSourceIndex === i ? 'active-source' : 'hover:bg-[#3a3a3e]'}`;
+                div.innerHTML = `
+                    <div class="flex items-center pointer-events-none">
+                        <span class="mr-2">${s.visible ? '👁' : '❌'}</span>
+                        <span class="truncate w-32">${s.name}</span>
+                    </div>
+                    <span class="text-[8px] opacity-40 font-mono pointer-events-none">${s.type}</span>
+                `;
+                div.onclick = (e) => { 
+                    e.stopPropagation();
+                    selectedSourceIndex = i; 
+                    renderSources(); 
+                };
+                list.appendChild(div);
+            });
+            
+            // Fix: Check if there are any VISIBLE sources to hide "No Signal"
+            const hasVisibleSources = scene.sources.some(s => s.visible);
+            document.getElementById('no-signal').style.display = hasVisibleSources ? 'none' : 'flex';
+        }
+
+        function addScene() {
+            const id = Date.now();
+            scenes.push({ id, name: "Scene " + (scenes.length + 1), sources: [] });
+            activeSceneId = id; 
+            renderUI();
+        }
+
+        function removeSelectedScene() {
+            if (scenes.length <= 1) return;
+            const idx = scenes.findIndex(s => s.id === activeSceneId);
+            scenes[idx].sources.forEach(stopMedia);
+            scenes.splice(idx, 1);
+            activeSceneId = scenes[0].id;
+            selectedSourceIndex = -1;
+            renderUI();
+        }
+
+        document.getElementById('btn-add-source-ui').onclick = () => {
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        };
+
+        function closeModal() { 
+            document.getElementById('modal-overlay').classList.add('hidden'); 
+        }
+
+        async function addSource(type) {
+            closeModal();
+            const scene = scenes.find(s => s.id === activeSceneId);
+            let media = null;
+            let sourceName = type.toUpperCase() + " " + (scene.sources.length + 1);
+
+            try {
+                if (type === 'webcam') {
+                    try {
+                        media = await navigator.mediaDevices.getUserMedia({ video: { width: 1920, height: 1080 }, audio: false });
+                    } catch(e) {
+                        media = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                    }
+                } else if (type === 'screen') {
+                    media = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                }
+
+                const source = {
+                    id: Date.now(),
+                    type,
+                    name: sourceName,
+                    visible: true,
+                    x: 0, y: 0, w: 1280, h: 720,
+                    data: null
+                };
+
+                if (media) {
+                    const video = document.createElement('video');
+                    video.setAttribute('playsinline', '');
+                    video.setAttribute('autoplay', '');
+                    video.muted = true;
+                    video.srcObject = media;
+                    assetPool.appendChild(video);
+                    
+                    await video.play().catch(e => console.warn("Video autoplay failed:", e));
+                    
+                    source.data = video;
+                    
+                    video.onloadedmetadata = () => {
+                        source.w = video.videoWidth || 1280;
+                        source.h = video.videoHeight || 720;
+                        if (source.w > 1920) {
+                            const ratio = 1920 / source.w;
+                            source.w *= ratio;
+                            source.h *= ratio;
+                        }
+                    };
+                } else if (type === 'color') {
+                    source.data = '#00aaff';
+                    source.w = 1920; source.h = 1080;
+                } else if (type === 'text') {
+                    source.data = "OBS WEB TEXT";
+                    source.x = 400; source.y = 500; source.w = 1100; source.h = 120;
+                }
+
+                scene.sources.unshift(source); 
+                selectedSourceIndex = 0;
+                renderUI();
+            } catch (err) {
+                console.error("Source Capture Error:", err);
+            }
+        }
+
+        function stopMedia(s) {
+            if (s.data instanceof HTMLVideoElement) {
+                const stream = s.data.srcObject;
+                if (stream) stream.getTracks().forEach(t => t.stop());
+                s.data.pause();
+                s.data.srcObject = null;
+                s.data.remove();
+            }
+        }
+
+        function removeSelectedSource() {
+            const scene = scenes.find(s => s.id === activeSceneId);
+            if (scene && selectedSourceIndex !== -1) {
+                stopMedia(scene.sources[selectedSourceIndex]);
+                scene.sources.splice(selectedSourceIndex, 1);
+                selectedSourceIndex = -1;
+                renderUI();
+            }
+        }
+
+        function toggleVisibility() {
+            const scene = scenes.find(s => s.id === activeSceneId);
+            if (scene && selectedSourceIndex !== -1) {
+                scene.sources[selectedSourceIndex].visible = !scene.sources[selectedSourceIndex].visible;
+                renderUI();
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const scene = scenes.find(s => s.id === activeSceneId);
+            if (scene) {
+                const hasVisibleSources = scene.sources.some(s => s.visible);
+                const signalEl = document.getElementById('no-signal');
+                if (hasVisibleSources && signalEl.style.display !== 'none') signalEl.style.display = 'none';
+                if (!hasVisibleSources && signalEl.style.display === 'none') signalEl.style.display = 'flex';
+
+                for (let i = scene.sources.length - 1; i >= 0; i--) {
+                    const s = scene.sources[i];
+                    if (!s.visible) continue;
+
+                    if (s.data instanceof HTMLVideoElement) {
+                        if (s.data.readyState >= 2) {
+                            ctx.drawImage(s.data, s.x, s.y, s.w, s.h);
+                        } else {
+                            ctx.fillStyle = "#111";
+                            ctx.fillRect(s.x, s.y, s.w, s.h);
+                        }
+                    } else if (s.type === 'color') {
+                        ctx.fillStyle = s.data;
+                        ctx.fillRect(s.x, s.y, s.w, s.h);
+                    } else if (s.type === 'text') {
+                        ctx.fillStyle = "white";
+                        ctx.font = "bold 100px sans-serif";
+                        ctx.textBaseline = "top";
+                        ctx.fillText(s.data, s.x, s.y);
+                    }
+
+                    if (i === selectedSourceIndex) {
+                        ctx.strokeStyle = "#00aaff";
+                        ctx.lineWidth = 12;
+                        ctx.strokeRect(s.x, s.y, s.w, s.h);
+                        ctx.fillStyle = "white";
+                        ctx.fillRect(s.x + s.w - 20, s.y + s.h - 20, 40, 40);
+                    }
+                }
+            }
+            
+            if (isStreaming || isRecording) {
+                document.getElementById('audio-peak').style.width = (20 + Math.random() * 70) + "%";
+            } else {
+                document.getElementById('audio-peak').style.width = "2%";
+            }
+
+            if (isRecording) {
+                const diff = Date.now() - recordStartTime;
+                const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                document.getElementById('recording-timer').innerText = `${h}:${m}:${s}`;
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        let drag = false, resize = false;
+        canvas.onmousedown = (e) => {
+            const scene = scenes.find(s => s.id === activeSceneId);
+            if (!scene) return;
+            
+            const r = canvas.getBoundingClientRect();
+            const sx = canvas.width / r.width;
+            const sy = canvas.height / r.height;
+            const mx = (e.clientX - r.left) * sx;
+            const my = (e.clientY - r.top) * sy;
+
+            if (selectedSourceIndex !== -1) {
+                const s = scene.sources[selectedSourceIndex];
+                if (mx > s.x + s.w - 80 && mx < s.x + s.w + 80 && my > s.y + s.h - 80 && my < s.y + s.h + 80) {
+                    resize = true; return;
+                }
+            }
+
+            let foundIndex = -1;
+            for (let i = 0; i < scene.sources.length; i++) {
+                const s = scene.sources[i];
+                if (mx > s.x && mx < s.x + s.w && my > s.y && my < s.y + s.h) {
+                    foundIndex = i;
+                    break;
+                }
+            }
+            
+            selectedSourceIndex = foundIndex;
+            renderSources();
+            if (foundIndex !== -1) drag = true;
+        };
+
+        window.onmouseup = () => drag = resize = false;
+        window.onmousemove = (e) => {
+            if (!drag && !resize) return;
+            const scene = scenes.find(s => s.id === activeSceneId);
+            const s = scene.sources[selectedSourceIndex];
+            const r = canvas.getBoundingClientRect();
+            const sx = canvas.width / r.width;
+            const sy = canvas.height / r.height;
+
+            if (drag) { s.x += e.movementX * sx; s.y += e.movementY * sy; }
+            if (resize) { s.w += e.movementX * sx; s.h += e.movementY * sy; }
+        };
+
+        function toggleStream() { 
+            isStreaming = !isStreaming; 
+            const btn = document.getElementById('btn-stream');
+            btn.innerText = isStreaming ? "Stop Streaming" : "Start Streaming";
+            btn.style.backgroundColor = isStreaming ? "#dc2626" : "#00aaff";
+        }
+        function toggleRecord() { 
+            isRecording = !isRecording; 
+            const btn = document.getElementById('btn-record');
+            btn.innerText = isRecording ? "Stop Recording" : "Start Recording";
+            btn.style.backgroundColor = isRecording ? "#991b1b" : "#3a3a3e";
+            if (isRecording) recordStartTime = Date.now();
+            else document.getElementById('recording-timer').innerText = "00:00:00";
+        }
+
+        renderUI();
+        draw();
+    </script>
+</body>
+</html>

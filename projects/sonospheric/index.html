@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SONOSPHERIC ATLAS · acoustic topography</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0e1420;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', 'Space Grotesk', system-ui, sans-serif;
+            padding: 16px;
+        }
+
+        /* main vessel — sonic chamber */
+        .sonic-atlas {
+            max-width: 1400px;
+            width: 100%;
+            background: rgba(10, 16, 30, 0.8);
+            backdrop-filter: blur(28px) saturate(260%);
+            -webkit-backdrop-filter: blur(28px) saturate(260%);
+            border: 2px solid rgba(140, 210, 255, 0.4);
+            border-radius: 68px 68px 60px 60px;
+            box-shadow: 0 40px 90px -20px #000, 0 0 0 2px rgba(80, 200, 255, 0.2) inset, 0 0 100px #2f6f9f;
+            padding: 32px 36px 48px 36px;
+            position: relative;
+        }
+
+        .sonic-atlas::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 8px;
+            background: radial-gradient(circle at 80% 30%, #b0e0ff, #7ab0ff, #3f6bb0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+
+        /* header — acoustic metrics */
+        .sound-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px 20px;
+            padding: 0 12px 28px 12px;
+            border-bottom: 2px solid rgba(100, 200, 255, 0.4);
+            margin-bottom: 36px;
+        }
+
+        .sound-tag {
+            background: rgba(0, 30, 55, 0.8);
+            border: 1px solid #6bb8ff;
+            color: #cce4ff;
+            border-radius: 60px;
+            padding: 10px 30px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 0 18px #6bb8ff;
+        }
+
+        .sound-tag strong {
+            color: white;
+            font-weight: 500;
+            margin-left: 8px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .sonic-pulse {
+            background: #0a2a44;
+            border-color: #ffb27f;
+            color: #ffead4;
+            box-shadow: 0 0 35px #ffb27f;
+            animation: soundWave 3s infinite alternate;
+        }
+
+        @keyframes soundWave {
+            0% { box-shadow: 0 0 15px #6bb8ff, border-color: #6bb8ff; }
+            100% { box-shadow: 0 0 55px #ffb27f, 0 0 20px #ffb27f; border-color: #ffb27f; }
+        }
+
+        /* three realms: controls, canvas, spectral data */
+        .sonic-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 2.2fr 1.1fr;
+            gap: 28px;
+            margin-bottom: 42px;
+        }
+
+        /* ----- left panel: frequency controls / sound knobs ----- */
+        .frequency-panel {
+            background: rgba(8, 20, 38, 0.7);
+            border-radius: 48px;
+            border: 1px solid rgba(80, 180, 255, 0.5);
+            padding: 30px 22px;
+            backdrop-filter: blur(18px);
+            box-shadow: 0 18px 0 #030f1f;
+        }
+
+        .freq-header {
+            font-size: 0.7rem;
+            letter-spacing: 4px;
+            color: #8ac2ff;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+            border-left: 5px solid #ffaa6f;
+            padding-left: 16px;
+        }
+
+        .sound-knob {
+            margin-bottom: 38px;
+        }
+
+        .knob-label {
+            display: flex;
+            justify-content: space-between;
+            color: #b8d6ff;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .knob-label span:last-child {
+            color: #ffe29e;
+            font-family: monospace;
+            font-size: 1.3rem;
+            font-weight: 500;
+            text-shadow: 0 0 12px #ffd58c;
+        }
+
+        .sonic-slider {
+            width: 100%;
+            height: 12px;
+            background: linear-gradient(90deg, #2a6f9f, #8ac8ff);
+            border-radius: 30px;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+            border: 1px solid #7ab9ff;
+        }
+
+        .sonic-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 28px;
+            height: 28px;
+            background: #f0f9ff;
+            border-radius: 50%;
+            box-shadow: 0 0 35px #00a6ff, 0 0 12px white;
+            border: 3px solid #5ac8ff;
+            cursor: pointer;
+        }
+
+        .wave-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 30px 0 10px;
+        }
+
+        .wave-btn {
+            background: #0b2a47;
+            border: 2px solid #4aa0ff;
+            color: #d4ebff;
+            font-size: 1rem;
+            padding: 14px 10px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.1s;
+            flex: 1 0 auto;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 0 15px #4aa0ff;
+        }
+
+        .wave-btn:hover {
+            background: #7ac4ff;
+            color: #021624;
+            border-color: white;
+            box-shadow: 0 0 45px #fffdbf;
+        }
+
+        /* ----- center: canvas (acoustic topography) ----- */
+        .topography-panel {
+            background: rgba(2, 10, 24, 0.9);
+            border-radius: 56px;
+            border: 2px solid #6fb6ff;
+            box-shadow: 0 0 70px #2d6bb0, inset 0 0 40px #001c44;
+            display: flex;
+            flex-direction: column;
+            padding: 22px;
+        }
+
+        .sonic-canvas {
+            width: 100%;
+            aspect-ratio: 1/0.95;
+            background: #020b18;
+            border-radius: 48px;
+            display: block;
+            margin-bottom: 18px;
+            border: 2px solid #7ab9ff;
+            box-shadow: 0 0 30px #7ab9ff;
+            cursor: crosshair;
+        }
+
+        .freq-tags {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            font-size: 0.9rem;
+            flex-wrap: wrap;
+        }
+
+        .freq-tags span {
+            background: #0c1f38;
+            padding: 8px 30px;
+            border-radius: 40px;
+            border: 1px solid #6bb8ff;
+            color: #cae0ff;
+        }
+
+        /* ----- right panel: spectral interpretation ----- */
+        .spectral-panel {
+            background: rgba(8, 20, 38, 0.7);
+            border-radius: 48px;
+            border: 1px solid rgba(255, 170, 100, 0.5);
+            padding: 30px 22px;
+            backdrop-filter: blur(18px);
+        }
+
+        .sonic-metric {
+            background: #0e2440;
+            border-radius: 36px;
+            padding: 22px;
+            border: 2px solid #ffb56b;
+            box-shadow: 0 0 35px #ffb56b;
+            margin-bottom: 24px;
+        }
+
+        .metric-sound {
+            font-size: 1.2rem;
+            color: #ffebc2;
+            margin-bottom: 12px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .metric-desc {
+            color: #b8d6ff;
+            font-size: 0.9rem;
+        }
+
+        .spectrum-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .spectrum-item {
+            display: flex;
+            justify-content: space-between;
+            color: #b8d6ff;
+            border-bottom: 1px dashed #6bb8ff;
+            padding-bottom: 8px;
+        }
+
+        .spectrum-value {
+            color: #ffe28a;
+            font-family: monospace;
+            font-size: 1.2rem;
+        }
+
+        /* footer — acoustic flux */
+        .sonic-footer {
+            margin-top: 36px;
+            background: #030f20cc;
+            border-radius: 100px;
+            padding: 18px 36px;
+            border: 1px solid #6bb8ff;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+            justify-content: space-between;
+            backdrop-filter: blur(24px);
+        }
+
+        .acoustic-metric {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            color: #b8d6ff;
+        }
+
+        .acoustic-num {
+            font-size: 1.8rem;
+            font-weight: 400;
+            font-family: 'JetBrains Mono', monospace;
+            color: #fede8b;
+            text-shadow: 0 0 12px gold;
+        }
+
+        .sonic-note {
+            color: #9ab9e6;
+            font-style: italic;
+        }
+
+        @media (max-width: 1000px) {
+            .sonic-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sonic-atlas">
+        <!-- header: live acoustic metrics -->
+        <div class="sound-bar">
+            <div class="sound-tag">🎵 FUNDAMENTAL <strong id="fundamentalFreq">128 Hz</strong></div>
+            <div class="sound-tag sonic-pulse">🌊 HARMONICS <strong id="harmonicCount">7</strong></div>
+            <div class="sound-tag">⚡ AMPLITUDE <strong id="amplitudeVal">0.63</strong></div>
+        </div>
+
+        <!-- main interactive grid -->
+        <div class="sonic-grid">
+            <!-- left: frequency controls -->
+            <div class="frequency-panel">
+                <div class="freq-header">⏣  SOUND SHAPING</div>
+                
+                <div class="sound-knob">
+                    <div class="knob-label"><span>PITCH</span><span id="pitchVal">0.52</span></div>
+                    <input type="range" id="pitchSlider" class="sonic-slider" min="0" max="1" step="0.01" value="0.52">
+                </div>
+
+                <div class="sound-knob">
+                    <div class="knob-label"><span>HARMONICS</span><span id="harmonicsVal">0.38</span></div>
+                    <input type="range" id="harmonicsSlider" class="sonic-slider" min="0" max="1" step="0.01" value="0.38">
+                </div>
+
+                <div class="sound-knob">
+                    <div class="knob-label"><span>RESONANCE</span><span id="resonanceSonicVal">0.71</span></div>
+                    <input type="range" id="resonanceSonicSlider" class="sonic-slider" min="0" max="1" step="0.01" value="0.71">
+                </div>
+
+                <div class="wave-buttons">
+                    <div class="wave-btn" id="waveSine">🌊 SINE</div>
+                    <div class="wave-btn" id="waveSaw">⚡ SAW</div>
+                    <div class="wave-btn" id="waveNoise">🌀 NOISE</div>
+                </div>
+                <div style="margin-top:20px; color:#6bb8ff; font-size:0.7rem;">↯ wave type alters topography</div>
+            </div>
+
+            <!-- center: canvas (acoustic topography) -->
+            <div class="topography-panel">
+                <canvas id="sonicCanvas" width="550" height="500" class="sonic-canvas"></canvas>
+                <div class="freq-tags">
+                    <span id="lowBand">LOW 82 Hz</span>
+                    <span id="midBand">MID 432 Hz</span>
+                    <span id="highBand">HIGH 2.1k Hz</span>
+                </div>
+            </div>
+
+            <!-- right: spectral interpretation -->
+            <div class="spectral-panel">
+                <div class="sonic-metric">
+                    <div class="metric-sound" id="soundVerse">"the mountain hums"</div>
+                    <div class="metric-desc" id="waveDesc">sine wave · 128 Hz</div>
+                </div>
+
+                <div class="spectrum-list">
+                    <div class="spectrum-item"><span>attack</span><span class="spectrum-value" id="attackVal">0.42</span></div>
+                    <div class="spectrum-item"><span>decay</span><span class="spectrum-value" id="decayVal">0.37</span></div>
+                    <div class="spectrum-item"><span>sustain</span><span class="spectrum-value" id="sustainVal">0.81</span></div>
+                </div>
+
+                <div style="margin-top: 26px; background: #102b48; border-radius: 30px; padding: 16px; color:#d4e6ff; text-align:center;" id="soundSignature">FFT: 0x7F3A · B7</div>
+            </div>
+        </div>
+
+        <!-- footer: acoustic flux stream -->
+        <div class="sonic-footer">
+            <div class="acoustic-metric">🎵 <span class="acoustic-num" id="fluxLow">0.39</span> <span>low</span></div>
+            <div class="acoustic-metric">⚡ <span class="acoustic-num" id="fluxMid">0.72</span> <span>mid</span></div>
+            <div class="acoustic-metric">🌊 <span class="acoustic-num" id="fluxHigh">0.58</span> <span>high</span></div>
+            <div class="sonic-note" id="sonicPoem">listening to mountains...</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- SONOSPHERIC ATLAS : acoustic topography ----------
+            const canvas = document.getElementById('sonicCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+
+            // DOM elements
+            const pitchSlider = document.getElementById('pitchSlider');
+            const harmonicsSlider = document.getElementById('harmonicsSlider');
+            const resonanceSlider = document.getElementById('resonanceSonicSlider');
+            const pitchSpan = document.getElementById('pitchVal');
+            const harmonicsSpan = document.getElementById('harmonicsVal');
+            const resonanceSpan = document.getElementById('resonanceSonicVal');
+
+            const fundamentalFreq = document.getElementById('fundamentalFreq');
+            const harmonicCount = document.getElementById('harmonicCount');
+            const amplitudeVal = document.getElementById('amplitudeVal');
+            const lowBand = document.getElementById('lowBand');
+            const midBand = document.getElementById('midBand');
+            const highBand = document.getElementById('highBand');
+            const soundVerse = document.getElementById('soundVerse');
+            const waveDesc = document.getElementById('waveDesc');
+            const attackVal = document.getElementById('attackVal');
+            const decayVal = document.getElementById('decayVal');
+            const sustainVal = document.getElementById('sustainVal');
+            const soundSignature = document.getElementById('soundSignature');
+            const fluxLow = document.getElementById('fluxLow');
+            const fluxMid = document.getElementById('fluxMid');
+            const fluxHigh = document.getElementById('fluxHigh');
+            const sonicPoem = document.getElementById('sonicPoem');
+
+            // internal state
+            let pitch = 0.52, harmonics = 0.38, resonance = 0.71;
+            let waveType = 0; // 0: sine, 1: saw, 2: noise
+            let frame = 0;
+            let time = 0;
+
+            // verse bank
+            const verseBank = [
+                "the mountain hums",
+                "valley resonance",
+                "echo in the canyon",
+                "stone vibrates",
+                "wind through peaks",
+                "earth's frequency",
+                "granite song",
+                "tectonic melody",
+                "the peak whispers",
+                "basalt drone"
+            ];
+
+            // update all derived data + redraw canvas
+            function resound() {
+                // read sliders
+                pitch = parseFloat(pitchSlider.value);
+                harmonics = parseFloat(harmonicsSlider.value);
+                resonance = parseFloat(resonanceSlider.value);
+
+                pitchSpan.innerText = pitch.toFixed(2);
+                harmonicsSpan.innerText = harmonics.toFixed(2);
+                resonanceSpan.innerText = resonance.toFixed(2);
+
+                // fundamental frequency
+                const freq = 40 + pitch * 300;
+                fundamentalFreq.innerText = Math.round(freq) + ' Hz';
+
+                // harmonic count
+                const harmCount = 1 + Math.floor(harmonics * 12);
+                harmonicCount.innerText = harmCount;
+
+                // amplitude
+                const amp = (0.3 + resonance * 0.6).toFixed(2);
+                amplitudeVal.innerText = amp;
+
+                // band tags
+                lowBand.innerText = 'LOW ' + Math.round(40 + pitch*100) + ' Hz';
+                midBand.innerText = 'MID ' + Math.round(200 + harmonics*400) + ' Hz';
+                highBand.innerText = 'HIGH ' + Math.round(800 + resonance*2000) + ' Hz';
+
+                // verse
+                const verseIdx = Math.floor((pitch*10 + harmonics*8 + time) % verseBank.length);
+                soundVerse.innerText = '"' + verseBank[verseIdx] + '"';
+
+                // wave description
+                const waveNames = ['sine wave', 'sawtooth', 'noise field'];
+                waveDesc.innerText = waveNames[waveType] + ' · ' + Math.round(freq) + ' Hz';
+
+                // ADSR
+                attackVal.innerText = (0.1 + pitch * 0.7).toFixed(2);
+                decayVal.innerText = (0.2 + harmonics * 0.6).toFixed(2);
+                sustainVal.innerText = (0.3 + resonance * 0.6).toFixed(2);
+
+                // signature
+                const hex1 = Math.floor(Math.random()*0xFFFF).toString(16).toUpperCase().padStart(4,'0');
+                const hex2 = Math.floor(Math.random()*0xFF).toString(16).toUpperCase().padStart(2,'0');
+                soundSignature.innerText = `FFT: 0x${hex1} · ${hex2}`;
+
+                // flux values
+                fluxLow.innerText = (0.2 + pitch * 0.7).toFixed(2);
+                fluxMid.innerText = (0.3 + harmonics * 0.6).toFixed(2);
+                fluxHigh.innerText = (0.4 + resonance * 0.5).toFixed(2);
+
+                const poems = ["listening to mountains...", "stone resonance", "earth's hum", "granite frequencies", "tectonic song"];
+                sonicPoem.innerText = poems[Math.floor(Math.random() * poems.length)];
+
+                drawTopography();
+            }
+
+            // canvas drawing — acoustic topography influenced by sound parameters
+            function drawTopography() {
+                ctx.clearRect(0, 0, w, h);
+                // deep background
+                const grad = ctx.createLinearGradient(0, 0, w, h);
+                grad.addColorStop(0, '#030c1c');
+                grad.addColorStop(1, '#1a2f48');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
+
+                // draw topographic layers (contour lines) based on sound waves
+                const layers = 12 + Math.floor(harmonics * 20);
+                for (let layer=0; layer<layers; layer++) {
+                    ctx.beginPath();
+                    const yOffset = h * 0.3 + layer * 20 + Math.sin(time * 2 + layer) * 10 * resonance;
+                    
+                    for (let x=0; x<w; x+=8) {
+                        // wave function based on waveType
+                        let wave = 0;
+                        if (waveType === 0) { // sine
+                            wave = Math.sin(x * 0.02 + time * 3 + layer * 2) * 20 * pitch;
+                        } else if (waveType === 1) { // saw
+                            wave = ((x * 0.02 + time * 3 + layer) % 6 - 3) * 15 * harmonics;
+                        } else { // noise
+                            wave = (Math.random() * 2 - 1) * 30 * resonance;
+                        }
+                        
+                        const y = yOffset + wave + Math.cos(x * 0.01 + layer) * 15 * harmonics;
+                        
+                        if (x===0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    
+                    const hue = 200 + layer * 5 + resonance * 30;
+                    ctx.strokeStyle = `hsla(${hue}, 80%, 70%, ${0.1+resonance*0.2})`;
+                    ctx.lineWidth = 1 + resonance * 2;
+                    ctx.stroke();
+                }
+
+                // frequency peaks (mountains)
+                for (let peak=0; peak<8; peak++) {
+                    const x = peak * 70 + 40 + Math.sin(time + peak) * 20;
+                    const height = 80 + Math.sin(peak * 2 + time) * 40 * pitch + 50 * harmonics;
+                    const yBase = h * 0.7;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x - 25, yBase);
+                    ctx.lineTo(x, yBase - height);
+                    ctx.lineTo(x + 25, yBase);
+                    ctx.fillStyle = `rgba(100, 180, 255, ${0.2+resonance*0.2})`;
+                    ctx.fill();
+                    ctx.strokeStyle = '#b0e0ff';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+
+                // sound particles
+                for (let p=0; p<40; p++) {
+                    const x = (p * 30 + time * 50) % w;
+                    const y = h * 0.3 + Math.sin(x*0.02 + time*5) * 40 * resonance + Math.cos(p*2 + harmonics*10) * 30;
+                    ctx.fillStyle = `rgba(200, 220, 255, ${0.2+pitch*0.3})`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3 + resonance*6, 0, 2*Math.PI);
+                    ctx.fill();
+                }
+
+                // text overlay
+                ctx.font = "12px 'JetBrains Mono'";
+                ctx.fillStyle = "#b0d2ff";
+                ctx.fillText(waveType === 0 ? '∼' : (waveType === 1 ? '⏛' : '⌇'), 30, 50);
+            }
+
+            // wave button handlers
+            document.getElementById('waveSine').addEventListener('click', () => { waveType = 0; resound(); });
+            document.getElementById('waveSaw').addEventListener('click', () => { waveType = 1; resound(); });
+            document.getElementById('waveNoise').addEventListener('click', () => { waveType = 2; resound(); });
+
+            // sliders
+            pitchSlider.addEventListener('input', resound);
+            harmonicsSlider.addEventListener('input', resound);
+            resonanceSlider.addEventListener('input', resound);
+
+            // canvas click for random mutation
+            canvas.addEventListener('click', () => {
+                pitch = Math.min(1, Math.max(0, pitch + (Math.random()*0.2 - 0.1)));
+                harmonics = Math.min(1, Math.max(0, harmonics + (Math.random()*0.2 - 0.1)));
+                resonance = Math.min(1, Math.max(0, resonance + (Math.random()*0.2 - 0.1)));
+                pitchSlider.value = pitch;
+                harmonicsSlider.value = harmonics;
+                resonanceSlider.value = resonance;
+                resound();
+            });
+
+            // animation loop
+            function animate() {
+                frame++;
+                time += 0.02;
+                if (frame % 3 === 0) {
+                    // update some dynamic fields
+                    drawTopography();
+                    if (frame % 15 === 0) {
+                        // occasionally update flux and poem
+                        fluxLow.innerText = (0.2 + pitch * 0.7 + Math.sin(time)*0.1).toFixed(2);
+                        fluxMid.innerText = (0.3 + harmonics * 0.6 + Math.cos(time*0.8)*0.1).toFixed(2);
+                        fluxHigh.innerText = (0.4 + resonance * 0.5 + Math.sin(time*1.2)*0.1).toFixed(2);
+                        const poems = ["listening to mountains...", "stone resonance", "earth's hum", "granite frequencies", "tectonic song"];
+                        sonicPoem.innerText = poems[Math.floor(Math.random() * poems.length)];
+                    }
+                } else {
+                    drawTopography();
+                }
+                requestAnimationFrame(animate);
+            }
+
+            // init
+            resound();
+            animate();
+
+        })();
+    </script>
+</body>
+</html>

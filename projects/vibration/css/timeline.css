@@ -1,0 +1,477 @@
+/* ============================================
+   VIBRATION COMPOSER - TIMELINE STYLES
+   Timeline Grid, Beat Visualization & Playhead
+   ============================================ */
+
+/* ============================================
+   TIMELINE CONTAINER
+   ============================================ */
+.timeline-container {
+    position: relative;
+    overflow-x: auto;
+    overflow-y: visible;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-tertiary);
+    padding: var(--space-4);
+    min-height: 300px;
+}
+
+.timeline-grid {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-width: 100%;
+}
+
+/* ============================================
+   TRACK STYLES
+   ============================================ */
+.track {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    transition: all var(--transition-base);
+}
+
+.track:hover {
+    border-color: var(--color-border-hover);
+    background: var(--color-bg-elevated);
+}
+
+.track-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+}
+
+.track-name {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    font-family: var(--font-mono);
+}
+
+.track-clear {
+    background: transparent;
+    border: none;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    padding: var(--space-1);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+}
+
+.track-clear:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-danger);
+    transform: rotate(90deg);
+}
+
+.track-clear:active {
+    transform: rotate(90deg) scale(0.9);
+}
+
+/* ============================================
+   BEAT ROW & CELLS
+   ============================================ */
+.beat-row {
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    gap: var(--space-2);
+    position: relative;
+}
+
+.beat-cell {
+    aspect-ratio: 1;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+    min-width: 32px;
+    min-height: 32px;
+}
+
+/* Beat cell hover effect */
+.beat-cell::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: var(--color-primary-glow);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all var(--transition-base);
+}
+
+.beat-cell:hover::before {
+    width: 100%;
+    height: 100%;
+}
+
+.beat-cell:hover {
+    border-color: var(--color-primary);
+    transform: scale(1.1);
+    box-shadow: 0 0 10px var(--color-primary-glow);
+}
+
+/* Active beat states */
+.beat-cell.active {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    border-color: var(--color-primary-light);
+    box-shadow: 0 0 15px var(--color-primary-glow), var(--shadow-md);
+}
+
+.beat-cell.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.2));
+}
+
+/* Intensity levels */
+.beat-cell.intensity-low {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(79, 70, 229, 0.3));
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+.beat-cell.intensity-medium {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(79, 70, 229, 0.6));
+    border-color: rgba(99, 102, 241, 0.8);
+}
+
+.beat-cell.intensity-high {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    border-color: var(--color-primary-light);
+    box-shadow: 0 0 15px var(--color-primary-glow);
+}
+
+/* Beat position markers (every 4th beat) */
+.beat-cell:nth-child(4n+1) {
+    border-left-width: 3px;
+    border-left-color: var(--color-border-hover);
+}
+
+/* Current beat highlight */
+.beat-cell.current {
+    animation: beat-pulse 0.3s ease-out;
+}
+
+@keyframes beat-pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+        box-shadow: 0 0 20px var(--color-accent-glow);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* ============================================
+   PLAYHEAD
+   ============================================ */
+.playhead {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--color-accent), var(--color-accent-light));
+    box-shadow: 0 0 10px var(--color-accent-glow), 0 0 20px var(--color-accent-glow);
+    z-index: var(--z-elevated);
+    pointer-events: none;
+    opacity: 0;
+    transition: left var(--transition-fast) linear, opacity var(--transition-fast);
+}
+
+.playhead::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--color-accent);
+    filter: drop-shadow(0 0 5px var(--color-accent-glow));
+}
+
+.playhead.active {
+    opacity: 1;
+}
+
+/* Playhead glow effect */
+.playhead::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 100%;
+    background: radial-gradient(ellipse at center, var(--color-accent-glow), transparent);
+    animation: playhead-glow 1s ease-in-out infinite;
+}
+
+@keyframes playhead-glow {
+
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* ============================================
+   BEAT GRID VISUAL GUIDES
+   ============================================ */
+.beat-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: repeating-linear-gradient(90deg,
+            transparent,
+            transparent calc(25% - 1px),
+            var(--color-border) calc(25% - 1px),
+            var(--color-border) 25%);
+    pointer-events: none;
+    opacity: 0.3;
+}
+
+/* ============================================
+   TOUCH INTERACTIONS
+   ============================================ */
+.beat-cell:active {
+    transform: scale(0.95);
+}
+
+/* Prevent text selection during drag */
+.timeline-container {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Touch feedback */
+@media (hover: none) and (pointer: coarse) {
+    .beat-cell {
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    .beat-cell:hover {
+        transform: none;
+    }
+
+    .beat-cell:active {
+        transform: scale(0.9);
+        background: var(--color-surface-active);
+    }
+}
+
+/* ============================================
+   RESPONSIVE TIMELINE
+   ============================================ */
+@media (max-width: 640px) {
+    .timeline-container {
+        padding: var(--space-3);
+    }
+
+    .beat-row {
+        gap: var(--space-1);
+    }
+
+    .beat-cell {
+        min-width: 28px;
+        min-height: 28px;
+        border-width: 1px;
+    }
+
+    .beat-cell:nth-child(4n+1) {
+        border-left-width: 2px;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+    .beat-cell {
+        min-width: 36px;
+        min-height: 36px;
+    }
+}
+
+/* ============================================
+   ANIMATIONS & TRANSITIONS
+   ============================================ */
+
+/* Beat activation animation */
+@keyframes beat-activate {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.15);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.beat-cell.just-activated {
+    animation: beat-activate 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Beat deactivation animation */
+@keyframes beat-deactivate {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(0.85);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.beat-cell.just-deactivated {
+    animation: beat-deactivate 0.2s ease-out;
+}
+
+/* Track highlight on interaction */
+.track.interacting {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-glow);
+}
+
+/* ============================================
+   VISUAL FEEDBACK DURING PLAYBACK
+   ============================================ */
+.beat-cell.playing {
+    animation: beat-playing 0.15s ease-out;
+}
+
+@keyframes beat-playing {
+    0% {
+        box-shadow: 0 0 0 0 var(--color-accent-glow);
+    }
+
+    50% {
+        box-shadow: 0 0 0 8px transparent, 0 0 20px var(--color-accent-glow);
+        transform: scale(1.1);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+        transform: scale(1);
+    }
+}
+
+/* ============================================
+   EMPTY STATE
+   ============================================ */
+.timeline-empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--color-text-tertiary);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--transition-base);
+}
+
+.timeline-grid:not(:has(.beat-cell.active)) .timeline-empty-state {
+    opacity: 1;
+}
+
+.timeline-empty-state-icon {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--space-2);
+}
+
+.timeline-empty-state-text {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+.beat-cell:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    z-index: var(--z-base);
+}
+
+.track-clear:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* ============================================
+   PERFORMANCE OPTIMIZATIONS
+   ============================================ */
+.beat-cell,
+.playhead {
+    will-change: transform;
+}
+
+.timeline-grid {
+    contain: layout style;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+
+    .beat-cell,
+    .playhead,
+    .track {
+        transition: none;
+        animation: none;
+    }
+
+    .beat-cell:hover {
+        transform: none;
+    }
+}

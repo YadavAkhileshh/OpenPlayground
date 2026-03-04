@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="NetherRift — divergence-free particle vortex engine using Simplex noise and curl calculus." />
+  <title>NetherRift — Vortex Engine</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       NETHERRIFT  ·  Divergence-Free Particle Vortex Engine
+       Canvas layer — covers 100 % of viewport
+  ═══════════════════════════════════════════════════════════ -->
+  <canvas id="rift-canvas" aria-label="NetherRift particle vortex simulation"></canvas>
+
+  <!-- Rift-tear SVG overlay (purely decorative atmosphere) -->
+  <svg id="rift-tear-svg" xmlns="http://www.w3.org/2000/svg"
+       aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="tear-glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+      <radialGradient id="rift-grad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#7b00ff" stop-opacity="0.45" />
+        <stop offset="60%"  stop-color="#ff0040" stop-opacity="0.20" />
+        <stop offset="100%" stop-color="#000000" stop-opacity="0.00" />
+      </radialGradient>
+    </defs>
+    <!-- Dynamic tear paths are injected by js/input/input.js -->
+    <g id="tear-group" filter="url(#tear-glow)"></g>
+  </svg>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HUD — performance monitor (top-left corner)
+  ═══════════════════════════════════════════════════════════ -->
+  <aside id="perf-hud" role="status" aria-live="polite" aria-label="Performance monitor">
+    <div class="hud-row">
+      <span class="hud-label">FPS</span>
+      <span class="hud-value" id="hud-fps">--</span>
+    </div>
+    <div class="hud-row">
+      <span class="hud-label">MS</span>
+      <span class="hud-value" id="hud-ms">--</span>
+    </div>
+    <div class="hud-row">
+      <span class="hud-label">PARTICLES</span>
+      <span class="hud-value" id="hud-particles">--</span>
+    </div>
+    <div class="hud-row">
+      <span class="hud-label">ALIVE</span>
+      <span class="hud-value" id="hud-alive">--</span>
+    </div>
+    <div class="hud-row">
+      <span class="hud-label">FIELD</span>
+      <span class="hud-value" id="hud-field">curl</span>
+    </div>
+    <canvas id="fps-graph" width="120" height="36" aria-hidden="true"></canvas>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       CONTROL PANEL — bottom-right corner
+  ═══════════════════════════════════════════════════════════ -->
+  <aside id="control-panel" role="complementary" aria-label="Simulation controls">
+
+    <header class="panel-header">
+      <span class="panel-logo">⛧</span>
+      <h1 class="panel-title">NETHERRIFT</h1>
+      <button id="btn-collapse" class="icon-btn" aria-label="Collapse controls"
+              title="Collapse">◂</button>
+    </header>
+
+    <div id="panel-body">
+
+      <!-- Density -->
+      <div class="ctrl-group">
+        <label class="ctrl-label" for="slider-density">
+          PARTICLE DENSITY
+          <span class="ctrl-val" id="val-density">50 000</span>
+        </label>
+        <input type="range" id="slider-density" class="slider"
+               min="5000" max="80000" step="1000" value="50000"
+               aria-valuemin="5000" aria-valuemax="80000" aria-valuenow="50000" />
+        <div class="slider-track-detail"></div>
+      </div>
+
+      <!-- Curl intensity -->
+      <div class="ctrl-group">
+        <label class="ctrl-label" for="slider-curl">
+          CURL INTENSITY
+          <span class="ctrl-val" id="val-curl">1.0</span>
+        </label>
+        <input type="range" id="slider-curl" class="slider"
+               min="0.1" max="4.0" step="0.05" value="1.0"
+               aria-valuemin="0.1" aria-valuemax="4.0" aria-valuenow="1.0" />
+        <div class="slider-track-detail"></div>
+      </div>
+
+      <!-- Noise scale -->
+      <div class="ctrl-group">
+        <label class="ctrl-label" for="slider-noise-scale">
+          NOISE SCALE
+          <span class="ctrl-val" id="val-noise-scale">0.0025</span>
+        </label>
+        <input type="range" id="slider-noise-scale" class="slider"
+               min="0.0005" max="0.008" step="0.0001" value="0.0025"
+               aria-valuemin="0.0005" aria-valuemax="0.008" aria-valuenow="0.0025" />
+        <div class="slider-track-detail"></div>
+      </div>
+
+      <!-- Speed -->
+      <div class="ctrl-group">
+        <label class="ctrl-label" for="slider-speed">
+          FLOW SPEED
+          <span class="ctrl-val" id="val-speed">1.0</span>
+        </label>
+        <input type="range" id="slider-speed" class="slider"
+               min="0.1" max="5.0" step="0.05" value="1.0"
+               aria-valuemin="0.1" aria-valuemax="5.0" aria-valuenow="1.0" />
+        <div class="slider-track-detail"></div>
+      </div>
+
+      <!-- Toggle row -->
+      <div class="toggle-row">
+        <button id="btn-glow" class="toggle-btn active" aria-pressed="true">
+          GLOW
+        </button>
+        <button id="btn-trails" class="toggle-btn active" aria-pressed="true">
+          TRAILS
+        </button>
+        <button id="btn-pause" class="toggle-btn" aria-pressed="false">
+          PAUSE
+        </button>
+        <button id="btn-reset" class="toggle-btn">
+          RESET
+        </button>
+      </div>
+
+      <!-- Palette selector -->
+      <div class="ctrl-group">
+        <label class="ctrl-label">COLOUR PALETTE</label>
+        <div class="palette-row" id="palette-row">
+          <button class="palette-btn active" data-palette="inferno"   style="--c:#ff4400" aria-label="Inferno palette">⬤</button>
+          <button class="palette-btn"        data-palette="void"      style="--c:#7b00ff" aria-label="Void palette">⬤</button>
+          <button class="palette-btn"        data-palette="spectral"  style="--c:#00ffcc" aria-label="Spectral palette">⬤</button>
+          <button class="palette-btn"        data-palette="blood"     style="--c:#cc0000" aria-label="Blood palette">⬤</button>
+          <button class="palette-btn"        data-palette="plasma"    style="--c:#ff00ff" aria-label="Plasma palette">⬤</button>
+        </div>
+      </div>
+
+      <!-- Rift instruction -->
+      <p class="hint-text">
+        Click &amp; drag to tear a rift · scroll to warp vortex
+      </p>
+
+    </div><!-- /panel-body -->
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       LOADING SCREEN
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="loading-screen" aria-live="assertive" role="alert">
+    <div class="loading-inner">
+      <div class="loading-sigil">⛧</div>
+      <div class="loading-title">NETHERRIFT</div>
+      <div class="loading-bar-wrap">
+        <div class="loading-bar" id="loading-bar"></div>
+      </div>
+      <div class="loading-status" id="loading-status">Initialising noise engine…</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MODULE SCRIPTS  (load order matters)
+  ═══════════════════════════════════════════════════════════ -->
+  <script type="module" src="js/config.js"></script>
+  <script type="module" src="js/utils/math.js"></script>
+  <script type="module" src="js/utils/color.js"></script>
+  <script type="module" src="js/noise/simplex.js"></script>
+  <script type="module" src="js/curl/curl.js"></script>
+  <script type="module" src="js/particles/pool.js"></script>
+  <script type="module" src="js/particles/integrator.js"></script>
+  <script type="module" src="js/render/renderer.js"></script>
+  <script type="module" src="js/input/input.js"></script>
+  <script type="module" src="js/ui/controls.js"></script>
+  <script type="module" src="js/ui/perf.js"></script>
+  <script type="module" src="js/core/engine.js"></script>
+
+</body>
+</html>

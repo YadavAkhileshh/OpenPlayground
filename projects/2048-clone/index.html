@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2048 · AI HINT | advanced clone</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(145deg, #1c2a3a, #0f1a24);
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .game-container {
+      max-width: 700px;
+      width: 100%;
+      background: #263b4f;
+      border-radius: 60px 60px 50px 50px;
+      padding: 30px 30px 35px;
+      box-shadow: 0 30px 45px -15px #030b11, inset 0 1px 5px #7f9fbb;
+      border: 3px solid #9bb7d4;
+    }
+
+    /* header with stats and AI */
+    .game-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      background: #1f3a4d;
+      border-radius: 70px;
+      padding: 15px 25px;
+      margin-bottom: 25px;
+      border: 2px solid #b3d4f0;
+    }
+
+    .score-box {
+      background: #2d4e68;
+      border-radius: 50px;
+      padding: 12px 32px;
+      color: #f7f0d9;
+      font-weight: 700;
+      font-size: 1.8rem;
+      border: 2px solid #e1c78c;
+    }
+
+    .ai-panel {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .hint-btn {
+      background: #bd9b60;
+      border: none;
+      color: #1e3120;
+      font-size: 1.5rem;
+      padding: 14px 28px;
+      border-radius: 60px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 7px 0 #7e623b;
+      transition: 0.07s;
+      border: 2px solid #ffdd99;
+    }
+
+    .hint-btn:active {
+      transform: translateY(7px);
+      box-shadow: 0 1px 0 #7e623b;
+    }
+
+    .hint-indicator {
+      background: #2a4b5c;
+      border-radius: 40px;
+      padding: 10px 25px;
+      color: #fadf9e;
+      font-size: 1.3rem;
+      font-weight: 500;
+      border: 2px solid #efca7a;
+    }
+
+    /* grid */
+    .grid-container {
+      background: #1a3141;
+      border-radius: 50px;
+      padding: 20px;
+      border: 4px solid #8fb1cc;
+      box-shadow: inset 0 0 30px #0c1f2b;
+      margin-bottom: 25px;
+    }
+
+    .grid-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .grid-cell {
+      background: #2a465a;
+      border-radius: 25px;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #f2efd0;
+      box-shadow: 0 8px 0 #0e2533, inset 0 0 8px #acc9e0;
+      transition: 0.1s;
+      border: 2px solid #7199b3;
+    }
+
+    /* tile colors */
+    .tile-2 { background: #f0e8d0; color: #5a4a3a; }
+    .tile-4 { background: #f0d0b0; color: #5a4a3a; }
+    .tile-8 { background: #f0b080; color: #f8f4e0; }
+    .tile-16 { background: #f09060; color: #f8f8f0; }
+    .tile-32 { background: #f07050; color: #f8f8f0; }
+    .tile-64 { background: #f05030; color: #f8f8f0; }
+    .tile-128 { background: #f0d070; color: #3a3a2a; font-size: 2rem; }
+    .tile-256 { background: #f0c060; color: #3a3a2a; font-size: 2rem; }
+    .tile-512 { background: #f0b050; color: #3a3a2a; font-size: 2rem; }
+    .tile-1024 { background: #f0a040; color: #f8f8f0; font-size: 1.8rem; }
+    .tile-2048 { background: #f09030; color: #f8f8f0; font-size: 1.8rem; }
+
+    /* controls */
+    .game-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .direction-panel {
+      display: flex;
+      gap: 12px;
+      background: #1f3a4d;
+      padding: 12px 20px;
+      border-radius: 60px;
+      border: 2px solid #b3d4f0;
+    }
+
+    .dir-btn {
+      background: #2f5777;
+      border: none;
+      color: #f0edc0;
+      font-size: 2.2rem;
+      width: 80px;
+      height: 80px;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #15384f;
+      transition: 0.05s;
+      border: 2px solid #bfe2ff;
+    }
+
+    .dir-btn:active {
+      transform: translateY(6px);
+      box-shadow: 0 1px 0 #15384f;
+    }
+
+    .new-game-btn {
+      background: #679f7e;
+      border: none;
+      color: #1a3022;
+      font-size: 1.8rem;
+      padding: 18px 40px;
+      border-radius: 70px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      box-shadow: 0 8px 0 #2f6a47;
+      transition: 0.07s;
+      border: 2px solid #c6ffb0;
+    }
+
+    .new-game-btn:active {
+      transform: translateY(8px);
+      box-shadow: 0 2px 0 #2f6a47;
+    }
+
+    /* footer */
+    .game-footer {
+      margin-top: 25px;
+      text-align: center;
+      color: #aac3d4;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="game-header">
+      <div class="score-box" id="scoreDisplay">0</div>
+      <div class="ai-panel">
+        <button class="hint-btn" id="hintBtn">💡 hint</button>
+        <div class="hint-indicator" id="hintDisplay">—</div>
+      </div>
+    </div>
+
+    <div class="grid-container" id="gridContainer"></div>
+
+    <div class="game-controls">
+      <div class="direction-panel">
+        <button class="dir-btn" id="moveUp">⬆️</button>
+        <button class="dir-btn" id="moveLeft">⬅️</button>
+        <button class="dir-btn" id="moveDown">⬇️</button>
+        <button class="dir-btn" id="moveRight">➡️</button>
+      </div>
+      <button class="new-game-btn" id="newGameBtn">🔄 new game</button>
+    </div>
+    <div class="game-footer">
+      ⚡ AI hint suggests best merge
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const SIZE = 4;
+      let grid = [];
+      let score = 0;
+      let gameOver = false;
+
+      // DOM
+      const gridContainer = document.getElementById('gridContainer');
+      const scoreDisplay = document.getElementById('scoreDisplay');
+      const hintDisplay = document.getElementById('hintDisplay');
+      const hintBtn = document.getElementById('hintBtn');
+      const newGameBtn = document.getElementById('newGameBtn');
+
+      // initialize grid
+      function initGrid() {
+        grid = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+        score = 0;
+        gameOver = false;
+        addRandomTile();
+        addRandomTile();
+        renderGrid();
+        updateScore();
+        hintDisplay.innerText = '—';
+      }
+
+      // add random 2 or 4
+      function addRandomTile() {
+        const empty = [];
+        for (let r = 0; r < SIZE; r++) {
+          for (let c = 0; c < SIZE; c++) {
+            if (grid[r][c] === 0) empty.push([r, c]);
+          }
+        }
+        if (empty.length === 0) return;
+        const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+        grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+      }
+
+      // render grid
+      function renderGrid() {
+        gridContainer.innerHTML = '';
+        for (let r = 0; r < SIZE; r++) {
+          const rowDiv = document.createElement('div');
+          rowDiv.className = 'grid-row';
+          for (let c = 0; c < SIZE; c++) {
+            const val = grid[r][c];
+            const cellDiv = document.createElement('div');
+            cellDiv.className = `grid-cell ${val ? 'tile-' + val : ''}`;
+            cellDiv.textContent = val || '';
+            rowDiv.appendChild(cellDiv);
+          }
+          gridContainer.appendChild(rowDiv);
+        }
+      }
+
+      // move and merge logic
+      function moveLeft() {
+        let moved = false;
+        for (let r = 0; r < SIZE; r++) {
+          const row = grid[r].filter(v => v !== 0);
+          const merged = [];
+          for (let i = 0; i < row.length; i++) {
+            if (i < row.length - 1 && row[i] === row[i + 1]) {
+              merged.push(row[i] * 2);
+              score += row[i] * 2;
+              i++; // skip next
+            } else {
+              merged.push(row[i]);
+            }
+          }
+          while (merged.length < SIZE) merged.push(0);
+          if (JSON.stringify(grid[r]) !== JSON.stringify(merged)) moved = true;
+          grid[r] = merged;
+        }
+        return moved;
+      }
+
+      function moveRight() {
+        let moved = false;
+        for (let r = 0; r < SIZE; r++) {
+          const row = grid[r].filter(v => v !== 0);
+          const merged = [];
+          for (let i = row.length - 1; i >= 0; i--) {
+            if (i > 0 && row[i] === row[i - 1]) {
+              merged.unshift(row[i] * 2);
+              score += row[i] * 2;
+              i--; // skip next
+            } else {
+              merged.unshift(row[i]);
+            }
+          }
+          while (merged.length < SIZE) merged.unshift(0);
+          if (JSON.stringify(grid[r]) !== JSON.stringify(merged)) moved = true;
+          grid[r] = merged;
+        }
+        return moved;
+      }
+
+      function moveUp() {
+        let moved = false;
+        for (let c = 0; c < SIZE; c++) {
+          const col = [];
+          for (let r = 0; r < SIZE; r++) col.push(grid[r][c]);
+          const filtered = col.filter(v => v !== 0);
+          const merged = [];
+          for (let i = 0; i < filtered.length; i++) {
+            if (i < filtered.length - 1 && filtered[i] === filtered[i + 1]) {
+              merged.push(filtered[i] * 2);
+              score += filtered[i] * 2;
+              i++;
+            } else {
+              merged.push(filtered[i]);
+            }
+          }
+          while (merged.length < SIZE) merged.push(0);
+          for (let r = 0; r < SIZE; r++) {
+            if (grid[r][c] !== merged[r]) moved = true;
+            grid[r][c] = merged[r];
+          }
+        }
+        return moved;
+      }
+
+      function moveDown() {
+        let moved = false;
+        for (let c = 0; c < SIZE; c++) {
+          const col = [];
+          for (let r = 0; r < SIZE; r++) col.push(grid[r][c]);
+          const filtered = col.filter(v => v !== 0);
+          const merged = [];
+          for (let i = filtered.length - 1; i >= 0; i--) {
+            if (i > 0 && filtered[i] === filtered[i - 1]) {
+              merged.unshift(filtered[i] * 2);
+              score += filtered[i] * 2;
+              i--;
+            } else {
+              merged.unshift(filtered[i]);
+            }
+          }
+          while (merged.length < SIZE) merged.unshift(0);
+          for (let r = 0; r < SIZE; r++) {
+            if (grid[r][c] !== merged[r]) moved = true;
+            grid[r][c] = merged[r];
+          }
+        }
+        return moved;
+      }
+
+      // check if game over
+      function isGameOver() {
+        for (let r = 0; r < SIZE; r++) {
+          for (let c = 0; c < SIZE; c++) {
+            if (grid[r][c] === 0) return false;
+            if (c < SIZE - 1 && grid[r][c] === grid[r][c + 1]) return false;
+            if (r < SIZE - 1 && grid[r][c] === grid[r + 1][c]) return false;
+          }
+        }
+        return true;
+      }
+
+      // make move with direction
+      function makeMove(direction) {
+        if (gameOver) return false;
+
+        let moved = false;
+        switch (direction) {
+          case 'left': moved = moveLeft(); break;
+          case 'right': moved = moveRight(); break;
+          case 'up': moved = moveUp(); break;
+          case 'down': moved = moveDown(); break;
+        }
+
+        if (moved) {
+          addRandomTile();
+          renderGrid();
+          updateScore();
+          gameOver = isGameOver();
+          if (gameOver) hintDisplay.innerText = '💀 game over';
+        }
+        return moved;
+      }
+
+      function updateScore() {
+        scoreDisplay.innerText = score;
+      }
+
+      // ----- AI HINT system (advanced) -----
+      function evaluateBoard(board) {
+        // heuristic: sum of values + merge potential
+        let sum = 0;
+        let empty = 0;
+        let smooth = 0;
+        for (let r = 0; r < SIZE; r++) {
+          for (let c = 0; c < SIZE; c++) {
+            const val = board[r][c];
+            sum += val;
+            if (val === 0) empty++;
+            // smoothness: adjacent same values are good
+            if (c < SIZE - 1 && val === board[r][c + 1] && val !== 0) smooth += val * 2;
+            if (r < SIZE - 1 && val === board[r + 1][c] && val !== 0) smooth += val * 2;
+          }
+        }
+        return sum + empty * 100 + smooth * 2;
+      }
+
+      function cloneGrid() {
+        return grid.map(row => [...row]);
+      }
+
+      function getBestHint() {
+        if (gameOver) return 'game over';
+
+        const directions = ['up', 'down', 'left', 'right'];
+        let bestDir = null;
+        let bestScore = -Infinity;
+
+        for (let dir of directions) {
+          const savedGrid = cloneGrid();
+          const savedScore = score;
+
+          let moved = false;
+          switch (dir) {
+            case 'left': moved = moveLeft(); break;
+            case 'right': moved = moveRight(); break;
+            case 'up': moved = moveUp(); break;
+            case 'down': moved = moveDown(); break;
+          }
+
+          if (moved) {
+            // evaluate resulting board
+            const evalScore = evaluateBoard(grid);
+            if (evalScore > bestScore) {
+              bestScore = evalScore;
+              bestDir = dir;
+            }
+          }
+
+          // restore
+          grid = savedGrid;
+          score = savedScore;
+        }
+
+        if (bestDir) {
+          const arrows = { up: '⬆️', down: '⬇️', left: '⬅️', right: '➡️' };
+          return arrows[bestDir];
+        }
+        return '⚠️ stuck';
+      }
+
+      // hint button
+      hintBtn.addEventListener('click', () => {
+        const hint = getBestHint();
+        hintDisplay.innerText = hint;
+      });
+
+      // move buttons
+      document.getElementById('moveUp').addEventListener('click', () => makeMove('up'));
+      document.getElementById('moveDown').addEventListener('click', () => makeMove('down'));
+      document.getElementById('moveLeft').addEventListener('click', () => makeMove('left'));
+      document.getElementById('moveRight').addEventListener('click', () => makeMove('right'));
+
+      // keyboard support
+      window.addEventListener('keydown', (e) => {
+        const key = e.key;
+        e.preventDefault();
+        if (key.startsWith('Arrow')) {
+          const dir = key.slice(5).toLowerCase();
+          makeMove(dir);
+        }
+      });
+
+      newGameBtn.addEventListener('click', () => {
+        initGrid();
+      });
+
+      // start game
+      initGrid();
+    })();
+  </script>
+</body>
+</html>

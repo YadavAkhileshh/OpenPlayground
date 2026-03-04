@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        html {
+  color-scheme: dark light;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0 auto;
+  width: min(100% - 32px, 60ch);
+}
+
+body > * + * {
+  margin-block-start: 1em;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0.5em 1em;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  min-width: 240px;
+}
+    </style>
+</head>
+<body>
+    <h1>Maze Generator – Recursive Backtracking</h1>
+<canvas id="mazeCanvas"></canvas>
+<br>
+<button type="button" id="regenBtn">Generate New Maze</button>
+<script>
+    const cols = 20; // number of columns
+const rows = 20; // number of rows
+const cellSize = 12; // pixel size of each cell
+const d = document
+const $ = d.querySelector.bind(d)
+const canvas = $('#mazeCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = cols * cellSize;
+canvas.height = rows * cellSize;
+
+class Cell {
+  constructor(col, row) {
+    this.col = col;
+    this.row = row;
+    this.reset();
+  }
+
+  reset() {
+    this.visited = false;
+    this.walls = { top: true, right: true, bottom: true, left: true };
+  }
+}
+
+const grid = [];
+for (let r = 0; r < rows; r++) {
+  for (let c = 0; c < cols; c++) {
+    grid.push(new Cell(c, r));
+  }
+}
+
+// Convert (col,row) to index in the 1‑D grid array
+const index = (col, row) => {
+  if (col < 0 || row < 0 || col >= cols || row >= rows) return -1;
+  return row * cols + col;
+};
+
+// Remove the wall between two adjacent cells
+const removeWalls = (a, b) => {
+  const x = a.col - b.col;
+  const y = a.row - b.row;
+  if (x === 1) {
+    a.walls.left = false;
+    b.walls.right = false;
+  } else if (x === -1) {
+    a.walls.right = false;
+    b.walls.left = false;
+  }
+
+  if (y === 1) {
+    a.walls.top = false;
+    b.walls.bottom = false;
+  } else if (y === -1) {
+    a.walls.bottom = false;
+    b.walls.top = false;
+  }
+};
+
+// Return a random unvisited neighbor of the given cell, or null if none
+const getUnvisitedNeighbor = (cell) => {
+  const neighbors = [];
+  const { col, row } = cell;
+
+  const top = grid[index(col, row - 1)];
+  const right = grid[index(col + 1, row)];
+  const bottom = grid[index(col, row + 1)];
+  const left = grid[index(col - 1, row)];
+
+  if (top && !top.visited) neighbors.push(top);
+  if (right && !right.visited) neighbors.push(right);
+  if (bottom && !bottom.visited) neighbors.push(bottom);
+  if (left && !left.visited) neighbors.push(left);
+
+  if (neighbors.length === 0) return null;
+  return neighbors[Math.floor(Math.random() * neighbors.length)];
+};
+
+/* ---------- Maze Generation (Recursive Backtracking) ---------- */
+const generateMaze = () => {
+  // Reset grid
+  for (const cell of grid) {
+    cell.reset();
+  }
+
+  const stack = [];
+  let current = grid[0];
+  current.visited = true;
+  let finished = false;
+  while (! finished) {
+    const next = getUnvisitedNeighbor(current);
+    if (next) {
+      next.visited = true;
+      stack.push(current);
+      removeWalls(current, next);
+      current = next;
+    } else if (stack.length > 0) {
+      current = stack.pop();
+    } else {
+      finished = true;
+      break; // finished
+    }
+  }
+};
+
+/* ---------- Rendering ---------- */
+const drawMaze = () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = getComputedStyle(document.body).color;
+  ctx.lineWidth = 2;
+
+  for (const cell of grid) {
+    const x = cell.col * cellSize;
+    const y = cell.row * cellSize;
+
+    if (cell.walls.top) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + cellSize, y);
+      ctx.stroke();
+    }
+    if (cell.walls.right) {
+      ctx.beginPath();
+      ctx.moveTo(x + cellSize, y);
+      ctx.lineTo(x + cellSize, y + cellSize);
+      ctx.stroke();
+    }
+    if (cell.walls.bottom) {
+      ctx.beginPath();
+      ctx.moveTo(x + cellSize, y + cellSize);
+      ctx.lineTo(x, y + cellSize);
+      ctx.stroke();
+    }
+    if (cell.walls.left) {
+      ctx.beginPath();
+      ctx.moveTo(x, y + cellSize);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+  }
+};
+
+$('#regenBtn').addEventListener('click', () => {
+  generateMaze();
+  drawMaze();
+});
+
+// Initial draw
+generateMaze();
+drawMaze();
+
+</script>
+</body>
+</html>

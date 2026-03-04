@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PixelSort - Professional glitch art generator using pixel sorting algorithms">
+    <title>PixelSort - Glitch Art Generator</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="app-title">
+                    <span class="title-icon">◆</span>
+                    PixelSort
+                </h1>
+                <p class="app-subtitle">Generative Glitch Art Studio</p>
+            </div>
+            <div class="header-actions">
+                <button id="resetBtn" class="btn btn-secondary" disabled>
+                    <span class="btn-icon">↺</span>
+                    Reset
+                </button>
+                <button id="exportBtn" class="btn btn-primary" disabled>
+                    <span class="btn-icon">↓</span>
+                    Export
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Upload Section -->
+            <section class="upload-section" id="uploadSection">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
+                    <h2 class="upload-title">Drop an image to begin</h2>
+                    <p class="upload-description">or click to browse</p>
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                    <div class="upload-formats">
+                        <span class="format-badge">JPG</span>
+                        <span class="format-badge">PNG</span>
+                        <span class="format-badge">WEBP</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Canvas Section -->
+            <section class="canvas-section" id="canvasSection" style="display: none;">
+                <div class="canvas-container">
+                    <canvas id="mainCanvas"></canvas>
+                    <div class="canvas-overlay" id="processingOverlay">
+                        <div class="processing-spinner"></div>
+                        <p class="processing-text">Processing...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Control Panel -->
+            <aside class="control-panel" id="controlPanel" style="display: none;">
+                <div class="panel-header">
+                    <h3 class="panel-title">Sort Parameters</h3>
+                    <div class="panel-status">
+                        <span class="status-indicator"></span>
+                        <span class="status-text">Ready</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label class="control-label">Sort Mode</label>
+                    </div>
+                    <div class="toggle-group">
+                        <button class="toggle-btn active" data-mode="brightness">
+                            <span class="toggle-icon">☀</span>
+                            Brightness
+                        </button>
+                        <button class="toggle-btn" data-mode="hue">
+                            <span class="toggle-icon">🎨</span>
+                            Hue
+                        </button>
+                        <button class="toggle-btn" data-mode="saturation">
+                            <span class="toggle-icon">◐</span>
+                            Saturation
+                        </button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label class="control-label">Direction</label>
+                    </div>
+                    <div class="toggle-group">
+                        <button class="toggle-btn active" data-direction="horizontal">
+                            <span class="toggle-icon">↔</span>
+                            Horizontal
+                        </button>
+                        <button class="toggle-btn" data-direction="vertical">
+                            <span class="toggle-icon">↕</span>
+                            Vertical
+                        </button>
+                        <button class="toggle-btn" data-direction="diagonal">
+                            <span class="toggle-icon">⤢</span>
+                            Diagonal
+                        </button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label class="control-label" for="thresholdSlider">
+                            Threshold
+                            <span class="control-value" id="thresholdValue">128</span>
+                        </label>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="thresholdSlider" class="slider" min="0" max="255" value="128">
+                        <div class="slider-track"></div>
+                    </div>
+                    <p class="control-hint">Controls which pixels get sorted</p>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label class="control-label" for="intensitySlider">
+                            Intensity
+                            <span class="control-value" id="intensityValue">50</span>
+                        </label>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="intensitySlider" class="slider" min="0" max="100" value="50">
+                        <div class="slider-track"></div>
+                    </div>
+                    <p class="control-hint">Strength of the sorting effect</p>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label class="control-label" for="lengthSlider">
+                            Sort Length
+                            <span class="control-value" id="lengthValue">100</span>
+                        </label>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="lengthSlider" class="slider" min="10" max="500" value="100">
+                        <div class="slider-track"></div>
+                    </div>
+                    <p class="control-hint">Maximum length of sorted segments</p>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label class="control-label">Sort Order</label>
+                    </div>
+                    <div class="toggle-group">
+                        <button class="toggle-btn active" data-order="ascending">
+                            <span class="toggle-icon">↑</span>
+                            Ascending
+                        </button>
+                        <button class="toggle-btn" data-order="descending">
+                            <span class="toggle-icon">↓</span>
+                            Descending
+                        </button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label class="control-label">Advanced Options</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="reverseCheck" class="checkbox">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Reverse Sort</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="randomCheck" class="checkbox">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Random Intervals</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="edgeDetectCheck" class="checkbox">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Edge Detection</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <button id="applyBtn" class="btn btn-accent btn-block">
+                        <span class="btn-icon">✦</span>
+                        Apply Sort
+                    </button>
+                </div>
+
+                <div class="control-group">
+                    <button id="newImageBtn" class="btn btn-secondary btn-block">
+                        <span class="btn-icon">+</span>
+                        Load New Image
+                    </button>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Footer Info -->
+        <footer class="app-footer">
+            <div class="footer-content">
+                <p class="footer-text">
+                    <span class="footer-label">Image:</span>
+                    <span id="imageInfo">No image loaded</span>
+                </p>
+                <p class="footer-text">
+                    <span class="footer-label">Processing:</span>
+                    <span id="processingTime">0ms</span>
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/imageProcessor.js"></script>
+    <script src="js/pixelSorter.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

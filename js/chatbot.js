@@ -5,7 +5,7 @@
 document.addEventListener("componentLoaded", (e) => {
   if (e.detail.component !== "chatbot") return;
 
-  (function () {
+  (() => {
     // Elements
     const chatbotToggle = document.getElementById("chatbot-toggle");
     const chatbot = document.getElementById("chatbot");
@@ -21,7 +21,7 @@ document.addEventListener("componentLoaded", (e) => {
     const chatInputArea = document.querySelector(".chatbot-input");
 
     // Toggle chatbot visibility
-    function toggleChatbot() {
+    const toggleChatbot = () => {
       if (!chatbot) return;
       const isVisible = chatbot.style.display === "flex";
       chatbot.style.display = isVisible ? "none" : "flex";
@@ -56,7 +56,7 @@ document.addEventListener("componentLoaded", (e) => {
     }
 
     // Send message function
-    function sendMessage() {
+    const sendMessage = () => {
       if (!userInput) return;
       const text = userInput.value.trim();
       if (!text) return;
@@ -78,7 +78,7 @@ document.addEventListener("componentLoaded", (e) => {
     }
 
     // Add message to chat
-    function addMessage(text, sender) {
+    const addMessage = (text, sender) => {
       if (!messages) return;
       const msg = document.createElement("div");
       msg.className = sender === "user" ? "user-message" : "bot-message";
@@ -89,7 +89,7 @@ document.addEventListener("componentLoaded", (e) => {
     let currentState = "idle";
 
     // Bot reply logic
-    function botReply(userText) {
+    const botReply = (userText) => {
       const msg = userText.trim().toLowerCase();
 
       // Always allow menu reset
@@ -124,7 +124,7 @@ document.addEventListener("componentLoaded", (e) => {
           showFallback();
       }
     }
-    function showMainMenu() {
+    const showMainMenu = () => {
       typeMessage(
         "👋 How can I help you today?\n\n" +
         "1️⃣ Explore projects\n\n" +
@@ -135,7 +135,7 @@ document.addEventListener("componentLoaded", (e) => {
       );
     }
 
-    function handleMainMenu(choice) {
+    const handleMainMenu = (choice) => {
       switch (choice) {
         case "1":
           currentState = "explore_projects";
@@ -174,7 +174,7 @@ document.addEventListener("componentLoaded", (e) => {
           typeMessage("⚠️ Please choose a valid option (1–4)");
       }
     }
-    function handleProjectType(choice) {
+    const handleProjectType = (choice) => {
       switch (choice) {
         case "1":
           typeMessage("🎨 You can find Action projects in the Projects section using filters.");
@@ -196,13 +196,13 @@ document.addEventListener("componentLoaded", (e) => {
           typeMessage("⚠️ Please choose a valid option or type 0 to go back.");
       }
     }
-    function showFallback() {
+    const showFallback = () => {
       typeMessage(
         "🤔 I didn’t understand that.\n\n" +
         "Type 'hi' to start or 'menu' to see options."
       );
     }
-    function handleContributeMenu(choice) {
+    const handleContributeMenu = (choice) => {
       switch (choice) {
         case "1":
           typeMessage("➕ You can add a project using the Contribute section. Make sure to follow the guidelines.");
@@ -226,7 +226,7 @@ document.addEventListener("componentLoaded", (e) => {
     }
 
     // Typing effect for bot messages
-    function typeMessage(text) {
+    const typeMessage = (text) => {
       if (!messages) return;
 
       const div = document.createElement("div");

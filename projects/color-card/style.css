@@ -1,0 +1,193 @@
+@import url(https://fonts.bunny.net/css?family=jura:300,500);
+@layer base, demo;
+
+@layer demo {
+	:root {
+		--cell-radius: 90%;
+		--bg-color: #111;
+	}
+
+	body {
+		font-family: "Jura", sans-serif;
+		background-color: var(--bg-color);
+	}
+	.colors {
+		height: 100svh;
+		display: grid;
+		grid-template-columns: repeat(10, 1fr);
+		grid-template-rows: repeat(14, 1fr);
+		gap: 1px;
+		div:last-child {
+			grid-column: span 2;
+			color: white;
+		}
+		button {
+			/* get color from data attribute*/
+			--color: attr(data-color type(<color>));
+
+			/* define contrast color based on background color */
+			/* note - this default color contrast definition is from this article:
+https://piccalil.li/blog/some-css-only-contrast-options-until-contrast-color-is-baseline-widely-available/
+			*/
+			--contrast-color: color(
+				from var(--color) xyz clamp(0, (0.36 / y - 1) * infinity, 1)
+					clamp(0, (0.36 / y - 1) * infinity, 1)
+					clamp(0, (0.36 / y - 1) * infinity, 1) / 1
+			);
+			@supports (color: color-contrast(red vs black, white)) {
+				/* try old Chrome version of contrast-color() */
+				--contrast-color: color-contrast(var(--color) vs black, white);
+			}
+			@supports (color: contrast-color(red)) {
+				/* modern browsers supporting contrast-color */
+				--contrast-color: contrast-color(var(--color));
+			}
+
+			background-color: var(--color);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.25em;
+			transition: all 1500ms;
+			transition-timing-function: linear(
+				0,
+				0.01 0.6%,
+				0.04 1.2%,
+				0.171 2.6%,
+				0.883 7.4%,
+				1.115 9.3%,
+				1.264 11.2%,
+				1.303 12.1%,
+				1.325 13.1%,
+				1.32 14.5%,
+				1.279 16%,
+				1.034 21.1%,
+				0.956 23.1%,
+				0.912 24.9%,
+				0.894 26.7%,
+				0.895 28.1%,
+				0.908 29.6%,
+				1.014 36.7%,
+				1.035 40.2%,
+				1.031 42.8%,
+				0.998 49.7%,
+				0.989 53.7%,
+				1.004 67%,
+				1
+			);
+			border-radius: 0;
+			padding: 0.25em;
+			outline: 1px dashed transparent;
+			outline-offset: -13px;
+			border: 10px solid transparent;
+			&::before,
+			&::after {
+				font-size: clamp(0.5rem, 1vw + 0.045rem, 0.8rem);
+				word-break: break-word;
+				color: var(--contrast-color);
+				@supports not (color: contrast-color(red)) and
+					(color: color-contrast(red vs black, white)) {
+					mix-blend-mode: difference;
+				}
+			}
+			&::after {
+				content: attr(data-color);
+			}
+			&::before {
+				content: "\29C9";
+			}
+			&.copied::before {
+				content: "\2713";
+			}
+			&:hover {
+				scale: 1.5;
+				z-index: 2;
+				border-radius: var(--cell-radius);
+				corner-shape: squircle;
+				outline-color: var(--contrast-color);
+				border-color: var(--bg-color);
+			}
+			/* hover - first row*/
+			&.first-row:hover {
+				border-radius: 0 0 var(--cell-radius) var(--cell-radius);
+			}
+			/* hover - last row*/
+			&.last-row:hover {
+				border-radius: var(--cell-radius) var(--cell-radius) 0 0;
+			}
+			/* hover - first column cell */
+			&.first-col:hover {
+				border-radius: 0 var(--cell-radius) var(--cell-radius) 0;
+			}
+			/* hover - last column cell */
+			&.last-col:hover {
+				border-radius: var(--cell-radius) 0 0 var(--cell-radius);
+			}
+			/* hover - first row + first column cell */
+			&.first-row.first-col:hover {
+				border-radius: 0 0 var(--cell-radius) 0;
+			}
+			/* hover - first row + last column cell */
+			&.first-row.last-col:hover {
+				border-radius: 0 0 0 var(--cell-radius);
+			}
+			/* hover - last row + first column cell */
+			&.last-row.first-col:hover {
+				border-radius: 0 var(--cell-radius) 0 0;
+			}
+			/* hover - last row + last column cell */
+			&.last-row.last-cell:hover {
+				border-radius: var(--cell-radius) 0 0 0;
+			}
+
+			/* direct siblings above,below and either side */
+			&:where(.row-before, .row-after, .cell-before, .cell-after) {
+				/*corner-shape: scoop;*/
+				scale: 0.8;
+			}
+			/* siblings offset in previous and next rows */
+			&:where(.row-before.cell-before, .row-before.cell-after, .row-after.cell-before, .row-after.cell-after) {
+				scale: 0.8;
+			}
+			&.row-before {
+				transform-origin: top;
+			}
+			&.row-after {
+				transform-origin: bottom;
+			}
+			&.cell-before {
+				transform-origin: left;
+			}
+			&.cell-after {
+				transform-origin: right;
+			}
+			&.row-before.cell-before {
+				/*border-radius: 0 0 var(--cell-radius) 0;*/
+				transform-origin: top left;
+			}
+			&.row-before.cell-after {
+				/*border-radius: 0 0 0 var(--cell-radius);*/
+				transform-origin: top right;
+			}
+			&.row-after.cell-before {
+				/*border-radius: 0 var(--cell-radius) 0 0;*/
+				transform-origin: bottom left;
+			}
+			&.row-after.cell-after {
+				/*border-radius: var(--cell-radius) 0 0 0;*/
+				transform-origin: bottom right;
+			}
+		}
+	}
+}
+@layer base {
+	* {
+		box-sizing: border-box;
+	}
+	body {
+		height: 100svh;
+		background: #111;
+		font-family: system-ui;
+		margin: 0;
+	}
+}

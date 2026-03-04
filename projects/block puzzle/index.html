@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Block Puzzle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --grid-bg: #1e293b;
+            --cell-border: #334155;
+            --accent-color: #38bdf8;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+            overflow: hidden;
+        }
+
+        #game-container {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 4px;
+            background: var(--grid-bg);
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            aspect-ratio: 1 / 1;
+        }
+
+        .cell {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 4px;
+            transition: background 0.2s, transform 0.2s;
+            position: relative;
+        }
+
+        .cell.filled {
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.2);
+        }
+
+        .piece-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 2rem;
+            min-height: 120px;
+        }
+
+        .draggable-piece {
+            cursor: grab;
+            display: grid;
+            gap: 2px;
+            transition: transform 0.1s ease;
+            transform-origin: center;
+            touch-action: none;
+        }
+
+        .draggable-piece:active {
+            cursor: grabbing;
+        }
+
+        .piece-cell {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+
+        .ghost {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .clearing {
+            animation: flash 0.4s ease-out;
+        }
+
+        @keyframes flash {
+            0% { transform: scale(1); filter: brightness(2); }
+            50% { transform: scale(1.1); filter: brightness(3); }
+            100% { transform: scale(0); filter: brightness(1); }
+        }
+
+        .game-over-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="flex justify-between w-full mb-4 px-2">
+        <div class="text-left">
+            <p class="text-slate-400 text-sm uppercase tracking-wider">Score</p>
+            <p id="score" class="text-3xl font-bold text-sky-400">0</p>
+        </div>
+        <div class="text-right">
+            <p class="text-slate-400 text-sm uppercase tracking-wider">Best</p>
+            <p id="high-score" class="text-3xl font-bold text-purple-400">0</p>
+        </div>
+    </div>
+
+    <div id="grid" class="grid-container"></div>
+
+    <div id="pieces-tray" class="piece-container"></div>
+</div>
+
+<div id="game-over" class="game-over-overlay">
+    <h1 class="text-5xl font-black mb-2 text-white">GAME OVER</h1>
+    <p id="final-score" class="text-xl text-slate-300 mb-8">Score: 0</p>
+    <button onclick="resetGame()" class="bg-sky-500 hover:bg-sky-400 text-white px-8 py-3 rounded-full font-bold text-lg transition-transform active:scale-95">
+        TRY AGAIN
+    </button>
+</div>
+
+<script>
+    const GRID_SIZE = 10;
+    const gridElement = document.getElementById('grid');
+    const trayElement = document.getElementById('pieces-tray');
+    const scoreElement = document.getElementById('score');
+    const highElement = document.getElementById('high-score');
+    const gameOverScreen = document.getElementById('game-over');
+    const finalScoreElement = document.getElementById('final-score');
+
+    let score = 0;
+    let highScore = localStorage.getItem('blockPuzzleHigh') || 0;
+    let grid = Array(GRID_SIZE * GRID_SIZE).fill(null);
+    let trayPieces = [];
+
+    const COLORS = [
+        '#f87171', '#fb923c', '#fbbf24', '#4ade80', '#22d3ee', '#818cf8', '#c084fc'
+    ];
+
+    const PIECE_TEMPLATES = [
+        [[1]], // Dot
+        [[1, 1]], // 2x1
+        [[1, 1, 1]], // 3x1
+        [[1, 1, 1, 1]], // 4x1
+        [[1, 1], [1, 1]], // 2x2 Square
+        [[1, 0], [1, 0], [1, 1]], // L
+        [[0, 1], [0, 1], [1, 1]], // Inverse L
+        [[1, 1, 1], [0, 1, 0]], // T
+        [[1, 1, 0], [0, 1, 1]], // Z
+        [[1, 1, 1], [1, 1, 1], [1, 1, 1]], // 3x3 Large
+    ];
+
+    function init() {
+        highElement.innerText = highScore;
+        createGrid();
+        generateTray();
+        setupDragListeners();
+    }
+
+    function createGrid() {
+        gridElement.innerHTML = '';
+        for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.dataset.index = i;
+            gridElement.appendChild(cell);
+        }
+    }
+
+    function generateTray() {
+        trayElement.innerHTML = '';
+        trayPieces = [];
+        for (let i = 0; i < 3; i++) {
+            const piece = createPieceElement();
+            trayElement.appendChild(piece);
+        }
+        checkGameOver();
+    }
+
+    function createPieceElement() {
+        const template = PIECE_TEMPLATES[Math.floor(Math.random() * PIECE_TEMPLATES.length)];
+        const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        
+        const piece = document.createElement('div');
+        piece.classList.add('draggable-piece');
+        piece.dataset.shape = JSON.stringify(template);
+        piece.dataset.color = color;
+        
+        piece.style.gridTemplateColumns = `repeat(${template[0].length}, 1fr)`;
+        
+        template.forEach((row, rIdx) => {
+            row.forEach((cell, cIdx) => {
+                const div = document.createElement('div');
+                div.classList.add('piece-cell');
+                if (cell) {
+                    div.style.backgroundColor = color;
+                    div.style.boxShadow = `0 0 10px ${color}44`;
+                } else {
+                    div.style.backgroundColor = 'transparent';
+                }
+                piece.appendChild(div);
+            });
+        });
+
+        return piece;
+    }
+
+    let activePiece = null;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    function setupDragListeners() {
+        document.addEventListener('mousedown', startDrag);
+        document.addEventListener('touchstart', startDrag, { passive: false });
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('touchmove', drag, { passive: false });
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchend', endDrag);
+    }
+
+    function startDrag(e) {
+        const target = e.target.closest('.draggable-piece');
+        if (!target) return;
+
+        activePiece = target;
+        activePiece.style.zIndex = '1000';
+        activePiece.style.position = 'fixed';
+        activePiece.style.pointerEvents = 'none';
+        activePiece.style.transform = 'scale(1.2)';
+
+        const rect = activePiece.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        offsetX = clientX - (rect.left + rect.width / 2);
+        offsetY = clientY - (rect.top + rect.height / 2);
+        
+        // Initial position
+        updatePiecePosition(clientX, clientY);
+    }
+
+    function drag(e) {
+        if (!activePiece) return;
+        if (e.cancelable) e.preventDefault();
+
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+        updatePiecePosition(clientX, clientY);
+        highlightPlacement(clientX, clientY);
+    }
+
+    function updatePiecePosition(x, y) {
+        activePiece.style.left = `${x - activePiece.offsetWidth / 2}px`;
+        activePiece.style.top = `${y - activePiece.offsetHeight / 1.5}px`; // Offset slightly higher for thumb visibility
+    }
+
+    function highlightPlacement(x, y) {
+        clearHighlights();
+        const gridRect = gridElement.getBoundingClientRect();
+        
+        // Offset the detection point slightly above the finger/mouse
+        const checkY = y - 40; 
+        
+        const cellUnder = document.elementFromPoint(x, checkY);
+        if (cellUnder && cellUnder.classList.contains('cell')) {
+            const index = parseInt(cellUnder.dataset.index);
+            const shape = JSON.parse(activePiece.dataset.shape);
+            const color = activePiece.dataset.color;
+            
+            const pos = getGridCoords(index);
+            if (canPlace(shape, pos.r, pos.c)) {
+                applyHighlight(shape, pos.r, pos.c, color);
+            }
+        }
+    }
+
+    function endDrag(e) {
+        if (!activePiece) return;
+
+        const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+        const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+        const checkY = clientY - 40;
+
+        const cellUnder = document.elementFromPoint(clientX, checkY);
+        let placed = false;
+
+        if (cellUnder && cellUnder.classList.contains('cell')) {
+            const index = parseInt(cellUnder.dataset.index);
+            const shape = JSON.parse(activePiece.dataset.shape);
+            const color = activePiece.dataset.color;
+            const pos = getGridCoords(index);
+
+            if (canPlace(shape, pos.r, pos.c)) {
+                placePiece(shape, pos.r, pos.c, color);
+                activePiece.remove();
+                placed = true;
+                
+                if (trayElement.children.length === 0) {
+                    generateTray();
+                } else {
+                    checkGameOver();
+                }
+            }
+        }
+
+        if (!placed) {
+            activePiece.style.position = 'static';
+            activePiece.style.zIndex = '1';
+            activePiece.style.pointerEvents = 'auto';
+            activePiece.style.transform = 'scale(1)';
+        }
+
+        activePiece = null;
+        clearHighlights();
+    }
+
+    function getGridCoords(index) {
+        return { r: Math.floor(index / GRID_SIZE), c: index % GRID_SIZE };
+    }
+
+    function canPlace(shape, r, c) {
+        for (let i = 0; i < shape.length; i++) {
+            for (let j = 0; j < shape[i].length; j++) {
+                if (shape[i][j]) {
+                    const nr = r + i;
+                    const nc = c + j;
+                    if (nr >= GRID_SIZE || nc >= GRID_SIZE || grid[nr * GRID_SIZE + nc]) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    function placePiece(shape, r, c, color) {
+        let cellsPlaced = 0;
+        shape.forEach((row, i) => {
+            row.forEach((cellValue, j) => {
+                if (cellValue) {
+                    const idx = (r + i) * GRID_SIZE + (c + j);
+                    grid[idx] = color;
+                    const cellEl = gridElement.children[idx];
+                    cellEl.style.backgroundColor = color;
+                    cellEl.classList.add('filled');
+                    cellsPlaced++;
+                }
+            });
+        });
+
+        score += cellsPlaced;
+        updateScore();
+        checkLines();
+    }
+
+    function clearHighlights() {
+        Array.from(gridElement.children).forEach(cell => {
+            cell.style.boxShadow = '';
+            if (!cell.classList.contains('filled')) {
+                cell.style.backgroundColor = '';
+            }
+        });
+    }
+
+    function applyHighlight(shape, r, c, color) {
+        shape.forEach((row, i) => {
+            row.forEach((cellValue, j) => {
+                if (cellValue) {
+                    const idx = (r + i) * GRID_SIZE + (c + j);
+                    if (idx < grid.length) {
+                        const cellEl = gridElement.children[idx];
+                        cellEl.style.backgroundColor = color + '88';
+                    }
+                }
+            });
+        });
+    }
+
+    function checkLines() {
+        let rowsToClear = [];
+        let colsToClear = [];
+
+        // Check rows
+        for (let r = 0; r < GRID_SIZE; r++) {
+            let full = true;
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (!grid[r * GRID_SIZE + c]) { full = false; break; }
+            }
+            if (full) rowsToClear.push(r);
+        }
+
+        // Check columns
+        for (let c = 0; c < GRID_SIZE; c++) {
+            let full = true;
+            for (let r = 0; r < GRID_SIZE; r++) {
+                if (!grid[r * GRID_SIZE + c]) { full = false; break; }
+            }
+            if (full) colsToClear.push(c);
+        }
+
+        if (rowsToClear.length > 0 || colsToClear.length > 0) {
+            clearLines(rowsToClear, colsToClear);
+        }
+    }
+
+    function clearLines(rows, cols) {
+        const indices = new Set();
+        rows.forEach(r => {
+            for (let c = 0; c < GRID_SIZE; c++) indices.add(r * GRID_SIZE + c);
+        });
+        cols.forEach(c => {
+            for (let r = 0; r < GRID_SIZE; r++) indices.add(r * GRID_SIZE + c);
+        });
+
+        indices.forEach(idx => {
+            const cell = gridElement.children[idx];
+            cell.classList.add('clearing');
+            setTimeout(() => {
+                grid[idx] = null;
+                cell.style.backgroundColor = '';
+                cell.classList.remove('filled', 'clearing');
+            }, 400);
+        });
+
+        const combo = rows.length + cols.length;
+        score += (combo * 10) * combo;
+        updateScore();
+    }
+
+    function updateScore() {
+        scoreElement.innerText = score;
+        if (score > highScore) {
+            highScore = score;
+            highElement.innerText = highScore;
+            localStorage.setItem('blockPuzzleHigh', highScore);
+        }
+    }
+
+    function checkGameOver() {
+        const pieces = Array.from(trayElement.children);
+        if (pieces.length === 0) return;
+
+        let anyCanBePlaced = false;
+        for (const piece of pieces) {
+            const shape = JSON.parse(piece.dataset.shape);
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (canPlace(shape, r, c)) {
+                        anyCanBePlaced = true;
+                        piece.style.opacity = '1';
+                        break;
+                    }
+                }
+                if (anyCanBePlaced) break;
+            }
+            if (!anyCanBePlaced) {
+                piece.style.opacity = '0.3';
+            } else {
+                anyCanBePlaced = true; // resets state to check next piece
+            }
+        }
+
+        // Global check: can ANY piece be placed?
+        const canPlaceAtLeastOne = pieces.some(p => {
+            const shape = JSON.parse(p.dataset.shape);
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (canPlace(shape, r, c)) return true;
+                }
+            }
+            return false;
+        });
+
+        if (!canPlaceAtLeastOne) {
+            setTimeout(() => {
+                finalScoreElement.innerText = `Final Score: ${score}`;
+                gameOverScreen.style.display = 'flex';
+            }, 1000);
+        }
+    }
+
+    function resetGame() {
+        score = 0;
+        updateScore();
+        grid = Array(GRID_SIZE * GRID_SIZE).fill(null);
+        createGrid();
+        generateTray();
+        gameOverScreen.style.display = 'none';
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>

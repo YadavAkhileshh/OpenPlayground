@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VectorLab Designer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            overflow: hidden;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        #canvas-container {
+            cursor: crosshair;
+            background-image: 
+                radial-gradient(#333 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+        .layer-item:hover .delete-btn {
+            display: block;
+        }
+        .canvas-element {
+            position: absolute;
+            outline: none;
+            user-select: none;
+        }
+        .canvas-element.selected {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+        .resizer {
+            width: 8px;
+            height: 8px;
+            background: #3b82f6;
+            position: absolute;
+            border-radius: 50%;
+        }
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            background: none;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: 2px solid #333;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <!-- Top Navigation Bar -->
+    <header class="h-12 border-b border-zinc-800 bg-zinc-900 flex items-center justify-between px-4 z-50">
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2 font-bold text-blue-500">
+                <i data-lucide="layers" class="w-5 h-5"></i>
+                <span>VectorLab</span>
+            </div>
+            <div class="flex items-center gap-1 bg-zinc-800 p-1 rounded-md">
+                <button onclick="setTool('select')" id="tool-select" class="tool-btn p-1.5 rounded bg-blue-600 text-white" title="Select (V)">
+                    <i data-lucide="mouse-pointer-2" class="w-4 h-4"></i>
+                </button>
+                <button onclick="setTool('rect')" id="tool-rect" class="tool-btn p-1.5 rounded hover:bg-zinc-700" title="Rectangle (R)">
+                    <i data-lucide="square" class="w-4 h-4"></i>
+                </button>
+                <button onclick="setTool('circle')" id="tool-circle" class="tool-btn p-1.5 rounded hover:bg-zinc-700" title="Ellipse (O)">
+                    <i data-lucide="circle" class="w-4 h-4"></i>
+                </button>
+                <button onclick="setTool('text')" id="tool-text" class="tool-btn p-1.5 rounded hover:bg-zinc-700" title="Text (T)">
+                    <i data-lucide="type" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button onclick="exportJSON()" class="text-xs bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded border border-zinc-700 transition">
+                Export
+            </button>
+            <button onclick="clearCanvas()" class="text-xs bg-red-900/30 hover:bg-red-900/50 text-red-400 px-3 py-1.5 rounded border border-red-800/50 transition">
+                Clear
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        <!-- Layers Panel (Left) -->
+        <aside class="w-64 border-r border-zinc-800 bg-zinc-900 flex flex-col">
+            <div class="p-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 border-b border-zinc-800">
+                Layers
+            </div>
+            <div id="layers-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+                <!-- Layers populated by JS -->
+                <div class="text-zinc-600 text-xs italic p-4 text-center">No layers yet</div>
+            </div>
+        </aside>
+
+        <!-- Canvas Area (Center) -->
+        <section id="canvas-container" class="flex-1 relative overflow-auto bg-zinc-950 p-20" onclick="deselectAll(event)">
+            <div id="artboard" class="bg-white shadow-2xl relative" style="width: 1200px; height: 800px; margin: 0 auto;">
+                <!-- User generated elements go here -->
+            </div>
+        </section>
+
+        <!-- Properties Panel (Right) -->
+        <aside id="properties-panel" class="w-72 border-l border-zinc-800 bg-zinc-900 hidden flex flex-col">
+            <div class="p-3 text-xs font-semibold uppercase tracking-wider text-zinc-500 border-b border-zinc-800">
+                Properties
+            </div>
+            <div class="p-4 space-y-6">
+                <!-- Transform -->
+                <div class="space-y-3">
+                    <label class="text-[10px] font-bold text-zinc-500 uppercase">Layout</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <span class="text-[10px] text-zinc-400 block mb-1">X</span>
+                            <input type="number" id="prop-x" class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-zinc-400 block mb-1">Y</span>
+                            <input type="number" id="prop-y" class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-zinc-400 block mb-1">W</span>
+                            <input type="number" id="prop-w" class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-zinc-400 block mb-1">H</span>
+                            <input type="number" id="prop-h" class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Appearance -->
+                <div class="space-y-3 border-t border-zinc-800 pt-4">
+                    <label class="text-[10px] font-bold text-zinc-500 uppercase">Appearance</label>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-zinc-400">Fill</span>
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="prop-color-hex" class="w-16 bg-zinc-800 border border-zinc-700 rounded px-1 py-0.5 text-[10px] outline-none">
+                            <input type="color" id="prop-color" value="#3b82f6">
+                        </div>
+                    </div>
+                    <div id="text-settings" class="hidden space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-zinc-400">Size</span>
+                            <input type="number" id="prop-font-size" class="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm outline-none">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-zinc-400 block mb-1">Content</span>
+                            <textarea id="prop-text-content" rows="2" class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm outline-none resize-none"></textarea>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-zinc-400">Opacity</span>
+                        <input type="range" id="prop-opacity" min="0" max="100" class="w-24 accent-blue-500">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-zinc-400">Radius</span>
+                        <input type="number" id="prop-radius" min="0" class="w-16 bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-sm outline-none">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-auto p-4 border-t border-zinc-800">
+                <button onclick="deleteSelected()" class="w-full py-2 bg-red-900/20 text-red-400 border border-red-900/50 rounded text-xs hover:bg-red-900/40 transition">
+                    Delete Element
+                </button>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Context Message -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-zinc-800 text-white px-4 py-2 rounded-lg shadow-xl text-sm transform translate-y-20 transition-transform duration-300 pointer-events-none">
+        Layer created!
+    </div>
+
+    <script>
+        // App State
+        let currentTool = 'select';
+        let elements = [];
+        let selectedId = null;
+        let isDragging = false;
+        let startX, startY;
+        let artboard = document.getElementById('artboard');
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Tool Management
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('bg-blue-600', 'text-white'));
+            document.getElementById(`tool-${tool}`).classList.add('bg-blue-600', 'text-white');
+            
+            if (tool !== 'select') {
+                deselectAll();
+                artboard.style.cursor = 'crosshair';
+            } else {
+                artboard.style.cursor = 'default';
+            }
+        }
+
+        // Canvas Interaction
+        artboard.addEventListener('mousedown', (e) => {
+            if (currentTool === 'select') return;
+
+            const rect = artboard.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+            
+            const newElement = {
+                id: 'el-' + Date.now(),
+                type: currentTool,
+                x: startX,
+                y: startY,
+                width: 0,
+                height: 0,
+                fill: '#3b82f6',
+                opacity: 1,
+                borderRadius: 0,
+                fontSize: 24,
+                content: 'Double click to edit',
+                zIndex: elements.length + 1
+            };
+
+            elements.push(newElement);
+            renderCanvas();
+            renderLayers();
+            selectElement(newElement.id);
+            
+            isDragging = true;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging || currentTool === 'select') return;
+
+            const rect = artboard.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+
+            const el = elements.find(el => el.id === selectedId);
+            if (el) {
+                el.width = Math.abs(currentX - startX);
+                el.height = Math.abs(currentY - startY);
+                el.x = Math.min(currentX, startX);
+                el.y = Math.min(currentY, startY);
+                updateElementInDOM(el);
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                if (currentTool !== 'select') {
+                    const el = elements.find(el => el.id === selectedId);
+                    if (el && el.width < 5 && el.height < 5 && el.type !== 'text') {
+                        // Tiny elements are usually accidents
+                        el.width = 100;
+                        el.height = 100;
+                        updateElementInDOM(el);
+                    }
+                    if (el && el.type === 'text') {
+                        el.width = 200;
+                        el.height = 40;
+                        updateElementInDOM(el);
+                    }
+                    setTool('select');
+                }
+            }
+        });
+
+        // Rendering Logic
+        function renderCanvas() {
+            // Only render elements that don't exist in DOM yet
+            elements.forEach(el => {
+                if (!document.getElementById(el.id)) {
+                    const domEl = document.createElement('div');
+                    domEl.id = el.id;
+                    domEl.className = 'canvas-element';
+                    domEl.onmousedown = (e) => {
+                        e.stopPropagation();
+                        if (currentTool === 'select') {
+                            selectElement(el.id);
+                            startMoving(e, el);
+                        }
+                    };
+                    artboard.appendChild(domEl);
+                    updateElementInDOM(el);
+                }
+            });
+        }
+
+        function updateElementInDOM(el) {
+            const domEl = document.getElementById(el.id);
+            if (!domEl) return;
+
+            domEl.style.left = el.x + 'px';
+            domEl.style.top = el.y + 'px';
+            domEl.style.width = el.width + 'px';
+            domEl.style.height = el.height + 'px';
+            domEl.style.backgroundColor = el.type === 'text' ? 'transparent' : el.fill;
+            domEl.style.opacity = el.opacity;
+            domEl.style.zIndex = el.zIndex;
+            domEl.style.borderRadius = el.type === 'circle' ? '50%' : el.borderRadius + 'px';
+            
+            if (el.type === 'text') {
+                domEl.innerText = el.content;
+                domEl.style.color = el.fill;
+                domEl.style.fontSize = el.fontSize + 'px';
+                domEl.style.fontWeight = '500';
+            }
+        }
+
+        function renderLayers() {
+            const list = document.getElementById('layers-list');
+            if (elements.length === 0) {
+                list.innerHTML = '<div class="text-zinc-600 text-xs italic p-4 text-center">No layers yet</div>';
+                return;
+            }
+
+            list.innerHTML = [...elements].reverse().map(el => `
+                <div onclick="selectElement('${el.id}')" class="layer-item flex items-center justify-between p-2 rounded text-xs cursor-pointer ${selectedId === el.id ? 'bg-blue-600 text-white' : 'hover:bg-zinc-800 text-zinc-300'}">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="${getIcon(el.type)}" class="w-3.5 h-3.5"></i>
+                        <span class="truncate w-32">${el.type.charAt(0).toUpperCase() + el.type.slice(1)}</span>
+                    </div>
+                    <button onclick="deleteElement('${el.id}')" class="delete-btn hidden hover:text-red-300">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function getIcon(type) {
+            switch(type) {
+                case 'rect': return 'square';
+                case 'circle': return 'circle';
+                case 'text': return 'type';
+                default: return 'mouse-pointer-2';
+            }
+        }
+
+        // Selection & Props
+        function selectElement(id) {
+            selectedId = id;
+            document.querySelectorAll('.canvas-element').forEach(el => el.classList.remove('selected'));
+            const domEl = document.getElementById(id);
+            if (domEl) domEl.classList.add('selected');
+            
+            const propertiesPanel = document.getElementById('properties-panel');
+            propertiesPanel.classList.remove('hidden');
+            
+            const elData = elements.find(el => el.id === id);
+            updatePropsUI(elData);
+            renderLayers();
+        }
+
+        function deselectAll(e) {
+            if (e && e.target !== artboard && e.target !== document.getElementById('canvas-container')) return;
+            selectedId = null;
+            document.querySelectorAll('.canvas-element').forEach(el => el.classList.remove('selected'));
+            document.getElementById('properties-panel').classList.add('hidden');
+            renderLayers();
+        }
+
+        function updatePropsUI(el) {
+            if (!el) return;
+            document.getElementById('prop-x').value = Math.round(el.x);
+            document.getElementById('prop-y').value = Math.round(el.y);
+            document.getElementById('prop-w').value = Math.round(el.width);
+            document.getElementById('prop-h').value = Math.round(el.height);
+            document.getElementById('prop-color').value = el.fill;
+            document.getElementById('prop-color-hex').value = el.fill.toUpperCase();
+            document.getElementById('prop-opacity').value = el.opacity * 100;
+            document.getElementById('prop-radius').value = el.borderRadius;
+
+            const textSettings = document.getElementById('text-settings');
+            if (el.type === 'text') {
+                textSettings.classList.remove('hidden');
+                document.getElementById('prop-font-size').value = el.fontSize;
+                document.getElementById('prop-text-content').value = el.content;
+            } else {
+                textSettings.classList.add('hidden');
+            }
+        }
+
+        // Moving Logic
+        function startMoving(e, el) {
+            let mStartX = e.clientX;
+            let mStartY = e.clientY;
+            let originalX = el.x;
+            let originalY = el.y;
+
+            function onMouseMove(moveEvent) {
+                const dx = moveEvent.clientX - mStartX;
+                const dy = moveEvent.clientY - mStartY;
+                el.x = originalX + dx;
+                el.y = originalY + dy;
+                updateElementInDOM(el);
+                updatePropsUI(el);
+            }
+
+            function onMouseUp() {
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            }
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        }
+
+        // UI Event Listeners for Props
+        const bindProp = (id, propName, isNumeric = true, callback) => {
+            document.getElementById(id).addEventListener('input', (e) => {
+                if (!selectedId) return;
+                const el = elements.find(el => el.id === selectedId);
+                let val = e.target.value;
+                if (isNumeric) val = parseFloat(val);
+                if (propName === 'opacity') val = val / 100;
+                
+                el[propName] = val;
+                if (callback) callback(el, val);
+                updateElementInDOM(el);
+            });
+        };
+
+        bindProp('prop-x', 'x');
+        bindProp('prop-y', 'y');
+        bindProp('prop-w', 'width');
+        bindProp('prop-h', 'height');
+        bindProp('prop-color', 'fill', false, (el, val) => {
+            document.getElementById('prop-color-hex').value = val.toUpperCase();
+        });
+        bindProp('prop-color-hex', 'fill', false, (el, val) => {
+            document.getElementById('prop-color').value = val;
+        });
+        bindProp('prop-opacity', 'opacity');
+        bindProp('prop-radius', 'borderRadius');
+        bindProp('prop-font-size', 'fontSize');
+        bindProp('prop-text-content', 'content', false);
+
+        // Management Actions
+        function deleteElement(id) {
+            elements = elements.filter(el => el.id !== id);
+            const domEl = document.getElementById(id);
+            if (domEl) domEl.remove();
+            if (selectedId === id) deselectAll();
+            renderLayers();
+        }
+
+        function deleteSelected() {
+            if (selectedId) deleteElement(selectedId);
+        }
+
+        function clearCanvas() {
+            if (confirm('Are you sure you want to clear the canvas?')) {
+                elements.forEach(el => {
+                    const domEl = document.getElementById(el.id);
+                    if (domEl) domEl.remove();
+                });
+                elements = [];
+                deselectAll();
+                renderLayers();
+            }
+        }
+
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(elements, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "design_export.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            showToast('Design exported as JSON');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.transform = 'translateY(0)';
+            setTimeout(() => {
+                toast.style.transform = 'translateY(80px)';
+            }, 3000);
+        }
+
+        // Shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            if (e.key === 'v' || e.key === 'V') setTool('select');
+            if (e.key === 'r' || e.key === 'R') setTool('rect');
+            if (e.key === 'o' || e.key === 'O') setTool('circle');
+            if (e.key === 't' || e.key === 'T') setTool('text');
+            if (e.key === 'Backspace' || e.key === 'Delete') deleteSelected();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volcano Observatory · Magmatic Activity</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Montserrat', 'Arial', sans-serif;
+            background-color: #2a1a0a;
+            color: #f5e6d3;
+        }
+        #observatory-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+            background: rgba(40, 20, 10, 0.85);
+            backdrop-filter: blur(12px);
+            border: 2px solid #ff8844;
+            border-radius: 50px;
+            padding: 12px 32px;
+            display: flex;
+            gap: 40px;
+            border-left: 6px solid #ffaa66;
+            box-shadow: 0 0 40px rgba(255, 80, 0, 0.4);
+            pointer-events: none;
+        }
+        .obs-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .obs-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: #ffbb88;
+            letter-spacing: 2px;
+        }
+        .obs-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #fff0d0, #ffaa66);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #seismic-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(50, 25, 10, 0.85);
+            backdrop-filter: blur(16px);
+            border: 2px solid #ff8844;
+            border-radius: 50px;
+            padding: 20px 32px;
+            z-index: 50;
+            border-right: 6px solid #ffaa66;
+            min-width: 280px;
+            box-shadow: 0 15px 35px rgba(200, 50, 0, 0.6);
+        }
+        .seismic-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 1rem;
+            border-bottom: 1px solid #b85a2a;
+            padding-bottom: 5px;
+        }
+        .seismic-label {
+            color: #ffbb88;
+        }
+        .seismic-value {
+            font-weight: 600;
+            color: #ffeedd;
+        }
+        .pulse-lava {
+            width: 14px;
+            height: 14px;
+            background: #ff6600;
+            border-radius: 50%;
+            box-shadow: 0 0 30px #ff3300;
+            animation: lava-pulse 1.2s infinite;
+        }
+        @keyframes lava-pulse {
+            0% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.5); background: #ffaa44; }
+            100% { opacity: 0.7; transform: scale(1); }
+        }
+        #environment-tag {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(40, 20, 10, 0.8);
+            backdrop-filter: blur(8px);
+            border: 2px solid #ff8844;
+            border-radius: 40px;
+            padding: 12px 28px;
+            z-index: 50;
+            border-left: 4px solid #ffaa66;
+            color: #ffeedd;
+        }
+        .lava-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #ff6600;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 15px #ff3300;
+        }
+        #gas-stats {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(50, 25, 10, 0.85);
+            backdrop-filter: blur(8px);
+            border: 2px solid #ff8844;
+            border-radius: 40px;
+            padding: 16px 28px;
+            z-index: 50;
+            text-align: right;
+            border-bottom: 4px solid #ffaa66;
+        }
+        .glow-number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff0d0, #ff8844);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="observatory-panel">
+        <div class="obs-item">
+            <span class="obs-label">volcano</span>
+            <span class="obs-value">MT. ASH</span>
+        </div>
+        <div class="obs-item">
+            <span class="obs-label">alert level</span>
+            <span class="obs-value" id="alert-level">ORANGE</span>
+        </div>
+        <div class="obs-item">
+            <span class="obs-label">summit temp</span>
+            <span class="obs-value" id="temp-summit">847°C</span>
+        </div>
+    </div>
+
+    <div id="seismic-panel">
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+            <span class="pulse-lava"></span>
+            <span style="font-weight: 600; font-size: 1.3rem;">📊 SEISMIC MONITOR</span>
+        </div>
+        <div class="seismic-row">
+            <span class="seismic-label">last event</span>
+            <span class="seismic-value" id="last-event">M2.4 · 23s ago</span>
+        </div>
+        <div class="seismic-row">
+            <span class="seismic-label">tremor amplitude</span>
+            <span class="seismic-value" id="tremor">14.2 µm</span>
+        </div>
+        <div class="seismic-row">
+            <span class="seismic-label">RSAM</span>
+            <span class="seismic-value" id="rsam">347 counts</span>
+        </div>
+        <div class="seismic-row">
+            <span class="seismic-label">tilt</span>
+            <span class="seismic-value" id="tilt">8.4 µrad</span>
+        </div>
+        <div class="seismic-row">
+            <span class="seismic-label">SO₂ flux</span>
+            <span class="seismic-value" id="so2">4,200 t/d</span>
+        </div>
+    </div>
+
+    <div id="environment-tag">
+        <span class="lava-icon"></span> <span>eruption column · pyroclastic flow · lahar risk</span>
+    </div>
+
+    <div id="gas-stats">
+        <div style="font-size:1rem;">🌋 CRATER GAS</div>
+        <div class="glow-number" id="co2">CO₂ 12.4%</div>
+        <div style="font-size:0.8rem;">SO₂ · H₂S · HCl detected</div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        
+        // --- Scene setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x331a0a);
+        scene.fog = new THREE.FogExp2(0x331a0a, 0.004);
+        
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(25, 20, 35);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+        
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+        
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.2;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.minDistance = 20;
+        controls.maxDistance = 100;
+        
+        // --- Lighting ---
+        const ambient = new THREE.AmbientLight(0x503030);
+        scene.add(ambient);
+        
+        const sunLight = new THREE.DirectionalLight(0xffccaa, 0.8);
+        sunLight.position.set(30, 40, 20);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        const d = 60;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 100;
+        scene.add(sunLight);
+        
+        // Lava glow light
+        const lavaLight = new THREE.PointLight(0xff5500, 1.5, 40);
+        lavaLight.position.set(0, 12, 0);
+        scene.add(lavaLight);
+        
+        // --- Ground (volcanic plain) ---
+        const groundGeo = new THREE.CircleGeometry(100, 32);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x5a3a2a, roughness: 0.9 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -1;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // --- Volcano cone ---
+        const coneGeo = new THREE.ConeGeometry(12, 14, 16);
+        const coneMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2a, roughness: 0.7, emissive: 0x221100 });
+        const cone = new THREE.Mesh(coneGeo, coneMat);
+        cone.position.y = 6;
+        cone.castShadow = true;
+        cone.receiveShadow = true;
+        scene.add(cone);
+        
+        // --- Crater rim ---
+        const rimGeo = new THREE.TorusGeometry(5, 1, 8, 16);
+        const rimMat = new THREE.MeshStandardMaterial({ color: 0x884422 });
+        const rim = new THREE.Mesh(rimGeo, rimMat);
+        rim.position.y = 13;
+        rim.rotation.x = Math.PI/2;
+        rim.castShadow = true;
+        scene.add(rim);
+        
+        // --- Lava glow in crater ---
+        const lavaPoolGeo = new THREE.CylinderGeometry(3, 3, 0.5, 8);
+        const lavaPoolMat = new THREE.MeshStandardMaterial({ color: 0xff5500, emissive: 0x441100 });
+        const lavaPool = new THREE.Mesh(lavaPoolGeo, lavaPoolMat);
+        lavaPool.position.y = 13.2;
+        lavaPool.castShadow = true;
+        scene.add(lavaPool);
+        
+        // --- Lava flows (multiple streams) ---
+        function createLavaFlow(startX, startZ, direction, length) {
+            const points = [];
+            let x = startX, z = startZ;
+            for (let i = 0; i < 20; i++) {
+                points.push(new THREE.Vector3(x, 5 + i*0.2, z));
+                x += direction.x * length/20;
+                z += direction.z * length/20;
+                x += (Math.random() - 0.5) * 2;
+                z += (Math.random() - 0.5) * 2;
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const mat = new THREE.LineBasicMaterial({ color: 0xff6600 });
+            const line = new THREE.Line(geo, mat);
+            scene.add(line);
+            
+            // Add glowing particles along flow
+            const flowParticles = new THREE.BufferGeometry();
+            const posArray = [];
+            for (let i = 0; i < 50; i++) {
+                const t = i / 50;
+                const idx = Math.floor(t * (points.length-1));
+                const p1 = points[idx];
+                const p2 = points[idx+1];
+                if (p1 && p2) {
+                    const lerp = new THREE.Vector3().lerpVectors(p1, p2, Math.random());
+                    posArray.push(lerp.x, lerp.y + 0.2, lerp.z);
+                }
+            }
+            flowParticles.setAttribute('position', new THREE.Float32BufferAttribute(posArray, 3));
+            const partMat = new THREE.PointsMaterial({ color: 0xffaa44, size: 0.2, blending: THREE.AdditiveBlending });
+            const parts = new THREE.Points(flowParticles, partMat);
+            scene.add(parts);
+        }
+        
+        createLavaFlow(4, 4, new THREE.Vector3(1,0,1), 12);
+        createLavaFlow(-3, 5, new THREE.Vector3(-1,0,1), 10);
+        createLavaFlow(2, -4, new THREE.Vector3(1,0,-1), 14);
+        createLavaFlow(-4, -3, new THREE.Vector3(-1,0,-1), 11);
+        
+        // --- Ash plume (particle system) ---
+        const ashGeo = new THREE.BufferGeometry();
+        const ashCount = 3000;
+        const ashPos = new Float32Array(ashCount * 3);
+        const ashVel = [];
+        for (let i = 0; i < ashCount; i++) {
+            ashPos[i*3] = (Math.random() - 0.5) * 20;
+            ashPos[i*3+1] = 14 + Math.random() * 25;
+            ashPos[i*3+2] = (Math.random() - 0.5) * 20;
+            ashVel.push(0.01 + Math.random() * 0.03);
+        }
+        ashGeo.setAttribute('position', new THREE.BufferAttribute(ashPos, 3));
+        const ashMat = new THREE.PointsMaterial({ color: 0x887766, size: 0.4, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending });
+        const ash = new THREE.Points(ashGeo, ashMat);
+        scene.add(ash);
+        
+        // --- Monitoring station (observatory buildings) ---
+        const obsGroup = new THREE.Group();
+        obsGroup.position.set(12, -1, 10);
+        
+        // Main building
+        const buildGeo = new THREE.BoxGeometry(3, 2, 3);
+        const buildMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+        const building = new THREE.Mesh(buildGeo, buildMat);
+        building.position.y = 1;
+        building.castShadow = true;
+        building.receiveShadow = true;
+        obsGroup.add(building);
+        
+        // Radome
+        const domeGeo = new THREE.SphereGeometry(0.8, 6, 3);
+        const domeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const dome = new THREE.Mesh(domeGeo, domeMat);
+        dome.position.y = 2.2;
+        dome.scale.set(1, 0.5, 1);
+        obsGroup.add(dome);
+        
+        // Antenna
+        const antGeo = new THREE.CylinderGeometry(0.1, 0.1, 2);
+        const antMat = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+        const ant = new THREE.Mesh(antGeo, antMat);
+        ant.position.set(1.2, 2.5, 1.2);
+        obsGroup.add(ant);
+        
+        scene.add(obsGroup);
+        
+        // Observatory label
+        const obsDiv = document.createElement('div');
+        obsDiv.textContent = '🔭 ASH OBSERVATORY';
+        obsDiv.style.background = '#332211';
+        obsDiv.style.color = '#ffbb88';
+        obsDiv.style.border = '2px solid #ff8844';
+        obsDiv.style.borderRadius = '30px';
+        obsDiv.style.padding = '4px 16px';
+        const obsLabel = new CSS2DObject(obsDiv);
+        obsLabel.position.set(12, 4, 10);
+        scene.add(obsLabel);
+        
+        // --- Seismic sensors (small boxes) ---
+        for (let i = 0; i < 5; i++) {
+            const sensorGeo = new THREE.BoxGeometry(0.4, 0.2, 0.4);
+            const sensorMat = new THREE.MeshStandardMaterial({ color: 0xffaa44 });
+            const sensor = new THREE.Mesh(sensorGeo, sensorMat);
+            sensor.position.set(
+                8 + i*2,
+                -0.8,
+                5 + Math.sin(i)*3
+            );
+            scene.add(sensor);
+        }
+        
+        // --- Animate ---
+        let time = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            time += 0.01;
+            
+            // Ash plume rise
+            const positions = ash.geometry.attributes.position.array;
+            for (let i = 1; i < positions.length; i += 3) {
+                positions[i] += ashVel[Math.floor(i/3)] * 0.5;
+                if (positions[i] > 40) {
+                    positions[i] = 14;
+                    positions[i-1] = (Math.random() - 0.5) * 20;
+                    positions[i+1] = (Math.random() - 0.5) * 20;
+                }
+            }
+            ash.geometry.attributes.position.needsUpdate = true;
+            
+            // Pulse lava light
+            lavaLight.intensity = 1.5 + Math.sin(time * 5) * 0.5;
+            
+            // Update displays
+            const tremor = 14.2 + Math.sin(time * 3) * 2;
+            document.getElementById('tremor').innerText = tremor.toFixed(1) + ' µm';
+            document.getElementById('rsam').innerText = (347 + Math.sin(time*5)*30).toFixed(0) + ' counts';
+            document.getElementById('tilt').innerText = (8.4 + Math.sin(time*2)*0.5).toFixed(1) + ' µrad';
+            document.getElementById('so2').innerText = (4200 + Math.sin(time*4)*200).toFixed(0) + ' t/d';
+            document.getElementById('co2').innerHTML = 'CO₂ ' + (12.4 + Math.sin(time*3)*0.5).toFixed(1) + '%';
+            document.getElementById('temp-summit').innerHTML = (847 + Math.sin(time*6)*10).toFixed(0) + '°C';
+            
+            // Random alert level change
+            if (Math.random() < 0.001) {
+                const levels = ['GREEN', 'YELLOW', 'ORANGE', 'RED'];
+                document.getElementById('alert-level').innerText = levels[Math.floor(Math.random() * levels.length)];
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

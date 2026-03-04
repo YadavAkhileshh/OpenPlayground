@@ -1,0 +1,2490 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Neuromorphic UI Component Library - Accessible, performant, and beautiful">
+  <title>Neuromorphic UI Components</title>
+
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Iconify -->
+  <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+
+  <style>
+    /* CSS Custom Properties */
+    :root {
+      --neu-bg-primary: #e6e9ef;
+      --neu-bg-secondary: #d1d5db;
+      --neu-shadow-dark: #b8bcc2;
+      --neu-shadow-light: #ffffff;
+      --neu-primary: #7c3aed;
+      --neu-primary-dark: #6d28d9;
+      --transition-fast: 150ms;
+      --transition-normal: 300ms;
+    }
+
+    .dark {
+      --neu-bg-primary: #374151;
+      --neu-bg-secondary: #1f2937;
+      --neu-shadow-dark: #111827;
+      --neu-shadow-light: #4b5563;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(145deg, var(--neu-bg-primary), var(--neu-bg-secondary));
+      min-height: 100vh;
+      transition: background 0.5s ease;
+    }
+
+    /* Neuromorphic Surfaces */
+    .neu-raised {
+      background: linear-gradient(145deg, var(--neu-bg-primary), var(--neu-bg-secondary));
+      box-shadow:
+        8px 8px 16px var(--neu-shadow-dark),
+        -8px -8px 16px var(--neu-shadow-light);
+    }
+
+    .neu-raised-sm {
+      box-shadow:
+        4px 4px 8px var(--neu-shadow-dark),
+        -4px -4px 8px var(--neu-shadow-light);
+    }
+
+    .neu-inset {
+      background: linear-gradient(145deg, var(--neu-bg-secondary), var(--neu-bg-primary));
+      box-shadow:
+        inset 4px 4px 8px var(--neu-shadow-dark),
+        inset -4px -4px 8px var(--neu-shadow-light);
+    }
+
+    .neu-flat {
+      background: linear-gradient(145deg, var(--neu-bg-primary), var(--neu-bg-secondary));
+    }
+
+    /* Button States */
+    .neu-btn {
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .neu-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+    }
+
+    .neu-btn:active:not(:disabled) {
+      transform: translateY(1px);
+      box-shadow:
+        inset 2px 2px 4px var(--neu-shadow-dark),
+        inset -2px -2px 4px var(--neu-shadow-light);
+    }
+
+    .neu-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Focus Styles */
+    .neu-focus:focus {
+      outline: none;
+    }
+
+    .neu-focus:focus-visible {
+      outline: 3px solid var(--neu-primary);
+      outline-offset: 2px;
+    }
+
+    /* Skip Link */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 16px;
+      z-index: 9999;
+      padding: 12px 24px;
+      background: var(--neu-primary);
+      color: white;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .skip-link:focus {
+      top: 16px;
+    }
+
+    /* Toast Animations */
+    @keyframes toast-in {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes toast-out {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+
+    .toast-enter {
+      animation: toast-in 0.3s ease-out forwards;
+    }
+
+    .toast-exit {
+      animation: toast-out 0.3s ease-in forwards;
+    }
+
+    /* Shimmer Animation */
+    @keyframes shimmer {
+      from {
+        transform: translateX(-100%);
+      }
+
+      to {
+        transform: translateX(100%);
+      }
+    }
+
+    .shimmer {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .shimmer::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg,
+          transparent,
+          rgba(255, 255, 255, 0.4),
+          transparent);
+      animation: shimmer 1.5s infinite;
+    }
+
+    /* Skeleton Loading */
+    @keyframes skeleton {
+      from {
+        background-position: 200% 0;
+      }
+
+      to {
+        background-position: -200% 0;
+      }
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg,
+          var(--neu-bg-secondary) 25%,
+          var(--neu-bg-primary) 50%,
+          var(--neu-bg-secondary) 75%);
+      background-size: 200% 100%;
+      animation: skeleton 1.5s infinite;
+    }
+
+    /* Chart Animations */
+    @keyframes grow-up {
+      from {
+        transform: scaleY(0);
+      }
+
+      to {
+        transform: scaleY(1);
+      }
+    }
+
+    .chart-bar {
+      animation: grow-up 0.8s ease-out;
+      transform-origin: bottom;
+    }
+
+    /* Tooltip */
+    .tooltip-container:hover .tooltip,
+    .tooltip-container:focus-within .tooltip {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .tooltip {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(-50%) translateY(4px);
+      transition: all var(--transition-fast);
+    }
+
+    /* Tab Active State */
+    .tab-btn[aria-selected="true"] {
+      background: linear-gradient(145deg, #7c3aed, #6d28d9);
+      color: white;
+      box-shadow: 4px 4px 8px var(--neu-shadow-dark), -4px -4px 8px var(--neu-shadow-light);
+    }
+
+    .tab-btn[aria-selected="false"] {
+      color: #6b7280;
+    }
+
+    .dark .tab-btn[aria-selected="false"] {
+      color: #9ca3af;
+    }
+
+    /* Accordion Panel */
+    .accordion-panel {
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+
+    /* Custom Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: var(--neu-bg-secondary);
+      border-radius: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: linear-gradient(145deg, var(--neu-shadow-dark), #9ca0a6);
+      border-radius: 4px;
+    }
+
+    /* Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Modal Backdrop */
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+    }
+
+    /* Progress Bar */
+    .progress-fill {
+      background: linear-gradient(90deg, #7c3aed, #a855f7);
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+
+<body class="text-gray-700 dark:text-gray-200">
+
+  <!-- Skip Link for Accessibility -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-3 pointer-events-none" role="status" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Theme Toggle -->
+  <div class="fixed top-4 right-4 z-40">
+    <button type="button" id="theme-toggle" class="neu-raised neu-btn neu-focus w-14 h-14 rounded-2xl flex items-center justify-center" aria-label="Toggle dark mode" aria-pressed="false">
+      <span id="theme-icon" class="iconify text-2xl text-gray-600 dark:text-gray-300" data-icon="lucide:sun" data-width="24"></span>
+    </button>
+  </div>
+
+  <!-- Header -->
+  <header class="pt-16 pb-8 px-4">
+    <div class="max-w-7xl mx-auto text-center">
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full neu-raised-sm mb-6">
+        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse" aria-hidden="true"></span>
+        <span class="text-xs font-medium text-gray-600 dark:text-gray-300 tracking-wide uppercase">Live
+          Components</span>
+      </div>
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-gray-800 dark:text-gray-100 mb-4">
+        Neuromorphic UI
+      </h1>
+      <p class="text-base md:text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+        A complete component library with accessibility, animations, and modern design patterns.
+      </p>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content" class="max-w-7xl mx-auto px-4 pb-20">
+
+    <!-- Tab Navigation -->
+    <nav class="mb-12 overflow-x-auto custom-scrollbar" aria-label="Component categories">
+      <div id="tab-list" class="flex gap-2 p-2 rounded-2xl mx-auto w-fit min-w-max neu-inset" role="tablist" aria-orientation="horizontal">
+        <button type="button" role="tab" id="tab-basics" aria-selected="true" aria-controls="panel-basics" tabindex="0" class="tab-btn neu-focus px-6 py-3 rounded-xl text-sm font-medium transition-all" data-tab="basics">
+          Basics
+        </button>
+        <button type="button" role="tab" id="tab-forms" aria-selected="false" aria-controls="panel-forms" tabindex="-1" class="tab-btn neu-focus px-6 py-3 rounded-xl text-sm font-medium transition-all" data-tab="forms">
+          Forms
+        </button>
+        <button type="button" role="tab" id="tab-feedback" aria-selected="false" aria-controls="panel-feedback" tabindex="-1" class="tab-btn neu-focus px-6 py-3 rounded-xl text-sm font-medium transition-all" data-tab="feedback">
+          Feedback
+        </button>
+        <button type="button" role="tab" id="tab-data" aria-selected="false" aria-controls="panel-data" tabindex="-1" class="tab-btn neu-focus px-6 py-3 rounded-xl text-sm font-medium transition-all" data-tab="data">
+          Data
+        </button>
+        <button type="button" role="tab" id="tab-advanced" aria-selected="false" aria-controls="panel-advanced" tabindex="-1" class="tab-btn neu-focus px-6 py-3 rounded-xl text-sm font-medium transition-all" data-tab="advanced">
+          Advanced
+        </button>
+      </div>
+    </nav>
+
+    <!-- ==================== BASICS PANEL ==================== -->
+    <section id="panel-basics" role="tabpanel" aria-labelledby="tab-basics" tabindex="0" class="tab-panel">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+        <!-- Buttons Card -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:mouse-pointer-click" data-width="20" aria-hidden="true"></span>
+            Buttons
+          </h2>
+          <div class="space-y-4">
+            <button type="button" class="neu-raised neu-btn neu-focus w-full py-3 px-6 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300">
+              Default
+            </button>
+            <button type="button" class="neu-btn neu-focus w-full py-3 px-6 rounded-xl text-sm font-medium text-white bg-gradient-to-br from-purple-600 to-purple-700 shadow-lg">
+              Primary
+            </button>
+            <button type="button" class="neu-btn neu-focus w-full py-3 px-6 rounded-xl text-sm font-medium text-white bg-gradient-to-br from-green-500 to-green-600 shadow-lg">
+              Success
+            </button>
+            <button type="button" id="loading-btn" class="neu-raised neu-btn neu-focus w-full py-3 px-6 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 flex items-center justify-center gap-2">
+              <span id="loading-spinner" class="hidden" aria-hidden="true">
+                <span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="18"></span>
+              </span>
+              <span id="loading-text">Click for Loading</span>
+            </button>
+          </div>
+        </article>
+
+        <!-- Toggles & Checks Card -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:toggle-left" data-width="20" aria-hidden="true"></span>
+            Toggles & Checks
+          </h2>
+          <div class="space-y-6">
+            <!-- Toggle Switch -->
+            <div class="flex items-center justify-between">
+              <label for="notifications-toggle" class="text-sm text-gray-600 dark:text-gray-300">
+                Enable notifications
+              </label>
+              <button type="button" role="switch" id="notifications-toggle" aria-checked="false" class="neu-focus w-14 h-8 rounded-full relative transition-all neu-inset">
+                <span id="toggle-thumb" class="absolute top-1 left-1 w-6 h-6 rounded-full transition-all duration-300 neu-raised" aria-hidden="true"></span>
+                <span class="sr-only">Toggle notifications</span>
+              </button>
+            </div>
+
+            <!-- Checkbox -->
+            <div class="flex items-center gap-3">
+              <button type="button" role="checkbox" id="terms-checkbox" aria-checked="false" class="neu-focus w-6 h-6 rounded-lg flex items-center justify-center transition-all neu-inset">
+                <span id="checkbox-icon" class="iconify text-white opacity-0 transition-opacity" data-icon="lucide:check" data-width="14" aria-hidden="true"></span>
+              </button>
+              <label for="terms-checkbox" class="text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+                Accept terms
+              </label>
+            </div>
+
+            <!-- Radio Buttons -->
+            <fieldset>
+              <legend class="text-sm text-gray-600 dark:text-gray-300 mb-3">Choose plan:</legend>
+              <div class="space-y-3" role="radiogroup" aria-label="Subscription plan" id="plan-radiogroup">
+                <div class="flex items-center gap-3">
+                  <button type="button" role="radio" aria-checked="true" data-value="free" class="radio-btn neu-focus w-6 h-6 rounded-full flex items-center justify-center transition-all neu-inset">
+                    <span class="radio-dot w-3 h-3 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 transition-opacity" aria-hidden="true"></span>
+                  </button>
+                  <span class="text-sm text-gray-600 dark:text-gray-300">Free</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button type="button" role="radio" aria-checked="false" data-value="pro" class="radio-btn neu-focus w-6 h-6 rounded-full flex items-center justify-center transition-all neu-inset">
+                    <span class="radio-dot w-3 h-3 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 opacity-0 transition-opacity" aria-hidden="true"></span>
+                  </button>
+                  <span class="text-sm text-gray-600 dark:text-gray-300">Pro</span>
+                </div>
+              </div>
+            </fieldset>
+          </div>
+        </article>
+
+        <!-- Badges Card -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:badge" data-width="20" aria-hidden="true"></span>
+            Badges
+          </h2>
+          <div class="flex flex-wrap gap-3">
+            <span class="px-4 py-2 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300 neu-raised-sm">Default</span>
+            <span class="px-4 py-2 rounded-full text-xs font-medium text-white bg-gradient-to-br from-purple-600 to-purple-700 shadow-md">Primary</span>
+            <span class="px-4 py-2 rounded-full text-xs font-medium text-white bg-gradient-to-br from-green-500 to-green-600 shadow-md">Success</span>
+            <span class="px-4 py-2 rounded-full text-xs font-medium text-white bg-gradient-to-br from-yellow-500 to-yellow-600 shadow-md">Warning</span>
+            <span class="px-4 py-2 rounded-full text-xs font-medium text-white bg-gradient-to-br from-red-500 to-red-600 shadow-md">Error</span>
+            <span class="px-4 py-2 rounded-full text-xs font-medium text-white bg-gradient-to-br from-blue-500 to-blue-600 shadow-md">Info</span>
+          </div>
+          <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mt-6 mb-4">With Icons</h3>
+          <div class="flex flex-wrap gap-3">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-green-700 bg-green-100 dark:bg-green-900 dark:text-green-300">
+              <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+              Active
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-yellow-700 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-300">
+              <span class="iconify" data-icon="lucide:clock" data-width="12" aria-hidden="true"></span>
+              Pending
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-red-700 bg-red-100 dark:bg-red-900 dark:text-red-300">
+              <span class="iconify" data-icon="lucide:x" data-width="12" aria-hidden="true"></span>
+              Closed
+            </span>
+          </div>
+        </article>
+
+        <!-- Tooltips Card -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:message-square" data-width="20" aria-hidden="true"></span>
+            Tooltips
+          </h2>
+          <div class="flex flex-wrap gap-3">
+            <div class="relative tooltip-container">
+              <button type="button" class="neu-raised neu-btn neu-focus p-3 rounded-xl" aria-describedby="tooltip-home">
+                <span class="iconify text-gray-600 dark:text-gray-300" data-icon="lucide:home" data-width="20" aria-hidden="true"></span>
+                <span class="sr-only">Home</span>
+              </button>
+              <div id="tooltip-home" role="tooltip" class="tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-gray-800 whitespace-nowrap pointer-events-none">
+                Home
+                <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800">
+                </div>
+              </div>
+            </div>
+            <div class="relative tooltip-container">
+              <button type="button" class="neu-raised neu-btn neu-focus p-3 rounded-xl" aria-describedby="tooltip-settings">
+                <span class="iconify text-gray-600 dark:text-gray-300" data-icon="lucide:settings" data-width="20" aria-hidden="true"></span>
+                <span class="sr-only">Settings</span>
+              </button>
+              <div id="tooltip-settings" role="tooltip" class="tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-gray-800 whitespace-nowrap pointer-events-none">
+                Settings
+                <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800">
+                </div>
+              </div>
+            </div>
+            <div class="relative tooltip-container">
+              <button type="button" class="neu-raised neu-btn neu-focus p-3 rounded-xl" aria-describedby="tooltip-notifications">
+                <span class="iconify text-gray-600 dark:text-gray-300" data-icon="lucide:bell" data-width="20" aria-hidden="true"></span>
+                <span class="sr-only">Notifications</span>
+              </button>
+              <div id="tooltip-notifications" role="tooltip" class="tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-gray-800 whitespace-nowrap pointer-events-none">
+                Notifications
+                <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800">
+                </div>
+              </div>
+            </div>
+            <div class="relative tooltip-container">
+              <button type="button" class="neu-raised neu-btn neu-focus p-3 rounded-xl" aria-describedby="tooltip-profile">
+                <span class="iconify text-gray-600 dark:text-gray-300" data-icon="lucide:user" data-width="20" aria-hidden="true"></span>
+                <span class="sr-only">Profile</span>
+              </button>
+              <div id="tooltip-profile" role="tooltip" class="tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-gray-800 whitespace-nowrap pointer-events-none">
+                Profile
+                <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800">
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Accordion Card -->
+        <article class="neu-raised p-6 rounded-3xl md:col-span-2">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:chevrons-down" data-width="20" aria-hidden="true"></span>
+            Accordion
+          </h2>
+          <div class="space-y-3" id="accordion">
+            <div class="accordion-item rounded-xl overflow-hidden neu-flat">
+              <button type="button" class="accordion-trigger neu-focus w-full px-5 py-4 text-left flex items-center justify-between" aria-expanded="true" aria-controls="accordion-panel-1">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-200">What is neuromorphic
+                  design?</span>
+                <span class="iconify accordion-icon transition-transform duration-300 rotate-180 text-gray-500" data-icon="lucide:chevron-down" data-width="18" aria-hidden="true"></span>
+              </button>
+              <div id="accordion-panel-1" class="accordion-panel px-5 pb-4" style="max-height: 200px;">
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  Neuromorphic design uses soft shadows and gradients to create a soft, extruded
+                  plastic look. It mimics real physical objects with subtle depth.
+                </p>
+              </div>
+            </div>
+            <div class="accordion-item rounded-xl overflow-hidden neu-flat">
+              <button type="button" class="accordion-trigger neu-focus w-full px-5 py-4 text-left flex items-center justify-between" aria-expanded="false" aria-controls="accordion-panel-2">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-200">Is it
+                  accessible?</span>
+                <span class="iconify accordion-icon transition-transform duration-300 text-gray-500" data-icon="lucide:chevron-down" data-width="18" aria-hidden="true"></span>
+              </button>
+              <div id="accordion-panel-2" class="accordion-panel px-5" style="max-height: 0;">
+                <p class="text-sm text-gray-500 dark:text-gray-400 pb-4">
+                  Yes! This implementation includes full keyboard navigation, ARIA attributes, and
+                  screen reader support.
+                </p>
+              </div>
+            </div>
+            <div class="accordion-item rounded-xl overflow-hidden neu-flat">
+              <button type="button" class="accordion-trigger neu-focus w-full px-5 py-4 text-left flex items-center justify-between" aria-expanded="false" aria-controls="accordion-panel-3">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-200">Can I customize
+                  it?</span>
+                <span class="iconify accordion-icon transition-transform duration-300 text-gray-500" data-icon="lucide:chevron-down" data-width="18" aria-hidden="true"></span>
+              </button>
+              <div id="accordion-panel-3" class="accordion-panel px-5" style="max-height: 0;">
+                <p class="text-sm text-gray-500 dark:text-gray-400 pb-4">
+                  Absolutely! All components are built with customization in mind. Colors, sizes, and
+                  animations can be easily modified.
+                </p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ==================== FORMS PANEL ==================== -->
+    <section id="panel-forms" role="tabpanel" aria-labelledby="tab-forms" tabindex="0" class="tab-panel hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+        <!-- Text Inputs -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:text-cursor-input" data-width="20" aria-hidden="true"></span>
+            Text Inputs
+          </h2>
+          <form id="contact-form" class="space-y-5" novalidate>
+            <div>
+              <label for="name-input" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+                Full Name <span class="text-red-500">*</span>
+              </label>
+              <input type="text" id="name-input" name="name" required placeholder="John Doe" autocomplete="name" class="w-full px-4 py-3 rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 neu-inset bg-transparent">
+              <p id="name-input-error" class="text-xs text-red-500 mt-1 hidden" role="alert"></p>
+            </div>
+            <div>
+              <label for="email-input" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+                Email <span class="text-red-500">*</span>
+              </label>
+              <input type="email" id="email-input" name="email" required placeholder="john@example.com" autocomplete="email" class="w-full px-4 py-3 rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 neu-inset bg-transparent">
+              <p id="email-input-error" class="text-xs text-red-500 mt-1 hidden" role="alert"></p>
+            </div>
+            <div>
+              <label for="message-input" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+                Message
+              </label>
+              <textarea id="message-input" name="message" rows="3" placeholder="Your message..." class="w-full px-4 py-3 rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none neu-inset bg-transparent"></textarea>
+            </div>
+            <button type="submit" class="neu-btn neu-focus w-full py-3 px-6 rounded-xl text-sm font-medium text-white bg-gradient-to-br from-purple-600 to-purple-700 shadow-lg">
+              Submit Form
+            </button>
+          </form>
+        </article>
+
+        <!-- Search Dropdown -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:search" data-width="20" aria-hidden="true"></span>
+            Search Dropdown
+          </h2>
+          <div class="relative">
+            <label for="country-search" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+              Select Country
+            </label>
+            <div class="relative">
+              <input type="text" id="country-search" placeholder="Search countries..." autocomplete="off" class="w-full px-4 py-3 pr-10 rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 neu-inset bg-transparent" role="combobox" aria-expanded="false" aria-haspopup="listbox" aria-controls="country-list" aria-autocomplete="list">
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <span class="iconify" data-icon="lucide:chevron-down" data-width="18" aria-hidden="true"></span>
+              </span>
+            </div>
+            <ul id="country-list" role="listbox" aria-label="Countries" class="absolute z-20 w-full mt-2 rounded-xl overflow-hidden opacity-0 invisible transition-all duration-200 neu-raised max-h-48 overflow-y-auto custom-scrollbar">
+              <li role="option" tabindex="-1" class="dropdown-item px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors" data-value="us">🇺🇸 United States</li>
+              <li role="option" tabindex="-1" class="dropdown-item px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors" data-value="uk">🇬🇧 United Kingdom</li>
+              <li role="option" tabindex="-1" class="dropdown-item px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors" data-value="ca">🇨🇦 Canada</li>
+              <li role="option" tabindex="-1" class="dropdown-item px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors" data-value="au">🇦🇺 Australia</li>
+              <li role="option" tabindex="-1" class="dropdown-item px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors" data-value="de">🇩🇪 Germany</li>
+              <li role="option" tabindex="-1" class="dropdown-item px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors" data-value="fr">🇫🇷 France</li>
+              <li role="option" tabindex="-1" class="dropdown-item px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors" data-value="jp">🇯🇵 Japan</li>
+              <li role="option" tabindex="-1" class="dropdown-item px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors" data-value="in">🇮🇳 India</li>
+            </ul>
+          </div>
+
+          <!-- ==================== NEW COMPONENT: Multi-Select ==================== -->
+          <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mt-6 mb-3">Multi-Select</h3>
+          <div class="relative" id="multi-select-wrapper">
+            <div id="multi-select-container" class="min-h-[48px] px-3 py-2 rounded-xl flex flex-wrap gap-2 items-center cursor-text neu-inset" role="listbox" aria-label="Selected skills" aria-multiselectable="true">
+              <span id="multi-select-placeholder" class="text-sm text-gray-400">Click to select...</span>
+            </div>
+            <button type="button" id="multi-select-toggle" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" aria-label="Toggle dropdown" aria-expanded="false" aria-haspopup="listbox">
+              <span class="iconify" data-icon="lucide:chevron-down" data-width="18" aria-hidden="true"></span>
+            </button>
+            <ul id="multi-select-list" role="listbox" aria-label="Available skills" class="absolute z-20 w-full mt-2 rounded-xl overflow-hidden opacity-0 invisible transition-all duration-200 neu-raised max-h-48 overflow-y-auto custom-scrollbar">
+              <li role="option" tabindex="-1" aria-selected="false" data-value="javascript" class="multi-select-option px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors flex items-center gap-2">
+                <span class="multi-check w-4 h-4 rounded border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center transition-colors"></span>
+                JavaScript
+              </li>
+              <li role="option" tabindex="-1" aria-selected="false" data-value="typescript" class="multi-select-option px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors flex items-center gap-2">
+                <span class="multi-check w-4 h-4 rounded border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center transition-colors"></span>
+                TypeScript
+              </li>
+              <li role="option" tabindex="-1" aria-selected="false" data-value="react" class="multi-select-option px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors flex items-center gap-2">
+                <span class="multi-check w-4 h-4 rounded border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center transition-colors"></span>
+                React
+              </li>
+              <li role="option" tabindex="-1" aria-selected="false" data-value="vue" class="multi-select-option px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors flex items-center gap-2">
+                <span class="multi-check w-4 h-4 rounded border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center transition-colors"></span>
+                Vue.js
+              </li>
+              <li role="option" tabindex="-1" aria-selected="false" data-value="nodejs" class="multi-select-option px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors flex items-center gap-2">
+                <span class="multi-check w-4 h-4 rounded border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center transition-colors"></span>
+                Node.js
+              </li>
+              <li role="option" tabindex="-1" aria-selected="false" data-value="python" class="multi-select-option px-4 py-3 text-sm text-gray-600 dark:text-gray-300 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors flex items-center gap-2">
+                <span class="multi-check w-4 h-4 rounded border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center transition-colors"></span>
+                Python
+              </li>
+            </ul>
+          </div>
+          <!-- ==================== END: Multi-Select ==================== -->
+        </article>
+
+        <!-- Range Slider & Rating -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:sliders-horizontal" data-width="20" aria-hidden="true"></span>
+            Range & Rating
+          </h2>
+          <div class="space-y-6">
+            <!-- Range Slider -->
+            <div>
+              <div class="flex justify-between mb-3">
+                <label for="volume-slider" class="text-sm font-medium text-gray-600 dark:text-gray-300">Volume</label>
+                <span id="volume-value" class="text-sm font-semibold text-purple-600">50%</span>
+              </div>
+              <div class="relative h-3 rounded-full neu-inset">
+                <div id="volume-track" class="absolute h-full rounded-full progress-fill" style="width: 50%;"></div>
+                <input type="range" id="volume-slider" min="0" max="100" value="50" class="absolute w-full h-full opacity-0 cursor-pointer" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" aria-label="Volume">
+                <div id="volume-thumb" class="absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full cursor-grab active:cursor-grabbing transition-transform hover:scale-110 neu-raised pointer-events-none" style="left: calc(50% - 12px);" aria-hidden="true"></div>
+              </div>
+            </div>
+
+            <!-- Star Rating -->
+            <div>
+              <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-3 block">Rating</label>
+              <div id="star-rating" class="flex gap-1" role="radiogroup" aria-label="Rating">
+                <button type="button" class="star-btn neu-focus p-1 rounded transition-transform hover:scale-110" role="radio" aria-checked="false" data-value="1" aria-label="1 star">
+                  <span class="iconify text-2xl text-gray-300" data-icon="lucide:star" data-width="28" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="star-btn neu-focus p-1 rounded transition-transform hover:scale-110" role="radio" aria-checked="false" data-value="2" aria-label="2 stars">
+                  <span class="iconify text-2xl text-gray-300" data-icon="lucide:star" data-width="28" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="star-btn neu-focus p-1 rounded transition-transform hover:scale-110" role="radio" aria-checked="false" data-value="3" aria-label="3 stars">
+                  <span class="iconify text-2xl text-gray-300" data-icon="lucide:star" data-width="28" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="star-btn neu-focus p-1 rounded transition-transform hover:scale-110" role="radio" aria-checked="false" data-value="4" aria-label="4 stars">
+                  <span class="iconify text-2xl text-gray-300" data-icon="lucide:star" data-width="28" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="star-btn neu-focus p-1 rounded transition-transform hover:scale-110" role="radio" aria-checked="false" data-value="5" aria-label="5 stars">
+                  <span class="iconify text-2xl text-gray-300" data-icon="lucide:star" data-width="28" aria-hidden="true"></span>
+                </button>
+              </div>
+              <p id="rating-text" class="text-xs text-gray-500 dark:text-gray-400 mt-2">Click to rate</p>
+            </div>
+          </div>
+        </article>
+
+        <!-- ==================== NEW COMPONENT: Date & Time ==================== -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:calendar-clock" data-width="20" aria-hidden="true"></span>
+            Date & Time
+          </h2>
+          <div class="space-y-5">
+            <!-- Date Picker -->
+            <div>
+              <label for="date-picker" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+                Select Date
+              </label>
+              <div class="relative">
+                <input type="date" id="date-picker" name="date" class="w-full px-4 py-3 pr-10 rounded-xl text-sm text-gray-700 dark:text-gray-200 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 neu-inset bg-transparent" aria-label="Select a date">
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <span class="iconify" data-icon="lucide:calendar" data-width="18" aria-hidden="true"></span>
+                </span>
+              </div>
+            </div>
+            <!-- Time Picker -->
+            <div>
+              <label for="time-picker" class="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+                Select Time
+              </label>
+              <div class="relative">
+                <input type="time" id="time-picker" name="time" class="w-full px-4 py-3 pr-10 rounded-xl text-sm text-gray-700 dark:text-gray-200 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 neu-inset bg-transparent" aria-label="Select a time">
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <span class="iconify" data-icon="lucide:clock" data-width="18" aria-hidden="true"></span>
+                </span>
+              </div>
+            </div>
+            <!-- Selected Display -->
+            <div id="datetime-display" class="p-3 rounded-xl text-sm text-gray-600 dark:text-gray-300 neu-flat">
+              <span class="iconify inline-block mr-2 text-purple-500" data-icon="lucide:info" data-width="16" aria-hidden="true"></span>
+              <span id="datetime-text">Select a date and time above</span>
+            </div>
+          </div>
+        </article>
+        <!-- ==================== END: Date & Time ==================== -->
+
+        <!-- File Upload -->
+        <article class="neu-raised p-6 rounded-3xl md:col-span-2 lg:col-span-3">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:upload-cloud" data-width="20" aria-hidden="true"></span>
+            File Upload
+          </h2>
+          <div id="drop-zone" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer hover:border-purple-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500" role="button" tabindex="0" aria-label="Drop files here or click to upload">
+            <input type="file" id="file-input" class="hidden" multiple accept="image/*,.pdf,.doc,.docx">
+            <div class="flex flex-col items-center">
+              <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 neu-raised">
+                <span class="iconify text-3xl text-purple-500" data-icon="lucide:cloud-upload" data-width="32" aria-hidden="true"></span>
+              </div>
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Drop files here or
+                click to upload</p>
+              <p class="text-xs text-gray-400">PNG, JPG, PDF up to 10MB</p>
+            </div>
+          </div>
+          <div id="file-list" class="mt-4 space-y-2" aria-live="polite"></div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ==================== FEEDBACK PANEL ==================== -->
+    <section id="panel-feedback" role="tabpanel" aria-labelledby="tab-feedback" tabindex="0" class="tab-panel hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+        <!-- Progress Bars -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:loader" data-width="20" aria-hidden="true"></span>
+            Progress
+          </h2>
+          <div class="space-y-6">
+            <div>
+              <div class="flex justify-between mb-2">
+                <span class="text-sm text-gray-600 dark:text-gray-300">Upload Progress</span>
+                <span id="progress-value" class="text-sm font-medium text-purple-600">0%</span>
+              </div>
+              <div class="h-3 rounded-full overflow-hidden neu-inset" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Upload progress">
+                <div id="progress-bar" class="h-full rounded-full transition-all duration-300 relative overflow-hidden progress-fill" style="width: 0%;">
+                  <div class="shimmer absolute inset-0"></div>
+                </div>
+              </div>
+            </div>
+            <div class="flex gap-3">
+              <button type="button" id="start-progress" class="neu-btn neu-focus flex-1 py-2 px-4 rounded-xl text-sm font-medium text-white bg-gradient-to-br from-green-500 to-green-600 shadow-md">
+                Start
+              </button>
+              <button type="button" id="reset-progress" class="neu-raised neu-btn neu-focus flex-1 py-2 px-4 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300">
+                Reset
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Loading States -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:loader-2" data-width="20" aria-hidden="true"></span>
+            Loading States
+          </h2>
+          <div class="space-y-6">
+            <div class="flex items-center gap-4">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center neu-raised">
+                <span class="iconify animate-spin text-purple-500" data-icon="lucide:loader-2" data-width="20" aria-label="Loading"></span>
+              </div>
+              <span class="text-sm text-gray-600 dark:text-gray-300">Spinner</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="flex gap-1" aria-label="Loading">
+                <div class="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 0ms;"></div>
+                <div class="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 150ms;"></div>
+                <div class="w-2 h-2 rounded-full bg-purple-500 animate-bounce" style="animation-delay: 300ms;"></div>
+              </div>
+              <span class="text-sm text-gray-600 dark:text-gray-300">Dots</span>
+            </div>
+            <div>
+              <span class="text-sm text-gray-600 dark:text-gray-300 block mb-3">Skeleton</span>
+              <div class="space-y-3" aria-label="Loading content">
+                <div class="h-4 rounded-lg skeleton" style="width: 75%;"></div>
+                <div class="h-4 rounded-lg skeleton" style="width: 100%;"></div>
+                <div class="h-4 rounded-lg skeleton" style="width: 60%;"></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Toast Notifications -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:bell-ring" data-width="20" aria-hidden="true"></span>
+            Notifications
+          </h2>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" id="toast-success" class="neu-btn neu-focus py-2 px-3 rounded-xl text-xs font-medium text-white bg-gradient-to-br from-green-500 to-green-600 shadow-md">
+              Success
+            </button>
+            <button type="button" id="toast-error" class="neu-btn neu-focus py-2 px-3 rounded-xl text-xs font-medium text-white bg-gradient-to-br from-red-500 to-red-600 shadow-md">
+              Error
+            </button>
+            <button type="button" id="toast-warning" class="neu-btn neu-focus py-2 px-3 rounded-xl text-xs font-medium text-white bg-gradient-to-br from-yellow-500 to-yellow-600 shadow-md">
+              Warning
+            </button>
+            <button type="button" id="toast-info" class="neu-btn neu-focus py-2 px-3 rounded-xl text-xs font-medium text-white bg-gradient-to-br from-blue-500 to-blue-600 shadow-md">
+              Info
+            </button>
+          </div>
+        </article>
+
+        <!-- Modal Trigger -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:layout" data-width="20" aria-hidden="true"></span>
+            Modal Dialog
+          </h2>
+          <button type="button" id="open-modal" class="neu-btn neu-focus w-full py-3 px-6 rounded-xl text-sm font-medium text-white bg-gradient-to-br from-purple-600 to-purple-700 shadow-lg">
+            Open Modal
+          </button>
+        </article>
+
+        <!-- Alert Messages -->
+        <article class="neu-raised p-6 rounded-3xl md:col-span-2">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:alert-triangle" data-width="20" aria-hidden="true"></span>
+            Alert Messages
+          </h2>
+          <div class="space-y-4">
+            <div class="flex items-start gap-3 p-4 rounded-xl bg-green-100 dark:bg-green-900/30" role="alert">
+              <span class="iconify text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" data-icon="lucide:check-circle" data-width="20" aria-hidden="true"></span>
+              <div>
+                <p class="text-sm font-medium text-green-800 dark:text-green-200">Success</p>
+                <p class="text-xs text-green-600 dark:text-green-400">Your changes have been saved
+                  successfully.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-4 rounded-xl bg-red-100 dark:bg-red-900/30" role="alert">
+              <span class="iconify text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" data-icon="lucide:x-circle" data-width="20" aria-hidden="true"></span>
+              <div>
+                <p class="text-sm font-medium text-red-800 dark:text-red-200">Error</p>
+                <p class="text-xs text-red-600 dark:text-red-400">There was a problem processing your
+                  request.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-4 rounded-xl bg-yellow-100 dark:bg-yellow-900/30" role="alert">
+              <span class="iconify text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" data-icon="lucide:alert-triangle" data-width="20" aria-hidden="true"></span>
+              <div>
+                <p class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Warning</p>
+                <p class="text-xs text-yellow-600 dark:text-yellow-400">Your session will expire in 5
+                  minutes.</p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ==================== DATA PANEL ==================== -->
+    <section id="panel-data" role="tabpanel" aria-labelledby="tab-data" tabindex="0" class="tab-panel hidden">
+      <div class="grid grid-cols-1 gap-8">
+
+        <!-- Data Table -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:table" data-width="20" aria-hidden="true"></span>
+            Data Table
+          </h2>
+          <div class="mb-4">
+            <div class="relative max-w-sm">
+              <input type="text" id="table-search" placeholder="Search..." class="w-full px-4 py-2 pl-10 rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 neu-inset bg-transparent" aria-label="Search table">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                <span class="iconify" data-icon="lucide:search" data-width="16" aria-hidden="true"></span>
+              </span>
+            </div>
+          </div>
+          <div class="overflow-x-auto rounded-xl neu-inset">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-gray-200 dark:border-gray-700">
+                  <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300" scope="col">Name</th>
+                  <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300" scope="col">Email</th>
+                  <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300" scope="col">Status</th>
+                  <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300" scope="col">Role</th>
+                </tr>
+              </thead>
+              <tbody id="table-body">
+                <tr class="border-b border-gray-100 dark:border-gray-700/50 hover:bg-white/30 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3 text-gray-700 dark:text-gray-200">John Doe</td>
+                  <td class="px-4 py-3 text-gray-500 dark:text-gray-400">john@example.com</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded-full text-xs font-medium text-green-700 bg-green-100 dark:bg-green-900/50 dark:text-green-300">Active</span>
+                  </td>
+                  <td class="px-4 py-3 text-gray-500 dark:text-gray-400">Admin</td>
+                </tr>
+                <tr class="border-b border-gray-100 dark:border-gray-700/50 hover:bg-white/30 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3 text-gray-700 dark:text-gray-200">Jane Smith</td>
+                  <td class="px-4 py-3 text-gray-500 dark:text-gray-400">jane@example.com</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded-full text-xs font-medium text-yellow-700 bg-yellow-100 dark:bg-yellow-900/50 dark:text-yellow-300">Pending</span>
+                  </td>
+                  <td class="px-4 py-3 text-gray-500 dark:text-gray-400">Editor</td>
+                </tr>
+                <tr class="hover:bg-white/30 dark:hover:bg-white/5 transition-colors">
+                  <td class="px-4 py-3 text-gray-700 dark:text-gray-200">Bob Johnson</td>
+                  <td class="px-4 py-3 text-gray-500 dark:text-gray-400">bob@example.com</td>
+                  <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded-full text-xs font-medium text-red-700 bg-red-100 dark:bg-red-900/50 dark:text-red-300">Inactive</span>
+                  </td>
+                  <td class="px-4 py-3 text-gray-500 dark:text-gray-400">Viewer</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="table-status" class="sr-only" aria-live="polite"></div>
+        </article>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <!-- Bar Chart -->
+          <article class="neu-raised p-6 rounded-3xl">
+            <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+              <span class="iconify" data-icon="lucide:bar-chart-3" data-width="20" aria-hidden="true"></span>
+              Bar Chart
+            </h2>
+            <div class="flex items-end justify-between h-48 gap-4 px-4" role="img" aria-label="Weekly activity chart">
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-full rounded-t-lg chart-bar bg-gradient-to-t from-purple-700 to-purple-500" style="height: 60%;"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Mon</span>
+              </div>
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-full rounded-t-lg chart-bar bg-gradient-to-t from-purple-700 to-purple-500" style="height: 80%;"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Tue</span>
+              </div>
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-full rounded-t-lg chart-bar bg-gradient-to-t from-purple-700 to-purple-500" style="height: 45%;"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Wed</span>
+              </div>
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-full rounded-t-lg chart-bar bg-gradient-to-t from-purple-700 to-purple-500" style="height: 90%;"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Thu</span>
+              </div>
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-full rounded-t-lg chart-bar bg-gradient-to-t from-purple-700 to-purple-500" style="height: 70%;"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Fri</span>
+              </div>
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-full rounded-t-lg chart-bar bg-gradient-to-t from-purple-700 to-purple-500" style="height: 55%;"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Sat</span>
+              </div>
+              <div class="flex flex-col items-center gap-2 flex-1">
+                <div class="w-full rounded-t-lg chart-bar bg-gradient-to-t from-purple-700 to-purple-500" style="height: 35%;"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Sun</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Donut Chart -->
+          <article class="neu-raised p-6 rounded-3xl">
+            <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+              <span class="iconify" data-icon="lucide:pie-chart" data-width="20" aria-hidden="true"></span>
+              Donut Chart
+            </h2>
+            <div class="flex items-center justify-center" role="img" aria-label="Device usage: Desktop 50%, Mobile 30%, Tablet 20%">
+              <div class="relative w-40 h-40">
+                <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="12" class="text-gray-200 dark:text-gray-700"></circle>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="url(#gradient1)" stroke-width="12" stroke-dasharray="125.6 251.2" stroke-linecap="round">
+                  </circle>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="url(#gradient2)" stroke-width="12" stroke-dasharray="75.4 251.2" stroke-dashoffset="-125.6" stroke-linecap="round"></circle>
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="url(#gradient3)" stroke-width="12" stroke-dasharray="50.2 251.2" stroke-dashoffset="-201" stroke-linecap="round"></circle>
+                  <defs>
+                    <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#7c3aed"></stop>
+                      <stop offset="100%" stop-color="#a855f7"></stop>
+                    </linearGradient>
+                    <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#10b981"></stop>
+                      <stop offset="100%" stop-color="#34d399"></stop>
+                    </linearGradient>
+                    <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#f59e0b"></stop>
+                      <stop offset="100%" stop-color="#fbbf24"></stop>
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <span class="text-2xl font-semibold text-gray-700 dark:text-gray-200">100%</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex justify-center gap-6 mt-4 flex-wrap">
+              <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-gradient-to-r from-purple-600 to-purple-400"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Desktop 50%</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-green-400"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Mobile 30%</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-400"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Tablet 20%</span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== ADVANCED PANEL ==================== -->
+    <section id="panel-advanced" role="tabpanel" aria-labelledby="tab-advanced" tabindex="0" class="tab-panel hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+        <!-- Breadcrumbs -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:chevrons-right" data-width="20" aria-hidden="true"></span>
+            Breadcrumbs
+          </h2>
+          <nav aria-label="Breadcrumb">
+            <ol class="flex items-center gap-2 text-sm flex-wrap">
+              <li>
+                <a href="#" class="text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors neu-focus rounded">Home</a>
+              </li>
+              <li aria-hidden="true">
+                <span class="iconify text-gray-400" data-icon="lucide:chevron-right" data-width="14"></span>
+              </li>
+              <li>
+                <a href="#" class="text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors neu-focus rounded">Products</a>
+              </li>
+              <li aria-hidden="true">
+                <span class="iconify text-gray-400" data-icon="lucide:chevron-right" data-width="14"></span>
+              </li>
+              <li>
+                <span class="text-gray-700 dark:text-gray-200 font-medium" aria-current="page">Details</span>
+              </li>
+            </ol>
+          </nav>
+        </article>
+
+        <!-- Stepper -->
+        <article class="neu-raised p-6 rounded-3xl md:col-span-2">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:git-branch" data-width="20" aria-hidden="true"></span>
+            Stepper
+          </h2>
+          <div class="flex items-center justify-between" role="list" aria-label="Progress steps">
+            <div class="flex items-center gap-3" role="listitem">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium bg-gradient-to-br from-purple-600 to-purple-700 shadow-md" aria-label="Step 1, completed">
+                <span class="iconify" data-icon="lucide:check" data-width="18" aria-hidden="true"></span>
+              </div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:block">Account</span>
+            </div>
+            <div class="flex-1 h-1 mx-4 rounded-full bg-gradient-to-r from-purple-600 to-purple-700" aria-hidden="true"></div>
+            <div class="flex items-center gap-3" role="listitem">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium bg-gradient-to-br from-purple-600 to-purple-700 shadow-md" aria-label="Step 2, current">
+                2
+              </div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:block">Details</span>
+            </div>
+            <div class="flex-1 h-1 mx-4 rounded-full neu-inset" aria-hidden="true"></div>
+            <div class="flex items-center gap-3" role="listitem">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm font-medium neu-raised" aria-label="Step 3, pending">
+                3
+              </div>
+              <span class="text-sm text-gray-400 dark:text-gray-500 hidden sm:block">Confirm</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Icon Cards -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:layout-grid" data-width="20" aria-hidden="true"></span>
+            Feature Cards
+          </h2>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="neu-flat p-4 rounded-xl text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+              <div class="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center bg-gradient-to-br from-purple-600 to-purple-700 shadow-md">
+                <span class="iconify text-white" data-icon="lucide:zap" data-width="24" aria-hidden="true"></span>
+              </div>
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-200">Fast</p>
+            </div>
+            <div class="neu-flat p-4 rounded-xl text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+              <div class="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center bg-gradient-to-br from-green-500 to-green-600 shadow-md">
+                <span class="iconify text-white" data-icon="lucide:shield-check" data-width="24" aria-hidden="true"></span>
+              </div>
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-200">Secure</p>
+            </div>
+            <div class="neu-flat p-4 rounded-xl text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+              <div class="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center bg-gradient-to-br from-yellow-500 to-yellow-600 shadow-md">
+                <span class="iconify text-white" data-icon="lucide:sparkles" data-width="24" aria-hidden="true"></span>
+              </div>
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-200">Modern</p>
+            </div>
+            <div class="neu-flat p-4 rounded-xl text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+              <div class="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 shadow-md">
+                <span class="iconify text-white" data-icon="lucide:globe" data-width="24" aria-hidden="true"></span>
+              </div>
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-200">Global</p>
+            </div>
+          </div>
+        </article>
+
+        <!-- Context Menu Demo -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:mouse-pointer-2" data-width="20" aria-hidden="true"></span>
+            Context Menu
+          </h2>
+          <div id="context-area" class="h-32 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 cursor-context-menu transition-colors hover:border-purple-400 focus:border-purple-400 focus:outline-none" tabindex="0" role="application" aria-label="Right-click or press Menu key for context menu">
+            <p class="text-sm text-gray-400 dark:text-gray-500 text-center px-4">Right-click here<br><span class="text-xs">(or press Menu key)</span></p>
+          </div>
+        </article>
+
+        <!-- ==================== NEW COMPONENT: Tree View ==================== -->
+        <article class="neu-raised p-6 rounded-3xl">
+          <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6 tracking-tight flex items-center gap-2">
+            <span class="iconify" data-icon="lucide:folder-tree" data-width="20" aria-hidden="true"></span>
+            Tree View
+          </h2>
+          <nav aria-label="File tree navigation">
+            <ul id="tree-view" role="tree" aria-label="Project files" class="space-y-1">
+              <!-- Root folder: src -->
+              <li role="treeitem" aria-expanded="true" class="tree-item">
+                <button type="button" class="tree-toggle neu-focus w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors text-left" aria-expanded="true">
+                  <span class="iconify tree-chevron text-gray-400 transition-transform duration-200 rotate-90" data-icon="lucide:chevron-right" data-width="14" aria-hidden="true"></span>
+                  <span class="iconify text-yellow-500" data-icon="lucide:folder-open" data-width="18" aria-hidden="true"></span>
+                  <span>src</span>
+                </button>
+                <ul role="group" class="tree-children pl-6 mt-1 space-y-1">
+                  <!-- Subfolder: components -->
+                  <li role="treeitem" aria-expanded="false" class="tree-item">
+                    <button type="button" class="tree-toggle neu-focus w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors text-left" aria-expanded="false">
+                      <span class="iconify tree-chevron text-gray-400 transition-transform duration-200" data-icon="lucide:chevron-right" data-width="14" aria-hidden="true"></span>
+                      <span class="iconify text-yellow-500" data-icon="lucide:folder" data-width="18" aria-hidden="true"></span>
+                      <span>components</span>
+                    </button>
+                    <ul role="group" class="tree-children pl-6 mt-1 space-y-1 hidden">
+                      <li role="treeitem" class="tree-leaf">
+                        <div class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors cursor-pointer">
+                          <span class="w-[14px]"></span>
+                          <span class="iconify text-blue-500" data-icon="lucide:file-code" data-width="18" aria-hidden="true"></span>
+                          <span>Button.tsx</span>
+                        </div>
+                      </li>
+                      <li role="treeitem" class="tree-leaf">
+                        <div class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors cursor-pointer">
+                          <span class="w-[14px]"></span>
+                          <span class="iconify text-blue-500" data-icon="lucide:file-code" data-width="18" aria-hidden="true"></span>
+                          <span>Modal.tsx</span>
+                        </div>
+                      </li>
+                      <li role="treeitem" class="tree-leaf">
+                        <div class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors cursor-pointer">
+                          <span class="w-[14px]"></span>
+                          <span class="iconify text-blue-500" data-icon="lucide:file-code" data-width="18" aria-hidden="true"></span>
+                          <span>Card.tsx</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </li>
+                  <!-- File: App.tsx -->
+                  <li role="treeitem" class="tree-leaf">
+                    <div class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors cursor-pointer">
+                      <span class="w-[14px]"></span>
+                      <span class="iconify text-blue-500" data-icon="lucide:file-code" data-width="18" aria-hidden="true"></span>
+                      <span>App.tsx</span>
+                    </div>
+                  </li>
+                  <!-- File: index.ts -->
+                  <li role="treeitem" class="tree-leaf">
+                    <div class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors cursor-pointer">
+                      <span class="w-[14px]"></span>
+                      <span class="iconify text-green-500" data-icon="lucide:file" data-width="18" aria-hidden="true"></span>
+                      <span>index.ts</span>
+                    </div>
+                  </li>
+                </ul>
+              </li>
+              <!-- Root file: package.json -->
+              <li role="treeitem" class="tree-leaf">
+                <div class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors cursor-pointer">
+                  <span class="w-[14px]"></span>
+                  <span class="iconify text-orange-500" data-icon="lucide:file-json" data-width="18" aria-hidden="true"></span>
+                  <span>package.json</span>
+                </div>
+              </li>
+              <!-- Root file: README.md -->
+              <li role="treeitem" class="tree-leaf">
+                <div class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors cursor-pointer">
+                  <span class="w-[14px]"></span>
+                  <span class="iconify text-gray-500" data-icon="lucide:file-text" data-width="18" aria-hidden="true"></span>
+                  <span>README.md</span>
+                </div>
+              </li>
+            </ul>
+          </nav>
+        </article>
+        <!-- ==================== END: Tree View ==================== -->
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal Backdrop -->
+  <div id="modal-backdrop" class="fixed inset-0 z-40 modal-backdrop opacity-0 invisible transition-all duration-300" aria-hidden="true"></div>
+
+  <!-- Modal Dialog -->
+  <div id="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-description" class="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md mx-4 p-6 rounded-3xl opacity-0 invisible transition-all duration-300 scale-95 neu-raised">
+    <div class="flex items-center justify-between mb-4">
+      <h2 id="modal-title" class="text-lg font-semibold text-gray-700 dark:text-gray-200">
+        Modal Title
+      </h2>
+      <button type="button" id="close-modal" class="neu-raised neu-btn neu-focus p-2 rounded-lg" aria-label="Close modal">
+        <span class="iconify text-gray-500 dark:text-gray-400" data-icon="lucide:x" data-width="18" aria-hidden="true"></span>
+      </button>
+    </div>
+    <p id="modal-description" class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+      This is a beautiful neuromorphic modal dialog with smooth animations and full accessibility support. Press
+      Escape to close.
+    </p>
+    <div class="flex gap-3">
+      <button type="button" id="modal-cancel" class="neu-raised neu-btn neu-focus flex-1 py-2 px-4 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300">
+        Cancel
+      </button>
+      <button type="button" id="modal-confirm" class="neu-btn neu-focus flex-1 py-2 px-4 rounded-xl text-sm font-medium text-white bg-gradient-to-br from-purple-600 to-purple-700 shadow-md">
+        Confirm
+      </button>
+    </div>
+  </div>
+
+  <!-- Context Menu -->
+  <div id="context-menu" role="menu" aria-label="Context menu" class="fixed z-50 rounded-xl py-2 min-w-40 opacity-0 invisible transition-all duration-200 neu-raised">
+    <button type="button" role="menuitem" class="context-menu-item w-full px-4 py-2 text-left text-sm text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 flex items-center gap-2 focus:outline-none focus:bg-purple-50 dark:focus:bg-purple-900/30">
+      <span class="iconify" data-icon="lucide:copy" data-width="14" aria-hidden="true"></span>
+      Copy
+    </button>
+    <button type="button" role="menuitem" class="context-menu-item w-full px-4 py-2 text-left text-sm text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 flex items-center gap-2 focus:outline-none focus:bg-purple-50 dark:focus:bg-purple-900/30">
+      <span class="iconify" data-icon="lucide:scissors" data-width="14" aria-hidden="true"></span>
+      Cut
+    </button>
+    <button type="button" role="menuitem" class="context-menu-item w-full px-4 py-2 text-left text-sm text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 flex items-center gap-2 focus:outline-none focus:bg-purple-50 dark:focus:bg-purple-900/30">
+      <span class="iconify" data-icon="lucide:clipboard" data-width="14" aria-hidden="true"></span>
+      Paste
+    </button>
+    <div class="border-t border-gray-200 dark:border-gray-700 my-1" role="separator"></div>
+    <button type="button" role="menuitem" class="context-menu-item w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 focus:outline-none focus:bg-red-50 dark:focus:bg-red-900/30">
+      <span class="iconify" data-icon="lucide:trash-2" data-width="14" aria-hidden="true"></span>
+      Delete
+    </button>
+  </div>
+
+  <!-- ==================== JAVASCRIPT ==================== -->
+  <script>
+    (function() {
+      'use strict';
+      // ============================================
+      // CONFIGURATION
+      // ============================================
+      const CONFIG = {
+        DEBUG: true, // Set to false in production
+        TOAST_DURATION: 4000,
+        DEBOUNCE_DELAY: 150,
+        ANIMATION_DURATION: 300,
+        STORAGE_KEY: 'neu-ui-theme',
+        MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
+        ALLOWED_FILE_TYPES: ['image/png', 'image/jpeg', 'image/gif', 'application/pdf']
+      };
+      const TOAST_CONFIG = {
+        success: {
+          bg: 'from-green-500 to-green-600',
+          icon: 'lucide:check-circle'
+        },
+        error: {
+          bg: 'from-red-500 to-red-600',
+          icon: 'lucide:x-circle'
+        },
+        warning: {
+          bg: 'from-yellow-500 to-yellow-600',
+          icon: 'lucide:alert-triangle'
+        },
+        info: {
+          bg: 'from-blue-500 to-blue-600',
+          icon: 'lucide:info'
+        }
+      };
+      // ============================================
+      // UTILITY FUNCTIONS
+      // ============================================
+      /**
+       * Logs warnings in development mode only
+       */
+      function logWarning(message) {
+        if (CONFIG.DEBUG) {
+          console.warn(`[Neuromorphic UI] ${message}`);
+        }
+      }
+      /**
+       * Sanitizes a string to prevent XSS
+       */
+      function sanitize(str) {
+        if (typeof str !== 'string') return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+      /**
+       * Sanitizes a URL to prevent JavaScript protocol injection
+       */
+      function sanitizeUrl(url) {
+        if (typeof url !== 'string') return '#';
+        try {
+          const parsed = new URL(url, window.location.origin);
+          if (!['http:', 'https:', 'mailto:'].includes(parsed.protocol)) {
+            return '#';
+          }
+          return parsed.href;
+        } catch {
+          return '#';
+        }
+      }
+      /**
+       * Debounce function
+       */
+      function debounce(fn, delay) {
+        let timeoutId;
+        return function(...args) {
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => fn.apply(this, args), delay);
+        };
+      }
+      /**
+       * Generates a unique ID
+       */
+      function generateId(prefix = 'neu') {
+        return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
+      }
+      /**
+       * Gets all focusable elements within a container
+       */
+      function getFocusableElements(container) {
+        return container.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+      }
+      /**
+       * Traps focus within a container (for modals)
+       */
+      function trapFocus(container) {
+        const focusable = getFocusableElements(container);
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        function handleKeyDown(e) {
+          if (e.key !== 'Tab') return;
+          if (e.shiftKey) {
+            if (document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+        container.addEventListener('keydown', handleKeyDown);
+        first?.focus();
+        return function cleanup() {
+          container.removeEventListener('keydown', handleKeyDown);
+        };
+      }
+      // ============================================
+      // TOAST NOTIFICATION SYSTEM
+      // ============================================
+      const ToastManager = {
+        container: null,
+        init() {
+          this.container = document.getElementById('toast-container');
+        },
+        show(type, title, message) {
+          if (!this.container) return;
+          const config = TOAST_CONFIG[type] || TOAST_CONFIG.info;
+          const id = generateId('toast');
+          const toast = document.createElement('div');
+          toast.id = id;
+          toast.className = `toast-enter pointer-events-auto flex items-start gap-3 p-4 rounded-xl min-w-[280px] max-w-sm bg-gradient-to-br ${config.bg} shadow-lg`;
+          toast.setAttribute('role', 'alert');
+          toast.innerHTML = `
+                        <span class="iconify text-white mt-0.5 flex-shrink-0" data-icon="${config.icon}" data-width="20" aria-hidden="true"></span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-white">${sanitize(title)}</p>
+                            <p class="text-xs text-white/80">${sanitize(message)}</p>
+                        </div>
+                        <button type="button" class="text-white/80 hover:text-white transition-colors flex-shrink-0 p-1 rounded focus:outline-none focus:ring-2 focus:ring-white/50" aria-label="Dismiss">
+                            <span class="iconify" data-icon="lucide:x" data-width="16" aria-hidden="true"></span>
+                        </button>
+                    `;
+          const dismissBtn = toast.querySelector('button');
+          dismissBtn.addEventListener('click', () => this.dismiss(id));
+          this.container.appendChild(toast);
+          // Auto dismiss
+          setTimeout(() => this.dismiss(id), CONFIG.TOAST_DURATION);
+          return id;
+        },
+        dismiss(id) {
+          const toast = document.getElementById(id);
+          if (!toast) return;
+          toast.classList.remove('toast-enter');
+          toast.classList.add('toast-exit');
+          toast.addEventListener('animationend', () => {
+            toast.remove();
+          }, {
+            once: true
+          });
+        }
+      };
+      // ============================================
+      // THEME CONTROLLER
+      // ============================================
+      const ThemeController = {
+        toggle: null,
+        icon: null,
+        isDark: false,
+        init() {
+          this.toggle = document.getElementById('theme-toggle');
+          this.icon = document.getElementById('theme-icon');
+          if (!this.toggle || !this.icon) {
+            logWarning('ThemeController: Required elements not found');
+            return;
+          }
+          // Check saved preference or system preference
+          const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          this.isDark = saved ? saved === 'dark' : prefersDark;
+          this.apply();
+          // Event listeners
+          this.toggle.addEventListener('click', () => this.toggleTheme());
+          // Listen for system changes
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem(CONFIG.STORAGE_KEY)) {
+              this.isDark = e.matches;
+              this.apply();
+            }
+          });
+        },
+        toggleTheme() {
+          this.isDark = !this.isDark;
+          this.apply();
+          localStorage.setItem(CONFIG.STORAGE_KEY, this.isDark ? 'dark' : 'light');
+        },
+        apply() {
+          document.documentElement.classList.toggle('dark', this.isDark);
+          this.icon.setAttribute('data-icon', this.isDark ? 'lucide:moon' : 'lucide:sun');
+          this.toggle.setAttribute('aria-pressed', this.isDark);
+        }
+      };
+      // ============================================
+      // TAB CONTROLLER
+      // ============================================
+      const TabController = {
+        tabs: [],
+        panels: [],
+        init() {
+          this.tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+          this.panels = Array.from(document.querySelectorAll('[role="tabpanel"]'));
+          if (this.tabs.length === 0) return;
+          this.tabs.forEach((tab, index) => {
+            tab.addEventListener('click', () => this.activate(index));
+            tab.addEventListener('keydown', (e) => this.handleKeydown(e, index));
+          });
+        },
+        handleKeydown(e, currentIndex) {
+          let newIndex;
+          switch (e.key) {
+            case 'ArrowRight':
+              newIndex = (currentIndex + 1) % this.tabs.length;
+              break;
+            case 'ArrowLeft':
+              newIndex = (currentIndex - 1 + this.tabs.length) % this.tabs.length;
+              break;
+            case 'Home':
+              newIndex = 0;
+              break;
+            case 'End':
+              newIndex = this.tabs.length - 1;
+              break;
+            default:
+              return;
+          }
+          e.preventDefault();
+          this.activate(newIndex);
+          this.tabs[newIndex].focus();
+        },
+        activate(index) {
+          this.tabs.forEach((tab, i) => {
+            const isActive = i === index;
+            tab.setAttribute('aria-selected', isActive);
+            tab.setAttribute('tabindex', isActive ? '0' : '-1');
+          });
+          this.panels.forEach((panel, i) => {
+            panel.classList.toggle('hidden', i !== index);
+          });
+        }
+      };
+      // ============================================
+      // TOGGLE SWITCH CONTROLLER
+      // ============================================
+      const ToggleController = {
+        init() {
+          const toggle = document.getElementById('notifications-toggle');
+          const thumb = document.getElementById('toggle-thumb');
+          if (!toggle || !thumb) return;
+          const updateToggle = () => {
+            const isChecked = toggle.getAttribute('aria-checked') === 'true';
+            toggle.setAttribute('aria-checked', !isChecked);
+            if (!isChecked) {
+              toggle.classList.remove('neu-inset');
+              toggle.classList.add('bg-gradient-to-br', 'from-purple-600', 'to-purple-700');
+              thumb.style.left = 'calc(100% - 28px)';
+            } else {
+              toggle.classList.add('neu-inset');
+              toggle.classList.remove('bg-gradient-to-br', 'from-purple-600', 'to-purple-700');
+              thumb.style.left = '4px';
+            }
+          };
+          toggle.addEventListener('click', updateToggle);
+          toggle.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              updateToggle();
+            }
+          });
+        }
+      };
+      // ============================================
+      // CHECKBOX CONTROLLER
+      // ============================================
+      const CheckboxController = {
+        init() {
+          const checkbox = document.getElementById('terms-checkbox');
+          const icon = document.getElementById('checkbox-icon');
+          if (!checkbox || !icon) return;
+          const updateCheckbox = () => {
+            const isChecked = checkbox.getAttribute('aria-checked') === 'true';
+            checkbox.setAttribute('aria-checked', !isChecked);
+            if (!isChecked) {
+              checkbox.classList.remove('neu-inset');
+              checkbox.classList.add('bg-gradient-to-br', 'from-purple-600', 'to-purple-700');
+              icon.style.opacity = '1';
+            } else {
+              checkbox.classList.add('neu-inset');
+              checkbox.classList.remove('bg-gradient-to-br', 'from-purple-600', 'to-purple-700');
+              icon.style.opacity = '0';
+            }
+          };
+          checkbox.addEventListener('click', updateCheckbox);
+          checkbox.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              updateCheckbox();
+            }
+          });
+        }
+      };
+      // ============================================
+      // RADIO BUTTON CONTROLLER
+      // ============================================
+      const RadioController = {
+        init() {
+          const radioGroup = document.getElementById('plan-radiogroup');
+          if (!radioGroup) return;
+          const radios = radioGroup.querySelectorAll('[role="radio"]');
+          radios.forEach(radio => {
+            radio.addEventListener('click', () => this.select(radios, radio));
+            radio.addEventListener('keydown', (e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                this.select(radios, radio);
+              }
+            });
+          });
+        },
+        select(radios, selected) {
+          radios.forEach(radio => {
+            const isSelected = radio === selected;
+            radio.setAttribute('aria-checked', isSelected);
+            const dot = radio.querySelector('.radio-dot');
+            if (dot) {
+              dot.style.opacity = isSelected ? '1' : '0';
+            }
+          });
+        }
+      };
+      // ============================================
+      // LOADING BUTTON CONTROLLER
+      // ============================================
+      const LoadingButtonController = {
+        init() {
+          const btn = document.getElementById('loading-btn');
+          const spinner = document.getElementById('loading-spinner');
+          const text = document.getElementById('loading-text');
+          if (!btn || !spinner || !text) return;
+          let isLoading = false;
+          btn.addEventListener('click', () => {
+            if (isLoading) return;
+            isLoading = true;
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            text.textContent = 'Loading...';
+            setTimeout(() => {
+              isLoading = false;
+              btn.disabled = false;
+              spinner.classList.add('hidden');
+              text.textContent = 'Click for Loading';
+              ToastManager.show('success', 'Complete', 'Loading finished!');
+            }, 2000);
+          });
+        }
+      };
+      // ============================================
+      // ACCORDION CONTROLLER
+      // ============================================
+      const AccordionController = {
+        init() {
+          const triggers = document.querySelectorAll('.accordion-trigger');
+          triggers.forEach(trigger => {
+            trigger.addEventListener('click', () => this.toggle(trigger));
+            trigger.addEventListener('keydown', (e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                this.toggle(trigger);
+              }
+            });
+          });
+        },
+        toggle(trigger) {
+          const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+          const panel = document.getElementById(trigger.getAttribute('aria-controls'));
+          const icon = trigger.querySelector('.accordion-icon');
+          trigger.setAttribute('aria-expanded', !isExpanded);
+          if (!isExpanded) {
+            panel.style.maxHeight = panel.scrollHeight + 'px';
+            icon?.classList.add('rotate-180');
+          } else {
+            panel.style.maxHeight = '0';
+            icon?.classList.remove('rotate-180');
+          }
+        }
+      };
+      // ============================================
+      // SEARCH DROPDOWN CONTROLLER
+      // ============================================
+      const SearchDropdownController = {
+        input: null,
+        list: null,
+        items: [],
+        isOpen: false,
+        init() {
+          this.input = document.getElementById('country-search');
+          this.list = document.getElementById('country-list');
+          if (!this.input || !this.list) return;
+          this.items = Array.from(this.list.querySelectorAll('[role="option"]'));
+          this.input.addEventListener('focus', () => this.open());
+          this.input.addEventListener('input', debounce((e) => this.filter(e.target.value), CONFIG.DEBOUNCE_DELAY));
+          this.input.addEventListener('keydown', (e) => this.handleKeydown(e));
+          this.items.forEach(item => {
+            item.addEventListener('click', () => this.select(item));
+          });
+          document.addEventListener('click', (e) => {
+            if (!e.target.closest('#country-search') && !e.target.closest('#country-list')) {
+              this.close();
+            }
+          });
+        },
+        open() {
+          this.isOpen = true;
+          this.list.style.opacity = '1';
+          this.list.style.visibility = 'visible';
+          this.input.setAttribute('aria-expanded', 'true');
+        },
+        close() {
+          this.isOpen = false;
+          this.list.style.opacity = '0';
+          this.list.style.visibility = 'hidden';
+          this.input.setAttribute('aria-expanded', 'false');
+        },
+        filter(query) {
+          const lowerQuery = query.toLowerCase();
+          this.items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(lowerQuery) ? '' : 'none';
+          });
+        },
+        select(item) {
+          this.input.value = item.textContent.trim();
+          this.close();
+          ToastManager.show('info', 'Selected', item.textContent.trim());
+        },
+        handleKeydown(e) {
+          if (e.key === 'Escape') {
+            this.close();
+            this.input.blur();
+          }
+        }
+      };
+      // ============================================
+      // RANGE SLIDER CONTROLLER
+      // ============================================
+      const RangeSliderController = {
+        init() {
+          const slider = document.getElementById('volume-slider');
+          const track = document.getElementById('volume-track');
+          const thumb = document.getElementById('volume-thumb');
+          const value = document.getElementById('volume-value');
+          if (!slider || !track || !thumb || !value) return;
+          const update = () => {
+            const val = slider.value;
+            track.style.width = val + '%';
+            thumb.style.left = `calc(${val}% - 12px)`;
+            value.textContent = val + '%';
+            slider.setAttribute('aria-valuenow', val);
+          };
+          slider.addEventListener('input', update);
+        }
+      };
+      // ============================================
+      // STAR RATING CONTROLLER
+      // ============================================
+      const StarRatingController = {
+        currentRating: 0,
+        init() {
+          const container = document.getElementById('star-rating');
+          const ratingText = document.getElementById('rating-text');
+          if (!container || !ratingText) return;
+          const stars = container.querySelectorAll('.star-btn');
+          stars.forEach((star, index) => {
+            star.addEventListener('click', () => {
+              this.currentRating = index + 1;
+              this.updateStars(stars, this.currentRating);
+              ratingText.textContent = `You rated ${this.currentRating} star${this.currentRating > 1 ? 's' : ''}`;
+            });
+            star.addEventListener('mouseenter', () => {
+              this.updateStars(stars, index + 1);
+            });
+            star.addEventListener('mouseleave', () => {
+              this.updateStars(stars, this.currentRating);
+            });
+            star.addEventListener('keydown', (e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                star.click();
+              }
+            });
+          });
+        },
+        updateStars(stars, rating) {
+          stars.forEach((star, index) => {
+            const icon = star.querySelector('.iconify');
+            if (icon) {
+              icon.style.color = index < rating ? '#f59e0b' : '#d1d5db';
+            }
+            star.setAttribute('aria-checked', index < this.currentRating);
+          });
+        }
+      };
+      // ============================================
+      // FILE UPLOAD CONTROLLER
+      // ============================================
+      const FileUploadController = {
+        init() {
+          const dropZone = document.getElementById('drop-zone');
+          const fileInput = document.getElementById('file-input');
+          const fileList = document.getElementById('file-list');
+          if (!dropZone || !fileInput || !fileList) {
+            logWarning('FileUploadController: Required elements not found');
+            return;
+          }
+          // Click to upload
+          dropZone.addEventListener('click', () => fileInput.click());
+          dropZone.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              fileInput.click();
+            }
+          });
+          // Drag and drop
+          dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-purple-400', 'bg-purple-50', 'dark:bg-purple-900/20');
+          });
+          dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-purple-400', 'bg-purple-50', 'dark:bg-purple-900/20');
+          });
+          dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-purple-400', 'bg-purple-50', 'dark:bg-purple-900/20');
+            this.handleFiles(e.dataTransfer.files, fileList);
+          });
+          fileInput.addEventListener('change', () => {
+            this.handleFiles(fileInput.files, fileList);
+            fileInput.value = '';
+          });
+        },
+        handleFiles(files, fileList) {
+          if (files.length === 0) return;
+          let addedCount = 0;
+          Array.from(files).forEach(file => {
+            // Validate using CONFIG values
+            if (!CONFIG.ALLOWED_FILE_TYPES.includes(file.type)) {
+              ToastManager.show('error', 'Invalid File', `${sanitize(file.name)}: File type not allowed`);
+              return;
+            }
+            if (file.size > CONFIG.MAX_FILE_SIZE) {
+              ToastManager.show('error', 'File Too Large', `${sanitize(file.name)}: Maximum size is 10MB`);
+              return;
+            }
+            // Add to list
+            this.addFileToList(file, fileList);
+            addedCount++;
+          });
+          if (addedCount > 0) {
+            ToastManager.show('success', 'Files Added', `${addedCount} file(s) ready for upload`);
+          }
+        },
+        addFileToList(file, fileList) {
+          const id = generateId('file');
+          const item = document.createElement('div');
+          item.id = id;
+          item.className = 'flex items-center gap-3 p-3 rounded-xl neu-raised';
+          item.innerHTML = `
+                        <span class="iconify text-purple-500 flex-shrink-0" data-icon="lucide:file" data-width="20" aria-hidden="true"></span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">${sanitize(file.name)}</p>
+                            <p class="text-xs text-gray-400">${(file.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                        <button type="button" class="p-1 text-gray-400 hover:text-red-500 transition-colors rounded neu-focus" aria-label="Remove ${sanitize(file.name)}">
+                            <span class="iconify" data-icon="lucide:x" data-width="16" aria-hidden="true"></span>
+                        </button>
+                    `;
+          item.querySelector('button').addEventListener('click', () => {
+            item.remove();
+          });
+          fileList.appendChild(item);
+        }
+      };
+      // ============================================
+      // PROGRESS BAR CONTROLLER
+      // ============================================
+      const ProgressBarController = {
+        intervalId: null,
+        currentProgress: 0,
+        init() {
+          const bar = document.getElementById('progress-bar');
+          const value = document.getElementById('progress-value');
+          const startBtn = document.getElementById('start-progress');
+          const resetBtn = document.getElementById('reset-progress');
+          if (!bar || !value || !startBtn || !resetBtn) return;
+          startBtn.addEventListener('click', () => {
+            if (this.intervalId) return;
+            this.currentProgress = 0;
+            startBtn.disabled = true;
+            this.intervalId = setInterval(() => {
+              this.currentProgress += Math.random() * 15;
+              if (this.currentProgress >= 100) {
+                this.currentProgress = 100;
+                clearInterval(this.intervalId);
+                this.intervalId = null;
+                startBtn.disabled = false;
+                ToastManager.show('success', 'Complete!', 'Upload finished successfully');
+              }
+              const progress = Math.round(this.currentProgress);
+              bar.style.width = progress + '%';
+              value.textContent = progress + '%';
+              bar.parentElement.setAttribute('aria-valuenow', progress);
+            }, 300);
+          });
+          resetBtn.addEventListener('click', () => {
+            if (this.intervalId) {
+              clearInterval(this.intervalId);
+              this.intervalId = null;
+            }
+            this.currentProgress = 0;
+            bar.style.width = '0%';
+            value.textContent = '0%';
+            bar.parentElement.setAttribute('aria-valuenow', 0);
+            startBtn.disabled = false;
+          });
+        }
+      };
+      // ============================================
+      // TOAST BUTTON CONTROLLER
+      // ============================================
+      const ToastButtonController = {
+        init() {
+          const buttons = {
+            'toast-success': {
+              type: 'success',
+              title: 'Success!',
+              message: 'Action completed successfully'
+            },
+            'toast-error': {
+              type: 'error',
+              title: 'Error!',
+              message: 'Something went wrong'
+            },
+            'toast-warning': {
+              type: 'warning',
+              title: 'Warning!',
+              message: 'Please check your input'
+            },
+            'toast-info': {
+              type: 'info',
+              title: 'Info',
+              message: 'Here is some information'
+            }
+          };
+          Object.entries(buttons).forEach(([id, config]) => {
+            const btn = document.getElementById(id);
+            if (btn) {
+              btn.addEventListener('click', () => {
+                ToastManager.show(config.type, config.title, config.message);
+              });
+            }
+          });
+        }
+      };
+      // ============================================
+      // MODAL CONTROLLER
+      // ============================================
+      const ModalController = {
+        modal: null,
+        backdrop: null,
+        previousActiveElement: null,
+        cleanupFocusTrap: null,
+        init() {
+          this.modal = document.getElementById('modal-dialog');
+          this.backdrop = document.getElementById('modal-backdrop');
+          if (!this.modal || !this.backdrop) return;
+          const openBtn = document.getElementById('open-modal');
+          const closeBtn = document.getElementById('close-modal');
+          const cancelBtn = document.getElementById('modal-cancel');
+          const confirmBtn = document.getElementById('modal-confirm');
+          if (openBtn) openBtn.addEventListener('click', () => this.open());
+          if (closeBtn) closeBtn.addEventListener('click', () => this.close());
+          if (cancelBtn) cancelBtn.addEventListener('click', () => this.close());
+          if (confirmBtn) confirmBtn.addEventListener('click', () => {
+            ToastManager.show('success', 'Confirmed!', 'Your action has been confirmed');
+            this.close();
+          });
+          this.backdrop.addEventListener('click', () => this.close());
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isOpen()) {
+              this.close();
+            }
+          });
+        },
+        isOpen() {
+          return !this.modal.classList.contains('invisible');
+        },
+        open() {
+          this.previousActiveElement = document.activeElement;
+          this.backdrop.classList.remove('invisible', 'opacity-0');
+          this.modal.classList.remove('invisible', 'opacity-0', 'scale-95');
+          this.modal.classList.add('scale-100');
+          this.cleanupFocusTrap = trapFocus(this.modal);
+        },
+        close() {
+          this.backdrop.classList.add('invisible', 'opacity-0');
+          this.modal.classList.add('invisible', 'opacity-0', 'scale-95');
+          this.modal.classList.remove('scale-100');
+          if (this.cleanupFocusTrap) {
+            this.cleanupFocusTrap();
+            this.cleanupFocusTrap = null;
+          }
+          this.previousActiveElement?.focus();
+        }
+      };
+      // ============================================
+      // FORM VALIDATION CONTROLLER
+      // ============================================
+      const FormController = {
+        init() {
+          const form = document.getElementById('contact-form');
+          if (!form) return;
+          form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            let isValid = true;
+            // Validate name
+            const nameInput = document.getElementById('name-input');
+            const nameError = document.getElementById('name-input-error');
+            if (!nameInput.value.trim()) {
+              this.showError(nameInput, nameError, 'Name is required');
+              isValid = false;
+            } else {
+              this.clearError(nameInput, nameError);
+            }
+            // Validate email
+            const emailInput = document.getElementById('email-input');
+            const emailError = document.getElementById('email-input-error');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailInput.value.trim()) {
+              this.showError(emailInput, emailError, 'Email is required');
+              isValid = false;
+            } else if (!emailRegex.test(emailInput.value)) {
+              this.showError(emailInput, emailError, 'Please enter a valid email');
+              isValid = false;
+            } else {
+              this.clearError(emailInput, emailError);
+            }
+            if (isValid) {
+              ToastManager.show('success', 'Form Submitted', 'Your message has been sent successfully!');
+              form.reset();
+            }
+          });
+          // Clear errors on input
+          ['name-input', 'email-input'].forEach(id => {
+            const input = document.getElementById(id);
+            const error = document.getElementById(id + '-error');
+            if (input && error) {
+              input.addEventListener('input', () => this.clearError(input, error));
+            }
+          });
+        },
+        showError(input, errorEl, message) {
+          input.classList.add('ring-2', 'ring-red-500');
+          input.setAttribute('aria-invalid', 'true');
+          errorEl.textContent = message;
+          errorEl.classList.remove('hidden');
+        },
+        clearError(input, errorEl) {
+          input.classList.remove('ring-2', 'ring-red-500');
+          input.removeAttribute('aria-invalid');
+          errorEl.classList.add('hidden');
+        }
+      };
+      // ============================================
+      // TABLE SEARCH CONTROLLER
+      // ============================================
+      const TableSearchController = {
+        init() {
+          const searchInput = document.getElementById('table-search');
+          const tableBody = document.getElementById('table-body');
+          const statusEl = document.getElementById('table-status');
+          if (!searchInput || !tableBody) return;
+          const rows = tableBody.querySelectorAll('tr');
+          searchInput.addEventListener('input', debounce((e) => {
+            const query = e.target.value.toLowerCase().trim();
+            let visibleCount = 0;
+            rows.forEach(row => {
+              const text = row.textContent.toLowerCase();
+              const isVisible = query === '' || text.includes(query);
+              row.style.display = isVisible ? '' : 'none';
+              if (isVisible) visibleCount++;
+            });
+            if (statusEl) {
+              statusEl.textContent = `${visibleCount} result${visibleCount !== 1 ? 's' : ''} found`;
+            }
+          }, CONFIG.DEBOUNCE_DELAY));
+        }
+      };
+      // ============================================
+      // CONTEXT MENU CONTROLLER
+      // ============================================
+      const ContextMenuController = {
+        menu: null,
+        isOpen: false,
+        init() {
+          const area = document.getElementById('context-area');
+          this.menu = document.getElementById('context-menu');
+          if (!area || !this.menu) return;
+          area.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            this.show(e.clientX, e.clientY);
+          });
+          area.addEventListener('keydown', (e) => {
+            if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+              e.preventDefault();
+              const rect = area.getBoundingClientRect();
+              this.show(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            }
+          });
+          document.addEventListener('click', () => this.hide());
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') this.hide();
+          });
+          // Menu item actions
+          this.menu.querySelectorAll('.context-menu-item').forEach(item => {
+            item.addEventListener('click', () => {
+              const action = item.textContent.trim();
+              ToastManager.show('info', 'Action', `${action} clicked`);
+              this.hide();
+            });
+          });
+        },
+        show(x, y) {
+          // Get menu dimensions
+          this.menu.style.visibility = 'hidden';
+          this.menu.style.opacity = '1';
+          const width = this.menu.offsetWidth;
+          const height = this.menu.offsetHeight;
+          // Adjust position to stay in viewport
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+          if (x + width > viewportWidth) x = viewportWidth - width - 10;
+          if (y + height > viewportHeight) y = viewportHeight - height - 10;
+          if (x < 0) x = 10;
+          if (y < 0) y = 10;
+          this.menu.style.left = x + 'px';
+          this.menu.style.top = y + 'px';
+          this.menu.style.opacity = '1';
+          this.menu.style.visibility = 'visible';
+          this.isOpen = true;
+          // Focus first item
+          const firstItem = this.menu.querySelector('.context-menu-item');
+          firstItem?.focus();
+        },
+        hide() {
+          if (!this.isOpen) return;
+          this.menu.style.opacity = '0';
+          this.menu.style.visibility = 'hidden';
+          this.isOpen = false;
+        }
+      };
+      // ============================================
+      // NEW COMPONENT: MULTI-SELECT CONTROLLER
+      // ============================================
+      const MultiSelectController = {
+        container: null,
+        list: null,
+        toggle: null,
+        placeholder: null,
+        options: [],
+        selected: [],
+        isOpen: false,
+        init() {
+          this.container = document.getElementById('multi-select-container');
+          this.list = document.getElementById('multi-select-list');
+          this.toggle = document.getElementById('multi-select-toggle');
+          this.placeholder = document.getElementById('multi-select-placeholder');
+          if (!this.container || !this.list || !this.toggle) return;
+          this.options = Array.from(this.list.querySelectorAll('.multi-select-option'));
+          this.container.addEventListener('click', () => this.toggleDropdown());
+          this.toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleDropdown();
+          });
+          this.options.forEach((option, index) => {
+            option.addEventListener('click', (e) => {
+              e.stopPropagation();
+              this.toggleOption(option);
+            });
+            option.addEventListener('keydown', (e) => {
+              this.handleOptionKeydown(e, index);
+            });
+          });
+          document.addEventListener('click', (e) => {
+            if (!e.target.closest('#multi-select-container') && !e.target.closest('#multi-select-list') && !e.target.closest('#multi-select-toggle')) {
+              this.closeDropdown();
+            }
+          });
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isOpen) {
+              this.closeDropdown();
+            }
+          });
+        },
+        toggleDropdown() {
+          this.isOpen ? this.closeDropdown() : this.openDropdown();
+        },
+        openDropdown() {
+          this.isOpen = true;
+          this.list.style.opacity = '1';
+          this.list.style.visibility = 'visible';
+          this.toggle.setAttribute('aria-expanded', 'true');
+        },
+        closeDropdown() {
+          this.isOpen = false;
+          this.list.style.opacity = '0';
+          this.list.style.visibility = 'hidden';
+          this.toggle.setAttribute('aria-expanded', 'false');
+        },
+        handleOptionKeydown(e, currentIndex) {
+          switch (e.key) {
+            case 'ArrowDown':
+              e.preventDefault();
+              const nextIndex = (currentIndex + 1) % this.options.length;
+              this.options[nextIndex].focus();
+              break;
+            case 'ArrowUp':
+              e.preventDefault();
+              const prevIndex = (currentIndex - 1 + this.options.length) % this.options.length;
+              this.options[prevIndex].focus();
+              break;
+            case ' ':
+            case 'Enter':
+              e.preventDefault();
+              this.toggleOption(this.options[currentIndex]);
+              break;
+            case 'Escape':
+              e.preventDefault();
+              this.closeDropdown();
+              this.toggle.focus();
+              break;
+          }
+        },
+        toggleOption(option) {
+          const value = option.dataset.value;
+          const isSelected = option.getAttribute('aria-selected') === 'true';
+          const checkBox = option.querySelector('.multi-check');
+          if (isSelected) {
+            option.setAttribute('aria-selected', 'false');
+            checkBox.classList.remove('bg-purple-600', 'border-purple-600');
+            checkBox.innerHTML = '';
+            this.selected = this.selected.filter(v => v !== value);
+            this.removeTag(value);
+          } else {
+            option.setAttribute('aria-selected', 'true');
+            checkBox.classList.add('bg-purple-600', 'border-purple-600');
+            checkBox.innerHTML = '<span class="iconify text-white" data-icon="lucide:check" data-width="12" aria-hidden="true"></span>';
+            this.selected.push(value);
+            this.addTag(value, option.textContent.trim());
+          }
+          this.updatePlaceholder();
+        },
+        addTag(value, label) {
+          const tag = document.createElement('span');
+          tag.id = `tag-${value}`;
+          tag.className = 'inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-white bg-gradient-to-br from-purple-600 to-purple-700';
+          tag.innerHTML = `
+                            ${sanitize(label)}
+                            <button type="button" class="hover:text-purple-200 transition-colors" aria-label="Remove ${sanitize(label)}">
+                                <span class="iconify" data-icon="lucide:x" data-width="12" aria-hidden="true"></span>
+                            </button>
+                        `;
+          tag.querySelector('button').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const option = this.options.find(opt => opt.dataset.value === value);
+            if (option) this.toggleOption(option);
+          });
+          this.container.appendChild(tag);
+        },
+        removeTag(value) {
+          const tag = document.getElementById(`tag-${value}`);
+          if (tag) tag.remove();
+        },
+        updatePlaceholder() {
+          if (this.placeholder) {
+            this.placeholder.style.display = this.selected.length === 0 ? '' : 'none';
+          }
+        }
+      };
+      // ============================================
+      // NEW COMPONENT: DATE & TIME CONTROLLER
+      // ============================================
+      const DateTimeController = {
+        datePicker: null,
+        timePicker: null,
+        displayText: null,
+        init() {
+          this.datePicker = document.getElementById('date-picker');
+          this.timePicker = document.getElementById('time-picker');
+          this.displayText = document.getElementById('datetime-text');
+          if (!this.datePicker || !this.timePicker || !this.displayText) return;
+          this.datePicker.addEventListener('change', () => this.updateDisplay());
+          this.timePicker.addEventListener('change', () => this.updateDisplay());
+        },
+        updateDisplay() {
+          const date = this.datePicker.value;
+          const time = this.timePicker.value;
+          if (date && time) {
+            // Use local date components to avoid timezone issues
+            const [year, month, day] = date.split('-').map(Number);
+            const [hours, minutes] = time.split(':').map(Number);
+            const dateObj = new Date(year, month - 1, day, hours, minutes);
+            const formattedDate = dateObj.toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+            const formattedTime = dateObj.toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            });
+            this.displayText.textContent = `${formattedDate} at ${formattedTime}`;
+            ToastManager.show('info', 'Date & Time Selected', `${formattedDate} at ${formattedTime}`);
+          } else if (date) {
+            // Use local date components to avoid timezone issues
+            const [year, month, day] = date.split('-').map(Number);
+            const dateObj = new Date(year, month - 1, day);
+            const formattedDate = dateObj.toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+            this.displayText.textContent = `Date: ${formattedDate}`;
+          } else if (time) {
+            const [hours, minutes] = time.split(':').map(Number);
+            const dateObj = new Date();
+            dateObj.setHours(hours, minutes);
+            const formattedTime = dateObj.toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            });
+            this.displayText.textContent = `Time: ${formattedTime}`;
+          } else {
+            this.displayText.textContent = 'Select a date and time above';
+          }
+        }
+      };
+      // ============================================
+      // NEW COMPONENT: TREE VIEW CONTROLLER
+      // ============================================
+      const TreeViewController = {
+        init() {
+          const treeView = document.getElementById('tree-view');
+          if (!treeView) return;
+          const toggles = treeView.querySelectorAll('.tree-toggle');
+          toggles.forEach(toggle => {
+            toggle.addEventListener('click', () => this.toggleNode(toggle));
+            toggle.addEventListener('keydown', (e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                this.toggleNode(toggle);
+              } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+                if (!isExpanded) this.toggleNode(toggle);
+              } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+                if (isExpanded) this.toggleNode(toggle);
+              }
+            });
+          });
+          // Handle leaf node clicks
+          const leaves = treeView.querySelectorAll('.tree-leaf > div');
+          leaves.forEach(leaf => {
+            leaf.addEventListener('click', () => {
+              const fileNameEl = leaf.querySelector('span:last-child');
+              const fileName = fileNameEl?.textContent ?? 'Unknown file';
+              ToastManager.show('info', 'File Selected', fileName);
+            });
+          });
+        },
+        toggleNode(toggle) {
+          const treeItem = toggle.closest('.tree-item');
+          const children = treeItem.querySelector('.tree-children');
+          const chevron = toggle.querySelector('.tree-chevron');
+          const folderIcon = toggle.querySelector('[data-icon^="lucide:folder"]');
+          const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+          toggle.setAttribute('aria-expanded', !isExpanded);
+          treeItem.setAttribute('aria-expanded', !isExpanded);
+          if (isExpanded) {
+            children.classList.add('hidden');
+            chevron.classList.remove('rotate-90');
+            if (folderIcon) folderIcon.setAttribute('data-icon', 'lucide:folder');
+          } else {
+            children.classList.remove('hidden');
+            chevron.classList.add('rotate-90');
+            if (folderIcon) folderIcon.setAttribute('data-icon', 'lucide:folder-open');
+          }
+        }
+      };
+      // ============================================
+      // INITIALIZATION
+      // ============================================
+      function init() {
+        // Initialize all controllers
+        ToastManager.init();
+        ThemeController.init();
+        TabController.init();
+        ToggleController.init();
+        CheckboxController.init();
+        RadioController.init();
+        LoadingButtonController.init();
+        AccordionController.init();
+        SearchDropdownController.init();
+        RangeSliderController.init();
+        StarRatingController.init();
+        FileUploadController.init();
+        ProgressBarController.init();
+        ToastButtonController.init();
+        ModalController.init();
+        FormController.init();
+        TableSearchController.init();
+        ContextMenuController.init();
+        MultiSelectController.init();
+        DateTimeController.init();
+        TreeViewController.init();
+        console.log('✅ Neuromorphic UI initialized successfully');
+      }
+      // Wait for DOM to be ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+      // Expose toast function globally for testing
+      window.showToast = function(type, title, message) {
+        ToastManager.show(type, title, message);
+      };
+    })();
+  </script>
+</body>
+
+</html>

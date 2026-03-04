@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mob Controller Pro</title>
+    <style>
+        :root {
+            --bg-top: #87ceeb;
+            --bg-bottom: #e0f2fe;
+            --player-color: #3b82f6;
+            --enemy-color: #ef4444;
+            --gate-color: #10b981;
+            --accent: #f59e0b;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #111827;
+            touch-action: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--bg-top), var(--bg-bottom));
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            border-radius: 16px;
+            font-weight: 800;
+            color: #1e293b;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border: 2px solid #fff;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        #overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 100;
+            text-align: center;
+            padding: 40px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin: 0;
+            text-shadow: 0 4px 0 #2563eb;
+            letter-spacing: -2px;
+        }
+
+        .btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 18px 48px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 99px;
+            cursor: pointer;
+            margin-top: 30px;
+            box-shadow: 0 8px 0 #1d4ed8;
+            transition: all 0.1s;
+            pointer-events: auto;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #1d4ed8;
+        }
+
+        .hidden { display: none !important; }
+
+        #level-progress {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 12px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui-layer">
+        <div class="header">
+            <div class="stat-card">⭐ <span id="score">0</span></div>
+            <div class="stat-card">WAVE <span id="wave">1</span></div>
+        </div>
+        <div id="level-progress">
+            <div id="progress-fill"></div>
+        </div>
+    </div>
+
+    <div id="overlay">
+        <h1 id="status-title">MOB CONTROL</h1>
+        <p id="status-desc">Aim through gates to multiply your army!</p>
+        <button class="btn" id="start-btn">PLAY</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const waveEl = document.getElementById('wave');
+    const progressFill = document.getElementById('progress-fill');
+    const overlay = document.getElementById('overlay');
+    const startBtn = document.getElementById('start-btn');
+    const statusTitle = document.getElementById('status-title');
+
+    // Configuration
+    const CONFIG = {
+        cannonY: 120,
+        unitSize: 7,
+        fireRate: 90,
+        gateWidth: 130,
+        gateHeight: 50,
+        gravity: 0.05
+    };
+
+    // State
+    let gameActive = false;
+    let score = 0;
+    let wave = 1;
+    let lastFireTime = 0;
+    let inputX = 0;
+    let isFiring = false;
+    let screenShake = 0;
+
+    // Entity Arrays
+    let playerUnits = [];
+    let enemyUnits = [];
+    let gates = [];
+    let particles = [];
+    let base = { x: 0, y: 120, hp: 100, maxHp: 100, size: 50 };
+
+    function init() {
+        resize();
+        window.addEventListener('resize', resize);
+        
+        const handleInput = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            inputX = Math.max(40, Math.min(canvas.width - 40, x));
+            if (gameActive) isFiring = true;
+        };
+
+        canvas.addEventListener('mousedown', handleInput);
+        canvas.addEventListener('mousemove', handleInput);
+        window.addEventListener('mouseup', () => isFiring = false);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(e); });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleInput(e); });
+        window.addEventListener('touchend', () => isFiring = false);
+
+        startBtn.onclick = startGame;
+        inputX = canvas.width / 2;
+    }
+
+    function resize() {
+        const container = document.getElementById('game-container');
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        base.x = canvas.width / 2;
+    }
+
+    function startGame() {
+        score = 0;
+        wave = 1;
+        playerUnits = [];
+        enemyUnits = [];
+        particles = [];
+        base.maxHp = 100;
+        base.hp = base.maxHp;
+        spawnGates();
+        updateUI();
+        overlay.classList.add('hidden');
+        gameActive = true;
+        requestAnimationFrame(gameLoop);
+    }
+
+    function spawnGates() {
+        gates = [];
+        const count = 3;
+        for (let i = 0; i < count; i++) {
+            gates.push({
+                x: Math.random() * (canvas.width - CONFIG.gateWidth),
+                y: 250 + (i * 160),
+                w: CONFIG.gateWidth,
+                h: CONFIG.gateHeight,
+                mult: 2 + Math.floor(Math.random() * 3),
+                dir: Math.random() > 0.5 ? 1 : -1,
+                speed: 1 + Math.random() * 1.5
+            });
+        }
+    }
+
+    function spawnEnemies() {
+        const spawnCount = 2 + Math.floor(wave / 2);
+        for(let i=0; i<spawnCount; i++) {
+            enemyUnits.push({
+                x: base.x + (Math.random() - 0.5) * 60,
+                y: base.y + 20,
+                vx: (Math.random() - 0.5) * 1.5,
+                vy: 0.8 + (wave * 0.1),
+                hp: 1
+            });
+        }
+    }
+
+    function createExplosion(x, y, color, count = 8) {
+        for(let i=0; i<count; i++) {
+            particles.push({
+                x, y,
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6,
+                size: Math.random() * 4 + 2,
+                life: 1.0,
+                color
+            });
+        }
+    }
+
+    function updateUI() {
+        scoreEl.innerText = score;
+        waveEl.innerText = wave;
+        const pct = ((base.maxHp - base.hp) / base.maxHp) * 100;
+        progressFill.style.width = `${pct}%`;
+    }
+
+    function update(now) {
+        if (screenShake > 0) screenShake -= 0.1;
+
+        // Cannon Firing
+        if (isFiring && now - lastFireTime > CONFIG.fireRate) {
+            playerUnits.push({
+                x: inputX,
+                y: canvas.height - CONFIG.cannonY,
+                vx: (Math.random() - 0.5) * 0.8,
+                vy: -6,
+                gates: new Set()
+            });
+            lastFireTime = now;
+        }
+
+        // Enemy Spawning
+        if (Math.random() < 0.02 + (wave * 0.005)) spawnEnemies();
+
+        // Gates Movement
+        gates.forEach(g => {
+            g.x += g.dir * g.speed;
+            if (g.x <= 0 || g.x + g.w >= canvas.width) g.dir *= -1;
+        });
+
+        // Player Units
+        for (let i = playerUnits.length - 1; i >= 0; i--) {
+            const u = playerUnits[i];
+            u.y += u.vy;
+            u.x += u.vx;
+            u.vx *= 0.99; // Air friction
+
+            // Gate Check
+            gates.forEach(g => {
+                if (!u.gates.has(g) && u.y < g.y + g.h && u.y > g.y && u.x > g.x && u.x < g.x + g.w) {
+                    u.gates.add(g);
+                    for (let j = 0; j < g.mult - 1; j++) {
+                        playerUnits.push({
+                            x: u.x + (Math.random() - 0.5) * 15,
+                            y: u.y,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: u.vy,
+                            gates: new Set(u.gates)
+                        });
+                    }
+                }
+            });
+
+            // Base Hit
+            const dBase = Math.hypot(u.x - base.x, u.y - base.y);
+            if (dBase < base.size) {
+                base.hp--;
+                score += 10;
+                screenShake = 0.3;
+                createExplosion(u.x, u.y, '#ef4444', 4);
+                playerUnits.splice(i, 1);
+                updateUI();
+                continue;
+            }
+
+            if (u.y < -50) playerUnits.splice(i, 1);
+        }
+
+        // Enemy Units
+        for (let i = enemyUnits.length - 1; i >= 0; i--) {
+            const e = enemyUnits[i];
+            e.y += e.vy;
+            e.x += e.vx;
+
+            if (e.x < 10 || e.x > canvas.width - 10) e.vx *= -1;
+
+            // Combat
+            for (let j = playerUnits.length - 1; j >= 0; j--) {
+                const p = playerUnits[j];
+                if (Math.hypot(p.x - e.x, p.y - e.y) < CONFIG.unitSize * 2) {
+                    createExplosion(e.x, e.y, '#94a3b8', 3);
+                    enemyUnits.splice(i, 1);
+                    playerUnits.splice(j, 1);
+                    score += 5;
+                    updateUI();
+                    break;
+                }
+            }
+
+            if (e.y > canvas.height) enemyUnits.splice(i, 1);
+        }
+
+        // Particles
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.03;
+            if (p.life <= 0) particles.splice(i, 1);
+        }
+
+        // Wave Progression
+        if (base.hp <= 0) {
+            wave++;
+            base.maxHp += 40;
+            base.hp = base.maxHp;
+            spawnGates();
+            updateUI();
+        }
+    }
+
+    function draw() {
+        ctx.save();
+        if (screenShake > 0) {
+            ctx.translate((Math.random()-0.5)*10*screenShake, (Math.random()-0.5)*10*screenShake);
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw 3D-ish Floor Grid
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 1;
+        const gridStep = 40;
+        for(let i=0; i<canvas.width; i+=gridStep) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, canvas.height);
+            ctx.stroke();
+        }
+        for(let i=0; i<canvas.height; i+=gridStep) {
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(canvas.width, i);
+            ctx.stroke();
+        }
+
+        // Draw Enemy Base
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(base.x, base.y, base.size, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        
+        // Base Icon (Castle symbol)
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(base.x - 15, base.y - 15, 30, 20);
+        ctx.fillRect(base.x - 20, base.y - 20, 10, 10);
+        ctx.fillRect(base.x + 10, base.y - 20, 10, 10);
+
+        // Draw Gates
+        gates.forEach(g => {
+            // Glow
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'rgba(16, 185, 129, 0.4)';
+            
+            const grad = ctx.createLinearGradient(g.x, g.y, g.x, g.y + g.h);
+            grad.addColorStop(0, '#10b981');
+            grad.addColorStop(1, '#059669');
+            
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.roundRect(g.x, g.y, g.w, g.h, 12);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'white';
+            ctx.font = '800 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`x${g.mult}`, g.x + g.w/2, g.y + 33);
+        });
+
+        // Draw Player Units
+        playerUnits.forEach(u => {
+            ctx.fillStyle = '#3b82f6';
+            ctx.beginPath();
+            ctx.arc(u.x, u.y, CONFIG.unitSize, 0, Math.PI*2);
+            ctx.fill();
+            // Highlight
+            ctx.fillStyle = '#60a5fa';
+            ctx.beginPath();
+            ctx.arc(u.x - 2, u.y - 2, 2, 0, Math.PI*2);
+            ctx.fill();
+        });
+
+        // Draw Enemy Units
+        enemyUnits.forEach(e => {
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, CONFIG.unitSize, 0, Math.PI*2);
+            ctx.fill();
+        });
+
+        // Particles
+        particles.forEach(p => {
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1.0;
+
+        // Draw Cannon
+        ctx.save();
+        ctx.translate(inputX, canvas.height - CONFIG.cannonY);
+        // Base of cannon
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.roundRect(-30, 20, 60, 40, 10);
+        ctx.fill();
+        // Barrel
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-20, -20, 40, 50);
+        // Tip
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(-22, -25, 44, 10);
+        ctx.restore();
+
+        ctx.restore();
+    }
+
+    function gameLoop(now) {
+        if (!gameActive) return;
+        update(now);
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    init();
+</script>
+</body>
+</html>

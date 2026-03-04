@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flashcard Study App 📚</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+
+  <header>
+    <span class="header-emoji">🃏</span>
+    <h1>Flashcard <span>Study</span> App</h1>
+    <p>Create decks, flip cards, track your progress — study smarter!</p>
+  </header>
+
+  <div class="container">
+
+    <div class="tabs">
+      <button class="tab-btn" id="tab-study"  onclick="switchTab('study')">📖 Study</button>
+      <button class="tab-btn" id="tab-manage" onclick="switchTab('manage')">✏️ Manage</button>
+      <button class="tab-btn" id="tab-stats"  onclick="switchTab('stats')">📊 Stats</button>
+    </div>
+
+    <!-- ══════════════════════════
+         STUDY VIEW
+    ══════════════════════════ -->
+    <div class="view" id="view-study">
+
+      <!-- Deck Picker -->
+      <div id="deck-picker-wrap">
+        <div class="card">
+          <div class="card-title">📚 Choose a Deck to Study</div>
+          <div class="deck-grid" id="deck-picker"></div>
+        </div>
+      </div>
+
+      <!-- Study Area -->
+      <div id="study-area" style="display:none;">
+        <div class="card">
+          <!-- Header -->
+          <div class="study-header">
+            <div class="study-deck-name" id="study-deck-name"></div>
+            <div class="study-progress-text" id="study-progress-text"></div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="study-progress-bar" style="width:0%"></div>
+          </div>
+
+          <!-- Flashcard -->
+          <div class="card-scene" onclick="flipCard()">
+            <div class="card-flipper" id="card-flipper">
+              <!-- Front (Question) -->
+              <div class="card-face card-front">
+                <div class="card-label">❓ Question</div>
+                <div class="card-text" id="card-question"></div>
+                <div class="card-hint">👆 Tap to reveal answer</div>
+              </div>
+              <!-- Back (Answer) -->
+              <div class="card-face card-back">
+                <div class="card-label">✅ Answer</div>
+                <div class="card-text" id="card-answer"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Know / Don't Know (shown after flip) -->
+          <div class="study-actions" id="study-actions" style="display:none;">
+            <button class="btn btn-danger"  onclick="markCard('unknown')">❌ Don't Know</button>
+            <button class="btn btn-success" onclick="markCard('known')">✅ Know It!</button>
+          </div>
+
+          <!-- Navigation -->
+          <div class="study-nav">
+            <button class="btn-nav" id="btn-prev" onclick="navCard(-1)">← Prev</button>
+            <div class="nav-dots" id="nav-dots"></div>
+            <button class="btn-nav" id="btn-next" onclick="navCard(1)">Next →</button>
+          </div>
+
+          <button class="btn btn-gray btn-sm" style="width:100%;" onclick="backToDecks()">← Back to Decks</button>
+        </div>
+      </div>
+
+      <!-- Result Area -->
+      <div id="result-area" style="display:none;">
+        <div class="card result-card">
+          <span class="result-emoji" id="result-emoji">🎉</span>
+          <div class="result-title"    id="result-title">Well Done!</div>
+          <div class="result-subtitle" id="result-subtitle">Keep it up!</div>
+          <div class="result-stats">
+            <div class="stat-box">
+              <div class="stat-num green" id="result-known">0</div>
+              <div class="stat-label">Known ✅</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-num" style="color:var(--primary)" id="result-pct">0%</div>
+              <div class="stat-label">Score</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-num red" id="result-unknown">0</div>
+              <div class="stat-label">Unknown ❌</div>
+            </div>
+          </div>
+          <div class="result-btns">
+            <button class="btn btn-primary" style="width:auto;flex:1;" onclick="restartDeck()">🔄 Try Again</button>
+            <button class="btn btn-outline" onclick="backToDecks()">← All Decks</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══════════════════════════
+         MANAGE VIEW
+    ══════════════════════════ -->
+    <div class="view" id="view-manage">
+
+      <!-- Create New Deck -->
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-title">➕ Create New Deck</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <select id="new-deck-emoji" style="width:80px;flex-shrink:0;">
+            <option>📚</option><option>⚡</option><option>🧪</option>
+            <option>🎨</option><option>🔢</option><option>🌍</option>
+            <option>💻</option><option>🧠</option><option>📝</option>
+            <option>🔬</option><option>🎯</option><option>🏆</option>
+          </select>
+          <input type="text" id="new-deck-name" placeholder="Deck name e.g. Biology Chapter 3" style="flex:1;min-width:160px;" />
+          <button class="btn btn-primary" style="width:auto;" onclick="addDeck()">+ Create</button>
+        </div>
+      </div>
+
+      <!-- Deck List + Card Manager -->
+      <div style="display:grid; grid-template-columns:1fr 1.5fr; gap:18px;">
+
+        <!-- Left: Deck List -->
+        <div class="card">
+          <div class="card-title">🗂️ Your Decks</div>
+          <div id="manage-deck-list"></div>
+        </div>
+
+        <!-- Right: Cards in Selected Deck -->
+        <div class="card">
+          <div class="card-title">🃏 <span id="card-list-header">Select a deck</span></div>
+
+          <!-- Card List -->
+          <div id="card-list" style="margin-bottom:16px;max-height:280px;overflow-y:auto;"></div>
+
+          <!-- Add Card Form -->
+          <div id="add-card-form" style="display:none;border-top:1px solid var(--border);padding-top:16px;">
+            <div class="form-group">
+              <label>Question</label>
+              <textarea id="new-card-q" placeholder="e.g. What is a variable?"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Answer</label>
+              <textarea id="new-card-a" placeholder="e.g. A variable is a container that stores data..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="addCard()">+ Add Card</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════
+         STATS VIEW
+    ══════════════════════════ -->
+    <div class="view" id="view-stats">
+
+      <div class="stats-grid">
+        <div class="stat-mini">
+          <strong style="color:var(--primary)" id="stat-sessions">0</strong>
+          <span>Sessions</span>
+        </div>
+        <div class="stat-mini">
+          <strong style="color:var(--text)" id="stat-studied">0</strong>
+          <span>Cards Studied</span>
+        </div>
+        <div class="stat-mini">
+          <strong style="color:var(--success)" id="stat-accuracy">—</strong>
+          <span>Accuracy</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between;">
+          <span>📊 Deck Progress</span>
+          <button class="btn btn-gray btn-sm" onclick="resetAllStats()">🔄 Reset</button>
+        </div>
+        <div id="deck-stats-list"></div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

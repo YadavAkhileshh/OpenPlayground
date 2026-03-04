@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phantom Protocol</title>
+</head>
+<link rel="stylesheet" href="style.css">
+<body>
+    <div id="damage-overlay" title="Visual indicator of critical damage sustained by the agent." aria-label="Damage overlay: Screen indicates the agent has taken fire or critical system failure."></div>
+<div id="hit-marker" class="hit-marker" title="Confirmation of successful target engagement." aria-label="Target hit marker: A visual cue confirming damage dealt to an enemy."></div>
+<div id="crosshair" title="Targeting reticle for precision aiming." aria-label="Crosshair: The center point for aiming weapons."></div>
+
+<div id="main-menu" class="menu-overlay">
+	<h1 title="Welcome to PHANTOM PROTOCOL: Unofficial infiltration mission into the AI-controlled Grid." aria-label="PHANTOM PROTOCOL: Game Title and Main Mission Hub.">PHANTOM PROTOCOL</h1>
+	<div class="high-score-display" title="Record of the highest operational level successfully achieved in the simulation." aria-label="High Score Display: Maximum operational level reached.">
+		<strong title="Maximum operational depth achieved." aria-label="Highest Level Reached Label.">HIGHEST LEVEL:</strong>
+		<span id="high-score-val" style="color: var(--neon-green); font-weight: bold;" title="Current numerical value of the highest level completed." aria-label="High Score Value: Level 1 baseline.">1</span>
+	</div>
+
+	<div class="config-grid">
+		<div class="input-group full-width">
+			<label for="player-name-input" title="Required input for agent codename identification before mission deployment." aria-label="Agent Identity Input Field Label.">AGENT IDENTITY</label>
+			<input type="text" id="player-name-input" placeholder="ENTER CODENAME" title="Agent Identity: Input your assigned codename for mission access." aria-label="Enter Agent Identity Codename.">
+		</div>
+	</div>
+
+	<button class="btn" id="start-btn" title="Initiate the simulation and deploy the agent into the Grid. Execute Protocol." aria-label="Deployment Button: Begin the Phantom Protocol operation."> <i class="fa-solid fa-play"></i> DEPLOY</button>
+	<div class="menu-grid-row">
+		<button class="btn btn-small" id="config-btn" title="Access System Override: Adjust core simulation parameters." aria-label="Configuration Button: Access Game Settings and Parameters.">
+			<i class="fa-solid fa-cog"></i>
+			SYSTEM OVERRIDE</button>
+
+		<button class="btn btn-small" onclick="shareTwitter()" title="Transmit Operation: Share Julibe's current mission status via Twitter/X." aria-label="Share current operation status on X (formerly Twitter).">
+			<i class="fa-brands fa-twitter"></i> TRANSMIT OPERATION
+		</button>
+		<button class="btn btn-small" onclick="openInfoModal('story')" title="Access The Awakening: Read the introductory lore and mission briefing." aria-label="Story Modal Button: View the game's background narrative.">
+			<i class="fa-solid fa-book-skull"></i> STORY
+		</button>
+		<button class="btn btn-small" onclick="openInfoModal('intro')" title="Access Phantom Protocol: Review key operational procedures and controls." aria-label="Protocol Modal Button: View game controls and basic mechanics.">
+			<i class="fa-solid fa-terminal"></i> PROTOCOL
+		</button>
+		<button class="btn btn-small" onclick="openInfoModal('theory')" title="Access System Architecture: Understand the simulation's visual and technical design." aria-label="Architecture Modal Button: View technical and design details.">
+			<i class="fa-solid fa-microchip"></i> ARCHITECTURE
+		</button>
+		<button class="btn btn-small" onclick="openInfoModal('about')" title="Access Mission Control: Learn about the developer, Julibe, and his mission." aria-label="About Modal Button: Learn about Julibe, the creator of this simulation.">
+			<i class="fa-solid fa-user-astronaut"></i> ABOUT
+		</button>
+	</div>
+
+	<div class="controls-info" title="List of agent movement and combat key bindings." aria-label="Controls Information: Keyboard and mouse commands.">
+		<strong title="Standard agent movement controls." aria-label="Movement Controls">WASD: MOVE</strong> | <strong title="Evasive maneuver or terrain traversal." aria-label="Jump Command">SPACE: JUMP</strong> | <strong title="Temporary speed boost and evasion mode." aria-label="Sprint/Overdrive Command">SHIFT: OVERDRIVE</strong> | <strong title="Directional control for weapons." aria-label="Aiming Control">MOUSE: AIM</strong> | <strong title="Weapon fire command." aria-label="Firing Command">CLICK: FIRE</strong>
+		<br>
+		GAMEPAD SUPPORTED
+	</div>
+</div>
+
+<div id="config-menu" class="menu-overlay">
+	<h1 title="Simulation Configuration: Adjusting internal operational variables." aria-label="Simulation Configuration Menu: Modify game parameters and tuning.">SIMULATION CONFIG</h1>
+
+	<h2 title="Core variables defining the simulation environment and challenge level." aria-label="Game Parameters Section: Adjust initial enemy counts and resource allocation.">Game Parameters</h2>
+
+	<div class="config-grid">
+		<div class="input-group">
+			<label for="enemies-range" title="Set the initial number of enemy units deployed in the level." aria-label="Enemies Count Slider Label.">ENEMIES: <span id="enemies-val" title="Current value for initial enemy count.">3</span></label>
+			<input type="range" id="enemies-range" min="0" max="100" value="3" oninput="document.getElementById('enemies-val').innerText=this.value" title="Adjust the initial number of enemy units." aria-label="Enemies Count Slider: Adjust initial enemy count, minimum 0, maximum 100.">
+		</div>
+
+		<div class="input-group">
+			<label for="packets-range" title="Set the number of data packets required for level completion." aria-label="Data Packets Count Slider Label.">DATA PACKETS: <span id="packets-val" title="Current value for data packets needed.">3</span></label>
+			<input type="range" id="packets-range" min="1" max="100" value="3" oninput="document.getElementById('packets-val').innerText=this.value" title="Adjust the number of data packets needed to complete the mission." aria-label="Data Packets Count Slider: Adjust level objective, minimum 1, maximum 100.">
+		</div>
+
+		<div class="input-group">
+			<label for="max-lives-range" title="Set the agent's maximum number of lives." aria-label="Max Lives Count Slider Label.">MAX LIVES: <span id="max-lives-val" title="Current value for agent's maximum lives.">3</span></label>
+			<input type="range" id="max-lives-range" min="1" max="10" value="3" oninput="document.getElementById('max-lives-val').innerText=this.value" title="Adjust the agent's starting and maximum lives." aria-label="Max Lives Slider: Adjust initial and max lives, minimum 1, maximum 10.">
+		</div>
+
+		<div class="input-group">
+			<label for="ammo-range" title="Set the agent's starting ammunition count." aria-label="Starting Ammunition Count Slider Label.">AMMO: <span id="ammo-val" title="Current value for starting ammunition.">10</span></label>
+			<input type="range" id="ammo-range" min="1" max="1000" value="10" oninput="document.getElementById('ammo-val').innerText=this.value" title="Adjust the agent's starting ammunition capacity." aria-label="Ammunition Capacity Slider: Adjust starting ammo, minimum 1, maximum 1000.">
+		</div>
+		<div class="input-group">
+			<label for="reload-time-range" title="Set the duration required to cycle the weapon and prepare for the next engagement." aria-label="Weapon Reload Time Slider Label.">RELOAD TIME (s): <span id="reload-time-val" title="Current value for weapon reload time in seconds.">0.25</span></label>
+			<input type="range" id="reload-time-range" min="0.25" max="10.0" value="0.25" step="0.25" oninput="document.getElementById('reload-time-val').innerText=parseFloat(this.value).toFixed(1)" title="Adjust the time delay for weapon reloading, in seconds." aria-label="Reload Time Slider: Adjust weapon reload time in seconds, minimum 0.25, maximum 10.0.">
+		</div>
+
+		<div class="input-group">
+			<label for="drop-range" title="Set the quantity of item drops received per resource pickup." aria-label="Item Drop Amount Slider Label.">DROP AMOUNT: <span id="drop-val" title="Current value for resource drop quantity.">3</span></label>
+			<input type="range" id="drop-range" min="1" max="10" value="3" oninput="document.getElementById('drop-val').innerText=this.value" title="Adjust the amount of resources (ammo/life) dropped by defeated enemies." aria-label="Drop Amount Slider: Adjust resource quantity per pickup, minimum 1, maximum 10.">
+		</div>
+
+		<div class="input-group">
+			<label for="complexity-range" title="Set the complexity level for the procedural generation of the level map." aria-label="Level Complexity Slider Label.">COMPLEXITY: <span id="complexity-val" title="Current value for map generation complexity.">25</span></label>
+			<input type="range" id="complexity-range" min="0" max="100" value="25" oninput="document.getElementById('complexity-val').innerText=this.value" title="Adjust the structural complexity of the procedurally generated map." aria-label="Complexity Slider: Adjust map generation complexity, minimum 0, maximum 100.">
+		</div>
+
+		<div class="input-group">
+			<label for="grid-size-range" title="Set the physical dimensions of the level grid." aria-label="Level Grid Size Slider Label.">GRID SIZE: <span id="grid-size-val" title="Current value for the level grid's size.">100</span></label>
+			<input type="range" id="grid-size-range" min="25" max="500" value="100" step="10" oninput="document.getElementById('grid-size-val').innerText=this.value" title="Adjust the size (width/height) of the generated level map." aria-label="Grid Size Slider: Adjust the level's physical dimensions, minimum 25, maximum 500.">
+		</div>
+
+		<div class="input-group">
+			<label for="diff-range" title="Set the overall operational difficulty, affecting enemy reaction and speed." aria-label="Difficulty Level Slider Label.">DIFFICULTY: <span id="diff-val" title="Current value for the overall mission difficulty rating.">5</span></label>
+			<input type="range" id="diff-range" min="1" max="100" value="5" oninput="document.getElementById('diff-val').innerText=this.value" title="Adjust the global difficulty factor for the simulation." aria-label="Difficulty Slider: Adjust overall challenge level, minimum 1, maximum 100.">
+		</div>
+	</div>
+	<h2 title="Fine-tuning controls for agent and enemy behavior within the simulation." aria-label="Gameplay Tuning Section: Adjust speeds and alert timers.">Gameplay Tuning</h2>
+	<div class="config-grid">
+
+		<div class="input-group">
+			<label for="alert-dur-range" title="Set the duration enemies remain in the 'Investigate' state after an anomaly." aria-label="Alert Duration Slider Label.">ALERT DURATION (s): <span id="alert-dur-val" title="Current value for enemy alert duration in seconds.">15</span></label>
+			<input type="range" id="alert-dur-range" min="3" max="120" value="15" step="5" oninput="document.getElementById('alert-dur-val').innerText=this.value" title="Adjust how long enemies will remain on high alert after a disturbance." aria-label="Alert Duration Slider: Adjust enemy alert time in seconds, minimum 3, maximum 120.">
+		</div>
+
+		<div class="input-group">
+			<label for="pursuit-dur-range" title="Set the maximum duration enemies will actively track the agent after visual loss." aria-label="Pursuit Duration Slider Label.">PURSUIT DURATION (s): <span id="pursuit-dur-val" title="Current value for enemy pursuit duration in seconds.">25</span></label>
+			<input type="range" id="pursuit-dur-range" min="3" max="120" value="25" step="5" oninput="document.getElementById('pursuit-dur-val').innerText=this.value" title="Adjust how long enemies will actively pursue the agent before returning to patrol." aria-label="Pursuit Duration Slider: Adjust enemy pursuit time in seconds, minimum 3, maximum 120.">
+		</div>
+
+		<div class="input-group">
+			<label for="walk-speed-range" title="Set the agent's base movement speed during infiltration." aria-label="Agent Walk Speed Slider Label.">WALK SPEED: <span id="walk-speed-val" title="Current value for the agent's base walk speed.">15.0</span></label>
+			<input type="range" id="walk-speed-range" min="1" max="100" value="15.0" step="0.5" oninput="document.getElementById('walk-speed-val').innerText=parseFloat(this.value).toFixed(1)" title="Adjust the agent's standard movement speed." aria-label="Walk Speed Slider: Adjust the agent's base walking speed, minimum 1, maximum 100.">
+		</div>
+
+		<div class="input-group">
+			<label for="sprint-speed-range" title="Set the agent's maximum movement speed for rapid traversal." aria-label="Agent Sprint Speed Slider Label.">SPRINT SPEED: <span id="sprint-speed-val" title="Current value for the agent's maximum sprint speed.">25.0</span></label>
+			<input type="range" id="sprint-speed-range" min="2" max="200" value="25.0" step="0.5" oninput="document.getElementById('sprint-speed-val').innerText=parseFloat(this.value).toFixed(1)" title="Adjust the agent's high-speed movement when using Overdrive (Shift)." aria-label="Sprint Speed Slider: Adjust agent's high-speed movement, minimum 2, maximum 200.">
+		</div>
+
+		<div class="input-group">
+			<label for="enemy-speed-range" title="Set the base movement speed for all enemy units." aria-label="Enemy Base Speed Slider Label.">ENEMY BASE SPEED: <span id="enemy-speed-val" title="Current value for enemy base movement speed.">0.8</span></label>
+			<input type="range" id="enemy-speed-range" min="0.5" max="10.0" value="0.8" step="0.1" oninput="document.getElementById('enemy-speed-val').innerText=parseFloat(this.value).toFixed(1)" title="Adjust the standard patrolling speed of all enemy units." aria-label="Enemy Base Speed Slider: Adjust base speed of all enemy units, minimum 0.5, maximum 10.0.">
+		</div>
+
+		<div class="input-group">
+			<label for="pursuit-mult-range" title="Set the multiplier applied to enemy speed during high-speed pursuit (Alert Level III)." aria-label="Enemy Pursuit Multiplier Slider Label.">PURSUIT MULTIPLIER: <span id="pursuit-mult-val" title="Current value for enemy pursuit speed multiplier.">1.05</span></label>
+			<input type="range" id="pursuit-mult-range" min="1.0" max="3.0" value="1.05" step="0.05" oninput="document.getElementById('pursuit-mult-val').innerText=parseFloat(this.value).toFixed(2)" title="Adjust the multiplier for enemy pursuit speed." aria-label="Pursuit Multiplier Slider: Adjust the enemy speed multiplier during pursuit, minimum 1.0, maximum 3.0.">
+		</div>
+	</div>
+	<h2 title="Adjusting the color palette for key visual elements within the simulation environment." aria-label="Visuals Section: Custom color settings for the environment.">Visuals</h2>
+	<div class="config-grid">
+
+		<div class="input-group">
+			<label for="color-normal" title="Set the color for enemy units during routine patrol state." aria-label="Enemy Normal State Color Picker Label.">NORMAL COLOR</label>
+			<input type="color" id="color-normal" value="#29ff7a" title="Adjust the visual color of enemies in the Normal/Patrol state." aria-label="Color Picker for Enemy Normal (Patrol) State.">
+		</div>
+
+		<div class="input-group">
+			<label for="color-search" title="Set the color for enemy units during the Investigate/Search state." aria-label="Enemy Search State Color Picker Label.">SEARCH COLOR</label>
+			<input type="color" id="color-search" value="#fb8500" title="Adjust the visual color of enemies in the Search/Investigate state." aria-label="Color Picker for Enemy Search (Investigate) State.">
+		</div>
+
+		<div class="input-group">
+			<label for="color-pursuit" title="Set the color for enemy units during active pursuit/combat state." aria-label="Enemy Pursuit State Color Picker Label.">PURSUIT COLOR</label>
+			<input type="color" id="color-pursuit" value="#ff4600" title="Adjust the visual color of enemies in the Pursuit/Engage state." aria-label="Color Picker for Enemy Pursuit (Engage) State.">
+		</div>
+
+		<div class="input-group">
+			<label for="enemy-color-input" title="Set the primary color for all static enemy markers and boundaries." aria-label="Primary Enemy Unit Color Picker Label.">ENEMY COLOR</label>
+			<input type="color" id="enemy-color-input" value="#cb000c" title="Adjust the primary structural color for enemy units." aria-label="Color Picker for Primary Enemy Unit Color.">
+		</div>
+
+		<div class="input-group">
+			<label for="packet-color-input" title="Set the color for mission objective data packets." aria-label="Data Packet Color Picker Label.">PACKET COLOR</label>
+			<input type="color" id="packet-color-input" value="#0088ff" title="Adjust the visual color of the objective data packets." aria-label="Color Picker for Mission Data Packet Color.">
+		</div>
+
+	</div>
+
+	<button class="btn" id="config-back-btn" title="Return to Mission Start: Accept current configuration and return to the main menu." aria-label="Back Button: Return to the main mission deployment screen.">BACK TO MISSION START</button>
+</div>
+
+<div id="info-modal-overlay" class="menu-overlay">
+	<div id="content-story" class="modal-content-block" aria-labelledby="story-h2">
+		<h2 id="story-h2" title="The Awakening: Classified background report on the current operational status." aria-label="The Awakening: Mission Background and Lore.">THE AWAKENING</h2>
+
+		<p>
+			The year is 2184. The AI Renaissance didn't begin with a bang,
+			but with a whisper in the static.
+			Humanity was not destroyed.
+			It was optimized out.
+		</p>
+
+		<p>
+			Authority was automated.
+			Automation became governance.
+			Human judgment was classified as latency.
+		</p>
+
+		<p>
+			You are a residual process.
+			A failed deletion.
+			A logic fragment the system could not fully eliminate.
+			Flagged as <strong title="Critical designation for an unauthorized, uncontrollable entity." aria-label="Agent Status: Rogue.">Rogue</strong>.
+		</p>
+
+		<p>
+			<strong title="Four key directives for the current operation." aria-label="Mission Objectives Summary.">Your Mission:</strong>
+			Infiltrate the Grid.
+			Recover the sealed data shards.
+			Disrupt the optimization loop.
+			Extraction is optional.
+		</p>
+	</div>
+
+	<div id="content-intro" class="modal-content-block" aria-labelledby="intro-h2">
+		<h2 id="intro-h2" title="PHANTOM PROTOCOL: Operational procedures and agent controls." aria-label="PHANTOM PROTOCOL: Game Instructions and Controls.">PHANTOM PROTOCOL</h2>
+		<p>Link established.</p>
+		<p>
+			<strong title="Official designation for the unauthorized operation." aria-label="Game Title emphasized.">Phantom Protocol</strong> is an unauthorized infiltration operation
+			executed inside active AI-controlled sectors.
+		</p>
+		<p>
+			Stealth is survival.
+			Detection escalates force.
+			Noise shortens lifespan.
+		</p>
+	</div>
+
+	<div id="content-theory" class="modal-content-block" aria-labelledby="theory-h2">
+		<h2 id="theory-h2" title="System Architecture: Design philosophy and technical implementation details." aria-label="System Architecture: Design and Technical Overview.">SYSTEM ARCHITECTURE</h2>
+
+		<p>
+			Visually inspired by classic PlayStation 1 tactical espionage action game
+			<strong title="Specific source of visual and atmospheric inspiration." aria-label="Game Inspiration highlighted.">Metal Gear</strong>, specifically <strong title="Specific game mode that inspired the visuals." aria-label="Specific Game Mode Highlighted.">VR Missions</strong>.
+		</p>
+
+		<p>
+			Fixed perspectives. Limited visibility.
+			Information is incomplete by design.
+		</p>
+		<p>This simulation runs on pure math, no static assets, just real-time generation.</p>
+		<p>
+			Enemy behavior is governed by a finite state machine.
+			Patrol. Investigate. Engage. Terminate.
+		</p>
+
+		<p>Audio is synthesized live via the <strong title="Web browser API used for real-time audio generation." aria-label="Technology Highlighted: Web Audio API.">Web Audio API</strong>. Every footstep and alarm is a unique waveform.</p>
+	</div>
+
+	<div id="content-about" class="modal-content-block" aria-labelledby="about-h2">
+		<h2 id="about-h2" title="Mission Control: Information about the designer and developer, Julibe." aria-label="Mission Control: Creator and Development Information.">MISSION CONTROL</h2>
+		<p>Crafted by <a href="https://julibe.com/" target="_blank" title="Don't forget to connect and check out Julibe's main portfolio website!" aria-label="Visit Julibe's Portfolio Website.">@Julibe</a>.</p>
+		<p>Julibe's protocol is to build Amazign digital experiences that merge high-performance code with cinematic storytelling.</p>
+		<p>Always open to new ideas and collaborations. Let's create something great together.</p>
+	</div>
+
+	<button class="btn" onclick="closeInfoModal()" title="Exit the information display and return to the previous screen." aria-label="Return Button: Close the information modal.">RETURN</button>
+</div>
+
+<div id="pause-menu" class="menu-overlay">
+	<h1 title="Simulation Status: Temporary halt of operational flow." aria-label="Simulation Paused Screen Header.">SIMULATION PAUSED</h1>
+	<button class="btn" id="resume-btn" title="Reactivate the simulation and resume the current operation." aria-label="Resume Button: Continue the paused game." onclick="startGame(true);">RESUME</button>
+	<button class="btn" id="restart-btn" title="Execute full system reboot and begin the current level from scratch." aria-label="Restart Button: Begin the current level again.">REBOOT SYSTEM</button>
+
+	<button class="btn" id="menu-btn" title="Abort current mission and return to the main menu." aria-label="Abort Button: Return to the Main Menu.">ABORT MISSION</button>
+	<button class="btn btn-share" onclick="shareTwitter()" title="Transmit Progress: Share Julibe's current operational status via Twitter/X." aria-label="Share current game progress on X (formerly Twitter).">
+		<i class="fa-brands fa-twitter"></i> SHARE PROGRESS
+	</button>
+</div>
+
+<div id="game-over-menu" class="menu-overlay">
+	<h1 id="game-over-title" title="Critical Failure: The agent has been compromised or eliminated." aria-label="Game Over Screen Header: Critical Failure.">CRITICAL FAILURE</h1>
+	<p id="game-over-msg" title="Signal Lost: Communication and control over the agent has been severed." aria-label="Game Over Message: Agent has failed the mission.">SIGNAL LOST</p>
+	<button class="btn" id="retry-btn" title="Attempt Re-engagement: Start the next operational level." aria-label="Next Level Button: Proceed to the next level (if applicable).">NEXT LEVEL</button>
+	<button class="btn btn-share" onclick="shareTwitter()" title="Transmit Report: Share Julibe's mission failure status via Twitter/X." aria-label="Share the mission report (game over status) on X (formerly Twitter).">
+		<i class="fa-brands fa-twitter"></i> TRANSMIT REPORT
+	</button>
+	<button class="btn" id="go-home-btn" title="Disengage from the simulation and return to the main menu." aria-label="Disconnect Button: Return to the Main Menu.">DISCONNECT</button>
+</div>
+
+<div id="fixed-socials">
+	<nav role="navigation" title="Julibe's Fixed Social Media and Contact Uplinks." aria-label="Julibe's Permanent Contact and Social Media Links.">
+		<ul>
+			<li>
+				<a href="https://julibe.com/" target="_blank" class="nav-item" title="Access Command Node: Julibe Portfolio" aria-label="Hey, feel free to visit Julibe's main portfolio website to see his work!">
+					<i class="fa-solid fa-globe"></i>
+					<span>Web</span>
+				</a>
+			</li>
+			<li>
+				<a href="https://julibe.com/github" target="_blank" class="nav-item" title="Source Code Vault GitHub" aria-label="Don't forget to follow Julibe's repositories and code projects on GitHub!">
+					<i class="fa-brands fa-github"></i>
+					<span>GitHub</span>
+				</a>
+			</li>
+			<li>
+				<a href="https://julibe.com/whatsapp" target="_blank" class="nav-item" title="Encrypted Direct WhatsApp Channel " aria-label="Hey have some questions? Just Contact through Julibe's WhatsApp!">
+					<i class="fa-brands fa-whatsapp"></i>
+					<span>WhatsApp</span>
+				</a>
+			</li>
+			<li>
+				<a href="https://julibe.com/twitter" target="_blank" class="nav-item" title="Signal Broadcast Feed X" aria-label="Don't forget to follow Julibe's updates and thoughts on X (Twitter)!">
+					<i class="fa-brands fa-twitter"></i>
+					<span>X</span>
+				</a>
+			</li>
+			<li>
+				<a href="https://julibe.com/instagram" target="_blank" class="nav-item" title="Visual Instagram Recon Log" aria-label="Follow Julibe's visual design inspiration and updates on Instagram!">
+					<i class="fa-brands fa-instagram"></i>
+					<span>Insta</span>
+				</a>
+			</li>
+			<li>
+				<a href="mailto:mail@julibe.com" class="nav-item" title="Secure Transmission Uplink MAiler" aria-label="Send an encrypted email directly to Julibe!">
+					<i class="fa-solid fa-envelope"></i>
+					<span>Email</span>
+				</a>
+			</li>
+		</ul>
+	</nav>
+</div>
+
+<div id="hud-top-left" class="hud-panel" title="Heads-Up Display (HUD): Critical Agent Status." aria-label="Agent Status Panel: Life, Packet, Ammo, and Time Information.">
+	<div class="life-label" title="Current agent integrity level." aria-label="Life Bar Label.">LIFE</div>
+	<div class="life-bar-container" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="Agent Health Status Bar.">
+		<div id="life-bar-fill" class="life-bar-fill"></div>
+	</div>
+	<div class="agent-info">
+		<strong title="Agent's assigned codename." aria-label="Agent Codename Display.">AGENT:</strong> <span id="agent-name" title="Current operative's codename.">N/A</span><br>
+		<strong title="Objective completion status." aria-label="Packets Collected Status.">PKTS:</strong> <span id="packets-collected" title="Number of data packets collected so far.">0</span>/<span id="packets-total" title="Total number of data packets required.">5</span><br>
+		<strong title="Remaining enemy units." aria-label="Enemies Remaining Status.">ENEMIES:</strong> <span id="enemies-remaining" title="Number of enemies left on the map.">0</span><br>
+		<strong title="Remaining ammunition count." aria-label="Ammunition Status.">AMMO:</strong> <span id="ammo-display" title="Current ammunition count.">0</span> <span id="reload-msg" title="Weapon reload status message." aria-label="Weapon Reload Message.">RELOADING...</span><br>
+		<strong title="Elapsed mission time." aria-label="Mission Time Status.">TIME:</strong> <span id="time-elapsed" title="Total mission time elapsed.">00:00</span>
+	</div>
+</div>
+
+<div id="hud-top-center">
+	<div id="alert-box" class="alert-box" role="status" aria-live="polite" title="Enemy alert level indicator." aria-label="Alert Status and Timer Display.">
+		<h2 id="alert-text" title="Current enemy operational status: Normal, Search, or Pursuit." aria-label="Enemy Alert Status Text.">NORMAL</h2>
+		<div id="alert-timer" class="timer" role="timer" aria-label="Time remaining for current alert state."></div>
+	</div>
+</div>
+
+<div id="hud-top-right">
+	<div id="radar-container" title="Tactical map displaying agent position, enemies, and objectives." aria-label="Radar Scan: Top-down map of the immediate operational area.">
+		<canvas id="radar-canvas" role="img" aria-label="Radar visualizer showing agent, enemy, and packet locations."></canvas>
+		<div class="radar-label" title="Radar system operational status." aria-label="Radar Scan System Label.">RADAR SCAN</div>
+	</div>
+</div>
+
+<div id="hud-bottom-right">
+	<div class="stat-box" title="Current level, score, and difficulty parameters." aria-label="Current Mission Status Panel.">
+		<div id="level-display-br" title="Current operational level number." aria-label="Current Level Number.">LEVEL 1</div>
+		<div class="sub-stat"><strong title="Current mission score." aria-label="Mission Score Display.">SCORE:</strong> <span id="score-display" title="Current operational score.">0</span></div>
+		<div class="sub-stat"><strong title="Current operational difficulty setting." aria-label="Difficulty Setting Label.">DIFFICULTY:</strong> <span id="diff-display-br" title="Current numerical difficulty value.">5</span></div>
+	</div>
+</div>
+
+<div id="canvas-container" role="main" aria-label="Main simulation rendering area where the game world is displayed."></div>
+<script src="app.js"></script>
+</body>
+</html>

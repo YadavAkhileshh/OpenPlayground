@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>memory palace · mnemonic architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0e0a18;
+            overflow: hidden;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        }
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #info {
+            position: absolute;
+            bottom: 32px;
+            left: 32px;
+            z-index: 20;
+            background: rgba(20, 15, 30, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(200, 180, 255, 0.35);
+            border-radius: 60px;
+            padding: 14px 32px;
+            color: #e4d9ff;
+            font-weight: 300;
+            font-size: 1rem;
+            letter-spacing: 0.4px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        #info .symbol {
+            color: #cbb5ff;
+            font-size: 1.8rem;
+            filter: drop-shadow(0 0 12px #a07dff);
+        }
+        #memory-stats {
+            position: absolute;
+            bottom: 32px;
+            right: 32px;
+            z-index: 20;
+            background: rgba(22, 16, 32, 0.65);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(190, 160, 255, 0.45);
+            border-radius: 50px;
+            padding: 12px 28px;
+            color: #dacbff;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.7);
+            pointer-events: none;
+        }
+        .glyph-badge {
+            background: rgba(90, 50, 150, 0.5);
+            color: #d4c0ff;
+            padding: 4px 16px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid rgba(170, 130, 255, 0.7);
+        }
+        .controls {
+            position: absolute;
+            top: 32px;
+            right: 32px;
+            z-index: 30;
+            display: flex;
+            gap: 14px;
+        }
+        button {
+            background: rgba(30, 20, 45, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(180, 140, 255, 0.6);
+            color: #d4c4ff;
+            padding: 12px 26px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.4px;
+        }
+        button:hover {
+            background: rgba(80, 40, 140, 0.6);
+            border-color: #bba4ff;
+            color: #f0e4ff;
+            box-shadow: 0 0 28px #9a72ff66;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div id="info">
+        <span class="symbol">𓋴</span> memory palace · 256 glyphs · mnemonic field
+    </div>
+    
+    <div id="memory-stats">
+        <span>◈ attention</span>
+        <span class="glyph-badge" id="attention-val">0.62</span>
+    </div>
+    
+    <div class="controls">
+        <button id="recollect">𓃀 recollect</button>
+        <button id="focus-toggle">◉ focus</button>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  MEMORY PALACE
+        //  concept: an abstract architectural space where thoughts (glyphs)
+        //  float in a grid, connected by threads of association. each glyph
+        //  is a unique custom shape that pulses with "attention". the palace
+        //  itself is a minimalist structure with floating platforms.
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- setup scene ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0720);
+        scene.fog = new THREE.FogExp2(0x0a0720, 0.008);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(20, 12, 28);
+        camera.lookAt(0, 4, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.3;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.3;
+        controls.enableZoom = true;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.target.set(0, 4, 0);
+
+        // --- lighting ---
+        const ambient = new THREE.AmbientLight(0x40406b);
+        scene.add(ambient);
+
+        const light1 = new THREE.PointLight(0x9f7aff, 1.2, 50);
+        light1.position.set(8, 12, 10);
+        scene.add(light1);
+
+        const light2 = new THREE.PointLight(0xff9f7a, 0.9, 50);
+        light2.position.set(-8, 8, 12);
+        scene.add(light2);
+
+        const backLight = new THREE.PointLight(0x6a8cff, 0.7, 60);
+        backLight.position.set(0, 5, -20);
+        scene.add(backLight);
+
+        // distant stars
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 2000;
+        const starPos = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount; i++) {
+            const r = 100 + Math.random() * 100;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            starPos[i*3] = Math.sin(phi) * Math.cos(theta) * r;
+            starPos[i*3+1] = Math.sin(phi) * Math.sin(theta) * r;
+            starPos[i*3+2] = Math.cos(phi) * r;
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0xaa99ee, size: 0.2, transparent: true, blending: THREE.AdditiveBlending });
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
+
+        // --- create architectural elements ---
+        const palaceGroup = new THREE.Group();
+
+        // central spiral staircase (abstract)
+        const spiralPoints = [];
+        for (let i = 0; i <= 40; i++) {
+            const t = i / 40 * Math.PI * 4;
+            const r = 5;
+            const x = Math.cos(t) * r;
+            const y = i * 0.4;
+            const z = Math.sin(t) * r;
+            spiralPoints.push(new THREE.Vector3(x, y, z));
+        }
+        const spiralGeo = new THREE.BufferGeometry().setFromPoints(spiralPoints);
+        const spiralMat = new THREE.LineBasicMaterial({ color: 0xaa88cc, transparent: true, opacity: 0.25 });
+        const spiralLine = new THREE.Line(spiralGeo, spiralMat);
+        palaceGroup.add(spiralLine);
+
+        // floating platforms (rings)
+        for (let level = 0; level < 5; level++) {
+            const y = level * 2.5 + 1;
+            const ringPoints = [];
+            for (let i = 0; i <= 32; i++) {
+                const angle = (i / 32) * Math.PI * 2;
+                const r = 7;
+                ringPoints.push(new THREE.Vector3(Math.cos(angle) * r, y, Math.sin(angle) * r));
+            }
+            const ringGeo = new THREE.BufferGeometry().setFromPoints(ringPoints);
+            const ringMat = new THREE.LineBasicMaterial({ color: 0x88aaff, transparent: true, opacity: 0.15 });
+            const ringLine = new THREE.LineLoop(ringGeo, ringMat);
+            palaceGroup.add(ringLine);
+        }
+
+        scene.add(palaceGroup);
+
+        // --- memory glyphs ---
+        const glyphCount = 256;
+        const glyphGroup = new THREE.Group();
+        const glyphMeshes = [];
+        const glyphConnections = []; // store connection lines
+
+        // create custom glyph shapes (simplified: combination of tetrahedron, octahedron, etc)
+        function createRandomGlyph(baseColor) {
+            // randomly choose one of several primitive shapes
+            const type = Math.floor(Math.random() * 3);
+            let geo;
+            if (type === 0) geo = new THREE.TetrahedronGeometry(0.5, 0);
+            else if (type === 1) geo = new THREE.OctahedronGeometry(0.45, 0);
+            else geo = new THREE.IcosahedronGeometry(0.4, 0);
+            
+            const mat = new THREE.MeshStandardMaterial({
+                color: baseColor,
+                emissive: new THREE.Color(0x221133),
+                roughness: 0.3,
+                metalness: 0.2,
+                transparent: true,
+                opacity: 0.9
+            });
+            return new THREE.Mesh(geo, mat);
+        }
+
+        // place glyphs in a 3D grid with some randomness
+        const gridSize = 8; // 8x8x4 = 256
+        const spacing = 2.8;
+        const offset = (gridSize - 1) * spacing / 2;
+
+        for (let x = 0; x < gridSize; x++) {
+            for (let y = 0; y < gridSize/2; y++) {
+                for (let z = 0; z < gridSize; z++) {
+                    const idx = x * (gridSize/2) * gridSize + y * gridSize + z;
+                    if (idx >= glyphCount) continue;
+                    
+                    // add some random offset for organic feel
+                    const jitter = 0.4;
+                    const posX = x * spacing - offset + (Math.random() - 0.5) * jitter;
+                    const posY = y * spacing + 2 + (Math.random() - 0.5) * jitter;
+                    const posZ = z * spacing - offset + (Math.random() - 0.5) * jitter;
+                    
+                    // color based on position
+                    const hue = (x / gridSize * 0.5 + y / 4 * 0.3 + z / gridSize * 0.2) % 1.0;
+                    const color = new THREE.Color().setHSL(hue, 0.9, 0.6);
+                    
+                    const glyph = createRandomGlyph(color);
+                    glyph.position.set(posX, posY, posZ);
+                    
+                    // store metadata
+                    glyph.userData = {
+                        baseColor: color.clone(),
+                        attention: Math.random() * 0.5, // current attention level
+                        targetAttention: 0,
+                        speed: 0.1 + Math.random() * 0.2,
+                        pos: new THREE.Vector3(posX, posY, posZ)
+                    };
+                    
+                    glyphGroup.add(glyph);
+                    glyphMeshes.push(glyph);
+                }
+            }
+        }
+        scene.add(glyphGroup);
+
+        // create connection lines between nearby glyphs (within distance)
+        const connectionMaterial = new THREE.LineBasicMaterial({ color: 0x8866cc, transparent: true, opacity: 0.15 });
+        
+        for (let i = 0; i < glyphMeshes.length; i += 3) { // sample for performance
+            const a = glyphMeshes[i];
+            if (!a) continue;
+            for (let j = i+1; j < glyphMeshes.length; j += 5) {
+                const b = glyphMeshes[j];
+                if (!b) continue;
+                const dist = a.position.distanceTo(b.position);
+                if (dist < 5.0) {
+                    const points = [a.position.clone(), b.position.clone()];
+                    const geo = new THREE.BufferGeometry().setFromPoints(points);
+                    const line = new THREE.Line(geo, connectionMaterial);
+                    scene.add(line);
+                    glyphConnections.push({ line, a, b, baseOpacity: 0.15 });
+                }
+            }
+        }
+
+        // --- UI state ---
+        let focusMode = false;
+        let attentionLevel = 0.5;
+        const attentionEl = document.getElementById('attention-val');
+
+        document.getElementById('recollect').addEventListener('click', () => {
+            // randomize target attention
+            glyphMeshes.forEach(g => {
+                g.userData.targetAttention = Math.random();
+            });
+        });
+        
+        document.getElementById('focus-toggle').addEventListener('click', (e) => {
+            focusMode = !focusMode;
+            e.target.innerHTML = focusMode ? '◉ focus (on)' : '◉ focus';
+        });
+
+        // --- animation loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const delta = clock.getDelta();
+            const elapsed = performance.now() / 1000;
+
+            // update glyph attention
+            let totalAttention = 0;
+            
+            glyphMeshes.forEach(glyph => {
+                const data = glyph.userData;
+                
+                // gradually move attention toward target
+                if (focusMode) {
+                    // in focus mode, attention follows a wave
+                    data.targetAttention = 0.3 + 0.7 * (Math.sin(elapsed * 2 + glyph.position.x) * 0.5 + 0.5);
+                }
+                
+                data.attention += (data.targetAttention - data.attention) * 0.02;
+                totalAttention += data.attention;
+                
+                // scale and color based on attention
+                const scale = 0.8 + data.attention * 0.7;
+                glyph.scale.set(scale, scale, scale);
+                
+                // brightness
+                const hue = data.baseColor.getHSL({}).h;
+                glyph.material.color.setHSL(hue, 0.9, 0.4 + data.attention * 0.4);
+                glyph.material.emissive.setHSL(hue, 0.8, data.attention * 0.3);
+                
+                // subtle floating
+                glyph.position.y = data.pos.y + Math.sin(elapsed * 2 + glyph.position.x) * 0.1;
+            });
+            
+            // update connections opacity based on avg attention
+            const avgAttention = totalAttention / glyphMeshes.length;
+            attentionEl.textContent = avgAttention.toFixed(2);
+            
+            glyphConnections.forEach(conn => {
+                const avg = (conn.a.userData.attention + conn.b.userData.attention) / 2;
+                conn.line.material.opacity = 0.1 + avg * 0.3;
+            });
+
+            // rotate palace elements slowly
+            palaceGroup.rotation.y += 0.0005;
+            
+            // rotate stars
+            stars.rotation.y += 0.0002;
+
+            controls.update();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // light shifts
+        setInterval(() => {
+            const t = performance.now() / 2000;
+            light1.color.setHSL(0.68 + Math.sin(t)*0.06, 0.8, 0.6);
+            light2.color.setHSL(0.92 + Math.cos(t*1.2)*0.05, 0.9, 0.6);
+        }, 200);
+    </script>
+</body>
+</html>

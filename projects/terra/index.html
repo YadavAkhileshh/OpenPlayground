@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terra - 3D Procedural Planet Sandbox</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/controls.css">
+    <link rel="stylesheet" href="css/theme.css">
+    
+    <!-- Three.js from CDN -->
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+</head>
+<body>
+    <!-- Main Container -->
+    <div id="app-container">
+        <!-- Canvas Container -->
+        <div id="canvas-container"></div>
+        
+        <!-- Header -->
+        <header id="header">
+            <h1>TERRA</h1>
+            <p class="subtitle">Procedural Planet Simulation</p>
+        </header>
+        
+        <!-- Info Panel -->
+        <div id="info-panel" class="panel">
+            <h3>Simulation Info</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">Time:</span>
+                    <span id="info-time" class="value">0.0 years</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Season:</span>
+                    <span id="info-season" class="value">Spring</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Day/Night:</span>
+                    <span id="info-daytime" class="value">Day</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Tectonic Age:</span>
+                    <span id="info-tectonic" class="value">0.0 My</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Erosion Level:</span>
+                    <span id="info-erosion" class="value">0%</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Avg Temp:</span>
+                    <span id="info-temp" class="value">15°C</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Control Panel -->
+        <div id="control-panel" class="panel">
+            <div class="panel-header">
+                <h3>Simulation Parameters</h3>
+                <button id="toggle-controls" class="toggle-btn">−</button>
+            </div>
+            
+            <div id="controls-content" class="controls-content">
+                <!-- Time Controls -->
+                <div class="control-section">
+                    <h4>Time & Lighting</h4>
+                    <div class="control-group">
+                        <label for="time-speed">Time Speed</label>
+                        <input type="range" id="time-speed" min="0" max="10" step="0.1" value="1">
+                        <span class="value-display">1.0x</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="axial-tilt">Axial Tilt</label>
+                        <input type="range" id="axial-tilt" min="0" max="45" step="1" value="23.5">
+                        <span class="value-display">23.5°</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="day-length">Day Length</label>
+                        <input type="range" id="day-length" min="1" max="100" step="1" value="24">
+                        <span class="value-display">24h</span>
+                    </div>
+                </div>
+                
+                <!-- Terrain Controls -->
+                <div class="control-section">
+                    <h4>Terrain Generation</h4>
+                    <div class="control-group">
+                        <label for="terrain-scale">Terrain Scale</label>
+                        <input type="range" id="terrain-scale" min="0.5" max="5" step="0.1" value="2.0">
+                        <span class="value-display">2.0</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="terrain-octaves">Noise Octaves</label>
+                        <input type="range" id="terrain-octaves" min="1" max="8" step="1" value="5">
+                        <span class="value-display">5</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="water-level">Water Level</label>
+                        <input type="range" id="water-level" min="-0.5" max="0.5" step="0.01" value="0.0">
+                        <span class="value-display">0.00</span>
+                    </div>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="show-water" checked>
+                            Show Water
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Tectonic Controls -->
+                <div class="control-section">
+                    <h4>Tectonic Activity</h4>
+                    <div class="control-group">
+                        <label for="plate-count">Plate Count</label>
+                        <input type="range" id="plate-count" min="3" max="20" step="1" value="8">
+                        <span class="value-display">8</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="tectonic-speed">Plate Speed</label>
+                        <input type="range" id="tectonic-speed" min="0" max="5" step="0.1" value="1.0">
+                        <span class="value-display">1.0</span>
+                    </div>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="show-plates" checked>
+                            Show Plate Boundaries
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Erosion Controls -->
+                <div class="control-section">
+                    <h4>Erosion Systems</h4>
+                    <div class="control-group">
+                        <label for="erosion-rate">Erosion Rate</label>
+                        <input type="range" id="erosion-rate" min="0" max="2" step="0.1" value="0.5">
+                        <span class="value-display">0.5</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="rainfall">Rainfall Level</label>
+                        <input type="range" id="rainfall" min="0" max="2" step="0.1" value="1.0">
+                        <span class="value-display">1.0</span>
+                    </div>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="enable-erosion" checked>
+                            Enable Erosion
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Climate Controls -->
+                <div class="control-section">
+                    <h4>Climate & Temperature</h4>
+                    <div class="control-group">
+                        <label for="global-temp">Global Temperature</label>
+                        <input type="range" id="global-temp" min="-20" max="40" step="1" value="15">
+                        <span class="value-display">15°C</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="temp-variance">Temperature Variance</label>
+                        <input type="range" id="temp-variance" min="0" max="2" step="0.1" value="1.0">
+                        <span class="value-display">1.0</span>
+                    </div>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="show-climate" checked>
+                            Show Climate Zones
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Visual Controls -->
+                <div class="control-section">
+                    <h4>Rendering</h4>
+                    <div class="control-group">
+                        <label for="lod-level">Level of Detail</label>
+                        <input type="range" id="lod-level" min="1" max="5" step="1" value="3">
+                        <span class="value-display">3</span>
+                    </div>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="show-wireframe">
+                            Wireframe Mode
+                        </label>
+                    </div>
+                    <div class="control-group">
+                        <label>
+                            <input type="checkbox" id="show-atmosphere" checked>
+                            Show Atmosphere
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="control-section">
+                    <h4>Actions</h4>
+                    <button id="btn-regenerate" class="action-btn">Regenerate Planet</button>
+                    <button id="btn-reset" class="action-btn">Reset Simulation</button>
+                    <button id="btn-pause" class="action-btn">Pause/Resume</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Legend -->
+        <div id="legend-panel" class="panel">
+            <h4>Climate Zones</h4>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <span class="color-box" style="background: #ffffff;"></span>
+                    <span>Polar Ice</span>
+                </div>
+                <div class="legend-item">
+                    <span class="color-box" style="background: #88ccff;"></span>
+                    <span>Tundra</span>
+                </div>
+                <div class="legend-item">
+                    <span class="color-box" style="background: #66aa66;"></span>
+                    <span>Temperate</span>
+                </div>
+                <div class="legend-item">
+                    <span class="color-box" style="background: #ddcc55;"></span>
+                    <span>Desert</span>
+                </div>
+                <div class="legend-item">
+                    <span class="color-box" style="background: #228833;"></span>
+                    <span>Tropical</span>
+                </div>
+                <div class="legend-item">
+                    <span class="color-box" style="background: #1155aa;"></span>
+                    <span>Ocean</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript Modules -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

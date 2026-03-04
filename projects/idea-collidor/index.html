@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚡ IDEA COLLIDER · smash thoughts</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0b0f1c;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      padding: 16px;
+    }
+
+    .collider-lab {
+      max-width: 1400px;
+      width: 100%;
+      background: #141c2bd9;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 70px 70px 50px 50px;
+      padding: 24px 24px 30px;
+      border: 2px solid #7f95d1;
+      box-shadow: 0 30px 40px -15px #020614, inset 0 0 20px #416dc6;
+    }
+
+    /* header */
+    .collider-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      background: #1d2942b8;
+      border-radius: 90px;
+      padding: 12px 28px;
+      margin-bottom: 22px;
+      border: 1px solid #a4cbff;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo h1 {
+      font-size: 2.3rem;
+      font-weight: 400;
+      background: linear-gradient(130deg, #ffdba5, #c0e0ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .particle-counter {
+      background: #283b62;
+      border-radius: 50px;
+      padding: 8px 28px;
+      color: #f6ffb0;
+      font-weight: 600;
+      font-size: 1.5rem;
+      border: 1px solid #b1d5ff;
+    }
+
+    /* main arena */
+    .arena {
+      background: #151f2f;
+      border-radius: 60px;
+      padding: 15px;
+      border: 3px solid #6c8fc6;
+      box-shadow: inset 0 0 60px #040a1a, 0 15px 20px black;
+      margin-bottom: 22px;
+      position: relative;
+    }
+
+    #colliderCanvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #0b1422;
+      border-radius: 50px;
+      cursor: crosshair;
+      border: 1px solid #aaccff;
+    }
+
+    /* control tower */
+    .control-tower {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      background: #19273fb3;
+      border-radius: 80px;
+      padding: 18px 30px;
+      border: 1px solid #8db0e6;
+    }
+
+    .button-bank {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+    }
+
+    .collider-btn {
+      background: #31538b;
+      border: none;
+      color: #f3ffd8;
+      font-size: 1.3rem;
+      padding: 12px 28px;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 500;
+      box-shadow: 0 7px 0 #142842;
+      transition: 0.07s linear;
+      border: 1px solid #adcfff;
+      cursor: pointer;
+    }
+
+    .collider-btn:active {
+      transform: translateY(7px);
+      box-shadow: 0 0px 0 #142842;
+    }
+
+    .collider-btn.special {
+      background: #4d518c;
+      box-shadow: 0 7px 0 #252b4d;
+    }
+
+    .slider-panel {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: #202f47;
+      padding: 8px 28px;
+      border-radius: 70px;
+      border: 1px solid #9ec3ff;
+    }
+
+    .slider-panel label {
+      color: #d6ecff;
+      font-weight: 500;
+      font-size: 1.2rem;
+    }
+
+    input[type=range] {
+      width: 180px;
+      height: 8px;
+      background: #2d4a70;
+      border-radius: 10px;
+      -webkit-appearance: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      background: #e7ffac;
+      border-radius: 22px;
+      box-shadow: 0 0 10px #aaf0ff;
+      cursor: grab;
+      border: 2px solid #29344b;
+    }
+
+    #gravityValue {
+      color: white;
+      font-weight: 600;
+      min-width: 45px;
+    }
+
+    .inspector {
+      background: #263a59;
+      border-radius: 70px;
+      padding: 8px 32px;
+      color: #ffefb0;
+      font-size: 1.3rem;
+      border: 1px solid #ffd966;
+    }
+  </style>
+</head>
+<body>
+  <div class="collider-lab">
+    <div class="collider-header">
+      <div class="logo">
+        <h1>⚡ IDEA COLLIDER</h1>
+      </div>
+      <div class="particle-counter" id="particleCount">0 particles</div>
+    </div>
+
+    <!-- main physics canvas -->
+    <div class="arena">
+      <canvas id="colliderCanvas" width="1200" height="500"></canvas>
+    </div>
+
+    <!-- controls -->
+    <div class="control-tower">
+      <div class="button-bank">
+        <button class="collider-btn" id="addIdeaBtn">💫 add idea</button>
+        <button class="collider-btn" id="addForceBtn" title="random push">💥 force burst</button>
+        <button class="collider-btn special" id="combineModeBtn">🌀 combine mode</button>
+        <button class="collider-btn" id="clearBtn">🧹 clear all</button>
+      </div>
+
+      <div class="slider-panel">
+        <label>🌍 gravity</label>
+        <input type="range" id="gravitySlider" min="0" max="0.8" step="0.02" value="0.25">
+        <span id="gravityValue">0.25</span>
+      </div>
+
+      <div class="inspector" id="modeIndicator">
+        mode: normal
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const canvas = document.getElementById('colliderCanvas');
+      const ctx = canvas.getContext('2d');
+      const particleCountSpan = document.getElementById('particleCount');
+      const gravitySlider = document.getElementById('gravitySlider');
+      const gravityValue = document.getElementById('gravityValue');
+      const addIdeaBtn = document.getElementById('addIdeaBtn');
+      const addForceBtn = document.getElementById('addForceBtn');
+      const combineModeBtn = document.getElementById('combineModeBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const modeIndicator = document.getElementById('modeIndicator');
+
+      // ---- physics state ----
+      let particles = [];
+      let mode = 'normal'; // 'normal' or 'combine'
+      let GRAVITY = 0.25;
+      let selectedParticleId = null; // for combine mode
+
+      // colors for variety
+      const colorPalette = ['#feff9c', '#ffccb3', '#c5e0b4', '#b4d9e6', '#e3d7ff', '#fbc8d5', '#f9cf7c', '#c0e5b0'];
+
+      // ---- particle class ----
+      class IdeaParticle {
+        constructor(x, y, text = 'idea', vx = (Math.random()-0.5)*2, vy = (Math.random()-0.5)*2) {
+          this.id = 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+          this.x = x;
+          this.y = y;
+          this.vx = vx;
+          this.vy = vy;
+          this.radius = 28 + Math.floor(Math.random() * 12); // 28-40px
+          this.text = text;
+          this.color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+          this.mass = this.radius / 20; // approx 1.4 - 2.0
+        }
+
+        // update position, apply gravity, bounce
+        update(width, height) {
+          this.vy += GRAVITY;
+
+          this.x += this.vx;
+          this.y += this.vy;
+
+          // dampen very little
+          this.vx *= 0.998;
+          this.vy *= 0.998;
+
+          // boundary collision (bounce with energy loss)
+          if (this.x - this.radius < 0) {
+            this.x = this.radius;
+            this.vx = -this.vx * 0.7;
+          }
+          if (this.x + this.radius > width) {
+            this.x = width - this.radius;
+            this.vx = -this.vx * 0.7;
+          }
+          if (this.y - this.radius < 0) {
+            this.y = this.radius;
+            this.vy = -this.vy * 0.7;
+          }
+          if (this.y + this.radius > height) {
+            this.y = height - this.radius;
+            this.vy = -this.vy * 0.6; // more energy loss on floor
+          }
+        }
+      }
+
+      // ---- add random particle ----
+      function addIdea() {
+        const x = 100 + Math.random() * (canvas.width - 200);
+        const y = 80 + Math.random() * (canvas.height - 160);
+        const texts = ['design', 'code', 'test', 'dream', 'users', 'profit', 'sketch', 'data', 'brain'];
+        const text = texts[Math.floor(Math.random() * texts.length)];
+        const particle = new IdeaParticle(x, y, text);
+        particles.push(particle);
+        updateCounter();
+      }
+
+      // ---- draw loop ----
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // draw faint grid for fun
+        ctx.strokeStyle = '#314b6b';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < canvas.width; i += 40) {
+          ctx.beginPath();
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i, canvas.height);
+          ctx.strokeStyle = '#1f3a55';
+          ctx.stroke();
+        }
+        for (let i = 0; i < canvas.height; i += 40) {
+          ctx.beginPath();
+          ctx.moveTo(0, i);
+          ctx.lineTo(canvas.width, i);
+          ctx.strokeStyle = '#1f3a55';
+          ctx.stroke();
+        }
+
+        // draw links if combine mode and a particle is selected
+        if (mode === 'combine' && selectedParticleId) {
+          const selected = particles.find(p => p.id === selectedParticleId);
+          if (selected) {
+            ctx.beginPath();
+            ctx.arc(selected.x, selected.y, selected.radius + 8, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#ffda7a';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([8, 8]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+        }
+
+        // draw particles
+        particles.forEach(p => {
+          // shadow
+          ctx.shadowColor = '#b0d0ff';
+          ctx.shadowBlur = 15;
+          // circle
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, 2 * Math.PI);
+          ctx.fillStyle = p.color;
+          ctx.fill();
+          ctx.strokeStyle = '#342e1a';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // text
+          ctx.shadowBlur = 8;
+          ctx.font = 'bold 16px "Segoe UI", "Inter", sans-serif';
+          ctx.fillStyle = '#1d291f';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(p.text, p.x, p.y);
+        });
+        ctx.shadowBlur = 0;
+
+        // draw mode hint on canvas
+        ctx.font = 'bold 22px "Segoe UI"';
+        ctx.fillStyle = '#abdef0';
+        ctx.shadowBlur = 10;
+        ctx.fillText(mode === 'combine' ? '🌀 COMBINE MODE' : '⚡ NORMAL', 150, 60);
+        ctx.shadowBlur = 0;
+      }
+
+      // ---- physics update + collisions ----
+      function updatePhysics() {
+        // particle-particle collision (simple elastic)
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const p1 = particles[i];
+            const p2 = particles[j];
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const minDist = p1.radius + p2.radius;
+
+            if (dist < minDist) {
+              // collision response (simple push)
+              const angle = Math.atan2(dy, dx);
+              const overlap = minDist - dist;
+              const pushX = Math.cos(angle) * overlap * 0.5;
+              const pushY = Math.sin(angle) * overlap * 0.5;
+
+              // separate
+              p1.x -= pushX;
+              p1.y -= pushY;
+              p2.x += pushX;
+              p2.y += pushY;
+
+              // if in combine mode and both particles exist, check for combine condition
+              if (mode === 'combine' && selectedParticleId) {
+                // we want to combine selected with any other if they touch
+                if (selectedParticleId === p1.id || selectedParticleId === p2.id) {
+                  const otherId = selectedParticleId === p1.id ? p2.id : p1.id;
+                  attemptCombine(selectedParticleId, otherId);
+                }
+              }
+
+              // bounce velocity (simple swap along normal)
+              const nx = dx / dist;
+              const ny = dy / dist;
+              const v1n = p1.vx * nx + p1.vy * ny;
+              const v2n = p2.vx * nx + p2.vy * ny;
+              if (v1n - v2n > 0) { // approaching
+                const reducedMass = (2 * (v1n - v2n)) / (p1.mass + p2.mass);
+                p1.vx -= reducedMass * p2.mass * nx;
+                p1.vy -= reducedMass * p2.mass * ny;
+                p2.vx += reducedMass * p1.mass * nx;
+                p2.vy += reducedMass * p1.mass * ny;
+              }
+            }
+          }
+        }
+
+        // update each particle
+        particles.forEach(p => p.update(canvas.width, canvas.height));
+
+        // keep inside canvas (additional safety)
+        particles.forEach(p => {
+          if (p.x - p.radius < 0) p.x = p.radius;
+          if (p.x + p.radius > canvas.width) p.x = canvas.width - p.radius;
+          if (p.y - p.radius < 0) p.y = p.radius;
+          if (p.y + p.radius > canvas.height) p.y = canvas.height - p.radius;
+        });
+      }
+
+      // ---- combine logic ----
+      function attemptCombine(id1, id2) {
+        if (!mode === 'combine') return;
+        const p1 = particles.find(p => p.id === id1);
+        const p2 = particles.find(p => p.id === id2);
+        if (!p1 || !p2) return;
+        if (p1.id === p2.id) return;
+
+        // Combine: replace with bigger particle containing merged text
+        const newText = p1.text.slice(0,4) + '+' + p2.text.slice(0,4);
+        const newX = (p1.x + p2.x) / 2;
+        const newY = (p1.y + p2.y) / 2;
+        const newRadius = Math.min(48, p1.radius + p2.radius - 10); // cap size
+        const newColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+
+        // remove both
+        particles = particles.filter(p => p.id !== id1 && p.id !== id2);
+        // create new combined particle
+        const combined = new IdeaParticle(newX, newY, newText);
+        combined.radius = newRadius;
+        combined.color = newColor;
+        combined.mass = combined.radius / 16;
+        combined.vx = (p1.vx + p2.vx) / 2;
+        combined.vy = (p1.vy + p2.vy) / 2;
+        particles.push(combined);
+
+        // reset selected
+        selectedParticleId = null;
+        modeIndicator.innerText = 'mode: combine';
+        updateCounter();
+      }
+
+      // ---- helpers ----
+      function updateCounter() {
+        particleCountSpan.innerText = particles.length + ' particle' + (particles.length !== 1 ? 's' : '');
+      }
+
+      // ---- animation loop ----
+      function animate() {
+        updatePhysics();
+        draw();
+        requestAnimationFrame(animate);
+      }
+
+      // ---- event handlers ----
+      canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mouseX = (e.clientX - rect.left) * scaleX;
+        const mouseY = (e.clientY - rect.top) * scaleY;
+
+        // find clicked particle (reverse order for top)
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          const dx = mouseX - p.x;
+          const dy = mouseY - p.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist <= p.radius) {
+            // clicked
+            if (mode === 'normal') {
+              // give it a random push
+              p.vx += (Math.random() - 0.5) * 6;
+              p.vy += (Math.random() - 0.5) * 6;
+            } else if (mode === 'combine') {
+              if (!selectedParticleId) {
+                selectedParticleId = p.id;
+              } else {
+                // if click on different particle, attempt combine
+                if (selectedParticleId !== p.id) {
+                  attemptCombine(selectedParticleId, p.id);
+                } else {
+                  // same particle: deselect
+                  selectedParticleId = null;
+                }
+              }
+            }
+            break;
+          }
+        }
+      });
+
+      // add button
+      addIdeaBtn.addEventListener('click', () => {
+        for (let i=0; i<3; i++) addIdea(); // add 3 at once for fun
+      });
+
+      // force burst: random push
+      addForceBtn.addEventListener('click', () => {
+        particles.forEach(p => {
+          p.vx += (Math.random() - 0.5) * 8;
+          p.vy += (Math.random() - 0.5) * 8;
+        });
+      });
+
+      // combine mode toggle
+      combineModeBtn.addEventListener('click', () => {
+        if (mode === 'normal') {
+          mode = 'combine';
+          selectedParticleId = null;
+          modeIndicator.innerText = 'mode: combine';
+        } else {
+          mode = 'normal';
+          selectedParticleId = null;
+          modeIndicator.innerText = 'mode: normal';
+        }
+      });
+
+      // clear all
+      clearBtn.addEventListener('click', () => {
+        if (particles.length > 0 && confirm('💥 clear all ideas?')) {
+          particles = [];
+          selectedParticleId = null;
+          updateCounter();
+        }
+      });
+
+      // gravity slider
+      gravitySlider.addEventListener('input', (e) => {
+        GRAVITY = parseFloat(e.target.value);
+        gravityValue.innerText = GRAVITY.toFixed(2);
+      });
+
+      // resize canvas
+      function resizeCanvas() {
+        const container = document.querySelector('.arena');
+        const w = container.clientWidth - 30;
+        canvas.width = w;
+        canvas.height = 500; // fixed
+      }
+      window.addEventListener('resize', () => {
+        resizeCanvas();
+      });
+      resizeCanvas();
+
+      // start with some demo particles
+      function initDemo() {
+        for (let i=0; i<6; i++) {
+          addIdea();
+        }
+      }
+      initDemo();
+
+      // start animation
+      animate();
+    })();
+  </script>
+</body>
+</html>

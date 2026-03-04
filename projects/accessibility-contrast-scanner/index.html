@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Accessibility Contrast Scanner — WCAG 2.1</title>
+    <meta name="description"
+        content="Scan a page or DOM subtree for WCAG contrast issues. Highlight failing elements, get accessible color suggestions, and export results as JSON/CSV." />
+    <link rel="stylesheet" href="style.css" />
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet" />
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <i class="ri-contrast-2-line logo-icon"></i>
+                <div class="logo-text">
+                    <h1>Contrast Scanner</h1>
+                    <span class="tagline">WCAG 2.1 DOM Accessibility Auditor</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <a href="../../index.html" class="header-btn" aria-label="Back to home">
+                    <i class="ri-arrow-left-line"></i><span>Home</span>
+                </a>
+                <button class="header-btn" id="keyboardHintBtn" aria-label="Keyboard shortcuts">
+                    <i class="ri-keyboard-box-line"></i><span class="hide-mobile">Shortcuts</span>
+                </button>
+                <button class="header-btn" id="themeToggle" aria-label="Toggle theme">
+                    <i class="ri-sun-line light-icon"></i>
+                    <i class="ri-moon-line dark-icon"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-main">
+        <!-- ===== Section 1: Input ===== -->
+        <section class="card" aria-labelledby="input-heading">
+            <h2 id="input-heading" class="section-title"><i class="ri-code-s-slash-line"></i> Scan Input</h2>
+            <p class="section-desc">Paste an HTML snippet or a full page URL below, then hit <strong>Scan</strong>.</p>
+
+            <div class="input-tabs" role="tablist">
+                <button class="tab active" role="tab" aria-selected="true" data-tab="html" id="tab-html">HTML Snippet</button>
+                <button class="tab" role="tab" aria-selected="false" data-tab="url" id="tab-url">Page URL</button>
+            </div>
+
+            <div class="tab-panel active" id="panel-html" role="tabpanel" aria-labelledby="tab-html">
+                <textarea id="htmlInput" class="code-input" rows="10" spellcheck="false"
+                    placeholder="<div style='background:#1a1a2e;color:#999'>Low contrast text</div>"></textarea>
+            </div>
+
+            <div class="tab-panel" id="panel-url" role="tabpanel" aria-labelledby="tab-url">
+                <div class="url-input-row">
+                    <input type="url" id="urlInput" class="text-input" placeholder="https://example.com" />
+                    <small class="url-note">Uses a CORS proxy; some sites may block requests.</small>
+                </div>
+            </div>
+
+            <!-- Demo HTML snippet (pre-loaded) -->
+            <button class="link-btn" id="loadDemoBtn"><i class="ri-flask-line"></i> Load demo snippet</button>
+        </section>
+
+        <!-- ===== Section 2: Controls ===== -->
+        <section class="card controls-bar" aria-labelledby="controls-heading">
+            <h2 id="controls-heading" class="sr-only">Scan Controls</h2>
+
+            <div class="control-group">
+                <label class="control-label">WCAG Level</label>
+                <div class="toggle-group" role="radiogroup" aria-label="WCAG compliance level">
+                    <button class="toggle-btn active" role="radio" aria-checked="true" data-level="AA">AA</button>
+                    <button class="toggle-btn" role="radio" aria-checked="false" data-level="AAA">AAA</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Text Size</label>
+                <div class="toggle-group" role="radiogroup" aria-label="Text size mode">
+                    <button class="toggle-btn active" role="radio" aria-checked="true" data-size="normal">Normal</button>
+                    <button class="toggle-btn" role="radio" aria-checked="false" data-size="large">Large</button>
+                </div>
+            </div>
+
+            <button class="primary-btn" id="scanBtn"><i class="ri-search-eye-line"></i> Scan</button>
+        </section>
+
+        <!-- ===== Section 3: Summary ===== -->
+        <section class="card hidden" id="summarySection" aria-labelledby="summary-heading">
+            <h2 id="summary-heading" class="section-title"><i class="ri-bar-chart-box-line"></i> Scan Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-stat" id="statTotal">
+                    <span class="stat-value">0</span>
+                    <span class="stat-label">Elements</span>
+                </div>
+                <div class="summary-stat pass" id="statPass">
+                    <span class="stat-value">0</span>
+                    <span class="stat-label">Pass</span>
+                </div>
+                <div class="summary-stat fail" id="statFail">
+                    <span class="stat-value">0</span>
+                    <span class="stat-label">Fail</span>
+                </div>
+                <div class="summary-stat" id="statRatio">
+                    <span class="stat-value">—</span>
+                    <span class="stat-label">Worst Ratio</span>
+                </div>
+            </div>
+
+            <!-- Copy summary -->
+            <button class="link-btn" id="copySummaryBtn"><i class="ri-clipboard-line"></i> Copy summary to clipboard</button>
+        </section>
+
+        <!-- ===== Section 4: Live Preview with Highlights ===== -->
+        <section class="card hidden" id="previewSection" aria-labelledby="preview-heading">
+            <div class="section-title-row">
+                <h2 id="preview-heading" class="section-title"><i class="ri-eye-line"></i> Live Preview</h2>
+                <div class="preview-controls">
+                    <button class="icon-btn" id="toggleHighlightsBtn" aria-label="Toggle failure highlights" title="Toggle highlights">
+                        <i class="ri-mark-pen-line"></i>
+                    </button>
+                    <button class="icon-btn" id="prevFailBtn" aria-label="Previous failing element" title="Previous (Shift+Tab)">
+                        <i class="ri-arrow-up-line"></i>
+                    </button>
+                    <button class="icon-btn" id="nextFailBtn" aria-label="Next failing element" title="Next (Tab)">
+                        <i class="ri-arrow-down-line"></i>
+                    </button>
+                    <span class="fail-counter" id="failCounter">0 / 0</span>
+                </div>
+            </div>
+            <div class="preview-frame-wrapper">
+                <iframe id="previewFrame" class="preview-frame" sandbox="allow-same-origin" title="Scanned page preview"></iframe>
+            </div>
+        </section>
+
+        <!-- ===== Section 5: Results Table ===== -->
+        <section class="card hidden" id="resultsSection" aria-labelledby="results-heading">
+            <div class="section-title-row">
+                <h2 id="results-heading" class="section-title"><i class="ri-list-check-2"></i> Detailed Results</h2>
+                <div class="results-filter">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="fail">Failing</button>
+                    <button class="filter-btn" data-filter="pass">Passing</button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table class="results-table" id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Element</th>
+                            <th>Text</th>
+                            <th>FG</th>
+                            <th>BG</th>
+                            <th>Ratio</th>
+                            <th>Status</th>
+                            <th>Suggestions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ===== Section 6: Export ===== -->
+        <section class="card hidden" id="exportSection" aria-labelledby="export-heading">
+            <h2 id="export-heading" class="section-title"><i class="ri-share-forward-line"></i> Export Results</h2>
+            <div class="export-grid">
+                <button class="export-btn" id="exportJsonBtn">
+                    <i class="ri-braces-line"></i><span>Export JSON</span>
+                </button>
+                <button class="export-btn" id="exportCsvBtn">
+                    <i class="ri-file-text-line"></i><span>Export CSV</span>
+                </button>
+                <button class="export-btn" id="copyJsonBtn">
+                    <i class="ri-clipboard-line"></i><span>Copy JSON</span>
+                </button>
+                <button class="export-btn" id="copyCsvBtn">
+                    <i class="ri-file-copy-line"></i><span>Copy CSV</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ===== Section 7: WCAG Reference ===== -->
+        <section class="card" aria-labelledby="ref-heading">
+            <h2 id="ref-heading" class="section-title"><i class="ri-information-line"></i> WCAG Quick Reference</h2>
+            <div class="ref-grid">
+                <div class="ref-card">
+                    <h3>AA — Normal Text</h3>
+                    <span class="ref-ratio">≥ 4.5 : 1</span>
+                    <p>Body text smaller than 18pt (24px) or 14pt bold (18.5px bold).</p>
+                </div>
+                <div class="ref-card">
+                    <h3>AA — Large Text</h3>
+                    <span class="ref-ratio">≥ 3 : 1</span>
+                    <p>Text at least 18pt (24px) or 14pt bold (18.5px bold).</p>
+                </div>
+                <div class="ref-card">
+                    <h3>AAA — Normal Text</h3>
+                    <span class="ref-ratio">≥ 7 : 1</span>
+                    <p>Enhanced contrast for maximum readability.</p>
+                </div>
+                <div class="ref-card">
+                    <h3>AAA — Large Text</h3>
+                    <span class="ref-ratio">≥ 4.5 : 1</span>
+                    <p>Enhanced contrast for large text elements.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div class="modal-overlay" id="keyboardModal" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title"><i class="ri-keyboard-box-line"></i> Keyboard Shortcuts</h3>
+                <button class="modal-close" id="closeModalBtn" aria-label="Close"><i class="ri-close-line"></i></button>
+            </div>
+            <ul class="shortcuts-list">
+                <li><kbd>Enter</kbd><span>Run scan</span></li>
+                <li><kbd>H</kbd><span>Toggle highlights</span></li>
+                <li><kbd>J</kbd><span>Next failing element</span></li>
+                <li><kbd>K</kbd><span>Previous failing element</span></li>
+                <li><kbd>1</kbd><span>Toggle AA / AAA</span></li>
+                <li><kbd>2</kbd><span>Toggle Normal / Large</span></li>
+                <li><kbd>T</kbd><span>Toggle theme</span></li>
+                <li><kbd>?</kbd><span>Show shortcuts</span></li>
+                <li><kbd>Esc</kbd><span>Close dialogs</span></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+    <footer class="app-footer">
+        <p>Built with <i class="ri-heart-fill"></i> for accessibility &bull;
+            <a href="https://www.w3.org/WAI/WCAG21/quickref/" target="_blank" rel="noopener">WCAG 2.1 Reference</a>
+        </p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

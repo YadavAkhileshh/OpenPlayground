@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Reaction Surge</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bungee&family=Orbitron:wght@600;800&family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="animations.css" />
+    <style>
+      .circle-container {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 999999;
+      }
+
+      .cursor-circle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #ff8c00;
+        box-shadow: 0 0 15px rgba(255, 140, 0, 0.7);
+        transform: translate(-50%, -50%);
+        will-change: transform;
+        mix-blend-mode: screen;
+      }
+
+      .cursor-circle:first-child {
+        width: 14px;
+        height: 14px;
+        background-color: #ffcc00;
+        box-shadow:
+          0 0 20px #ff8c00,
+          0 0 40px rgba(255, 140, 0, 0.5);
+        z-index: 2;
+      }
+
+      .cursor-clicking {
+        transform: translate(-50%, -50%) scale(2.5);
+        background-color: #ffcc00;
+      }
+
+      .cursor-hovering {
+        transform: translate(-50%, -50%) scale(1.8);
+        background-color: #ff9900;
+      }
+    </style>
+
+    <div class="circle-container" id="cursor-trail"></div>
+
+    <script>
+      (function () {
+        document.body.style.cursor = "none";
+
+        const container = document.getElementById("cursor-trail");
+        const coords = { x: 0, y: 0 };
+        const circles = [];
+        const COUNT = 16;
+
+        for (let i = 0; i < COUNT; i++) {
+          const c = document.createElement("div");
+          c.className = "cursor-circle";
+          c.style.opacity = (1 - i / COUNT).toString();
+          container.appendChild(c);
+          circles.push({ el: c, x: 0, y: 0 });
+        }
+
+        window.addEventListener("mousemove", (e) => {
+          coords.x = e.clientX;
+          coords.y = e.clientY;
+        });
+
+        window.addEventListener("mousedown", () =>
+          circles.forEach((c) => c.el.classList.add("cursor-clicking")),
+        );
+
+        window.addEventListener("mouseup", () =>
+          circles.forEach((c) => c.el.classList.remove("cursor-clicking")),
+        );
+
+        window.addEventListener("mouseover", (e) => {
+          const interactive = e.target.closest("a,button");
+          circles.forEach((c) =>
+            c.el.classList.toggle("cursor-hovering", !!interactive),
+          );
+        });
+
+        function animate() {
+          let x = coords.x;
+          let y = coords.y;
+
+          circles.forEach((c, i) => {
+            c.el.style.left = x + "px";
+            c.el.style.top = y + "px";
+            c.x = x;
+            c.y = y;
+
+            const next = circles[i + 1] || circles[0];
+            x += (next.x - x) * 0.4;
+            y += (next.y - y) * 0.4;
+          });
+
+          requestAnimationFrame(animate);
+        }
+
+        animate();
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div class="game">
+      <h1 class="title">RESPONSE SURGE</h1>
+      <p class="subtitle">Wait. Focus. Strike.</p>
+
+      <div id="arena" class="arena">
+        <span id="signal">READY</span>
+      </div>
+
+      <div class="hud">
+        <div>Score: <span id="score">0</span></div>
+        <div>Streak: <span id="streak">0</span></div>
+        <div>Time: <span id="time">30</span>s</div>
+      </div>
+    </div>
+
+    <!-- GAME OVER OVERLAY -->
+    <div id="overlay" class="overlay hidden">
+      <div class="game-over-card">
+        <h1 class="game-over-title">GAME OVER</h1>
+        <p id="overlayText" class="game-over-score"></p>
+        <button id="startBtn" class="restart-btn">PLAY AGAIN</button>
+      </div>
+    </div>
+
+    <script src="audio.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

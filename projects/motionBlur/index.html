@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motion Blur Playground</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0 40px;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, #ff7e5f, #feb47b, #86a8e7, #91eae4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px rgba(134, 168, 231, 0.3);
+            letter-spacing: 1px;
+        }
+
+        .tagline {
+            font-size: 1.3rem;
+            color: #b0c4de;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .description {
+            max-width: 800px;
+            margin: 0 auto 25px;
+            color: #a0b3d6;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        .playground-container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            margin-bottom: 50px;
+            height: 700px;
+        }
+
+        @media (max-width: 1200px) {
+            .playground-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+
+        .motion-canvas-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #motionCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: pointer;
+        }
+
+        .canvas-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .canvas-overlay:hover {
+            opacity: 1;
+        }
+
+        .canvas-instruction {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            color: #86a8e7;
+            text-align: center;
+            margin-top: 20px;
+            border: 1px solid rgba(134, 168, 231, 0.3);
+        }
+
+        .controls-panel {
+            background: rgba(20, 25, 45, 0.85);
+            border-radius: 20px;
+            padding: 30px;
+            overflow-y: auto;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .panel-title {
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            color: #86a8e7;
+            border-bottom: 2px solid rgba(134, 168, 231, 0.3);
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .control-group {
+            margin-bottom: 30px;
+        }
+
+        .control-label {
+            display: block;
+            margin-bottom: 12px;
+            color: #b0c4de;
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-container {
+            margin-bottom: 20px;
+        }
+
+        .slider-with-value {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .slider-value {
+            min-width: 80px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            color: #ff7e5f;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 12px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #ff7e5f;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 126, 95, 0.5);
+            border: 2px solid white;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .4s;
+            border-radius: 30px;
+        }
+
+        .switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .switch-slider {
+            background-color: #86a8e7;
+        }
+
+        input:checked + .switch-slider:before {
+            transform: translateX(30px);
+        }
+
+        .object-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .object-btn {
+            padding: 18px 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .object-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .object-btn.active {
+            background: rgba(134, 168, 231, 0.3);
+            border-color: #86a8e7;
+            box-shadow: 0 5px 15px rgba(134, 168, 231, 0.3);
+        }
+
+        .object-icon {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .preset-btn {
+            padding: 18px 10px;
+            border-radius: 10px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: inherit;
+        }
+
+        .preset-btn.ghosting {
+            background: linear-gradient(to right, #667eea, #764ba2);
+            color: white;
+        }
+
+        .preset-btn.ghosting:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .preset-btn.speedlines {
+            background: linear-gradient(to right, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .preset-btn.speedlines:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(240, 147, 251, 0.4);
+        }
+
+        .preset-btn.reset {
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            color: white;
+            grid-column: span 2;
+        }
+
+        .preset-btn.reset:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(0, 242, 254, 0.4);
+        }
+
+        .info-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            border-left: 4px solid #ff7e5f;
+        }
+
+        .info-title {
+            color: #ff7e5f;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-text {
+            color: #b0c4de;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .examples {
+            margin-top: 60px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+        }
+
+        .examples-title {
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: #86a8e7;
+            text-align: center;
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .example-item {
+            background: rgba(20, 25, 45, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .example-item:hover {
+            transform: translateY(-10px);
+            background: rgba(30, 35, 55, 0.9);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .example-title {
+            color: #ff7e5f;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .example-description {
+            color: #b0c4de;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .example-stats {
+            display: flex;
+            justify-content: space-between;
+            color: #86a8e7;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 30px 0;
+            color: #86a8e7;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .playground-container {
+                gap: 20px;
+            }
+            
+            .object-buttons {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .examples-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .controls-panel {
+                padding: 20px;
+            }
+            
+            .panel-title {
+                font-size: 1.5rem;
+            }
+            
+            .object-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .blur-path {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .trail-dot {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-running"></i> Motion Blur Playground</h1>
+            <p class="tagline">Experiment with motion blur effects in real-time</p>
+            <p class="description">Drag objects on the canvas to create motion blur. Adjust parameters to see how different settings affect the blur effect. Perfect for understanding motion visualization in animation and photography.</p>
+        </header>
+
+        <div class="playground-container">
+            <div class="motion-canvas-container">
+                <canvas id="motionCanvas"></canvas>
+                <div class="canvas-overlay">
+                    <div class="canvas-instruction">
+                        <i class="fas fa-mouse-pointer"></i> Drag objects to create motion blur
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-panel">
+                <h2 class="panel-title"><i class="fas fa-sliders-h"></i> Motion Controls</h2>
+                
+                <div class="control-group">
+                    <div class="control-label"><i class="fas fa-tachometer-alt"></i> Blur Intensity</div>
+                    <div class="slider-with-value">
+                        <input type="range" id="blurIntensity" min="1" max="100" value="30">
+                        <div class="slider-value" id="blurIntensityValue">30</div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label"><i class="fas fa-ruler"></i> Trail Length</div>
+                    <div class="slider-with-value">
+                        <input type="range" id="trailLength" min="5" max="100" value="40">
+                        <div class="slider-value" id="trailLengthValue">40</div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label"><i class="fas fa-palette"></i> Trail Color</div>
+                    <div class="slider-with-value">
+                        <input type="color" id="trailColor" value="#86a8e7" style="width: 60px; height: 40px; border-radius: 8px; border: none; cursor: pointer;">
+                        <div class="slider-value" id="trailColorValue">#86a8e7</div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label"><i class="fas fa-bezier-curve"></i> Motion Type</div>
+                    <div class="toggle-switch">
+                        <span>Linear Motion</span>
+                        <label class="switch">
+                            <input type="checkbox" id="motionTypeToggle">
+                            <span class="switch-slider"></span>
+                        </label>
+                        <span>Curved Motion</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label"><i class="fas fa-layer-group"></i> Object Type</div>
+                    <div class="object-buttons" id="objectButtons">
+                        <div class="object-btn active" data-object="circle">
+                            <div class="object-icon"><i class="fas fa-circle"></i></div>
+                            <span>Circle</span>
+                        </div>
+                        <div class="object-btn" data-object="square">
+                            <div class="object-icon"><i class="fas fa-square"></i></div>
+                            <span>Square</span>
+                        </div>
+                        <div class="object-btn" data-object="triangle">
+                            <div class="object-icon"><i class="fas fa-play"></i></div>
+                            <span>Triangle</span>
+                        </div>
+                        <div class="object-btn" data-object="star">
+                            <div class="object-icon"><i class="fas fa-star"></i></div>
+                            <span>Star</span>
+                        </div>
+                        <div class="object-btn" data-object="car">
+                            <div class="object-icon"><i class="fas fa-car"></i></div>
+                            <span>Car</span>
+                        </div>
+                        <div class="object-btn" data-object="rocket">
+                            <div class="object-icon"><i class="fas fa-rocket"></i></div>
+                            <span>Rocket</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label"><i class="fas fa-eye"></i> Visual Effects</div>
+                    <div class="toggle-switch">
+                        <span>Show Trails</span>
+                        <label class="switch">
+                            <input type="checkbox" id="trailsToggle" checked>
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-switch">
+                        <span>Show Motion Lines</span>
+                        <label class="switch">
+                            <input type="checkbox" id="linesToggle" checked>
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-switch">
+                        <span>Fade Trails</span>
+                        <label class="switch">
+                            <input type="checkbox" id="fadeToggle" checked>
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="preset-buttons">
+                    <button class="preset-btn ghosting" id="ghostingPreset">
+                        <i class="fas fa-ghost"></i> Ghosting Effect
+                    </button>
+                    <button class="preset-btn speedlines" id="speedlinesPreset">
+                        <i class="fas fa-bolt"></i> Speed Lines
+                    </button>
+                    <button class="preset-btn reset" id="resetPreset">
+                        <i class="fas fa-redo"></i> Reset All
+                    </button>
+                </div>
+
+                <div class="info-panel">
+                    <div class="info-title"><i class="fas fa-lightbulb"></i> How Motion Blur Works</div>
+                    <div class="info-text">
+                        Motion blur occurs when objects move faster than the camera's exposure time. In animation, it's used to convey speed and direction. This playground simulates motion blur by creating trails that follow moving objects, with opacity fading over time to mimic real-world motion perception.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="examples">
+            <h2 class="examples-title"><i class="fas fa-vial"></i> Motion Blur Examples</h2>
+            <div class="examples-grid">
+                <div class="example-item" data-example="racing">
+                    <div class="example-title"><i class="fas fa-flag-checkered"></i> Racing Car</div>
+                    <div class="example-description">Simulates a fast-moving vehicle with strong horizontal blur and speed lines.</div>
+                    <div class="example-stats">
+                        <span>Intensity: 75</span>
+                        <span>Trail: 60</span>
+                        <span>Speed: High</span>
+                    </div>
+                </div>
+                <div class="example-item" data-example="spinning">
+                    <div class="example-title"><i class="fas fa-sync-alt"></i> Spinning Wheel</div>
+                    <div class="example-description">Circular motion blur showing rotational speed with curved trails.</div>
+                    <div class="example-stats">
+                        <span>Intensity: 50</span>
+                        <span>Trail: 30</span>
+                        <span>Motion: Circular</span>
+                    </div>
+                </div>
+                <div class="example-item" data-example="bouncing">
+                    <div class="example-title"><i class="fas fa-basketball-ball"></i> Bouncing Ball</div>
+                    <div class="example-description">Parabolic motion with blur that changes direction on each bounce.</div>
+                    <div class="example-stats">
+                        <span>Intensity: 40</span>
+                        <span>Trail: 45</span>
+                        <span>Gravity: Enabled</span>
+                    </div>
+                </div>
+                <div class="example-item" data-example="particles">
+                    <div class="example-title"><i class="fas fa-fire"></i> Particle Explosion</div>
+                    <div class="example-description">Multiple objects moving outward from a central point with radial blur.</div>
+                    <div class="example-stats">
+                        <span>Intensity: 65</span>
+                        <span>Trail: 25</span>
+                        <span>Objects: Multiple</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Motion Blur Playground &copy; 2023 | Experiment with different motion visualization techniques</p>
+            <p>Drag objects on the canvas to create real-time motion blur effects. Adjust parameters to see how they affect the visual result.</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const canvas = document.getElementById('motionCanvas');
+        const ctx = canvas.getContext('2d');
+        const blurIntensity = document.getElementById('blurIntensity');
+        const blurIntensityValue = document.getElementById('blurIntensityValue');
+        const trailLength = document.getElementById('trailLength');
+        const trailLengthValue = document.getElementById('trailLengthValue');
+        const trailColor = document.getElementById('trailColor');
+        const trailColorValue = document.getElementById('trailColorValue');
+        const motionTypeToggle = document.getElementById('motionTypeToggle');
+        const trailsToggle = document.getElementById('trailsToggle');
+        const linesToggle = document.getElementById('linesToggle');
+        const fadeToggle = document.getElementById('fadeToggle');
+        const objectButtons = document.querySelectorAll('.object-btn');
+        const ghostingPreset = document.getElementById('ghostingPreset');
+        const speedlinesPreset = document.getElementById('speedlinesPreset');
+        const resetPreset = document.getElementById('resetPreset');
+        const exampleItems = document.querySelectorAll('.example-item');
+
+        // Canvas setup
+        let canvasWidth, canvasHeight;
+        let centerX, centerY;
+
+        // Motion blur parameters
+        let blurAmount = 30;
+        let trailSize = 40;
+        let trailColorHex = '#86a8e7';
+        let isCurvedMotion = false;
+        let showTrails = true;
+        let showMotionLines = true;
+        let fadeTrails = true;
+        let currentObject = 'circle';
+
+        // Objects on canvas
+        let objects = [];
+        let trails = [];
+        let isDragging = false;
+        let dragObject = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+        let mouseX = 0;
+        let mouseY = 0;
+
+        // Initialize canvas
+        function initCanvas() {
+            const container = canvas.parentElement;
+            canvasWidth = container.clientWidth;
+            canvasHeight = container.clientHeight;
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            
+            centerX = canvasWidth / 2;
+            centerY = canvasHeight / 2;
+            
+            // Create initial objects
+            createInitialObjects();
+        }
+
+        // Create initial objects on the canvas
+        function createInitialObjects() {
+            objects = [];
+            trails = [];
+            
+            // Create objects at different positions
+            const objectTypes = ['circle', 'square', 'triangle', 'star', 'car', 'rocket'];
+            const positions = [
+                {x: centerX - 200, y: centerY - 100},
+                {x: centerX + 200, y: centerY - 100},
+                {x: centerX - 200, y: centerY + 100},
+                {x: centerX + 200, y: centerY + 100},
+                {x: centerX, y: centerY - 150},
+                {x: centerX, y: centerY + 150}
+            ];
+            
+            for (let i = 0; i < 6; i++) {
+                objects.push({
+                    id: i,
+                    type: objectTypes[i],
+                    x: positions[i].x,
+                    y: positions[i].y,
+                    size: 40 + i * 5,
+                    color: getObjectColor(i),
+                    velocityX: 0,
+                    velocityY: 0,
+                    rotation: 0,
+                    rotationSpeed: Math.random() * 0.05 - 0.025
+                });
+            }
+        }
+
+        // Get color for object based on index
+        function getObjectColor(index) {
+            const colors = [
+                '#ff7e5f', '#feb47b', '#86a8e7', '#91eae4', '#667eea', '#f093fb'
+            ];
+            return colors[index % colors.length];
+        }
+
+        // Draw everything on canvas
+        function draw() {
+            // Clear canvas with a dark background
+            ctx.fillStyle = 'rgba(15, 12, 41, 0.1)';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+            
+            // Draw grid for reference
+            drawGrid();
+            
+            // Draw trails if enabled
+            if (showTrails) {
+                drawTrails();
+            }
+            
+            // Draw motion lines if enabled
+            if (showMotionLines && trails.length > 0) {
+                drawMotionLines();
+            }
+            
+            // Draw all objects
+            objects.forEach(obj => {
+                drawObject(obj);
+            });
+            
+            // Update object positions and rotations
+            updateObjects();
+            
+            // Update trails
+            updateTrails();
+        }
+
+        // Draw a grid for visual reference
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            
+            // Vertical lines
+            for (let x = 0; x < canvasWidth; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvasHeight);
+                ctx.stroke();
+            }
+            
+            // Horizontal lines
+            for (let y = 0; y < canvasHeight; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvasWidth, y);
+                ctx.stroke();
+            }
+        }
+
+        // Draw an object based on its type
+        function drawObject(obj) {
+            ctx.save();
+            ctx.translate(obj.x, obj.y);
+            ctx.rotate(obj.rotation);
+            
+            // Set object color
+            ctx.fillStyle = obj.color;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            
+            // Draw based on object type
+            switch(obj.type) {
+                case 'circle':
+                    ctx.beginPath();
+                    ctx.arc(0, 0, obj.size/2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+                    
+                case 'square':
+                    ctx.fillRect(-obj.size/2, -obj.size/2, obj.size, obj.size);
+                    ctx.strokeRect(-obj.size/2, -obj.size/2, obj.size, obj.size);
+                    break;
+                    
+                case 'triangle':
+                    ctx.beginPath();
+                    ctx.moveTo(0, -obj.size/2);
+                    ctx.lineTo(obj.size/2, obj.size/2);
+                    ctx.lineTo(-obj.size/2, obj.size/2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+                    
+                case 'star':
+                    drawStar(ctx, 0, 0, 5, obj.size/2, obj.size/4);
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+                    
+                case 'car':
+                    drawCar(ctx, 0, 0, obj.size);
+                    break;
+                    
+                case 'rocket':
+                    drawRocket(ctx, 0, 0, obj.size);
+                    break;
+            }
+            
+            ctx.restore();
+        }
+
+        // Helper function to draw a star
+        function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
+            let rot = Math.PI / 2 * 3;
+            let x = cx;
+            let y = cy;
+            const step = Math.PI / spikes;
+            
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - outerRadius);
+            
+            for (let i = 0; i < spikes; i++) {
+                x = cx + Math.cos(rot) * outerRadius;
+                y = cy + Math.sin(rot) * outerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+                
+                x = cx + Math.cos(rot) * innerRadius;
+                y = cy + Math.sin(rot) * innerRadius;
+                ctx.lineTo(x, y);
+                rot += step;
+            }
+            
+            ctx.lineTo(cx, cy - outerRadius);
+            ctx.closePath();
+        }
+
+        // Helper function to draw a car
+        function drawCar(ctx, x, y, size) {
+            const carWidth = size;
+            const carHeight = size * 0.6;
+            
+            // Car body
+            ctx.fillStyle = '#ff7e5f';
+            ctx.fillRect(x - carWidth/2, y - carHeight/2, carWidth, carHeight);
+            ctx.strokeRect(x - carWidth/2, y - carHeight/2, carWidth, carHeight);
+            
+            // Car top
+            ctx.fillStyle = '#feb47b';
+            ctx.fillRect(x - carWidth/3, y - carHeight/2 - size*0.2, carWidth*0.66, size*0.2);
+            ctx.strokeRect(x - carWidth/3, y - carHeight/2 - size*0.2, carWidth*0.66, size*0.2);
+            
+            // Wheels
+            ctx.fillStyle = '#333';
+            const wheelRadius = size * 0.15;
+            ctx.beginPath();
+            ctx.arc(x - carWidth/3, y + carHeight/3, wheelRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(x + carWidth/3, y + carHeight/3, wheelRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Wheel details
+            ctx.fillStyle = '#666';
+            ctx.beginPath();
+            ctx.arc(x - carWidth/3, y + carHeight/3, wheelRadius/2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(x + carWidth/3, y + carHeight/3, wheelRadius/2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Helper function to draw a rocket
+        function drawRocket(ctx, x, y, size) {
+            const rocketHeight = size;
+            const rocketWidth = size * 0.5;
+            
+            // Rocket body
+            ctx.fillStyle = '#86a8e7';
+            ctx.beginPath();
+            ctx.moveTo(x, y - rocketHeight/2);
+            ctx.lineTo(x + rocketWidth/2, y + rocketHeight/2);
+            ctx.lineTo(x - rocketWidth/2, y + rocketHeight/2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Rocket nose
+            ctx.fillStyle = '#ff7e5f';
+            ctx.beginPath();
+            ctx.arc(x, y - rocketHeight/2, rocketWidth/3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Fins
+            ctx.fillStyle = '#667eea';
+            ctx.beginPath();
+            ctx.moveTo(x - rocketWidth/2, y + rocketHeight/2);
+            ctx.lineTo(x - rocketWidth, y + rocketHeight/1.5);
+            ctx.lineTo(x - rocketWidth/2, y + rocketHeight/1.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(x + rocketWidth/2, y + rocketHeight/2);
+            ctx.lineTo(x + rocketWidth, y + rocketHeight/1.5);
+            ctx.lineTo(x + rocketWidth/2, y + rocketHeight/1.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Flame
+            ctx.fillStyle = '#feb47b';
+            ctx.beginPath();
+            ctx.moveTo(x - rocketWidth/4, y + rocketHeight/2);
+            ctx.lineTo(x, y + rocketHeight);
+            ctx.lineTo(x + rocketWidth/4, y + rocketHeight/2);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Update object positions and rotations
+        function updateObjects() {
+            objects.forEach(obj => {
+                // Apply rotation
+                obj.rotation += obj.rotationSpeed;
+                
+                // Apply velocity (if any)
+                obj.x += obj.velocityX;
+                obj.y += obj.velocityY;
+                
+                // Apply friction
+                obj.velocityX *= 0.95;
+                obj.velocityY *= 0.95;
+                
+                // Bounce off walls
+                if (obj.x < obj.size/2) {
+                    obj.x = obj.size/2;
+                    obj.velocityX = Math.abs(obj.velocityX) * 0.8;
+                }
+                if (obj.x > canvasWidth - obj.size/2) {
+                    obj.x = canvasWidth - obj.size/2;
+                    obj.velocityX = -Math.abs(obj.velocityX) * 0.8;
+                }
+                if (obj.y < obj.size/2) {
+                    obj.y = obj.size/2;
+                    obj.velocityY = Math.abs(obj.velocityY) * 0.8;
+                }
+                if (obj.y > canvasHeight - obj.size/2) {
+                    obj.y = canvasHeight - obj.size/2;
+                    obj.velocityY = -Math.abs(obj.velocityY) * 0.8;
+                }
+                
+                // Add trail point if object is moving
+                const speed = Math.sqrt(obj.velocityX * obj.velocityX + obj.velocityY * obj.velocityY);
+                if (speed > 0.5) {
+                    addTrailPoint(obj);
+                }
+            });
+        }
+
+        // Add a trail point for an object
+        function addTrailPoint(obj) {
+            trails.push({
+                x: obj.x,
+                y: obj.y,
+                color: trailColorHex,
+                opacity: 1.0,
+                size: obj.size * 0.7,
+                objectType: obj.type,
+                objectId: obj.id,
+                createdAt: Date.now()
+            });
+            
+            // Limit trail length
+            if (trails.length > trailSize * 5) {
+                trails.splice(0, trails.length - trailSize * 5);
+            }
+        }
+
+        // Draw all trails
+        function drawTrails() {
+            trails.forEach((trail, index) => {
+                // Calculate opacity based on age and fade setting
+                let opacity = trail.opacity;
+                if (fadeTrails) {
+                    const age = Date.now() - trail.createdAt;
+                    opacity = Math.max(0, 1 - age / 5000);
+                }
+                
+                // Draw trail point
+                ctx.fillStyle = trail.color.replace(')', `, ${opacity})`).replace('rgb', 'rgba');
+                ctx.strokeStyle = trail.color.replace(')', `, ${opacity * 0.5})`).replace('rgb', 'rgba');
+                ctx.lineWidth = 1;
+                
+                // Draw based on object type
+                switch(trail.objectType) {
+                    case 'circle':
+                        ctx.beginPath();
+                        ctx.arc(trail.x, trail.y, trail.size/2, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                        
+                    case 'square':
+                        ctx.fillRect(trail.x - trail.size/2, trail.y - trail.size/2, trail.size, trail.size);
+                        break;
+                        
+                    case 'triangle':
+                        ctx.beginPath();
+                        ctx.moveTo(trail.x, trail.y - trail.size/2);
+                        ctx.lineTo(trail.x + trail.size/2, trail.y + trail.size/2);
+                        ctx.lineTo(trail.x - trail.size/2, trail.y + trail.size/2);
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+                        
+                    case 'star':
+                        drawStar(ctx, trail.x, trail.y, 5, trail.size/2, trail.size/4);
+                        ctx.fill();
+                        break;
+                        
+                    case 'car':
+                        ctx.fillRect(trail.x - trail.size/2, trail.y - trail.size/3, trail.size, trail.size * 0.6);
+                        break;
+                        
+                    case 'rocket':
+                        ctx.beginPath();
+                        ctx.moveTo(trail.x, trail.y - trail.size/2);
+                        ctx.lineTo(trail.x + trail.size/4, trail.y + trail.size/2);
+                        ctx.lineTo(trail.x - trail.size/4, trail.y + trail.size/2);
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+                }
+            });
+        }
+
+        // Draw motion lines connecting trail points
+        function drawMotionLines() {
+            // Group trails by object
+            const trailsByObject = {};
+            trails.forEach(trail => {
+                if (!trailsByObject[trail.objectId]) {
+                    trailsByObject[trail.objectId] = [];
+                }
+                trailsByObject[trail.objectId].push(trail);
+            });
+            
+            // Draw lines for each object
+            Object.values(trailsByObject).forEach(objectTrails => {
+                if (objectTrails.length < 2) return;
+                
+                // Sort by creation time (oldest first)
+                objectTrails.sort((a, b) => a.createdAt - b.createdAt);
+                
+                // Draw gradient line connecting trail points
+                for (let i = 0; i < objectTrails.length - 1; i++) {
+                    const start = objectTrails[i];
+                    const end = objectTrails[i + 1];
+                    
+                    // Calculate opacity based on position in trail
+                    const progress = i / objectTrails.length;
+                    const opacity = fadeTrails ? (1 - progress) * 0.3 : 0.3;
+                    
+                    // Create gradient for the line
+                    const gradient = ctx.createLinearGradient(start.x, start.y, end.x, end.y);
+                    gradient.addColorStop(0, start.color.replace(')', `, ${opacity})`).replace('rgb', 'rgba'));
+                    gradient.addColorStop(1, end.color.replace(')', `, ${opacity * 0.5})`).replace('rgb', 'rgba'));
+                    
+                    // Draw the line
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = blurAmount / 20;
+                    ctx.lineCap = 'round';
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(start.x, start.y);
+                    
+                    if (isCurvedMotion && i < objectTrails.length - 2) {
+                        // Draw curved line
+                        const next = objectTrails[i + 2];
+                        const cp1x = (start.x + end.x) / 2;
+                        const cp1y = (start.y + end.y) / 2;
+                        const cp2x = (end.x + next.x) / 2;
+                        const cp2y = (end.y + next.y) / 2;
+                        
+                        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, end.x, end.y);
+                    } else {
+                        // Draw straight line
+                        ctx.lineTo(end.x, end.y);
+                    }
+                    
+                    ctx.stroke();
+                }
+            });
+        }
+
+        // Update trails (remove old ones)
+        function updateTrails() {
+            if (fadeTrails) {
+                const now = Date.now();
+                trails = trails.filter(trail => {
+                    const age = now - trail.createdAt;
+                    return age < 5000; // Keep trails for 5 seconds
+                });
+            }
+        }
+
+        // Find object at coordinates
+        function getObjectAt(x, y) {
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const obj = objects[i];
+                const distance = Math.sqrt((x - obj.x) ** 2 + (y - obj.y) ** 2);
+                if (distance < obj.size) {
+                    return obj;
+                }
+            }
+            return null;
+        }
+
+        // Update slider values display
+        function updateSliderValues() {
+            blurIntensityValue.textContent = blurIntensity.value;
+            trailLengthValue.textContent = trailLength.value;
+            trailColorValue.textContent = trailColor.value;
+            
+            blurAmount = parseInt(blurIntensity.value);
+            trailSize = parseInt(trailLength.value);
+            trailColorHex = trailColor.value;
+        }
+
+        // Apply ghosting effect preset
+        function applyGhostingPreset() {
+            blurIntensity.value = 75;
+            trailLength.value = 60;
+            trailColor.value = '#ffffff';
+            motionTypeToggle.checked = false;
+            trailsToggle.checked = true;
+            linesToggle.checked = true;
+            fadeToggle.checked = true;
+            
+            updateSliderValues();
+            isCurvedMotion = false;
+            showTrails = true;
+            showMotionLines = true;
+            fadeTrails = true;
+            
+            // Update objects to have high velocity
+            objects.forEach(obj => {
+                obj.velocityX = (Math.random() - 0.5) * 10;
+                obj.velocityY = (Math.random() - 0.5) * 10;
+            });
+        }
+
+        // Apply speed lines preset
+        function applySpeedlinesPreset() {
+            blurIntensity.value = 85;
+            trailLength.value = 40;
+            trailColor.value = '#86a8e7';
+            motionTypeToggle.checked = false;
+            trailsToggle.checked = false;
+            linesToggle.checked = true;
+            fadeToggle.checked = true;
+            
+            updateSliderValues();
+            isCurvedMotion = false;
+            showTrails = false;
+            showMotionLines = true;
+            fadeTrails = true;
+            
+            // Make objects move in same direction
+            objects.forEach(obj => {
+                obj.velocityX = 8;
+                obj.velocityY = 0;
+            });
+        }
+
+        // Reset to default settings
+        function resetToDefault() {
+            blurIntensity.value = 30;
+            trailLength.value = 40;
+            trailColor.value = '#86a8e7';
+            motionTypeToggle.checked = false;
+            trailsToggle.checked = true;
+            linesToggle.checked = true;
+            fadeToggle.checked = true;
+            
+            updateSliderValues();
+            isCurvedMotion = false;
+            showTrails = true;
+            showMotionLines = true;
+            fadeTrails = true;
+            
+            // Reset object positions and velocities
+            createInitialObjects();
+        }
+
+        // Apply example preset
+        function applyExamplePreset(example) {
+            switch(example) {
+                case 'racing':
+                    blurIntensity.value = 75;
+                    trailLength.value = 60;
+                    trailColor.value = '#ff7e5f';
+                    motionTypeToggle.checked = false;
+                    objectButtons.forEach(btn => {
+                        if (btn.dataset.object === 'car') btn.classList.add('active');
+                        else btn.classList.remove('active');
+                    });
+                    currentObject = 'car';
+                    break;
+                    
+                case 'spinning':
+                    blurIntensity.value = 50;
+                    trailLength.value = 30;
+                    trailColor.value = '#86a8e7';
+                    motionTypeToggle.checked = true;
+                    objectButtons.forEach(btn => {
+                        if (btn.dataset.object === 'circle') btn.classList.add('active');
+                        else btn.classList.remove('active');
+                    });
+                    currentObject = 'circle';
+                    break;
+                    
+                case 'bouncing':
+                    blurIntensity.value = 40;
+                    trailLength.value = 45;
+                    trailColor.value = '#91eae4';
+                    motionTypeToggle.checked = false;
+                    objectButtons.forEach(btn => {
+                        if (btn.dataset.object === 'circle') btn.classList.add('active');
+                        else btn.classList.remove('active');
+                    });
+                    currentObject = 'circle';
+                    break;
+                    
+                case 'particles':
+                    blurIntensity.value = 65;
+                    trailLength.value = 25;
+                    trailColor.value = '#f093fb';
+                    motionTypeToggle.checked = false;
+                    objectButtons.forEach(btn => {
+                        if (btn.dataset.object === 'star') btn.classList.add('active');
+                        else btn.classList.remove('active');
+                    });
+                    currentObject = 'star';
+                    break;
+            }
+            
+            updateSliderValues();
+            isCurvedMotion = motionTypeToggle.checked;
+            
+            // Reset and create explosion effect for particles example
+            if (example === 'particles') {
+                objects = [];
+                trails = [];
+                
+                for (let i = 0; i < 20; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 5 + Math.random() * 10;
+                    
+                    objects.push({
+                        id: i,
+                        type: 'star',
+                        x: centerX,
+                        y: centerY,
+                        size: 15 + Math.random() * 20,
+                        color: getObjectColor(i),
+                        velocityX: Math.cos(angle) * speed,
+                        velocityY: Math.sin(angle) * speed,
+                        rotation: 0,
+                        rotationSpeed: Math.random() * 0.1 - 0.05
+                    });
+                }
+            } else {
+                // Reset to initial objects for other examples
+                createInitialObjects();
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        // Event Listeners
+        blurIntensity.addEventListener('input', updateSliderValues);
+        trailLength.addEventListener('input', updateSliderValues);
+        trailColor.addEventListener('input', updateSliderValues);
+
+        motionTypeToggle.addEventListener('change', () => {
+            isCurvedMotion = motionTypeToggle.checked;
+        });
+
+        trailsToggle.addEventListener('change', () => {
+            showTrails = trailsToggle.checked;
+        });
+
+        linesToggle.addEventListener('change', () => {
+            showMotionLines = linesToggle.checked;
+        });
+
+        fadeToggle.addEventListener('change', () => {
+            fadeTrails = fadeToggle.checked;
+        });
+
+        objectButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                objectButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentObject = btn.dataset.object;
+                
+                // Change all objects to selected type
+                objects.forEach(obj => {
+                    obj.type = currentObject;
+                });
+            });
+        });
+
+        ghostingPreset.addEventListener('click', applyGhostingPreset);
+        speedlinesPreset.addEventListener('click', applySpeedlinesPreset);
+        resetPreset.addEventListener('click', resetToDefault);
+
+        exampleItems.forEach(item => {
+            item.addEventListener('click', () => {
+                applyExamplePreset(item.dataset.example);
+            });
+        });
+
+        // Mouse event handlers for dragging objects
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+            
+            dragObject = getObjectAt(mouseX, mouseY);
+            if (dragObject) {
+                isDragging = true;
+                dragOffsetX = mouseX - dragObject.x;
+                dragOffsetY = mouseY - dragObject.y;
+                canvas.style.cursor = 'grabbing';
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+            
+            if (isDragging && dragObject) {
+                // Calculate velocity based on mouse movement
+                dragObject.velocityX = (mouseX - dragObject.x - dragOffsetX) * 0.5;
+                dragObject.velocityY = (mouseY - dragObject.y - dragOffsetY) * 0.5;
+                
+                // Update object position
+                dragObject.x = mouseX - dragOffsetX;
+                dragObject.y = mouseY - dragOffsetY;
+                
+                // Add trail points while dragging
+                addTrailPoint(dragObject);
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+            dragObject = null;
+            canvas.style.cursor = 'default';
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
+            dragObject = null;
+            canvas.style.cursor = 'default';
+        });
+
+        // Touch support for mobile devices
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.touches[0].clientX - rect.left;
+            mouseY = e.touches[0].clientY - rect.top;
+            
+            dragObject = getObjectAt(mouseX, mouseY);
+            if (dragObject) {
+                isDragging = true;
+                dragOffsetX = mouseX - dragObject.x;
+                dragOffsetY = mouseY - dragObject.y;
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isDragging) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.touches[0].clientX - rect.left;
+            mouseY = e.touches[0].clientY - rect.top;
+            
+            if (dragObject) {
+                dragObject.velocityX = (mouseX - dragObject.x - dragOffsetX) * 0.5;
+                dragObject.velocityY = (mouseY - dragObject.y - dragOffsetY) * 0.5;
+                
+                dragObject.x = mouseX - dragOffsetX;
+                dragObject.y = mouseY - dragOffsetY;
+                
+                addTrailPoint(dragObject);
+            }
+        });
+
+        canvas.addEventListener('touchend', () => {
+            isDragging = false;
+            dragObject = null;
+        });
+
+        // Initialize and start animation
+        window.addEventListener('load', () => {
+            initCanvas();
+            updateSliderValues();
+            animate();
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            initCanvas();
+        });
+    </script>
+</body>
+</html>

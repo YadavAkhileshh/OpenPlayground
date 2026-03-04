@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Art Gallery & AI Drawing Studio</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e);
+            color: #f0f0f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo h1 {
+            font-size: 2.8rem;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo i {
+            font-size: 3rem;
+            color: #ff7e5f;
+        }
+
+        .user-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .notification {
+            position: relative;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #ff7e5f;
+        }
+
+        .notification::after {
+            content: '3';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ff416c;
+            color: white;
+            font-size: 0.7rem;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+        }
+
+        .gallery-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+            color: #feb47b;
+        }
+
+        .gallery-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .gallery-filter {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50px;
+            color: #f0f0f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-color: transparent;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .search-box {
+            position: relative;
+            flex-grow: 1;
+            max-width: 300px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50px;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #ff7e5f;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .artwork-card {
+            background: rgba(30, 30, 50, 0.8);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .artwork-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            border-color: rgba(255, 126, 95, 0.5);
+        }
+
+        .artwork-img {
+            height: 200px;
+            width: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+        }
+
+        .artwork-info {
+            padding: 20px;
+        }
+
+        .artwork-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #feb47b;
+        }
+
+        .artwork-artist {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: #a0a0ff;
+        }
+
+        .artist-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff7e5f, #feb47b);
+        }
+
+        .artwork-stats {
+            display: flex;
+            justify-content: space-between;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .artwork-stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .view-artwork-btn {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .view-artwork-btn:hover {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .drawing-studio {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        }
+
+        .canvas-container {
+            background: rgba(20, 20, 40, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            height: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+        }
+
+        #drawingCanvas {
+            background: white;
+            border-radius: 10px;
+            cursor: crosshair;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .drawing-tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .tool-btn {
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: #f0f0f0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .tool-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-color: transparent;
+        }
+
+        .tool-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .color-option.active {
+            border-color: white;
+            transform: scale(1.2);
+        }
+
+        .brush-size {
+            margin-bottom: 25px;
+        }
+
+        .size-label {
+            display: block;
+            margin-bottom: 10px;
+            color: #feb47b;
+        }
+
+        .size-slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .size-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #ff7e5f;
+            cursor: pointer;
+        }
+
+        .ai-assist-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #ff7e5f, #feb47b);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .ai-assist-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(255, 126, 95, 0.4);
+        }
+
+        .studio-controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .studio-controls button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #FF416C, #FF4B2B);
+        }
+
+        .save-btn:hover, .clear-btn:hover {
+            transform: translateY(-3px);
+        }
+
+        .right-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .exhibition-hall {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .exhibition-list {
+            margin-top: 20px;
+        }
+
+        .exhibition-item {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .exhibition-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .exhibition-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #feb47b;
+        }
+
+        .exhibition-date {
+            font-size: 0.9rem;
+            color: #a0a0ff;
+        }
+
+        .community-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .community-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: #feb47b;
+        }
+
+        .user-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .user-info h4 {
+            margin-bottom: 5px;
+        }
+
+        .user-status {
+            font-size: 0.8rem;
+            color: #4CAF50;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: rgba(30, 30, 50, 0.95);
+            border-radius: 20px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 40px;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
+            animation: modalAppear 0.5s ease;
+        }
+
+        @keyframes modalAppear {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            font-size: 2rem;
+            color: #ff7e5f;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-modal:hover {
+            transform: rotate(90deg);
+        }
+
+        .artwork-modal-img {
+            width: 100%;
+            height: 400px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            color: white;
+        }
+
+        .artwork-modal-title {
+            font-size: 2.5rem;
+            color: #feb47b;
+            margin-bottom: 20px;
+        }
+
+        .artwork-modal-description {
+            line-height: 1.7;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+            color: #d0d0ff;
+        }
+
+        .artwork-modal-stats {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff7e5f;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #a0a0ff;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 1100px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .gallery-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .search-box {
+                max-width: 100%;
+            }
+            
+            .gallery-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-palette"></i>
+                <h1>Virtual Art Gallery</h1>
+            </div>
+            
+            <div class="user-controls">
+                <div class="notification">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div class="user-avatar">
+                    AS
+                </div>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <div class="gallery-section">
+                <div class="section-title">
+                    <i class="fas fa-images"></i>
+                    <h2>Featured Artworks</h2>
+                </div>
+                
+                <div class="gallery-controls">
+                    <div class="gallery-filter">
+                        <button class="filter-btn active">All</button>
+                        <button class="filter-btn">Paintings</button>
+                        <button class="filter-btn">Digital</button>
+                        <button class="filter-btn">Sculpture</button>
+                        <button class="filter-btn">Photography</button>
+                    </div>
+                    
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search artworks, artists...">
+                    </div>
+                </div>
+                
+                <div class="gallery-grid" id="galleryGrid">
+                    <!-- Artworks will be generated by JavaScript -->
+                </div>
+                
+                <button class="view-artwork-btn" id="loadMoreBtn">
+                    <i class="fas fa-plus"></i> Load More Artworks
+                </button>
+            </div>
+            
+            <div class="right-sidebar">
+                <div class="drawing-studio">
+                    <div class="section-title">
+                        <i class="fas fa-paint-brush"></i>
+                        <h2>AI Drawing Studio</h2>
+                    </div>
+                    
+                    <div class="canvas-container">
+                        <canvas id="drawingCanvas" width="500" height="300"></canvas>
+                    </div>
+                    
+                    <div class="drawing-tools">
+                        <button class="tool-btn active" data-tool="brush">
+                            <i class="fas fa-paint-brush"></i> Brush
+                        </button>
+                        <button class="tool-btn" data-tool="eraser">
+                            <i class="fas fa-eraser"></i> Eraser
+                        </button>
+                        <button class="tool-btn" data-tool="line">
+                            <i class="fas fa-slash"></i> Line
+                        </button>
+                        <button class="tool-btn" data-tool="shape">
+                            <i class="fas fa-square"></i> Shape
+                        </button>
+                    </div>
+                    
+                    <div class="color-palette" id="colorPalette">
+                        <!-- Colors will be generated by JavaScript -->
+                    </div>
+                    
+                    <div class="brush-size">
+                        <label class="size-label">Brush Size: <span id="brushSizeValue">5</span>px</label>
+                        <input type="range" min="1" max="50" value="5" class="size-slider" id="brushSize">
+                    </div>
+                    
+                    <button class="ai-assist-btn" id="aiAssistBtn">
+                        <i class="fas fa-robot"></i> AI Artistic Suggestions
+                    </button>
+                    
+                    <div class="studio-controls">
+                        <button class="save-btn" id="saveBtn">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button class="clear-btn" id="clearBtn">
+                            <i class="fas fa-trash"></i> Clear
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="exhibition-hall">
+                    <div class="section-title">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h3>Current Exhibitions</h3>
+                    </div>
+                    
+                    <div class="exhibition-list">
+                        <div class="exhibition-item">
+                            <div class="exhibition-title">Modern Masters</div>
+                            <div class="exhibition-date">Until Dec 15, 2025</div>
+                        </div>
+                        <div class="exhibition-item">
+                            <div class="exhibition-title">Digital Dreams</div>
+                            <div class="exhibition-date">Nov 10 - Dec 30, 2025</div>
+                        </div>
+                        <div class="exhibition-item">
+                            <div class="exhibition-title">Young Artists Showcase</div>
+                            <div class="exhibition-date">Ongoing</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="community-section">
+                    <div class="community-title">
+                        <i class="fas fa-users"></i>
+                        <h3>Active Artists</h3>
+                    </div>
+                    
+                    <div class="user-list">
+                        <div class="user-item">
+                            <div class="user-avatar-small">MJ</div>
+                            <div class="user-info">
+                                <h4>Maria Johnson</h4>
+                                <div class="user-status">Drawing now</div>
+                            </div>
+                        </div>
+                        <div class="user-item">
+                            <div class="user-avatar-small">AS</div>
+                            <div class="user-info">
+                                <h4>Alex Smith</h4>
+                                <div class="user-status">Online</div>
+                            </div>
+                        </div>
+                        <div class="user-item">
+                            <div class="user-avatar-small">LT</div>
+                            <div class="user-info">
+                                <h4>Lisa Taylor</h4>
+                                <div class="user-status">Viewing gallery</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Artwork Detail Modal -->
+        <div class="modal" id="artworkModal">
+            <div class="modal-content">
+                <div class="close-modal" id="closeModal">&times;</div>
+                <div class="artwork-modal-img" id="modalArtworkImg">
+                    <i class="fas fa-palette"></i>
+                </div>
+                <h2 class="artwork-modal-title" id="modalArtworkTitle">Starry Night</h2>
+                <div class="artwork-modal-description" id="modalArtworkDescription">
+                    A mesmerizing digital interpretation of Van Gogh's masterpiece, reimagined with contemporary techniques and vibrant color palettes that bring new life to the classic composition.
+                </div>
+                
+                <div class="artwork-modal-stats">
+                    <div class="stat-box">
+                        <div class="stat-value">1,247</div>
+                        <div class="stat-label">Views</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">89</div>
+                        <div class="stat-label">Likes</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">23</div>
+                        <div class="stat-label">Comments</div>
+                    </div>
+                </div>
+                
+                <button class="view-artwork-btn">
+                    <i class="fas fa-heart"></i> Add to Favorites
+                </button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Virtual Art Gallery &copy; 2026 | Explore, Create, Share | AI-Powered Drawing Studio</p>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initGallery();
+            initDrawingStudio();
+            initEventListeners();
+        });
+
+        // Gallery Data
+        const artworks = [
+            {
+                id: 1,
+                title: "Starry Night Reimagined",
+                artist: "Vincent Digital",
+                artistInitials: "VD",
+                type: "Digital",
+                likes: 89,
+                views: 1247,
+                color: "#667eea"
+            },
+            {
+                id: 2,
+                title: "Urban Reflections",
+                artist: "Maria Johnson",
+                artistInitials: "MJ",
+                type: "Photography",
+                likes: 156,
+                views: 2345,
+                color: "#ff7e5f"
+            },
+            {
+                id: 3,
+                title: "Abstract Harmony",
+                artist: "Alex Chen",
+                artistInitials: "AC",
+                type: "Paintings",
+                likes: 203,
+                views: 3120,
+                color: "#4CAF50"
+            },
+            {
+                id: 4,
+                title: "Digital Dreams",
+                artist: "Sam Rivera",
+                artistInitials: "SR",
+                type: "Digital",
+                likes: 178,
+                views: 2876,
+                color: "#9C27B0"
+            },
+            {
+                id: 5,
+                title: "Silent Mountains",
+                artist: "Lisa Taylor",
+                artistInitials: "LT",
+                type: "Paintings",
+                likes: 94,
+                views: 1654,
+                color: "#2196F3"
+            },
+            {
+                id: 6,
+                title: "Metropolis",
+                artist: "James Wilson",
+                artistInitials: "JW",
+                type: "Sculpture",
+                likes: 267,
+                views: 3987,
+                color: "#FF9800"
+            },
+            {
+                id: 7,
+                title: "Ocean Depths",
+                artist: "Emma Davis",
+                artistInitials: "ED",
+                type: "Digital",
+                likes: 312,
+                views: 4567,
+                color: "#00BCD4"
+            },
+            {
+                id: 8,
+                title: "Golden Hour",
+                artist: "Robert Kim",
+                artistInitials: "RK",
+                type: "Photography",
+                likes: 189,
+                views: 2789,
+                color: "#FF5722"
+            }
+        ];
+
+        // Drawing Studio Variables
+        let canvas, ctx;
+        let painting = false;
+        let currentTool = 'brush';
+        let currentColor = '#ff7e5f';
+        let brushSize = 5;
+        let startX, startY;
+
+        // Initialize Gallery
+        function initGallery() {
+            const galleryGrid = document.getElementById('galleryGrid');
+            galleryGrid.innerHTML = '';
+            
+            artworks.forEach(artwork => {
+                const artworkCard = document.createElement('div');
+                artworkCard.className = 'artwork-card';
+                artworkCard.dataset.id = artwork.id;
+                
+                artworkCard.innerHTML = `
+                    <div class="artwork-img" style="background: linear-gradient(135deg, ${artwork.color}, ${darkenColor(artwork.color, 30)})">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <div class="artwork-info">
+                        <div class="artwork-title">${artwork.title}</div>
+                        <div class="artwork-artist">
+                            <div class="artist-avatar">${artwork.artistInitials}</div>
+                            <span>${artwork.artist}</span>
+                        </div>
+                        <div class="artwork-stats">
+                            <div class="artwork-stat">
+                                <i class="fas fa-eye"></i>
+                                <span>${artwork.views.toLocaleString()}</span>
+                            </div>
+                            <div class="artwork-stat">
+                                <i class="fas fa-heart"></i>
+                                <span>${artwork.likes}</span>
+                            </div>
+                            <div class="artwork-stat">
+                                <i class="fas fa-tag"></i>
+                                <span>${artwork.type}</span>
+                            </div>
+                        </div>
+                        <button class="view-artwork-btn" data-id="${artwork.id}">
+                            <i class="fas fa-expand"></i> View Details
+                        </button>
+                    </div>
+                `;
+                
+                galleryGrid.appendChild(artworkCard);
+            });
+            
+            // Add click event to artwork cards
+            document.querySelectorAll('.artwork-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    if (!e.target.classList.contains('view-artwork-btn')) {
+                        const id = parseInt(this.dataset.id);
+                        openArtworkModal(id);
+                    }
+                });
+            });
+            
+            // Add click event to view buttons
+            document.querySelectorAll('.view-artwork-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const id = parseInt(this.dataset.id);
+                    openArtworkModal(id);
+                });
+            });
+        }
+
+        // Initialize Drawing Studio
+        function initDrawingStudio() {
+            canvas = document.getElementById('drawingCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Set canvas background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Initialize color palette
+            initColorPalette();
+            
+            // Set up drawing events
+            canvas.addEventListener('mousedown', startPosition);
+            canvas.addEventListener('mouseup', finishedPosition);
+            canvas.addEventListener('mousemove', draw);
+            
+            // Touch events for mobile
+            canvas.addEventListener('touchstart', startPosition);
+            canvas.addEventListener('touchend', finishedPosition);
+            canvas.addEventListener('touchmove', draw);
+            
+            // Initialize brush size slider
+            const brushSizeSlider = document.getElementById('brushSize');
+            const brushSizeValue = document.getElementById('brushSizeValue');
+            
+            brushSizeSlider.addEventListener('input', function() {
+                brushSize = parseInt(this.value);
+                brushSizeValue.textContent = brushSize;
+            });
+        }
+
+        // Initialize Color Palette
+        function initColorPalette() {
+            const colors = [
+                '#ff7e5f', '#feb47b', '#667eea', '#764ba2', 
+                '#4CAF50', '#FF9800', '#2196F3', '#9C27B0',
+                '#000000', '#ffffff', '#FF416C', '#00BCD4'
+            ];
+            
+            const colorPalette = document.getElementById('colorPalette');
+            colorPalette.innerHTML = '';
+            
+            colors.forEach(color => {
+                const colorOption = document.createElement('div');
+                colorOption.className = 'color-option';
+                if (color === currentColor) colorOption.classList.add('active');
+                colorOption.style.backgroundColor = color;
+                colorOption.dataset.color = color;
+                
+                colorOption.addEventListener('click', function() {
+                    document.querySelectorAll('.color-option').forEach(opt => {
+                        opt.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    currentColor = this.dataset.color;
+                });
+                
+                colorPalette.appendChild(colorOption);
+            });
+        }
+
+        // Drawing Functions
+        function startPosition(e) {
+            painting = true;
+            draw(e); // Draw a dot immediately
+            
+            // Store starting position for shapes/lines
+            const rect = canvas.getBoundingClientRect();
+            if (e.type.includes('mouse')) {
+                startX = e.clientX - rect.left;
+                startY = e.clientY - rect.top;
+            } else {
+                startX = e.touches[0].clientX - rect.left;
+                startY = e.touches[0].clientY - rect.top;
+            }
+        }
+
+        function finishedPosition() {
+            painting = false;
+            ctx.beginPath(); // Reset the path for next drawing
+            
+            // If we're drawing a shape, complete it
+            if (currentTool === 'line' || currentTool === 'shape') {
+                // Shape drawing is handled in the draw function
+            }
+        }
+
+        function draw(e) {
+            if (!painting) return;
+            
+            e.preventDefault();
+            
+            const rect = canvas.getBoundingClientRect();
+            let x, y;
+            
+            if (e.type.includes('mouse')) {
+                x = e.clientX - rect.left;
+                y = e.clientY - rect.top;
+            } else {
+                x = e.touches[0].clientX - rect.left;
+                y = e.touches[0].clientY - rect.top;
+            }
+            
+            ctx.lineWidth = brushSize;
+            ctx.lineCap = 'round';
+            
+            if (currentTool === 'brush') {
+                ctx.strokeStyle = currentColor;
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            } else if (currentTool === 'eraser') {
+                ctx.strokeStyle = 'white';
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            } else if (currentTool === 'line') {
+                // For line tool, we'll redraw from start to current position
+                // First, clear what we've drawn so far
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                tempCtx.drawImage(canvas, 0, 0);
+                
+                // Clear the main canvas and redraw the saved image
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(tempCanvas, 0, 0);
+                
+                // Draw the line from start to current position
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle = currentColor;
+                ctx.stroke();
+            } else if (currentTool === 'shape') {
+                // For shape tool (rectangle)
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                tempCtx.drawImage(canvas, 0, 0);
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(tempCanvas, 0, 0);
+                
+                // Draw rectangle from start to current position
+                ctx.beginPath();
+                ctx.rect(startX, startY, x - startX, y - startY);
+                ctx.strokeStyle = currentColor;
+                ctx.stroke();
+            }
+        }
+
+        // Initialize Event Listeners
+        function initEventListeners() {
+            // Filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // In a real app, this would filter the gallery
+                    // For now, we'll just show a message
+                    showNotification(`Showing ${this.textContent.toLowerCase()} artworks`);
+                });
+            });
+            
+            // Tool buttons
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.tool-btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    currentTool = this.dataset.tool;
+                });
+            });
+            
+            // AI Assist Button
+            document.getElementById('aiAssistBtn').addEventListener('click', function() {
+                showAISuggestions();
+            });
+            
+            // Save Button
+            document.getElementById('saveBtn').addEventListener('click', function() {
+                saveDrawing();
+            });
+            
+            // Clear Button
+            document.getElementById('clearBtn').addEventListener('click', function() {
+                clearCanvas();
+            });
+            
+            // Load More Button
+            document.getElementById('loadMoreBtn').addEventListener('click', function() {
+                loadMoreArtworks();
+            });
+            
+            // Close Modal Button
+            document.getElementById('closeModal').addEventListener('click', function() {
+                closeArtworkModal();
+            });
+            
+            // Close modal when clicking outside
+            document.getElementById('artworkModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeArtworkModal();
+                }
+            });
+            
+            // Search functionality
+            const searchInput = document.querySelector('.search-box input');
+            searchInput.addEventListener('input', function() {
+                if (this.value.length > 2) {
+                    searchArtworks(this.value);
+                }
+            });
+        }
+
+        // Open Artwork Modal
+        function openArtworkModal(id) {
+            const artwork = artworks.find(a => a.id === id);
+            if (!artwork) return;
+            
+            document.getElementById('modalArtworkTitle').textContent = artwork.title;
+            document.getElementById('modalArtworkDescription').textContent = 
+                `A stunning ${artwork.type.toLowerCase()} by ${artwork.artist}. This piece has captivated ${artwork.views.toLocaleString()} viewers and received ${artwork.likes} likes from the art community.`;
+            
+            document.getElementById('modalArtworkImg').style.background = 
+                `linear-gradient(135deg, ${artwork.color}, ${darkenColor(artwork.color, 30)})`;
+            
+            document.querySelectorAll('.stat-value')[0].textContent = artwork.views.toLocaleString();
+            document.querySelectorAll('.stat-value')[1].textContent = artwork.likes;
+            document.querySelectorAll('.stat-value')[2].textContent = Math.floor(artwork.likes * 0.25);
+            
+            document.getElementById('artworkModal').style.display = 'flex';
+        }
+
+        function closeArtworkModal() {
+            document.getElementById('artworkModal').style.display = 'none';
+        }
+
+        // AI Suggestions Function
+        function showAISuggestions() {
+            const suggestions = [
+                "Try adding more contrast to make elements pop",
+                "Consider using complementary colors for harmony",
+                "Add some texture to create depth",
+                "Try a monochromatic color scheme for elegance",
+                "Add a focal point to guide the viewer's eye",
+                "Experiment with negative space for balance"
+            ];
+            
+            const randomSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
+            
+            // Show notification with suggestion
+            showNotification(`🤖 AI Suggestion: ${randomSuggestion}`);
+            
+            // In a real app, this might actually modify the drawing
+            // For now, we'll just change to a suggested color
+            const suggestedColors = ['#667eea', '#ff7e5f', '#4CAF50', '#9C27B0', '#FF9800'];
+            const randomColor = suggestedColors[Math.floor(Math.random() * suggestedColors.length)];
+            
+            // Find and activate the color
+            document.querySelectorAll('.color-option').forEach(opt => {
+                opt.classList.remove('active');
+                if (opt.dataset.color === randomColor) {
+                    opt.classList.add('active');
+                    currentColor = randomColor;
+                }
+            });
+        }
+
+        // Save Drawing
+        function saveDrawing() {
+            // In a real app, this would save to server/local storage
+            // For now, we'll create a download link
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'my-artwork.png';
+            link.href = dataURL;
+            link.click();
+            
+            showNotification('🎨 Artwork saved successfully!');
+            
+            // Add to "gallery" as a new artwork
+            const newArtwork = {
+                id: artworks.length + 1,
+                title: `My Creation ${new Date().getTime().toString().slice(-4)}`,
+                artist: "You",
+                artistInitials: "ME",
+                type: "Digital",
+                likes: 1,
+                views: 1,
+                color: currentColor
+            };
+            
+            // In a real app, you would add to the gallery grid
+            // For now, just show a notification
+            showNotification(`✨ "${newArtwork.title}" added to your gallery!`);
+        }
+
+        // Clear Canvas
+        function clearCanvas() {
+            if (confirm('Are you sure you want to clear the canvas?')) {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                showNotification('Canvas cleared');
+            }
+        }
+
+        // Load More Artworks
+        function loadMoreArtworks() {
+            // In a real app, this would load more from a server
+            // For now, we'll duplicate existing artworks with modified properties
+            const btn = document.getElementById('loadMoreBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                // Simulate loading delay
+                const currentCount = artworks.length;
+                const newArtworks = [...artworks.slice(0, 4)].map((art, index) => ({
+                    ...art,
+                    id: currentCount + index + 1,
+                    title: `${art.title} ${index + 1}`,
+                    likes: Math.floor(Math.random() * 200) + 50,
+                    views: Math.floor(Math.random() * 3000) + 1000
+                }));
+                
+                // Add to gallery
+                newArtworks.forEach(artwork => {
+                    artworks.push(artwork);
+                });
+                
+                initGallery(); // Re-render gallery
+                
+                btn.innerHTML = '<i class="fas fa-plus"></i> Load More Artworks';
+                btn.disabled = false;
+                
+                showNotification(`Loaded ${newArtworks.length} more artworks`);
+            }, 1500);
+        }
+
+        // Search Artworks
+        function searchArtworks(query) {
+            // In a real app, this would filter the gallery
+            // For now, we'll just highlight matching cards
+            const cards = document.querySelectorAll('.artwork-card');
+            let matchCount = 0;
+            
+            cards.forEach(card => {
+                const title = card.querySelector('.artwork-title').textContent.toLowerCase();
+                const artist = card.querySelector('.artwork-artist span').textContent.toLowerCase();
+                
+                if (title.includes(query.toLowerCase()) || artist.includes(query.toLowerCase())) {
+                    card.style.opacity = '1';
+                    card.style.transform = 'scale(1.02)';
+                    matchCount++;
+                } else {
+                    card.style.opacity = '0.5';
+                    card.style.transform = 'scale(0.98)';
+                }
+            });
+            
+            if (matchCount > 0) {
+                showNotification(`Found ${matchCount} artwork${matchCount !== 1 ? 's' : ''} matching "${query}"`);
+            }
+        }
+
+        // Utility Functions
+        function darkenColor(color, percent) {
+            // Simple color darkening function
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) - amt;
+            const G = (num >> 8 & 0x00FF) - amt;
+            const B = (num & 0x0000FF) - amt;
+            
+            return `#${(0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1)}`;
+        }
+
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                padding: 15px 25px;
+                border-radius: 10px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                z-index: 1001;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+            
+            // Add CSS for animations
+            if (!document.getElementById('notificationStyles')) {
+                const style = document.createElement('style');
+                style.id = 'notificationStyles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOut {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+    </script>
+</body>
+</html>

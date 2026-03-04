@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Advanced 3D visualization of spacetime curvature around quantum singularities with real-time physics simulation">
+    <meta name="keywords" content="black hole, spacetime, curvature, quantum singularity, physics simulation, 3D visualization">
+    <meta name="author" content="OpenPlayground">
+    <title>Quantum Singularity – Spacetime Curvature Visualizer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23000' stroke='%2300f' stroke-width='4'/><circle cx='50' cy='50' r='15' fill='%23000'/><circle cx='50' cy='50' r='8' fill='%2300f'/></svg>">
+    <style>
+        /* Loading screen styles */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #000011, #001122);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+
+        #loading-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 255, 255, 0.3);
+            border-top: 4px solid #00ffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .loading-text {
+            color: #00ffff;
+            font-size: 18px;
+            font-weight: 300;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .loading-subtitle {
+            color: #cccccc;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+            max-width: 400px;
+            line-height: 1.4;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            width: 300px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Initializing Quantum Singularity Visualizer</div>
+        <div class="loading-subtitle">
+            Loading advanced physics simulation and 3D rendering engine...<br>
+            Preparing spacetime curvature calculations and quantum effects...
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- Main 3D Container -->
+    <div id="container"></div>
+
+    <!-- UI Panels are created dynamically by JavaScript -->
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="script.js"></script>
+
+    <!-- Loading Script -->
+    <script>
+        // Loading screen management
+        class LoadingManager {
+            constructor() {
+                this.progress = 0;
+                this.loadingScreen = document.getElementById('loading-screen');
+                this.progressFill = document.getElementById('progress-fill');
+                this.loadingText = document.querySelector('.loading-text');
+                this.loadingSubtitle = document.querySelector('.loading-subtitle');
+
+                this.loadingSteps = [
+                    'Initializing Three.js engine...',
+                    'Setting up physics parameters...',
+                    'Creating spacetime geometry...',
+                    'Initializing singularity objects...',
+                    'Setting up lighting and materials...',
+                    'Creating UI controls...',
+                    'Loading quantum effects...',
+                    'Preparing animation system...',
+                    'Finalizing visualization...'
+                ];
+
+                this.currentStep = 0;
+            }
+
+            updateProgress(step, message) {
+                this.currentStep = step;
+                this.progress = (step / this.loadingSteps.length) * 100;
+                this.progressFill.style.width = this.progress + '%';
+
+                if (message) {
+                    this.loadingText.textContent = message;
+                } else if (this.loadingSteps[step]) {
+                    this.loadingText.textContent = this.loadingSteps[step];
+                }
+            }
+
+            hideLoadingScreen() {
+                setTimeout(() => {
+                    this.loadingScreen.classList.add('fade-out');
+                    setTimeout(() => {
+                        this.loadingScreen.style.display = 'none';
+                    }, 500);
+                }, 1000);
+            }
+        }
+
+        const loadingManager = new LoadingManager();
+
+        // Simulate loading progress
+        let loadingStep = 0;
+        const loadingInterval = setInterval(() => {
+            loadingManager.updateProgress(loadingStep);
+            loadingStep++;
+
+            if (loadingStep >= loadingManager.loadingSteps.length) {
+                clearInterval(loadingInterval);
+                loadingManager.hideLoadingScreen();
+            }
+        }, 200);
+
+        // Check if Three.js is loaded
+        window.addEventListener('load', () => {
+            if (typeof THREE !== 'undefined') {
+                loadingManager.updateProgress(loadingManager.loadingSteps.length - 1, 'Ready to explore spacetime!');
+            }
+        });
+
+        // Error handling
+        window.addEventListener('error', (e) => {
+            console.error('Loading error:', e);
+            loadingManager.loadingText.textContent = 'Error loading visualizer';
+            loadingManager.loadingSubtitle.textContent = 'Please check your internet connection and refresh the page.';
+            loadingManager.progressFill.style.background = '#ff4444';
+        });
+
+        // Performance monitoring
+        if ('performance' in window && 'memory' in window.performance) {
+            console.log('Memory usage:', window.performance.memory);
+        }
+    </script>
+</body>
+</html>

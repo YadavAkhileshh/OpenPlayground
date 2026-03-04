@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHRONO-NAVIGATOR · temporal landscape</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0d14;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', 'Space Grotesk', system-ui, sans-serif;
+            padding: 16px;
+        }
+
+        /* main vessel — timeline nexus */
+        .chrono {
+            max-width: 1400px;
+            width: 100%;
+            background: rgba(8, 12, 25, 0.8);
+            backdrop-filter: blur(30px) saturate(280%);
+            -webkit-backdrop-filter: blur(30px) saturate(280%);
+            border: 2px solid rgba(100, 180, 255, 0.4);
+            border-radius: 64px 64px 56px 56px;
+            box-shadow: 0 40px 90px -20px #000, 0 0 0 2px rgba(0, 160, 255, 0.2) inset, 0 0 100px #1f4b8f;
+            padding: 32px 36px 48px 36px;
+            position: relative;
+        }
+
+        .chrono::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 8px;
+            background: radial-gradient(circle at 70% 20%, #9acdff, #5f9eff, #3d69b0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+
+        /* header — temporal metrics */
+        .time-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px 20px;
+            padding: 0 12px 28px 12px;
+            border-bottom: 2px solid rgba(0, 180, 255, 0.4);
+            margin-bottom: 36px;
+        }
+
+        .time-tag {
+            background: rgba(0, 20, 45, 0.8);
+            border: 1px solid #5bb4ff;
+            color: #c0e2ff;
+            border-radius: 60px;
+            padding: 10px 30px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 0 18px #5bb4ff;
+        }
+
+        .time-tag strong {
+            color: white;
+            font-weight: 500;
+            margin-left: 8px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .chrono-pulse {
+            background: #0a2640;
+            border-color: #ffb86b;
+            color: #ffeac4;
+            box-shadow: 0 0 35px #ffb86b;
+            animation: timeWarp 3.2s infinite alternate;
+        }
+
+        @keyframes timeWarp {
+            0% { box-shadow: 0 0 15px #5bb4ff, border-color: #5bb4ff; }
+            100% { box-shadow: 0 0 55px #ffb86b, 0 0 20px #ffb86b; border-color: #ffe28a; }
+        }
+
+        /* three realms: controls, timeline canvas, temporal data */
+        .chrono-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 2.2fr 1.1fr;
+            gap: 28px;
+            margin-bottom: 42px;
+        }
+
+        /* ----- left panel: temporal controls / distortion knobs ----- */
+        .control-panel {
+            background: rgba(8, 18, 32, 0.7);
+            border-radius: 48px;
+            border: 1px solid rgba(70, 160, 255, 0.5);
+            padding: 30px 22px;
+            backdrop-filter: blur(18px);
+            box-shadow: 0 18px 0 #030c1a;
+        }
+
+        .control-header {
+            font-size: 0.7rem;
+            letter-spacing: 4px;
+            color: #7ab9ff;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+            border-left: 5px solid #ffaa6f;
+            padding-left: 16px;
+        }
+
+        .time-knob {
+            margin-bottom: 38px;
+        }
+
+        .knob-desc {
+            display: flex;
+            justify-content: space-between;
+            color: #b0d2ff;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .knob-desc span:last-child {
+            color: #ffde9e;
+            font-family: monospace;
+            font-size: 1.3rem;
+            font-weight: 500;
+            text-shadow: 0 0 12px #ffd58c;
+        }
+
+        .chrono-slider {
+            width: 100%;
+            height: 12px;
+            background: linear-gradient(90deg, #1e5799, #7ac4ff);
+            border-radius: 30px;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+            border: 1px solid #78beff;
+        }
+
+        .chrono-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 28px;
+            height: 28px;
+            background: #f0f9ff;
+            border-radius: 50%;
+            box-shadow: 0 0 35px #00a6ff, 0 0 12px white;
+            border: 3px solid #5ac8ff;
+            cursor: pointer;
+        }
+
+        .era-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 30px 0 10px;
+        }
+
+        .era-btn {
+            background: #0b263f;
+            border: 2px solid #4aa0ff;
+            color: #d4ebff;
+            font-size: 1rem;
+            padding: 14px 14px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.1s;
+            flex: 1 0 auto;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 0 15px #4aa0ff;
+        }
+
+        .era-btn:hover {
+            background: #7ac4ff;
+            color: #021624;
+            border-color: white;
+            box-shadow: 0 0 45px #fffdbf;
+        }
+
+        /* ----- center: canvas (temporal landscape) ----- */
+        .timeline-panel {
+            background: rgba(2, 8, 20, 0.9);
+            border-radius: 56px;
+            border: 2px solid #5faaff;
+            box-shadow: 0 0 70px #2d6bb0, inset 0 0 40px #001c44;
+            display: flex;
+            flex-direction: column;
+            padding: 22px;
+        }
+
+        .chrono-canvas {
+            width: 100%;
+            aspect-ratio: 1/0.95;
+            background: #020613;
+            border-radius: 48px;
+            display: block;
+            margin-bottom: 18px;
+            border: 2px solid #7ab9ff;
+            box-shadow: 0 0 30px #7ab9ff;
+            cursor: grab;
+        }
+
+        .chrono-canvas:active {
+            cursor: grabbing;
+        }
+
+        .timemarkers {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            font-size: 0.9rem;
+            flex-wrap: wrap;
+        }
+
+        .timemarkers span {
+            background: #0c1d32;
+            padding: 8px 30px;
+            border-radius: 40px;
+            border: 1px solid #5faaff;
+            color: #cae0ff;
+        }
+
+        /* ----- right panel: temporal data / paradox indices ----- */
+        .data-panel {
+            background: rgba(8, 18, 32, 0.7);
+            border-radius: 48px;
+            border: 1px solid rgba(255, 170, 100, 0.5);
+            padding: 30px 22px;
+            backdrop-filter: blur(18px);
+        }
+
+        .temporal-metric {
+            background: #0e1e36;
+            border-radius: 36px;
+            padding: 22px;
+            border: 2px solid #ffb56b;
+            box-shadow: 0 0 35px #ffb56b;
+            margin-bottom: 24px;
+        }
+
+        .metric-line {
+            font-size: 1.2rem;
+            color: #ffebc2;
+            margin-bottom: 12px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .metric-expl {
+            color: #b0d2ff;
+            font-size: 0.9rem;
+        }
+
+        .paradox-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .paradox-item {
+            display: flex;
+            justify-content: space-between;
+            color: #b0d2ff;
+            border-bottom: 1px dashed #5f9eff;
+            padding-bottom: 8px;
+        }
+
+        .paradox-value {
+            color: #ffe28a;
+            font-family: monospace;
+            font-size: 1.2rem;
+        }
+
+        /* footer — chrono flux */
+        .chrono-footer {
+            margin-top: 36px;
+            background: #020d1fcc;
+            border-radius: 100px;
+            padding: 18px 36px;
+            border: 1px solid #5faaff;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+            justify-content: space-between;
+            backdrop-filter: blur(24px);
+        }
+
+        .flux-metric {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            color: #b0d2ff;
+        }
+
+        .flux-num {
+            font-size: 1.8rem;
+            font-weight: 400;
+            font-family: 'JetBrains Mono', monospace;
+            color: #fede8b;
+            text-shadow: 0 0 12px gold;
+        }
+
+        .chrono-note {
+            color: #9ab9e6;
+            font-style: italic;
+        }
+
+        @media (max-width: 1000px) {
+            .chrono-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="chrono">
+        <!-- header: live temporal metrics -->
+        <div class="time-bar">
+            <div class="time-tag">⏳ CURRENT <strong id="currentEra">HOLOCENE</strong></div>
+            <div class="time-tag chrono-pulse">🌀 PARADOX <strong id="paradoxLevel">0.23</strong></div>
+            <div class="time-tag">⚡ ENTROPY <strong id="entropyVal">0.71</strong></div>
+        </div>
+
+        <!-- main interactive grid -->
+        <div class="chrono-grid">
+            <!-- left: temporal controls -->
+            <div class="control-panel">
+                <div class="control-header">⏣  TIME DISTORTION</div>
+                
+                <div class="time-knob">
+                    <div class="knob-desc"><span>DILATION</span><span id="dilationVal">0.48</span></div>
+                    <input type="range" id="dilationSlider" class="chrono-slider" min="0" max="1" step="0.01" value="0.48">
+                </div>
+
+                <div class="time-knob">
+                    <div class="knob-desc"><span>FOLDING</span><span id="foldVal">0.31</span></div>
+                    <input type="range" id="foldSlider" class="chrono-slider" min="0" max="1" step="0.01" value="0.31">
+                </div>
+
+                <div class="time-knob">
+                    <div class="knob-desc"><span>RESONANCE</span><span id="resonanceVal">0.62</span></div>
+                    <input type="range" id="resonanceSlider" class="chrono-slider" min="0" max="1" step="0.01" value="0.62">
+                </div>
+
+                <div class="era-buttons">
+                    <div class="era-btn" id="eraPast">🌌 PAST</div>
+                    <div class="era-btn" id="eraPresent">🌀 NOW</div>
+                    <div class="era-btn" id="eraFuture">✨ FUTURE</div>
+                </div>
+                <div style="margin-top:20px; color:#5f9eff; font-size:0.7rem;">↯ era shifts alter landscape</div>
+            </div>
+
+            <!-- center: canvas (temporal landscape) -->
+            <div class="timeline-panel">
+                <canvas id="chronoCanvas" width="550" height="500" class="chrono-canvas"></canvas>
+                <div class="timemarkers">
+                    <span id="markerPast">◀ PAST</span>
+                    <span id="markerPresent">◆ NOW</span>
+                    <span id="markerFuture">FUTURE ▶</span>
+                </div>
+            </div>
+
+            <!-- right: temporal interpretation -->
+            <div class="data-panel">
+                <div class="temporal-metric">
+                    <div class="metric-line" id="timelineVerse">"time bends like light"</div>
+                    <div class="metric-expl" id="eraDescription">holocene anomaly</div>
+                </div>
+
+                <div class="paradox-list">
+                    <div class="paradox-item"><span>chrono flux</span><span class="paradox-value" id="chronoFlux">0.83</span></div>
+                    <div class="paradox-item"><span>memory decay</span><span class="paradox-value" id="memoryDecay">0.41</span></div>
+                    <div class="paradox-item"><span>causality</span><span class="paradox-value" id="causality">0.92</span></div>
+                </div>
+
+                <div style="margin-top: 26px; background: #10233e; border-radius: 30px; padding: 16px; color:#d4e6ff; text-align:center;" id="timelineID">LINE: 0x7F3A · B7</div>
+            </div>
+        </div>
+
+        <!-- footer: chrono flux stream -->
+        <div class="chrono-footer">
+            <div class="flux-metric">🌀 <span class="flux-num" id="fluxA">0.39</span> <span>drift</span></div>
+            <div class="flux-metric">⚡ <span class="flux-num" id="fluxB">0.72</span> <span>ripple</span></div>
+            <div class="flux-metric">🌙 <span class="flux-num" id="fluxC">0.58</span> <span>echo</span></div>
+            <div class="chrono-note" id="chronoPoem">navigating timelines...</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- CHRONO-NAVIGATOR : temporal landscape ----------
+            const canvas = document.getElementById('chronoCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+
+            // DOM elements
+            const dilationSlider = document.getElementById('dilationSlider');
+            const foldSlider = document.getElementById('foldSlider');
+            const resonanceSlider = document.getElementById('resonanceSlider');
+            const dilationSpan = document.getElementById('dilationVal');
+            const foldSpan = document.getElementById('foldVal');
+            const resonanceSpan = document.getElementById('resonanceVal');
+
+            const currentEra = document.getElementById('currentEra');
+            const paradoxLevel = document.getElementById('paradoxLevel');
+            const entropyVal = document.getElementById('entropyVal');
+            const markerPast = document.getElementById('markerPast');
+            const markerPresent = document.getElementById('markerPresent');
+            const markerFuture = document.getElementById('markerFuture');
+            const timelineVerse = document.getElementById('timelineVerse');
+            const eraDescription = document.getElementById('eraDescription');
+            const chronoFlux = document.getElementById('chronoFlux');
+            const memoryDecay = document.getElementById('memoryDecay');
+            const causality = document.getElementById('causality');
+            const timelineID = document.getElementById('timelineID');
+            const fluxA = document.getElementById('fluxA');
+            const fluxB = document.getElementById('fluxB');
+            const fluxC = document.getElementById('fluxC');
+            const chronoPoem = document.getElementById('chronoPoem');
+
+            // internal state
+            let dilation = 0.48, folding = 0.31, resonance = 0.62;
+            let era = 1; // 0: past, 1: present, 2: future
+            let frame = 0;
+            let time = 0;
+
+            // verse bank
+            const verseBank = [
+                "time bends like light",
+                "yesterday is a mountain",
+                "tomorrow's shadow",
+                "the present is a door",
+                "echoes from the future",
+                "a fracture in time",
+                "memory is a river",
+                "the clock dissolves",
+                "causality is a suggestion",
+                "all moments at once"
+            ];
+
+            // update all derived data + redraw canvas
+            function navigateTime() {
+                // read sliders
+                dilation = parseFloat(dilationSlider.value);
+                folding = parseFloat(foldSlider.value);
+                resonance = parseFloat(resonanceSlider.value);
+
+                dilationSpan.innerText = dilation.toFixed(2);
+                foldSpan.innerText = folding.toFixed(2);
+                resonanceSpan.innerText = resonance.toFixed(2);
+
+                // era based on button (0,1,2) plus modifiers
+                const eras = ["PALEOZOIC", "HOLOCENE", "NEXUS"];
+                if (era === 0) currentEra.innerText = eras[0];
+                else if (era === 1) currentEra.innerText = eras[1];
+                else currentEra.innerText = eras[2];
+
+                // paradox level
+                const paradox = (0.1 + dilation * 0.5 + folding * 0.3).toFixed(2);
+                paradoxLevel.innerText = paradox;
+
+                // entropy
+                const entropy = (0.3 + resonance * 0.6 + folding * 0.2).toFixed(2);
+                entropyVal.innerText = entropy;
+
+                // markers text based on era
+                if (era === 0) {
+                    markerPast.innerText = '◀◀ DEEP TIME';
+                    markerPresent.innerText = '◆ ECHO';
+                    markerFuture.innerText = 'VEIL ▶';
+                } else if (era === 1) {
+                    markerPast.innerText = '◀ PAST';
+                    markerPresent.innerText = '◆ NOW';
+                    markerFuture.innerText = 'FUTURE ▶';
+                } else {
+                    markerPast.innerText = '◀ ECHO';
+                    markerPresent.innerText = '◆ NEXUS';
+                    markerFuture.innerText = 'BEYOND ▶';
+                }
+
+                // verse
+                const verseIdx = Math.floor((dilation*10 + folding*8 + time) % verseBank.length);
+                timelineVerse.innerText = '"' + verseBank[verseIdx] + '"';
+                eraDescription.innerText = era === 0 ? 'deep time distortion' : (era === 1 ? 'present moment flux' : 'future echo chamber');
+
+                // paradox values
+                chronoFlux.innerText = (0.5 + dilation * 0.5).toFixed(2);
+                memoryDecay.innerText = (0.3 + folding * 0.6).toFixed(2);
+                causality.innerText = (0.7 - resonance * 0.3).toFixed(2);
+
+                // timeline ID
+                const hex1 = Math.floor(Math.random()*0xFFFF).toString(16).toUpperCase().padStart(4,'0');
+                const hex2 = Math.floor(Math.random()*0xFF).toString(16).toUpperCase().padStart(2,'0');
+                timelineID.innerText = `LINE: 0x${hex1} · ${hex2}`;
+
+                // flux values
+                fluxA.innerText = (0.2 + dilation * 0.7).toFixed(2);
+                fluxB.innerText = (0.3 + folding * 0.6).toFixed(2);
+                fluxC.innerText = (0.4 + resonance * 0.5).toFixed(2);
+
+                const poems = ["navigating timelines...", "chronos weeps", "time is a spiral", "eternity now", "the clock has no hands"];
+                chronoPoem.innerText = poems[Math.floor(Math.random() * poems.length)];
+
+                drawTimeline();
+            }
+
+            // canvas drawing — abstract temporal landscape
+            function drawTimeline() {
+                ctx.clearRect(0, 0, w, h);
+                // deep background
+                const grad = ctx.createLinearGradient(0, 0, w, h);
+                grad.addColorStop(0, '#020617');
+                grad.addColorStop(1, '#14253d');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, w, h);
+
+                // horizon line (time axis)
+                const midY = h * 0.6;
+                ctx.beginPath();
+                ctx.moveTo(0, midY);
+                ctx.lineTo(w, midY);
+                ctx.strokeStyle = '#5f9eff40';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // temporal waves (influence of dilation, folding)
+                for (let wave=0; wave<5; wave++) {
+                    ctx.beginPath();
+                    for (let x=0; x<w; x+=15) {
+                        const t = x / w;
+                        const depth = (Math.sin(x*0.02 + time*2 + wave) * 20 * dilation) + (Math.cos(x*0.01 + folding*10) * 30 * folding);
+                        const y = midY + depth + wave*15;
+                        if (x===0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    const hue = 200 + wave*10 + resonance*30;
+                    ctx.strokeStyle = `hsla(${hue}, 80%, 70%, 0.3)`;
+                    ctx.lineWidth = 1.5 + resonance*3;
+                    ctx.stroke();
+                }
+
+                // time particles (memory echoes)
+                for (let p=0; p<40; p++) {
+                    const x = (p * 37 + time*50) % w;
+                    const y = midY + Math.sin(x*0.02 + time*3) * 40 * dilation + Math.cos(p*2 + folding*10) * 30;
+                    ctx.fillStyle = `rgba(180, 220, 255, ${0.2+resonance*0.3})`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4 + dilation*8, 0, 2*Math.PI);
+                    ctx.fill();
+                }
+
+                // era-specific overlays
+                if (era === 0) { // past: sepia/reddish tint
+                    ctx.fillStyle = '#ffdbb530';
+                    ctx.fillRect(0,0,w,h);
+                } else if (era === 2) { // future: cool cyan tint
+                    ctx.fillStyle = '#a0f0ff20';
+                    ctx.fillRect(0,0,w,h);
+                }
+
+                // time folds (folding effect)
+                for (let f=0; f<3; f++) {
+                    const foldX = w * (0.3 + f*0.3 + folding*0.2);
+                    ctx.beginPath();
+                    ctx.moveTo(foldX, 0);
+                    ctx.lineTo(foldX + 20*folding, h);
+                    ctx.strokeStyle = `rgba(255,200,100,${0.3+folding*0.3})`;
+                    ctx.lineWidth = 3 + folding*10;
+                    ctx.stroke();
+                }
+
+                // text overlay
+                ctx.font = "12px 'JetBrains Mono'";
+                ctx.fillStyle = "#b0d2ff";
+                ctx.fillText("t=" + time.toFixed(2), 30, 40);
+            }
+
+            // era button handlers
+            document.getElementById('eraPast').addEventListener('click', () => { era = 0; navigateTime(); });
+            document.getElementById('eraPresent').addEventListener('click', () => { era = 1; navigateTime(); });
+            document.getElementById('eraFuture').addEventListener('click', () => { era = 2; navigateTime(); });
+
+            // sliders
+            dilationSlider.addEventListener('input', navigateTime);
+            foldSlider.addEventListener('input', navigateTime);
+            resonanceSlider.addEventListener('input', navigateTime);
+
+            // canvas click for random mutation
+            canvas.addEventListener('click', () => {
+                dilation = Math.min(1, Math.max(0, dilation + (Math.random()*0.2 - 0.1)));
+                folding = Math.min(1, Math.max(0, folding + (Math.random()*0.2 - 0.1)));
+                resonance = Math.min(1, Math.max(0, resonance + (Math.random()*0.2 - 0.1)));
+                dilationSlider.value = dilation;
+                foldSlider.value = folding;
+                resonanceSlider.value = resonance;
+                navigateTime();
+            });
+
+            // animation loop
+            function animate() {
+                frame++;
+                time += 0.02;
+                if (frame % 5 === 0) {
+                    // update some dynamic fields without full regenerate? just redraw canvas and maybe flux
+                    drawTimeline();
+                    // occasionally update flux/poem
+                    if (frame % 15 === 0) {
+                        fluxA.innerText = (0.2 + dilation * 0.7 + Math.sin(time)*0.1).toFixed(2);
+                        fluxB.innerText = (0.3 + folding * 0.6 + Math.cos(time*0.8)*0.1).toFixed(2);
+                        fluxC.innerText = (0.4 + resonance * 0.5 + Math.sin(time*1.2)*0.1).toFixed(2);
+                        const poems = ["navigating timelines...", "chronos weeps", "time is a spiral", "eternity now", "the clock has no hands"];
+                        chronoPoem.innerText = poems[Math.floor(Math.random() * poems.length)];
+                    }
+                } else {
+                    drawTimeline();
+                }
+                requestAnimationFrame(animate);
+            }
+
+            // init
+            navigateTime();
+            animate();
+
+        })();
+    </script>
+</body>
+</html>
