@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Frame Studio Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, #0f172a, #020617);
+            min-height: 100vh;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+        }
+
+        .preview-container {
+            perspective: 1200px;
+        }
+
+        #frame-canvas-wrapper {
+            transition: transform 0.1s ease-out;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            transform-style: preserve-3d;
+        }
+
+        /* Custom Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            margin-top: -6px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+            border: 2px solid #fff;
+        }
+
+        .custom-loader {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 tracking-tight">
+                    Elite Frame Studio
+                </h1>
+                <p class="text-gray-400 text-sm font-medium">Professional-grade photo framing suite</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="status-indicator" class="hidden flex items-center gap-2 text-blue-400 text-sm">
+                    <div class="custom-loader"></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Sidebar Controls -->
+            <aside class="lg:col-span-4 space-y-6">
+                <!-- Upload Area -->
+                <div class="glass p-5">
+                    <div class="relative group">
+                        <input type="file" id="imageInput" accept="image/*" class="hidden">
+                        <label for="imageInput" class="flex items-center gap-4 p-4 border-2 border-dashed border-gray-700 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-white/5 transition-all">
+                            <div class="bg-blue-500/10 p-3 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <span class="text-sm font-bold block" id="file-name">Choose Photo</span>
+                                <span class="text-xs text-gray-500">HD images supported</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Tabs for Controls -->
+                <div class="glass overflow-hidden">
+                    <div class="flex border-b border-white/10">
+                        <button onclick="switchTab('frame')" id="tab-frame" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider tab-active">Frame</button>
+                        <button onclick="switchTab('filters')" id="tab-filters" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider text-gray-500">Filters</button>
+                    </div>
+                    
+                    <!-- Frame Tab -->
+                    <div id="panel-frame" class="p-6 space-y-5">
+                        <div>
+                            <label class="flex justify-between text-xs mb-2">
+                                <span>Thickness</span>
+                                <span id="thickness-val" class="font-mono text-blue-400">20px</span>
+                            </label>
+                            <input type="range" id="frameWidth" min="0" max="150" value="20" class="w-full">
+                        </div>
+
+                        <div>
+                            <label class="flex justify-between text-xs mb-2">
+                                <span>Outer Radius</span>
+                                <span id="radius-val" class="font-mono text-blue-400">12px</span>
+                            </label>
+                            <input type="range" id="borderRadius" min="0" max="200" value="12" class="w-full">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs mb-3 text-gray-400 uppercase">Style Preset</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button class="style-btn active bg-blue-600 text-white p-2.5 rounded-lg text-[10px] font-bold uppercase" data-style="solid">Minimalist</button>
+                                <button class="style-btn bg-white/5 hover:bg-white/10 p-2.5 rounded-lg text-[10px] font-bold uppercase" data-style="gradient">Gradient</button>
+                                <button class="style-btn bg-white/5 hover:bg-white/10 p-2.5 rounded-lg text-[10px] font-bold uppercase" data-style="neon">Cyber Glow</button>
+                                <button class="style-btn bg-white/5 hover:bg-white/10 p-2.5 rounded-lg text-[10px] font-bold uppercase" data-style="royal">Royal Gold</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs mb-2 text-gray-400 uppercase">Frame Accent</label>
+                            <div class="flex gap-3 items-center">
+                                <input type="color" id="frameColor" value="#ffffff" class="w-10 h-10 bg-transparent border-none cursor-pointer">
+                                <div class="flex-1 flex justify-between">
+                                    <div class="w-8 h-8 rounded-full cursor-pointer ring-2 ring-transparent hover:ring-white/50" style="background: #ffffff" onclick="updateColor('#ffffff')"></div>
+                                    <div class="w-8 h-8 rounded-full cursor-pointer ring-2 ring-transparent hover:ring-white/50" style="background: #fbbf24" onclick="updateColor('#fbbf24')"></div>
+                                    <div class="w-8 h-8 rounded-full cursor-pointer ring-2 ring-transparent hover:ring-white/50" style="background: #10b981" onclick="updateColor('#10b981')"></div>
+                                    <div class="w-8 h-8 rounded-full cursor-pointer ring-2 ring-transparent hover:ring-white/50" style="background: #ef4444" onclick="updateColor('#ef4444')"></div>
+                                    <div class="w-8 h-8 rounded-full cursor-pointer ring-2 ring-transparent hover:ring-white/50" style="background: #000000" onclick="updateColor('#000000')"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters Tab -->
+                    <div id="panel-filters" class="hidden p-6 space-y-5">
+                        <div>
+                            <label class="flex justify-between text-xs mb-2 text-gray-400">
+                                <span>Brightness</span>
+                                <span id="bright-val" class="font-mono">100%</span>
+                            </label>
+                            <input type="range" id="brightness" min="0" max="200" value="100" class="w-full">
+                        </div>
+                        <div>
+                            <label class="flex justify-between text-xs mb-2 text-gray-400">
+                                <span>Contrast</span>
+                                <span id="contrast-val" class="font-mono">100%</span>
+                            </label>
+                            <input type="range" id="contrast" min="0" max="200" value="100" class="w-full">
+                        </div>
+                        <div>
+                            <label class="flex justify-between text-xs mb-2 text-gray-400">
+                                <span>Saturation</span>
+                                <span id="saturate-val" class="font-mono">100%</span>
+                            </label>
+                            <input type="range" id="saturate" min="0" max="200" value="100" class="w-full">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export -->
+                <button id="downloadBtn" class="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:brightness-110 py-4 rounded-xl font-bold shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Export High-Res PNG
+                </button>
+            </aside>
+
+            <!-- Preview Main Area -->
+            <main class="lg:col-span-8 flex items-center justify-center p-4 min-h-[600px] relative overflow-hidden">
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 pointer-events-none"></div>
+                
+                <div class="preview-container w-full h-full flex items-center justify-center">
+                    <div id="frame-canvas-wrapper" class="relative max-w-full cursor-move">
+                        <!-- Canvas will be drawn here -->
+                        <canvas id="mainCanvas" class="max-w-full h-auto rounded-lg hidden"></canvas>
+                        
+                        <!-- Empty State -->
+                        <div id="placeholder" class="text-center p-20 glass border-2 border-dashed border-white/10">
+                            <div class="bg-gradient-to-tr from-blue-500 to-purple-500 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl rotate-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                            </div>
+                            <h2 class="text-2xl font-bold mb-3">Studio Empty</h2>
+                            <p class="text-gray-400 text-sm max-w-xs mx-auto">Upload an image to unlock 3D framing and cinematic filters.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tilt Toggle Tooltip -->
+                <div class="absolute bottom-4 right-4 text-[10px] text-gray-500 font-bold uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">
+                    Move mouse to tilt preview
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 glass px-8 py-4 text-sm font-bold translate-y-20 transition-all opacity-0 flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+        Processing Complete!
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const imageInput = document.getElementById('imageInput');
+        const frameWidthInput = document.getElementById('frameWidth');
+        const borderRadiusInput = document.getElementById('borderRadius');
+        const frameColorInput = document.getElementById('frameColor');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const placeholder = document.getElementById('placeholder');
+        const styleBtns = document.querySelectorAll('.style-btn');
+        const wrapper = document.getElementById('frame-canvas-wrapper');
+
+        let originalImage = null;
+        let currentStyle = 'solid';
+
+        const state = {
+            thickness: 20,
+            radius: 12,
+            color: '#ffffff',
+            brightness: 100,
+            contrast: 100,
+            saturate: 100
+        };
+
+        // Tab Switching
+        function switchTab(tab) {
+            document.getElementById('panel-frame').classList.toggle('hidden', tab !== 'frame');
+            document.getElementById('panel-filters').classList.toggle('hidden', tab !== 'filters');
+            document.getElementById('tab-frame').classList.toggle('tab-active', tab === 'frame');
+            document.getElementById('tab-filters').classList.toggle('tab-active', tab === 'filters');
+            document.getElementById('tab-frame').classList.toggle('text-gray-500', tab !== 'frame');
+            document.getElementById('tab-filters').classList.toggle('text-gray-500', tab !== 'filters');
+        }
+
+        // 3D Tilt Effect
+        document.querySelector('main').addEventListener('mousemove', (e) => {
+            if (!originalImage) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const rotateX = (y - centerY) / 20;
+            const rotateY = (centerX - x) / 20;
+            
+            wrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+        });
+
+        document.querySelector('main').addEventListener('mouseleave', () => {
+            wrapper.style.transform = `rotateX(0deg) rotateY(0deg)`;
+        });
+
+        function updateLabels() {
+            document.getElementById('thickness-val').textContent = `${state.thickness}px`;
+            document.getElementById('radius-val').textContent = `${state.radius}px`;
+            document.getElementById('bright-val').textContent = `${state.brightness}%`;
+            document.getElementById('contrast-val').textContent = `${state.contrast}%`;
+            document.getElementById('saturate-val').textContent = `${state.saturate}%`;
+        }
+
+        function updateColor(hex) {
+            frameColorInput.value = hex;
+            state.color = hex;
+            render();
+        }
+
+        imageInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            document.getElementById('file-name').textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    originalImage = img;
+                    placeholder.classList.add('hidden');
+                    canvas.classList.remove('hidden');
+                    render();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        styleBtns.forEach(btn => {
+            btn.onclick = () => {
+                styleBtns.forEach(b => b.classList.remove('active', 'bg-blue-600', 'text-white'));
+                styleBtns.forEach(b => b.classList.add('bg-white/5'));
+                btn.classList.add('active', 'bg-blue-600', 'text-white');
+                btn.classList.remove('bg-white/5');
+                currentStyle = btn.dataset.style;
+                render();
+            };
+        });
+
+        // Event Listeners for controls
+        frameWidthInput.oninput = (e) => { state.thickness = parseInt(e.target.value); updateLabels(); render(); };
+        borderRadiusInput.oninput = (e) => { state.radius = parseInt(e.target.value); updateLabels(); render(); };
+        frameColorInput.oninput = (e) => { state.color = e.target.value; render(); };
+        
+        ['brightness', 'contrast', 'saturate'].forEach(id => {
+            document.getElementById(id).oninput = (e) => {
+                state[id] = e.target.value;
+                updateLabels();
+                render();
+            };
+        });
+
+        function render() {
+            if (!originalImage) return;
+
+            const padding = state.thickness;
+            const radius = state.radius;
+
+            canvas.width = originalImage.width + (padding * 2);
+            canvas.height = originalImage.height + (padding * 2);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Draw Frame Background
+            ctx.save();
+            drawRoundedRect(ctx, 0, 0, canvas.width, canvas.height, radius);
+            
+            if (currentStyle === 'solid') {
+                ctx.fillStyle = state.color;
+            } else if (currentStyle === 'gradient') {
+                const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                grad.addColorStop(0, state.color);
+                grad.addColorStop(1, '#6366f1');
+                ctx.fillStyle = grad;
+            } else if (currentStyle === 'neon') {
+                ctx.fillStyle = '#020617';
+                ctx.shadowBlur = 40;
+                ctx.shadowColor = state.color;
+                ctx.strokeStyle = state.color;
+                ctx.lineWidth = 6;
+            } else if (currentStyle === 'royal') {
+                const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                grad.addColorStop(0, '#78350f');
+                grad.addColorStop(0.5, '#fde68a');
+                grad.addColorStop(1, '#78350f');
+                ctx.fillStyle = grad;
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 2;
+            }
+            
+            ctx.fill();
+            if (['neon', 'royal'].includes(currentStyle)) ctx.stroke();
+            ctx.restore();
+
+            // 2. Draw Image with Clipping and Filters
+            ctx.save();
+            const innerRadius = Math.max(0, radius - padding);
+            drawRoundedRect(ctx, padding, padding, originalImage.width, originalImage.height, innerRadius);
+            ctx.clip();
+            
+            // Apply Filters
+            ctx.filter = `brightness(${state.brightness}%) contrast(${state.contrast}%) saturate(${state.saturate}%)`;
+            ctx.drawImage(originalImage, padding, padding);
+            
+            // Subtle inner depth
+            ctx.filter = 'none';
+            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawRoundedRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        downloadBtn.onclick = () => {
+            if (!originalImage) return;
+            const link = document.createElement('a');
+            link.download = `framed-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+        };
+
+        updateLabels();
+    </script>
+</body>
+</html>
