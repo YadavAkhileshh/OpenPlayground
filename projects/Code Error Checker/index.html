@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniCheck | Offline Multi-Lang Linter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <!-- Language definitions for highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        .editor-font { font-family: 'Fira Code', monospace; font-size: 14px; }
+        
+        .code-container {
+            position: relative;
+            height: 500px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #editor, #highlight-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            margin: 0;
+            border: none;
+            white-space: pre;
+            word-wrap: normal;
+            line-height: 1.6;
+            tab-size: 4;
+            overflow: auto;
+        }
+
+        #editor {
+            color: transparent;
+            background: transparent;
+            caret-color: #3b82f6;
+            z-index: 2;
+            resize: none;
+            outline: none;
+        }
+
+        #highlight-layer {
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .issue-card {
+            transition: all 0.2s ease;
+        }
+        .issue-card:hover {
+            transform: translateX(4px);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
+    </style>
+</head>
+<body class="bg-[#0d0d0d] text-gray-200 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-[#141414] border-b border-gray-800 px-6 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center font-bold italic">Ω</div>
+            <h1 class="text-lg font-bold tracking-tight">OmniCheck <span class="text-xs text-indigo-400 font-normal ml-1">v1.0 (OFFLINE)</span></h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <select id="lang-select" class="bg-gray-800 border border-gray-700 text-xs px-3 py-1.5 rounded outline-none focus:ring-1 ring-indigo-500">
+                <option value="auto">Auto-Detect</option>
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="cpp">C++</option>
+            </select>
+            <button id="run-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-1.5 rounded transition shadow-lg shadow-indigo-900/20">
+                ANALYZE CODE
+            </button>
+        </div>
+    </nav>
+
+    <!-- UI Main -->
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden p-4 gap-4">
+        
+        <!-- Editor View -->
+        <div class="flex-1 flex flex-col gap-2">
+            <div class="flex justify-between items-center px-2">
+                <span id="detected-badge" class="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Editor</span>
+                <span id="char-count" class="text-[10px] text-gray-600 font-mono">0 chars</span>
+            </div>
+            <div class="code-container shadow-2xl border border-gray-800">
+                <textarea id="editor" spellcheck="false" placeholder="// Paste your code here..."></textarea>
+                <pre id="highlight-layer"><code id="code-output" class="language-javascript"></code></pre>
+            </div>
+        </div>
+
+        <!-- Analysis Sidebar -->
+        <div class="w-full lg:w-[400px] flex flex-col gap-3 overflow-y-auto">
+            <div class="bg-[#141414] border border-gray-800 rounded-lg p-4 flex flex-col h-full">
+                <div class="flex items-center justify-between mb-4 border-b border-gray-800 pb-2">
+                    <h2 class="text-xs font-black text-gray-400 uppercase tracking-tighter">Diagnostics</h2>
+                    <span id="issue-count" class="bg-gray-800 text-gray-300 text-[10px] px-2 py-0.5 rounded-full">0 Found</span>
+                </div>
+                
+                <div id="results-area" class="flex-1 space-y-3">
+                    <div class="text-center py-10 opacity-30 italic text-sm">
+                        No errors detected yet.<br>Press Analyze.
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-gray-800 text-[10px] text-gray-500 flex justify-between">
+                    <span>Engine: Local-RegEx-v1</span>
+                    <span id="status-dot" class="flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Ready
+                    </span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const codeOutput = document.getElementById('code-output');
+        const langSelect = document.getElementById('lang-select');
+        const runBtn = document.getElementById('run-btn');
+        const resultsArea = document.getElementById('results-area');
+        const issueCountBadge = document.getElementById('issue-count');
+        const charCount = document.getElementById('char-count');
+        const detectedBadge = document.getElementById('detected-badge');
+
+        // --- Multi-Language Linter Rules ---
+        const LinterRules = {
+            javascript: [
+                { regex: /[^=]==[^=]/g, title: "Loose Equality", msg: "Using '==' can cause type-coercion bugs. Use '===' instead.", severity: "Medium" },
+                { regex: /var\s+\w+/g, title: "Legacy Variable", msg: "Use 'let' or 'const' instead of 'var' for block-scoping.", severity: "Low" },
+                { regex: /eval\(.*\)/g, title: "Security Risk", msg: "Never use eval(). It allows execution of malicious strings.", severity: "High" },
+                { regex: /console\.log\(.*\)/g, title: "Debug Leftover", msg: "Remove console logs before production.", severity: "Low" },
+                { regex: /\w+\s*=\s*\w+[^;]$/gm, title: "Missing Semicolon", msg: "While optional, missing semicolons can lead to ASI issues.", severity: "Low" }
+            ],
+            python: [
+                { regex: /[^=]=[^=]\s*$/gm, title: "Assignment in Return?", msg: "You might be assigning a value in a place that expects a comparison.", severity: "Medium" },
+                { regex: /print\s+[^ (]/g, title: "Python 2 Syntax", msg: "Use print() with parentheses for Python 3 compatibility.", severity: "High" },
+                { regex: /except:\s*$/gm, title: "Bare Except", msg: "Catching all exceptions is dangerous. Specify a class (e.g., except Exception:).", severity: "Medium" },
+                { regex: /input\(.*\)/g, title: "Insecure Input", msg: "In Python 2, input() is insecure. Use raw_input() or check your environment.", severity: "Medium" }
+            ],
+            cpp: [
+                { regex: /gets\(.*\)/g, title: "Dangerous Function", msg: "gets() is deprecated and vulnerable to buffer overflows. Use fgets().", severity: "High" },
+                { regex: /using\s+namespace\s+std;/g, title: "Namespace Pollution", msg: "Avoid 'using namespace std;' in headers or large projects.", severity: "Low" },
+                { regex: /malloc\(.*\)/g, title: "C-Style Allocation", msg: "In C++, prefer 'new' or smart pointers over 'malloc'.", severity: "Medium" },
+                { regex: /NULL/g, title: "Legacy Null", msg: "Use 'nullptr' in modern C++ instead of 'NULL'.", severity: "Low" }
+            ]
+        };
+
+        // --- Helper Functions ---
+
+        function detectLanguage(code) {
+            if (langSelect.value !== 'auto') return langSelect.value;
+            
+            if (code.includes('import ') || code.includes('def ') || code.includes('elif ')) return 'python';
+            if (code.includes('#include') || code.includes('std::') || code.includes('cout <<')) return 'cpp';
+            return 'javascript'; // Default
+        }
+
+        function updateEditor() {
+            const code = editor.value;
+            const lang = detectLanguage(code);
+            
+            // Sync Highlighting
+            codeOutput.className = `language-${lang}`;
+            codeOutput.textContent = code + (code.endsWith('\n') ? ' ' : '');
+            Prism.highlightElement(codeOutput);
+
+            // Sync View
+            document.getElementById('highlight-layer').scrollTop = editor.scrollTop;
+            document.getElementById('highlight-layer').scrollLeft = editor.scrollLeft;
+            
+            // Update Stats
+            charCount.textContent = `${code.length} chars`;
+            detectedBadge.textContent = `Language: ${lang}`;
+        }
+
+        function runAnalysis() {
+            const code = editor.value;
+            const lang = detectLanguage(code);
+            const rules = LinterRules[lang] || [];
+            const issues = [];
+
+            resultsArea.innerHTML = '';
+
+            // 1. Check Syntax (Browser JS only)
+            if (lang === 'javascript') {
+                try {
+                    new Function(code);
+                } catch (e) {
+                    issues.push({
+                        title: "Syntax Error",
+                        msg: e.message,
+                        severity: "High",
+                        line: "Live"
+                    });
+                }
+            }
+
+            // 2. Rule Based Scanning
+            rules.forEach(rule => {
+                let match;
+                while ((match = rule.regex.exec(code)) !== null) {
+                    // Calculate line number
+                    const line = code.substring(0, match.index).split('\n').length;
+                    issues.push({ ...rule, line });
+                }
+            });
+
+            // 3. Render Results
+            issueCountBadge.textContent = `${issues.length} Found`;
+            
+            if (issues.length === 0) {
+                resultsArea.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-12 text-green-500 animate-pulse">
+                        <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="text-sm font-bold">Code looks solid!</span>
+                    </div>`;
+                return;
+            }
+
+            issues.forEach(issue => {
+                const card = document.createElement('div');
+                const borderColors = { High: 'border-red-600 bg-red-950/20', Medium: 'border-yellow-600 bg-yellow-950/20', Low: 'border-blue-600 bg-blue-950/20' };
+                const textColors = { High: 'text-red-400', Medium: 'text-yellow-400', Low: 'text-blue-400' };
+
+                card.className = `issue-card p-3 rounded border-l-4 ${borderColors[issue.severity]} bg-[#1a1a1a] shadow-sm`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <h3 class="text-xs font-bold uppercase tracking-tight ${textColors[issue.severity]}">${issue.title}</h3>
+                        <span class="text-[9px] bg-gray-800 px-1 rounded">Line ${issue.line}</span>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-normal">${issue.msg}</p>
+                `;
+                resultsArea.appendChild(card);
+            });
+        }
+
+        // --- Listeners ---
+
+        editor.addEventListener('input', updateEditor);
+        editor.addEventListener('scroll', () => {
+            document.getElementById('highlight-layer').scrollTop = editor.scrollTop;
+            document.getElementById('highlight-layer').scrollLeft = editor.scrollLeft;
+        });
+
+        // Tab Handling
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = editor.selectionStart;
+                editor.value = editor.value.substring(0, start) + "    " + editor.value.substring(editor.selectionEnd);
+                editor.selectionStart = editor.selectionEnd = start + 4;
+                updateEditor();
+            }
+        });
+
+        runBtn.addEventListener('click', () => {
+            runBtn.innerHTML = '<span class="animate-spin mr-2">◌</span> ANALYZING...';
+            setTimeout(() => {
+                runAnalysis();
+                runBtn.textContent = 'ANALYZE CODE';
+            }, 400);
+        });
+
+        // Demo Data
+        window.onload = () => {
+            editor.value = `// Welcome to OmniCheck
+function checkStatus(id) {
+    var status = "active"; // Legacy keyword
+    if(id == 0) {          // Loose equality
+        console.log(id);   // Debugging leftover
+    }
+    return status
+}
+
+/* Try Python or C++ mode too! */`;
+            updateEditor();
+        };
+
+    </script>
+</body>
+</html>

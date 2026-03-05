@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>True Phone Dialer & Contacts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --primary: #3b82f6;
+            --bg-dark: #0f172a;
+            --surface: #1e293b;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .phone-container {
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            background: var(--surface);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        @media (min-width: 640px) {
+            .phone-container {
+                height: 850px;
+                border-radius: 40px;
+                border: 8px solid #334155;
+                overflow: hidden;
+            }
+        }
+
+        .screen-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 100px;
+            scrollbar-width: none;
+        }
+
+        .screen-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-bar {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 75px;
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(15px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            z-index: 50;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 33.33%;
+            padding-top: 10px;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item i {
+            font-size: 1.3rem;
+            margin-bottom: 4px;
+        }
+
+        .nav-item span {
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .dialpad-container {
+            position: absolute;
+            bottom: 75px;
+            left: 0;
+            width: 100%;
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 20px 0 30px 0;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 60;
+            border-top-left-radius: 32px;
+            border-top-right-radius: 32px;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
+        }
+
+        .dialpad-container.active {
+            transform: translateY(0);
+        }
+
+        .dial-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.04);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            user-select: none;
+        }
+
+        .dial-btn:active {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(0.92);
+        }
+
+        .dial-number {
+            font-size: 1.8rem;
+            font-weight: 500;
+            line-height: 1;
+        }
+
+        .dial-alpha {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+
+        .call-action-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: #22c55e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.6rem;
+            box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
+            border: none;
+        }
+
+        .search-bar {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin: 10px 20px 20px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .contact-row {
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .contact-row:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .fab {
+            position: absolute;
+            bottom: 95px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 20px;
+            background: var(--primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.5);
+            z-index: 40;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .fab:hover { transform: translateY(-3px); }
+        .fab:active { transform: scale(0.9); }
+
+        /* Modal / Overlay Systems */
+        .overlay-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .overlay-screen.active {
+            display: flex;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            padding-left: 4px;
+        }
+
+        .input-field {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 14px;
+            color: white;
+            outline: none;
+        }
+
+        .input-field:focus {
+            border-color: var(--primary);
+        }
+
+        .pulse {
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(59, 130, 246, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-container">
+        <!-- Status Bar Mockup -->
+        <div class="flex justify-between items-center px-8 py-4 text-xs font-semibold text-slate-400">
+            <span>9:41</span>
+            <div class="flex gap-2">
+                <i class="fas fa-signal"></i>
+                <i class="fas fa-wifi"></i>
+                <div class="flex items-center gap-1 border border-slate-700 px-1 rounded-[4px]">
+                    <span class="scale-75">100%</span>
+                    <i class="fas fa-battery-full"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div id="screen-content" class="screen-content">
+            <!-- Dynamic content injected here -->
+        </div>
+
+        <!-- Floating Action Button (Dialpad Toggle) -->
+        <div id="dial-fab" class="fab">
+            <i class="fas fa-th"></i>
+        </div>
+
+        <!-- Navigation Bar -->
+        <nav class="nav-bar">
+            <div class="nav-item active" onclick="switchTab('recents')">
+                <i class="fas fa-clock"></i>
+                <span>Recents</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('contacts')">
+                <i class="fas fa-user-friends"></i>
+                <span>Contacts</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('favorites')">
+                <i class="fas fa-star"></i>
+                <span>Favorites</span>
+            </div>
+        </nav>
+
+        <!-- Dialpad Overlay -->
+        <div id="dialpad" class="dialpad-container">
+            <div class="flex flex-col items-center">
+                <!-- Dialed Number Display -->
+                <div class="w-full px-10 mb-6 flex flex-col items-center">
+                    <div id="dialed-number" class="text-4xl font-light tracking-widest text-center overflow-hidden whitespace-nowrap min-h-[48px]"></div>
+                    <div id="t9-suggestion" class="text-primary text-sm font-medium mt-1 h-5"></div>
+                </div>
+
+                <!-- Number Grid -->
+                <div class="grid grid-cols-3 gap-y-5 gap-x-10 mb-8">
+                    <div class="dial-btn" onclick="appendDigit('1')"><span class="dial-number">1</span><span class="dial-alpha"><i class="fas fa-voicemail text-[8px]"></i></span></div>
+                    <div class="dial-btn" onclick="appendDigit('2')"><span class="dial-number">2</span><span class="dial-alpha">abc</span></div>
+                    <div class="dial-btn" onclick="appendDigit('3')"><span class="dial-number">3</span><span class="dial-alpha">def</span></div>
+                    <div class="dial-btn" onclick="appendDigit('4')"><span class="dial-number">4</span><span class="dial-alpha">ghi</span></div>
+                    <div class="dial-btn" onclick="appendDigit('5')"><span class="dial-number">5</span><span class="dial-alpha">jkl</span></div>
+                    <div class="dial-btn" onclick="appendDigit('6')"><span class="dial-number">6</span><span class="dial-alpha">mno</span></div>
+                    <div class="dial-btn" onclick="appendDigit('7')"><span class="dial-number">7</span><span class="dial-alpha">pqrs</span></div>
+                    <div class="dial-btn" onclick="appendDigit('8')"><span class="dial-number">8</span><span class="dial-alpha">tuv</span></div>
+                    <div class="dial-btn" onclick="appendDigit('9')"><span class="dial-number">9</span><span class="dial-alpha">wxyz</span></div>
+                    <div class="dial-btn" onclick="appendDigit('*')"><span class="dial-number">*</span><span class="dial-alpha">&nbsp;</span></div>
+                    <div class="dial-btn" onclick="appendDigit('0')"><span class="dial-number">0</span><span class="dial-alpha">+</span></div>
+                    <div class="dial-btn" onclick="appendDigit('#')"><span class="dial-number">#</span><span class="dial-alpha">&nbsp;</span></div>
+                </div>
+
+                <!-- Call & Controls -->
+                <div class="flex items-center gap-12">
+                    <button onclick="openAddContactFromDialer()" class="text-slate-500 hover:text-white transition-colors">
+                        <i class="fas fa-user-plus text-xl"></i>
+                    </button>
+                    <button onclick="startCall()" class="call-action-btn">
+                        <i class="fas fa-phone"></i>
+                    </button>
+                    <button onclick="backspace()" class="text-slate-500 hover:text-white transition-colors">
+                        <i class="fas fa-backspace text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Contact Overlay -->
+        <div id="add-contact-screen" class="overlay-screen">
+            <div class="px-6 py-8 flex justify-between items-center border-bottom border-slate-800">
+                <button onclick="closeAddContact()" class="text-primary font-medium">Cancel</button>
+                <h2 class="text-xl font-bold">New Contact</h2>
+                <button onclick="saveContact()" class="text-primary font-bold">Done</button>
+            </div>
+            
+            <div class="flex-1 px-6 pt-4">
+                <div class="flex justify-center mb-10">
+                    <div class="w-24 h-24 rounded-full bg-slate-800 border-2 border-dashed border-slate-600 flex items-center justify-center text-slate-500">
+                        <i class="fas fa-camera text-3xl"></i>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">First Name</label>
+                    <input type="text" id="contact-fname" class="input-field" placeholder="John">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Last Name</label>
+                    <input type="text" id="contact-lname" class="input-field" placeholder="Doe">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">Phone Number</label>
+                    <input type="tel" id="contact-phone" class="input-field" placeholder="+1 (555) 000-0000">
+                </div>
+            </div>
+        </div>
+
+        <!-- Calling Screen Overlay -->
+        <div id="calling-screen" class="overlay-screen !bg-slate-950/95 backdrop-blur-3xl justify-around items-center px-10 py-20">
+            <div class="flex flex-col items-center text-center">
+                <div id="caller-avatar" class="avatar w-32 h-32 text-4xl mb-8 pulse shadow-2xl">?</div>
+                <h2 id="caller-name" class="text-3xl font-bold mb-3">Unknown</h2>
+                <p id="caller-number" class="text-slate-400 font-medium tracking-wide">Calling...</p>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-12 text-slate-300 w-full max-w-xs">
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl transition-colors active:bg-white/20">
+                        <i class="fas fa-microphone-slash"></i>
+                    </div>
+                    <span class="text-[11px] font-medium opacity-70">Mute</span>
+                </div>
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl transition-colors active:bg-white/20">
+                        <i class="fas fa-th"></i>
+                    </div>
+                    <span class="text-[11px] font-medium opacity-70">Keypad</span>
+                </div>
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl transition-colors active:bg-white/20">
+                        <i class="fas fa-volume-up"></i>
+                    </div>
+                    <span class="text-[11px] font-medium opacity-70">Speaker</span>
+                </div>
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl transition-colors active:bg-white/20">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <span class="text-[11px] font-medium opacity-70">Add Call</span>
+                </div>
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl transition-colors active:bg-white/20">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <span class="text-[11px] font-medium opacity-70">Video</span>
+                </div>
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl transition-colors active:bg-white/20">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <span class="text-[11px] font-medium opacity-70">Contacts</span>
+                </div>
+            </div>
+
+            <button onclick="endCall()" class="w-20 h-20 rounded-full bg-red-500 flex items-center justify-center text-white text-3xl shadow-2xl shadow-red-500/50 transform active:scale-90 transition-transform">
+                <i class="fas fa-phone-slash"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let contacts = [
+            { id: 1, name: "Alexander Pierce", number: "+1 202-555-0143", color: "#3b82f6", favorite: true },
+            { id: 2, name: "Brooklyn Simmons", number: "+1 202-555-0178", color: "#10b981", favorite: false },
+            { id: 3, name: "Cameron Williamson", number: "+1 202-555-0112", color: "#f59e0b", favorite: true },
+            { id: 4, name: "Darlene Robertson", number: "+1 202-555-0155", color: "#ef4444", favorite: false },
+            { id: 5, name: "Esther Howard", number: "+1 202-555-0199", color: "#8b5cf6", favorite: true },
+            { id: 6, name: "Floyd Miles", number: "+1 202-555-0121", color: "#ec4899", favorite: false },
+            { id: 7, name: "Guy Hawkins", number: "+1 202-555-0134", color: "#6366f1", favorite: false },
+            { id: 8, name: "Hillary Clinton", number: "+1 202-555-0188", color: "#14b8a6", favorite: false }
+        ];
+
+        let callLogs = [
+            { id: 1, name: "Alexander Pierce", type: "incoming", time: "2 min ago", number: "+1 202-555-0143" },
+            { id: 2, name: "Unknown", type: "missed", time: "1 hour ago", number: "+44 7700 900077" },
+            { id: 3, name: "Esther Howard", type: "outgoing", time: "3 hours ago", number: "+1 202-555-0199" },
+            { id: 4, name: "Darlene Robertson", type: "incoming", time: "Yesterday", number: "+1 202-555-0155" }
+        ];
+
+        let currentTab = 'recents';
+        let dialedNumber = "";
+        let isDialpadVisible = false;
+
+        const screenContent = document.getElementById('screen-content');
+        const dialpad = document.getElementById('dialpad');
+        const dialFab = document.getElementById('dial-fab');
+        const numberDisplay = document.getElementById('dialed-number');
+        const suggestionDisplay = document.getElementById('t9-suggestion');
+        const callingScreen = document.getElementById('calling-screen');
+        const addContactScreen = document.getElementById('add-contact-screen');
+
+        // Initialization
+        window.onload = () => {
+            renderTab();
+            dialFab.addEventListener('click', toggleDialpad);
+        };
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('onclick').includes(`'${tab}'`)) {
+                    item.classList.add('active');
+                }
+            });
+            renderTab();
+        }
+
+        function toggleDialpad() {
+            isDialpadVisible = !isDialpadVisible;
+            dialpad.classList.toggle('active', isDialpadVisible);
+            dialFab.innerHTML = isDialpadVisible ? '<i class="fas fa-times"></i>' : '<i class="fas fa-th"></i>';
+            dialFab.style.background = isDialpadVisible ? '#475569' : '#3b82f6';
+            if(!isDialpadVisible) {
+                dialedNumber = "";
+                updateNumberDisplay();
+            }
+        }
+
+        function appendDigit(digit) {
+            dialedNumber += digit;
+            updateNumberDisplay();
+            performT9Search();
+        }
+
+        function backspace() {
+            dialedNumber = dialedNumber.slice(0, -1);
+            updateNumberDisplay();
+            performT9Search();
+        }
+
+        function updateNumberDisplay() {
+            numberDisplay.innerText = dialedNumber;
+        }
+
+        function performT9Search() {
+            if (!dialedNumber) {
+                suggestionDisplay.innerText = "";
+                return;
+            }
+            const match = contacts.find(c => c.number.includes(dialedNumber));
+            suggestionDisplay.innerText = match ? match.name : "";
+        }
+
+        function renderTab() {
+            screenContent.innerHTML = "";
+            
+            if (currentTab === 'recents') {
+                renderRecents();
+            } else if (currentTab === 'contacts') {
+                renderContacts(contacts);
+            } else if (currentTab === 'favorites') {
+                renderFavorites();
+            }
+        }
+
+        function renderRecents() {
+            const header = document.createElement('div');
+            header.className = "px-6 py-6 flex justify-between items-center bg-slate-900/40 sticky top-0 backdrop-blur-md z-10";
+            header.innerHTML = `<h1 class="text-3xl font-bold">Recents</h1><button class="text-primary text-sm font-semibold px-4 py-2 bg-primary/10 rounded-full">Edit</button>`;
+            screenContent.appendChild(header);
+
+            if(callLogs.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = "flex flex-col items-center justify-center h-64 text-slate-600";
+                empty.innerHTML = `<i class="fas fa-history text-5xl mb-4 opacity-20"></i><p>No recent calls</p>`;
+                screenContent.appendChild(empty);
+                return;
+            }
+
+            callLogs.forEach(log => {
+                const row = document.createElement('div');
+                row.className = "contact-row";
+                row.onclick = () => startCall(log.name, log.number);
+                
+                const initials = getInitials(log.name);
+                const iconColor = log.type === 'missed' ? 'text-red-500' : 'text-slate-500';
+                const icon = log.type === 'incoming' ? 'fa-arrow-down-left' : (log.type === 'outgoing' ? 'fa-arrow-up-right' : 'fa-phone-slash');
+
+                row.innerHTML = `
+                    <div class="avatar" style="background: ${getContactColor(log.name)}">${initials}</div>
+                    <div class="flex-1">
+                        <div class="font-semibold text-base ${log.type === 'missed' ? 'text-red-500' : ''}">${log.name}</div>
+                        <div class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
+                            <i class="fas ${icon} ${iconColor} text-[10px]"></i>
+                            <span>${log.time}</span>
+                        </div>
+                    </div>
+                    <div class="text-slate-600 p-2"><i class="fas fa-info-circle text-lg"></i></div>
+                `;
+                screenContent.appendChild(row);
+            });
+        }
+
+        function renderContacts(list) {
+            const header = document.createElement('div');
+            header.className = "px-6 pt-6 pb-2 sticky top-0 bg-slate-900/40 backdrop-blur-md z-10";
+            header.innerHTML = `<div class="flex justify-between items-center mb-6">
+                                    <h1 class="text-3xl font-bold">Contacts</h1>
+                                    <button onclick="openAddContact()" class="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <div class="search-bar">
+                                    <i class="fas fa-search text-slate-500"></i>
+                                    <input type="text" placeholder="Search" class="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-600" oninput="filterContacts(this.value)">
+                                </div>`;
+            screenContent.appendChild(header);
+
+            const sortedList = [...list].sort((a, b) => a.name.localeCompare(b.name));
+            
+            sortedList.forEach(contact => {
+                const row = document.createElement('div');
+                row.className = "contact-row";
+                row.onclick = () => startCall(contact.name, contact.number);
+                
+                const initials = getInitials(contact.name);
+
+                row.innerHTML = `
+                    <div class="avatar" style="background: ${contact.color}">${initials}</div>
+                    <div class="flex-1">
+                        <div class="font-semibold text-base">${contact.name}</div>
+                        <div class="text-xs text-slate-500 mt-0.5">${contact.number}</div>
+                    </div>
+                `;
+                screenContent.appendChild(row);
+            });
+        }
+
+        function renderFavorites() {
+            const header = document.createElement('div');
+            header.className = "px-6 py-6";
+            header.innerHTML = `<h1 class="text-3xl font-bold">Favorites</h1>`;
+            screenContent.appendChild(header);
+
+            const favs = contacts.filter(c => c.favorite);
+            
+            if(favs.length === 0) {
+                 const empty = document.createElement('div');
+                empty.className = "flex flex-col items-center justify-center h-64 text-slate-600";
+                empty.innerHTML = `<i class="fas fa-star text-5xl mb-4 opacity-20"></i><p>Add some favorites</p>`;
+                screenContent.appendChild(empty);
+                return;
+            }
+
+            const grid = document.createElement('div');
+            grid.className = "grid grid-cols-2 gap-4 px-6 mt-2";
+            
+            favs.forEach(contact => {
+                const card = document.createElement('div');
+                card.className = "bg-white/5 rounded-3xl p-6 flex flex-col items-center gap-4 cursor-pointer border border-white/5 hover:bg-white/10 transition-all";
+                card.onclick = () => startCall(contact.name, contact.number);
+                
+                const initials = getInitials(contact.name);
+
+                card.innerHTML = `
+                    <div class="avatar w-20 h-20 text-2xl shadow-lg" style="background: ${contact.color}">${initials}</div>
+                    <div class="text-center">
+                        <div class="font-bold text-base">${contact.name}</div>
+                        <div class="text-[10px] text-primary mt-1.5 font-bold uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded-full inline-block">Mobile</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            screenContent.appendChild(grid);
+        }
+
+        // Contact Functions
+        function openAddContact() {
+            addContactScreen.classList.add('active');
+            document.getElementById('contact-fname').value = "";
+            document.getElementById('contact-lname').value = "";
+            document.getElementById('contact-phone').value = "";
+        }
+
+        function openAddContactFromDialer() {
+            openAddContact();
+            document.getElementById('contact-phone').value = dialedNumber;
+        }
+
+        function closeAddContact() {
+            addContactScreen.classList.remove('active');
+        }
+
+        function saveContact() {
+            const fname = document.getElementById('contact-fname').value.trim();
+            const lname = document.getElementById('contact-lname').value.trim();
+            const phone = document.getElementById('contact-phone').value.trim();
+
+            if (!fname || !phone) {
+                showToast("Name and Phone are required");
+                return;
+            }
+
+            const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#6366f1", "#14b8a6"];
+            const newContact = {
+                id: Date.now(),
+                name: `${fname} ${lname}`.trim(),
+                number: phone,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                favorite: false
+            };
+
+            contacts.push(newContact);
+            closeAddContact();
+            if (currentTab === 'contacts') renderTab();
+            showToast("Contact Saved");
+        }
+
+        function filterContacts(query) {
+            const filtered = contacts.filter(c => c.name.toLowerCase().includes(query.toLowerCase()) || c.number.includes(query));
+            const existingRows = screenContent.querySelectorAll('.contact-row');
+            existingRows.forEach(row => row.remove());
+            
+            filtered.forEach(contact => {
+                const row = document.createElement('div');
+                row.className = "contact-row";
+                row.onclick = () => startCall(contact.name, contact.number);
+                const initials = getInitials(contact.name);
+                row.innerHTML = `
+                    <div class="avatar" style="background: ${contact.color}">${initials}</div>
+                    <div class="flex-1">
+                        <div class="font-semibold text-base">${contact.name}</div>
+                        <div class="text-xs text-slate-500 mt-0.5">${contact.number}</div>
+                    </div>
+                `;
+                screenContent.appendChild(row);
+            });
+        }
+
+        // Helper Functions
+        function getInitials(name) {
+            if (name === "Unknown") return "?";
+            return name.split(' ').map(n => n[0]).join('').toUpperCase();
+        }
+
+        function getContactColor(name) {
+            const contact = contacts.find(c => c.name === name);
+            return contact ? contact.color : '#475569';
+        }
+
+        function startCall(name = null, number = null) {
+            const callName = name || (suggestionDisplay.innerText || "Unknown");
+            const callNumber = number || (dialedNumber || "Hidden Number");
+            
+            document.getElementById('caller-name').innerText = callName;
+            document.getElementById('caller-number').innerText = callNumber;
+            
+            const avatar = document.getElementById('caller-avatar');
+            avatar.innerText = getInitials(callName);
+            avatar.style.background = getContactColor(callName);
+
+            callingScreen.classList.add('active');
+            if (isDialpadVisible) toggleDialpad();
+        }
+
+        function endCall() {
+            const name = document.getElementById('caller-name').innerText;
+            const number = document.getElementById('caller-number').innerText;
+            
+            callLogs.unshift({
+                id: Date.now(),
+                name: name,
+                type: 'outgoing',
+                time: 'Just now',
+                number: number
+            });
+            
+            callingScreen.classList.remove('active');
+            if (currentTab === 'recents') renderTab();
+            dialedNumber = "";
+            updateNumberDisplay();
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = "fixed top-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl z-[200] border border-white/10 text-sm font-medium animate-bounce";
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+    </script>
+</body>
+</html>
