@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Toy Picker Deluxe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #0f172a;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+        }
+
+        canvas {
+            border: 8px solid #334155;
+            border-radius: 24px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 0, 0, 0.5);
+            background: #1e293b;
+            max-width: 95vw;
+            max-height: 70vh;
+            cursor: crosshair;
+        }
+
+        .ui-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-neon {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-neon:active {
+            transform: scale(0.92);
+            filter: brightness(1.2);
+        }
+
+        .claw-control {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #message-overlay {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .glow-text {
+            text-shadow: 0 0 15px currentColor;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- Header UI -->
+    <div class="flex justify-between w-full max-w-lg px-6 py-4 absolute top-0 z-10">
+        <div class="ui-panel px-5 py-2 rounded-2xl text-white">
+            <span class="text-gray-400 text-[10px] uppercase font-black tracking-widest block">Score</span>
+            <span id="score-val" class="text-3xl font-black text-cyan-400 glow-text">0</span>
+        </div>
+        <div class="ui-panel px-5 py-2 rounded-2xl text-white text-right">
+            <span class="text-gray-400 text-[10px] uppercase font-black tracking-widest block">Level</span>
+            <span id="level-val" class="text-3xl font-black text-fuchsia-400 glow-text">1</span>
+        </div>
+    </div>
+
+    <!-- The Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Controls UI -->
+    <div class="w-full max-w-md p-6 flex flex-col items-center gap-5">
+        <div class="flex gap-4 w-full">
+            <button id="leftBtn" class="claw-control flex-1 bg-slate-800 hover:bg-slate-700 text-white py-6 rounded-3xl text-3xl shadow-xl btn-neon border-b-4 border-slate-900">
+                ←
+            </button>
+            <button id="dropBtn" class="claw-control flex-[2.5] bg-gradient-to-b from-cyan-400 to-blue-600 hover:from-cyan-300 hover:to-blue-500 text-white font-black py-6 rounded-3xl text-xl uppercase tracking-[0.2em] shadow-lg shadow-cyan-500/30 btn-neon border-b-4 border-blue-800">
+                DROP CLAW
+            </button>
+            <button id="rightBtn" class="claw-control flex-1 bg-slate-800 hover:bg-slate-700 text-white py-6 rounded-3xl text-3xl shadow-xl btn-neon border-b-4 border-slate-900">
+                →
+            </button>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+            <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Arrows/WASD to Move • Space to Drop</p>
+        </div>
+    </div>
+
+    <!-- Win Overlay -->
+    <div id="message-overlay" class="ui-panel p-10 rounded-[40px] text-center min-w-[320px] border-2 border-white/10">
+        <div id="toy-preview" class="w-20 h-20 mx-auto mb-4 relative"></div>
+        <h2 id="msg-title" class="text-4xl font-black text-white mb-2 uppercase italic tracking-tighter">SUCCESS!</h2>
+        <p id="msg-body" class="text-slate-300 mb-8 font-medium text-lg"></p>
+        <button onclick="closeMessage()" class="w-full bg-cyan-400 text-slate-900 font-black px-8 py-4 rounded-2xl hover:bg-white transition-all transform active:scale-95 shadow-xl shadow-cyan-400/20">
+            NEXT TARGET
+        </button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score-val');
+    const levelEl = document.getElementById('level-val');
+    const overlay = document.getElementById('message-overlay');
+
+    let score = 0;
+    let level = 1;
+    let toys = [];
+    let particles = [];
+    let isDropping = false;
+    let isReturning = false;
+    let caughtToy = null;
+    let time = 0;
+
+    function resize() {
+        canvas.width = 600;
+        canvas.height = 700;
+    }
+    resize();
+
+    const claw = {
+        x: canvas.width / 2,
+        y: 100,
+        maxArmLength: 550,
+        speed: 6,
+        dropSpeed: 10,
+        closing: 0,
+        sway: 0,
+        
+        draw() {
+            ctx.save();
+            
+            // Subtle sway effect for the cable
+            const swayOffset = Math.sin(time * 0.05) * 2;
+            
+            // Draw Cable with gradient
+            const cableGrad = ctx.createLinearGradient(this.x, 0, this.x + swayOffset, this.y);
+            cableGrad.addColorStop(0, '#1e293b');
+            cableGrad.addColorStop(1, '#94a3b8');
+            
+            ctx.beginPath();
+            ctx.strokeStyle = cableGrad;
+            ctx.lineWidth = 4;
+            ctx.setLineDash([10, 5]); // Armored cable look
+            ctx.moveTo(this.x, 0);
+            ctx.lineTo(this.x + swayOffset, this.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.translate(swayOffset, 0);
+
+            // Draw Mechanical Base
+            ctx.fillStyle = '#475569';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.beginPath();
+            ctx.roundRect(this.x - 25, this.y - 15, 50, 30, 8);
+            ctx.fill();
+            
+            // Chrome Highlight
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(this.x - 15, this.y - 10, 30, 5);
+
+            // Claw Prongs Logic
+            const angle = this.closing * 0.9;
+            ctx.strokeStyle = '#f1f5f9';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+
+            // Left Prong
+            ctx.save();
+            ctx.translate(this.x - 18, this.y + 10);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(-25, 25, -15, 55, 5, 55);
+            ctx.stroke();
+            ctx.restore();
+
+            // Right Prong
+            ctx.save();
+            ctx.translate(this.x + 18, this.y + 10);
+            ctx.rotate(-angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(25, 25, 15, 55, -5, 55);
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.restore();
+        }
+    };
+
+    const TOY_TYPES = [
+        { color: '#fbbf24', shape: 'star', points: 150, name: 'Golden Star' },
+        { color: '#f87171', shape: 'heart', points: 80, name: 'Sweet Heart' },
+        { color: '#60a5fa', shape: 'circle', points: 40, name: 'Bubble Orb' },
+        { color: '#4ade80', shape: 'square', points: 60, name: 'Emerald Cube' },
+        { color: '#a78bfa', shape: 'diamond', points: 100, name: 'Violet Gem' }
+    ];
+
+    class Toy {
+        constructor() {
+            this.reset();
+        }
+
+        reset() {
+            const type = TOY_TYPES[Math.floor(Math.random() * TOY_TYPES.length)];
+            this.x = Math.random() * (canvas.width - 150) + 75;
+            this.y = canvas.height - 100 - (Math.random() * 60);
+            this.size = 28 + Math.random() * 12;
+            this.color = type.color;
+            this.shape = type.shape;
+            this.points = type.points;
+            this.name = type.name;
+            this.rotation = Math.random() * Math.PI * 2;
+            this.swayDir = Math.random() > 0.5 ? 1 : -1;
+            this.isCaught = false;
+        }
+
+        draw() {
+            if (this.isCaught) {
+                this.x = claw.x + Math.sin(time * 0.05) * 2;
+                this.y = claw.y + 50;
+            }
+
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            // Idle sway animation
+            if (!this.isCaught) {
+                ctx.rotate(this.rotation + Math.sin(time * 0.02) * 0.1);
+            } else {
+                ctx.rotate(this.rotation);
+            }
+            
+            ctx.fillStyle = this.color;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = this.color;
+
+            if (this.shape === 'star') drawStar(ctx, 0, 0, 5, this.size, this.size/2.2);
+            else if (this.shape === 'heart') drawHeart(ctx, -this.size/2, -this.size/2, this.size);
+            else if (this.shape === 'diamond') drawDiamond(ctx, 0, 0, this.size);
+            else {
+                ctx.beginPath();
+                ctx.roundRect(-this.size/2, -this.size/2, this.size, this.size, 10);
+                ctx.fill();
+            }
+            
+            // Gloss effect
+            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(-this.size/4, -this.size/4, this.size/5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+    }
+
+    function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
+        let rot = Math.PI / 2 * 3;
+        let step = Math.PI / spikes;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - outerRadius);
+        for (let i = 0; i < spikes; i++) {
+            ctx.lineTo(cx + Math.cos(rot) * outerRadius, cy + Math.sin(rot) * outerRadius);
+            rot += step;
+            ctx.lineTo(cx + Math.cos(rot) * innerRadius, cy + Math.sin(rot) * innerRadius);
+            rot += step;
+        }
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    function drawHeart(ctx, x, y, size) {
+        ctx.beginPath();
+        ctx.moveTo(x + size/2, y + size/4);
+        ctx.bezierCurveTo(x + size/2, y, x, y, x, y + size/4);
+        ctx.bezierCurveTo(x, y + size/2, x + size/2, y + size*0.8, x + size/2, y + size);
+        ctx.bezierCurveTo(x + size/2, y + size*0.8, x + size, y + size/2, x + size, y + size/4);
+        ctx.bezierCurveTo(x + size, y, x + size/2, y, x + size/2, y + size/4);
+        ctx.fill();
+    }
+
+    function drawDiamond(ctx, x, y, size) {
+        ctx.beginPath();
+        ctx.moveTo(x, y - size/1.5);
+        ctx.lineTo(x + size/1.5, y);
+        ctx.lineTo(x, y + size/1.5);
+        ctx.lineTo(x - size/1.5, y);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            const angle = Math.random() * Math.PI * 2;
+            const force = Math.random() * 8 + 4;
+            this.vx = Math.cos(angle) * force;
+            this.vy = Math.sin(angle) * force;
+            this.life = 1.0;
+            this.gravity = 0.25;
+        }
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.vy += this.gravity;
+            this.life -= 0.015;
+        }
+        draw() {
+            ctx.globalAlpha = this.life;
+            ctx.fillStyle = this.color;
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 5 * this.life, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    function spawnToys() {
+        toys = [];
+        const count = 6 + (level * 2);
+        for (let i = 0; i < count; i++) {
+            toys.push(new Toy());
+        }
+    }
+
+    function showMessage(toy) {
+        document.getElementById('msg-body').innerHTML = `You caught the <span style="color:${toy.color}">${toy.name}</span>!<br><span class="text-white font-black">+${toy.points} PTS</span>`;
+        overlay.style.display = 'block';
+    }
+
+    function closeMessage() {
+        overlay.style.display = 'none';
+        if (toys.length === 0) {
+            level++;
+            levelEl.innerText = level;
+            spawnToys();
+        }
+    }
+
+    function update() {
+        time++;
+
+        if (!isDropping && !isReturning) {
+            if (keys['ArrowLeft'] || keys['KeyA'] || activeBtn === 'left') claw.x = Math.max(60, claw.x - claw.speed);
+            if (keys['ArrowRight'] || keys['KeyD'] || activeBtn === 'right') claw.x = Math.min(canvas.width - 60, claw.x + claw.speed);
+        }
+
+        if (isDropping) {
+            claw.y += claw.dropSpeed;
+            if (claw.y >= claw.maxArmLength) {
+                isDropping = false;
+                isReturning = true;
+            }
+
+            toys.forEach(toy => {
+                if (!caughtToy && !toy.isCaught) {
+                    const dist = Math.hypot(claw.x - toy.x, (claw.y + 40) - toy.y);
+                    if (dist < 35) {
+                        caughtToy = toy;
+                        toy.isCaught = true;
+                        claw.closing = 1;
+                        isDropping = false;
+                        isReturning = true;
+                    }
+                }
+            });
+        }
+
+        if (isReturning) {
+            claw.y -= claw.dropSpeed * 0.6;
+            if (claw.y <= 100) {
+                claw.y = 100;
+                isReturning = false;
+                
+                if (caughtToy) {
+                    score += caughtToy.points;
+                    scoreEl.innerText = score;
+                    
+                    for(let i=0; i<30; i++) particles.push(new Particle(claw.x, claw.y + 50, caughtToy.color));
+                    
+                    showMessage(caughtToy);
+                    toys = toys.filter(t => t !== caughtToy);
+                    caughtToy = null;
+                    claw.closing = 0;
+                }
+            }
+        }
+
+        particles.forEach((p, i) => {
+            p.update();
+            if (p.life <= 0) particles.splice(i, 1);
+        });
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Grid Background
+        ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+        ctx.lineWidth = 1;
+        for(let i=0; i<canvas.width; i+=50) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+        }
+        for(let j=0; j<canvas.height; j+=50) {
+            ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
+        }
+
+        // Collection Chute
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(2, canvas.height - 78, canvas.width - 4, 76);
+
+        // Glass reflection on the "screen"
+        const screenGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        screenGrad.addColorStop(0, 'rgba(255,255,255,0.03)');
+        screenGrad.addColorStop(0.5, 'transparent');
+        screenGrad.addColorStop(1, 'rgba(255,255,255,0.03)');
+        ctx.fillStyle = screenGrad;
+        ctx.fillRect(0,0,canvas.width, canvas.height);
+
+        toys.forEach(toy => toy.draw());
+        claw.draw();
+        particles.forEach(p => p.draw());
+
+        requestAnimationFrame(() => {
+            update();
+            draw();
+        });
+    }
+
+    const keys = {};
+    let activeBtn = null;
+
+    window.addEventListener('keydown', e => {
+        keys[e.code] = true;
+        if (e.code === 'Space' && !isDropping && !isReturning && overlay.style.display !== 'block') {
+            isDropping = true;
+        }
+    });
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+    const dropBtn = document.getElementById('dropBtn');
+
+    const setBtn = (btn) => activeBtn = btn;
+    const clearBtn = () => activeBtn = null;
+
+    leftBtn.addEventListener('mousedown', () => setBtn('left'));
+    leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); setBtn('left'); });
+    rightBtn.addEventListener('mousedown', () => setBtn('right'));
+    rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); setBtn('right'); });
+    
+    window.addEventListener('mouseup', clearBtn);
+    window.addEventListener('touchend', clearBtn);
+
+    dropBtn.addEventListener('click', () => {
+        if (!isDropping && !isReturning && overlay.style.display !== 'block') isDropping = true;
+    });
+
+    spawnToys();
+    draw();
+</script>
+</body>
+</html>
