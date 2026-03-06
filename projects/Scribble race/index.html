@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scribble Racer Deluxe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0f172a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .win-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            text-align: center;
+            color: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        .win-screen.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+        }
+        .btn {
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            margin-top: 1rem;
+            transition: transform 0.2s;
+            pointer-events: auto;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        #cursor-hint {
+            position: absolute;
+            pointer-events: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="ui-overlay">
+        <div class="text-3xl font-black mb-1">SCRIBBLE RACER</div>
+        <div class="text-lg opacity-80" id="status">Draw a path to the goal!</div>
+        <div class="mt-4 flex gap-4">
+            <div id="distance-ui" class="bg-black/30 p-2 rounded">Progress: 0%</div>
+        </div>
+    </div>
+
+    <div id="win-screen" class="win-screen">
+        <h1 class="text-5xl font-black mb-4 text-yellow-400">VICTORY!</h1>
+        <p class="text-xl mb-6">You reached the star with an awesome scribble!</p>
+        <button class="btn" onclick="resetGame()">PLAY AGAIN</button>
+    </div>
+
+    <div id="cursor-hint"></div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusText = document.getElementById('status');
+    const distanceUI = document.getElementById('distance-ui');
+    const winScreen = document.getElementById('win-screen');
+    const cursorHint = document.getElementById('cursor-hint');
+
+    // Game State
+    let width, height;
+    let points = []; // The player's scribble
+    let isDrawing = false;
+    let ball = { x: 0, y: 0, radius: 12, vx: 0, vy: 0, active: false };
+    let goal = { x: 0, y: 0, radius: 30 };
+    let obstacles = [];
+    let particles = [];
+    let gameWon = false;
+    let lastPoint = null;
+
+    function init() {
+        resize();
+        resetGame();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Position elements based on screen size
+        goal.x = width - 100;
+        goal.y = height / 2;
+        ball.x = 80;
+        ball.y = height / 2;
+    }
+
+    function resetGame() {
+        points = [];
+        isDrawing = false;
+        gameWon = false;
+        ball.active = false;
+        ball.vx = 0;
+        ball.vy = 0;
+        ball.x = 100;
+        ball.y = height / 2;
+        winScreen.classList.remove('active');
+        statusText.innerText = "Draw a path to the goal!";
+        
+        // Generate procedural obstacles
+        obstacles = [];
+        for(let i = 0; i < 5; i++) {
+            obstacles.push({
+                x: 300 + Math.random() * (width - 500),
+                y: Math.random() * height,
+                r: 30 + Math.random() * 40,
+                pulse: Math.random() * Math.PI
+            });
+        }
+    }
+
+    // Input Handling
+    function handleStart(e) {
+        if (gameWon) return;
+        const pos = getPos(e);
+        isDrawing = true;
+        points = [{ x: pos.x, y: pos.y }];
+        lastPoint = { x: pos.x, y: pos.y };
+        ball.active = false;
+        statusText.innerText = "Scribbling...";
+    }
+
+    function handleMove(e) {
+        const pos = getPos(e);
+        cursorHint.style.left = pos.x + 'px';
+        cursorHint.style.top = pos.y + 'px';
+
+        if (!isDrawing) return;
+        
+        // Distance check to avoid too many points
+        const dist = Math.hypot(pos.x - lastPoint.x, pos.y - lastPoint.y);
+        if (dist > 5) {
+            points.push({ x: pos.x, y: pos.y });
+            lastPoint = { x: pos.x, y: pos.y };
+        }
+    }
+
+    function handleEnd() {
+        if (!isDrawing) return;
+        isDrawing = false;
+        if (points.length > 2) {
+            ball.active = true;
+            ball.x = points[0].x;
+            ball.y = points[0].y;
+            statusText.innerText = "Watching the ride...";
+        }
+    }
+
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    // Event Listeners
+    window.addEventListener('mousedown', handleStart);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchstart', (e) => { e.preventDefault(); handleStart(e); }, { passive: false });
+    window.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e); }, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+    window.addEventListener('resize', resize);
+
+    // Particle System for "Awesome" feeling
+    function createConfetti() {
+        for(let i = 0; i < 100; i++) {
+            particles.push({
+                x: goal.x,
+                y: goal.y,
+                vx: (Math.random() - 0.5) * 15,
+                vy: (Math.random() - 0.5) * 15 - 5,
+                size: Math.random() * 8 + 4,
+                color: `hsl(${Math.random() * 360}, 80%, 60%)`,
+                life: 1
+            });
+        }
+    }
+
+    function gameLoop(time) {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function update() {
+        if (ball.active && !gameWon) {
+            // Ball follows the path
+            // We find the segment of the path closest to current ball position
+            // But for a 'scribble racer', we'll simulate physics on the line
+            
+            let moved = false;
+            const speed = 6;
+            
+            // Logic: Move ball towards the next point in the array
+            // Find current target point
+            if (points.length > 1) {
+                const target = points[1];
+                const dx = target.x - ball.x;
+                const dy = target.y - ball.y;
+                const dist = Math.hypot(dx, dy);
+                
+                if (dist < speed) {
+                    points.shift(); // Remove point we reached
+                } else {
+                    ball.x += (dx / dist) * speed;
+                    ball.y += (dy / dist) * speed;
+                }
+                moved = true;
+            }
+
+            // Check Obstacles
+            obstacles.forEach(obs => {
+                const d = Math.hypot(ball.x - obs.x, ball.y - obs.y);
+                if (d < ball.radius + obs.r) {
+                    ball.active = false;
+                    statusText.innerText = "Hit an obstacle! Try again.";
+                    setTimeout(resetGame, 1000);
+                }
+            });
+
+            // Check Goal
+            const distToGoal = Math.hypot(ball.x - goal.x, ball.y - goal.y);
+            if (distToGoal < goal.radius) {
+                triggerWin();
+            }
+
+            // Progress UI
+            const totalWidth = width - 200;
+            const progress = Math.min(100, Math.round((ball.x / width) * 100));
+            distanceUI.innerText = `Progress: ${progress}%`;
+        }
+
+        // Update particles
+        particles.forEach((p, i) => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.2; // Gravity
+            p.life -= 0.01;
+            if (p.life <= 0) particles.splice(i, 1);
+        });
+    }
+
+    function triggerWin() {
+        if (gameWon) return;
+        gameWon = true;
+        ball.active = false;
+        statusText.innerText = "PERFECT!";
+        winScreen.classList.add('active');
+        createConfetti();
+    }
+
+    function draw() {
+        // Clear background
+        const grad = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
+        grad.addColorStop(0, '#1e293b');
+        grad.addColorStop(1, '#0f172a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+
+        // Draw Grid
+        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        ctx.lineWidth = 1;
+        for(let x=0; x<width; x+=50) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+        }
+        for(let y=0; y<height; y+=50) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+        }
+
+        // Draw Obstacles
+        obstacles.forEach(obs => {
+            obs.pulse += 0.05;
+            const s = obs.r + Math.sin(obs.pulse) * 5;
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(obs.x, obs.y, s, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+        });
+
+        // Draw Goal
+        ctx.save();
+        ctx.translate(goal.x, goal.y);
+        ctx.rotate(Date.now() / 1000);
+        ctx.fillStyle = '#fbbf24';
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#fbbf24';
+        ctx.beginPath();
+        for(let i=0; i<5; i++) {
+            ctx.rotate(Math.PI * 2 / 5);
+            ctx.lineTo(0, goal.radius);
+            ctx.rotate(Math.PI * 2 / 5);
+            ctx.lineTo(0, goal.radius / 2.5);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // Draw Scribble Path
+        if (points.length > 1) {
+            ctx.beginPath();
+            ctx.strokeStyle = '#60a5fa';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.setLineDash([10, 5]); // Dash effect
+            ctx.lineDashOffset = -Date.now() / 50;
+            ctx.moveTo(points[0].x, points[0].y);
+            for(let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset
+        }
+
+        // Draw Player Ball
+        if (ball.active || gameWon || points.length > 0) {
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#fff';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        // Draw Particles
+        particles.forEach(p => {
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+        });
+        ctx.globalAlpha = 1;
+    }
+
+    // Start everything
+    window.onload = init;
+
+</script>
+</body>
+</html>
