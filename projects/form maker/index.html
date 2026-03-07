@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FormCraft Pro | Advanced Form Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f1f5f9;
+        }
+
+        .canvas-area {
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .form-element {
+            transition: all 0.2s ease;
+            cursor: grab;
+        }
+
+        .form-element:active {
+            cursor: grabbing;
+        }
+
+        .ghost {
+            opacity: 0.5;
+            background: #e2e8f0;
+            border: 2px dashed #94a3b8;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .preview-active {
+            border: 2px solid #3b82f6;
+            background-color: #eff6ff;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">F</div>
+            <h1 class="text-xl font-bold text-slate-800 tracking-tight">FormCraft <span class="text-indigo-600">Pro</span></h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="clearBtn" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Clear All</button>
+            <button id="exportBtn" class="px-4 py-2 text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg shadow-sm shadow-indigo-200 transition-all flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export Code
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        <!-- Left Sidebar: Toolbox -->
+        <aside class="w-72 bg-white border-r border-slate-200 overflow-y-auto custom-scrollbar p-6">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Elements</h2>
+            <div class="space-y-3" id="toolbox">
+                <div draggable="true" data-type="text" class="p-3 border border-slate-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 flex items-center gap-3 group transition-all cursor-move">
+                    <div class="p-2 bg-slate-100 rounded-lg group-hover:bg-indigo-100 text-slate-500 group-hover:text-indigo-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6.1H3"/><path d="M21 12.1H3"/><path d="M15.1 18.1H3"/></svg>
+                    </div>
+                    <span class="text-sm font-medium text-slate-700">Text Input</span>
+                </div>
+                <div draggable="true" data-type="email" class="p-3 border border-slate-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 flex items-center gap-3 group transition-all cursor-move">
+                    <div class="p-2 bg-slate-100 rounded-lg group-hover:bg-indigo-100 text-slate-500 group-hover:text-indigo-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    </div>
+                    <span class="text-sm font-medium text-slate-700">Email Address</span>
+                </div>
+                <div draggable="true" data-type="textarea" class="p-3 border border-slate-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 flex items-center gap-3 group transition-all cursor-move">
+                    <div class="p-2 bg-slate-100 rounded-lg group-hover:bg-indigo-100 text-slate-500 group-hover:text-indigo-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <span class="text-sm font-medium text-slate-700">Message Box</span>
+                </div>
+                <div draggable="true" data-type="select" class="p-3 border border-slate-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 flex items-center gap-3 group transition-all cursor-move">
+                    <div class="p-2 bg-slate-100 rounded-lg group-hover:bg-indigo-100 text-slate-500 group-hover:text-indigo-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
+                    <span class="text-sm font-medium text-slate-700">Dropdown</span>
+                </div>
+                <div draggable="true" data-type="checkbox" class="p-3 border border-slate-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 flex items-center gap-3 group transition-all cursor-move">
+                    <div class="p-2 bg-slate-100 rounded-lg group-hover:bg-indigo-100 text-slate-500 group-hover:text-indigo-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    </div>
+                    <span class="text-sm font-medium text-slate-700">Checkbox</span>
+                </div>
+            </div>
+
+            <div class="mt-12 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                <h4 class="text-sm font-bold text-indigo-900 mb-2">Pro Tip</h4>
+                <p class="text-xs text-indigo-700 leading-relaxed">Drag elements to the center canvas to start building your form structure.</p>
+            </div>
+        </aside>
+
+        <!-- Center: Builder Canvas -->
+        <section class="flex-1 canvas-area p-8 overflow-y-auto custom-scrollbar flex justify-center">
+            <div id="canvas" class="w-full max-w-2xl bg-white min-h-[400px] h-fit rounded-2xl shadow-xl shadow-slate-200/50 p-10 border border-slate-100">
+                <div id="canvasEmptyState" class="h-full flex flex-col items-center justify-center text-center py-20 pointer-events-none">
+                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-600">Canvas is empty</h3>
+                    <p class="text-slate-400 text-sm">Drag or click elements to add them here</p>
+                </div>
+                <form id="buildForm" class="space-y-6 hidden"></form>
+            </div>
+        </section>
+
+        <!-- Right Sidebar: Properties -->
+        <aside id="propertiesPanel" class="w-80 bg-white border-l border-slate-200 overflow-y-auto custom-scrollbar p-6">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Properties</h2>
+            <div id="noSelectedState" class="text-center py-10">
+                <p class="text-sm text-slate-400">Select an element to edit its properties</p>
+            </div>
+            <div id="editorContent" class="hidden space-y-5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Label</label>
+                    <input type="text" id="propLabel" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Placeholder</label>
+                    <input type="text" id="propPlaceholder" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-sm font-medium text-slate-700">Required Field</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="propRequired" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+                <div id="optionsGroup" class="hidden">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Options (comma separated)</label>
+                    <textarea id="propOptions" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none h-24"></textarea>
+                </div>
+                <button id="deleteElementBtn" class="w-full mt-6 py-2 px-4 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-sm font-semibold transition-colors">
+                    Remove Element
+                </button>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Export Modal -->
+    <div id="exportModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-slate-800">Export Ready-to-Use Code</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="flex-1 overflow-hidden p-6 flex flex-col gap-4">
+                <div class="flex-1 bg-slate-900 rounded-2xl p-4 overflow-auto custom-scrollbar">
+                    <pre id="codeOutput" class="text-indigo-300 text-xs font-mono leading-relaxed"></pre>
+                </div>
+            </div>
+            <div class="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                <button onclick="copyCode()" class="px-6 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all active:scale-95">Copy to Clipboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const toolboxItems = document.querySelectorAll('#toolbox [draggable="true"]');
+        const canvas = document.getElementById('canvas');
+        const buildForm = document.getElementById('buildForm');
+        const canvasEmptyState = document.getElementById('canvasEmptyState');
+        const propertiesPanel = document.getElementById('propertiesPanel');
+        const editorContent = document.getElementById('editorContent');
+        const noSelectedState = document.getElementById('noSelectedState');
+        const clearBtn = document.getElementById('clearBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const exportModal = document.getElementById('exportModal');
+        const codeOutput = document.getElementById('codeOutput');
+
+        // Properties Inputs
+        const propLabel = document.getElementById('propLabel');
+        const propPlaceholder = document.getElementById('propPlaceholder');
+        const propRequired = document.getElementById('propRequired');
+        const propOptions = document.getElementById('propOptions');
+        const optionsGroup = document.getElementById('optionsGroup');
+        const deleteBtn = document.getElementById('deleteElementBtn');
+
+        let formElements = [];
+        let selectedId = null;
+
+        // Tool Drag Logic
+        toolboxItems.forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('type', item.dataset.type);
+            });
+            item.addEventListener('click', () => {
+                addElement(item.dataset.type);
+            });
+        });
+
+        canvas.addEventListener('dragover', (e) => e.preventDefault());
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('type');
+            if (type) addElement(type);
+        });
+
+        function addElement(type) {
+            const id = 'el_' + Date.now();
+            const newElement = {
+                id,
+                type,
+                label: type.charAt(0).toUpperCase() + type.slice(1),
+                placeholder: 'Enter ' + type + '...',
+                required: false,
+                options: type === 'select' ? 'Option 1, Option 2, Option 3' : ''
+            };
+            formElements.push(newElement);
+            renderForm();
+            selectElement(id);
+        }
+
+        function renderForm() {
+            if (formElements.length === 0) {
+                buildForm.classList.add('hidden');
+                canvasEmptyState.classList.remove('hidden');
+                return;
+            }
+
+            buildForm.classList.remove('hidden');
+            canvasEmptyState.classList.add('hidden');
+            buildForm.innerHTML = '';
+
+            formElements.forEach(el => {
+                const wrapper = document.createElement('div');
+                wrapper.className = `p-4 border-2 rounded-xl cursor-pointer transition-all ${selectedId === el.id ? 'preview-active' : 'border-transparent hover:border-slate-100'}`;
+                wrapper.onclick = (e) => {
+                    e.stopPropagation();
+                    selectElement(el.id);
+                };
+
+                let inputHtml = '';
+                const reqAttr = el.required ? '<span class="text-red-500 ml-1">*</span>' : '';
+
+                if (el.type === 'textarea') {
+                    inputHtml = `<textarea disabled placeholder="${el.placeholder}" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm h-24"></textarea>`;
+                } else if (el.type === 'select') {
+                    const opts = el.options.split(',').map(o => `<option>${o.trim()}</option>`).join('');
+                    inputHtml = `<select disabled class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm appearance-none">${opts}</select>`;
+                } else if (el.type === 'checkbox') {
+                    inputHtml = `<div class="flex items-center gap-3"><input type="checkbox" disabled class="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"><span class="text-sm text-slate-500">I agree to the terms</span></div>`;
+                } else {
+                    inputHtml = `<input type="${el.type}" disabled placeholder="${el.placeholder}" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm">`;
+                }
+
+                wrapper.innerHTML = `
+                    <div class="mb-2 flex justify-between items-center">
+                        <label class="text-sm font-bold text-slate-700">${el.label}${reqAttr}</label>
+                    </div>
+                    ${inputHtml}
+                `;
+                buildForm.appendChild(wrapper);
+            });
+        }
+
+        function selectElement(id) {
+            selectedId = id;
+            const el = formElements.find(e => e.id === id);
+            
+            noSelectedState.classList.add('hidden');
+            editorContent.classList.remove('hidden');
+            
+            propLabel.value = el.label;
+            propPlaceholder.value = el.placeholder;
+            propRequired.checked = el.required;
+            
+            if (el.type === 'select') {
+                optionsGroup.classList.remove('hidden');
+                propOptions.value = el.options;
+            } else {
+                optionsGroup.classList.add('hidden');
+            }
+
+            renderForm();
+        }
+
+        // Live Properties Sync
+        [propLabel, propPlaceholder, propRequired, propOptions].forEach(input => {
+            input.oninput = () => {
+                const el = formElements.find(e => e.id === selectedId);
+                if (!el) return;
+
+                el.label = propLabel.value;
+                el.placeholder = propPlaceholder.value;
+                el.required = propRequired.checked;
+                if (el.type === 'select') el.options = propOptions.value;
+                
+                renderForm();
+            };
+        });
+
+        deleteBtn.onclick = () => {
+            formElements = formElements.filter(e => e.id !== selectedId);
+            selectedId = null;
+            editorContent.classList.add('hidden');
+            noSelectedState.classList.remove('hidden');
+            renderForm();
+        };
+
+        clearBtn.onclick = () => {
+            if (confirm('Clear entire form?')) {
+                formElements = [];
+                selectedId = null;
+                renderForm();
+                editorContent.classList.add('hidden');
+                noSelectedState.classList.remove('hidden');
+            }
+        };
+
+        // Export Logic
+        exportBtn.onclick = () => {
+            const formHtml = generateCode();
+            codeOutput.textContent = formHtml;
+            exportModal.classList.remove('hidden');
+        };
+
+        function closeModal() {
+            exportModal.classList.add('hidden');
+        }
+
+        function generateCode() {
+            let fields = formElements.map(el => {
+                const req = el.required ? 'required' : '';
+                if (el.type === 'textarea') {
+                    return `  <div class="form-group">\n    <label>${el.label}</label>\n    <textarea placeholder="${el.placeholder}" ${req}></textarea>\n  </div>`;
+                } else if (el.type === 'select') {
+                    const opts = el.options.split(',').map(o => `      <option>${o.trim()}</option>`).join('\n');
+                    return `  <div class="form-group">\n    <label>${el.label}</label>\n    <select ${req}>\n${opts}\n    </select>\n  </div>`;
+                } else if (el.type === 'checkbox') {
+                    return `  <div class="form-group checkbox-group">\n    <input type="checkbox" id="check_${el.id}" ${req}>\n    <label for="check_${el.id}">${el.label}</label>\n  </div>`;
+                }
+                return `  <div class="form-group">\n    <label>${el.label}</label>\n    <input type="${el.type}" placeholder="${el.placeholder}" ${req}>\n  </div>`;
+            }).join('\n\n');
+
+            return `<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { font-family: sans-serif; background: #f4f7f6; display: flex; justify-content: center; padding: 40px; }
+  .form-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+  .form-group { margin-bottom: 20px; }
+  label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px; color: #333; }
+  input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+  .checkbox-group { display: flex; align-items: center; gap: 10px; }
+  .checkbox-group input { width: auto; }
+  .checkbox-group label { margin-bottom: 0; }
+  button { width: 100%; padding: 14px; background: #4f46e5; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+  button:hover { background: #4338ca; }
+</style>
+</head>
+<body>
+  <div class="form-card">
+    <form>
+${fields}
+      <button type="submit">Submit Form</button>
+    </form>
+  </div>
+</body>
+</html>`;
+        }
+
+        function copyCode() {
+            const text = codeOutput.textContent;
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = originalText, 2000);
+        }
+
+        // Close modal on outside click
+        exportModal.onclick = (e) => {
+            if (e.target === exportModal) closeModal();
+        };
+    </script>
+</body>
+</html>
