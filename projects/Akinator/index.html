@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akinator AI - The Digital Genie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        .genie-gradient {
+            background: radial-gradient(circle at center, #3b82f6 0%, #1e3a8a 100%);
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px border rgba(255, 255, 255, 0.1);
+        }
+
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .option-btn:hover {
+            transform: scale(1.02);
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+        }
+
+        #progress-bar {
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Background Elements -->
+    <div class="fixed inset-0 -z-10 opacity-20">
+        <div class="absolute top-0 left-0 w-96 h-96 bg-blue-600 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-0 right-0 w-96 h-96 bg-purple-600 rounded-full blur-[120px]"></div>
+    </div>
+
+    <div id="game-container" class="w-full max-w-2xl">
+        
+        <!-- Header / Stats -->
+        <div class="flex justify-between items-center mb-8 px-4">
+            <h1 class="text-2xl font-800 tracking-tighter text-blue-400">AKINATOR <span class="text-white text-xs align-top bg-blue-600 px-2 py-1 rounded-full">LOCAL ENGINE</span></h1>
+            <div id="round-counter" class="text-slate-400 text-sm font-mono">READY</div>
+        </div>
+
+        <!-- Main Card -->
+        <div class="glass rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+            <!-- Progress -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-slate-800">
+                <div id="progress-bar" class="h-full bg-blue-500 shadow-[0_0_15px_#3b82f6]" style="width: 0%"></div>
+            </div>
+
+            <div id="display-area" class="flex flex-col items-center text-center space-y-8 py-4">
+                
+                <!-- Genie Avatar -->
+                <div class="relative">
+                    <div id="genie-svg" class="w-40 h-40 floating text-blue-400">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                            <circle cx="12" cy="7" r="1" fill="currentColor"></circle>
+                        </svg>
+                    </div>
+                    <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-24 h-4 bg-black/40 blur-md rounded-full"></div>
+                </div>
+
+                <!-- Text Interaction -->
+                <div class="space-y-4">
+                    <p id="genie-thought" class="text-blue-300 text-xs font-mono uppercase tracking-[0.2em] opacity-60">I am sensing your energy...</p>
+                    <h2 id="question-text" class="text-2xl md:text-3xl font-semibold leading-tight px-4">
+                        Think of a famous character, and I will guess who it is!
+                    </h2>
+                </div>
+
+                <!-- Action Buttons -->
+                <div id="button-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                    <button onclick="startGame()" class="md:col-span-2 py-4 px-8 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-lg transition-all shadow-lg shadow-blue-900/20">
+                        Challenge Me
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center text-slate-500 text-sm">
+            Standalone Local Logic • No API Required
+        </div>
+    </div>
+
+    <script>
+        // Local Character Database
+        const characters = [
+            { name: "Harry Potter", tags: ["fiction", "male", "magic", "glasses", "student"], bio: "The Boy Who Lived." },
+            { name: "Iron Man", tags: ["fiction", "male", "tech", "rich", "hero"], bio: "Genius, billionaire, playboy, philanthropist." },
+            { name: "Albert Einstein", tags: ["real", "male", "science", "historical", "smart"], bio: "Theoretical physicist who developed relativity." },
+            { name: "Wonder Woman", tags: ["fiction", "female", "hero", "magic", "strong"], bio: "Princess Diana of Themyscira." },
+            { name: "Elon Musk", tags: ["real", "male", "tech", "rich", "modern"], bio: "CEO of Tesla and SpaceX." },
+            { name: "Mickey Mouse", tags: ["fiction", "male", "animal", "classic", "disney"], bio: "The face of Disney." },
+            { name: "Taylor Swift", tags: ["real", "female", "music", "modern", "famous"], bio: "American singer-songwriter." },
+            { name: "Sherlock Holmes", tags: ["fiction", "male", "smart", "british", "detective"], bio: "The world's only consulting detective." },
+            { name: "Darth Vader", tags: ["fiction", "male", "space", "evil", "mask"], bio: "Anakin Skywalker turned to the dark side." },
+            { name: "Hermione Granger", tags: ["fiction", "female", "magic", "student", "smart"], bio: "The brightest witch of her age." },
+            { name: "Steve Jobs", tags: ["real", "male", "tech", "historical", "smart"], bio: "Co-founder of Apple Inc." },
+            { name: "Marie Curie", tags: ["real", "female", "science", "historical", "smart"], bio: "First woman to win a Nobel Prize." }
+        ];
+
+        // Potential Questions Linked to Tags
+        const allQuestions = [
+            { text: "Is your character real?", tag: "real" },
+            { text: "Is your character fictional?", tag: "fiction" },
+            { text: "Is your character male?", tag: "male" },
+            { text: "Is your character female?", tag: "female" },
+            { text: "Is your character associated with technology?", tag: "tech" },
+            { text: "Is your character associated with magic?", tag: "magic" },
+            { text: "Is your character very wealthy?", tag: "rich" },
+            { text: "Does your character have special powers?", tag: "hero" },
+            { text: "Is your character a scientist?", tag: "science" },
+            { text: "Is your character an animal?", tag: "animal" },
+            { text: "Is your character a student?", tag: "student" },
+            { text: "Is your character currently alive?", tag: "modern" }
+        ];
+
+        let currentPool = [];
+        let askedQuestions = [];
+        let currentQuestion = null;
+        let questionCount = 0;
+
+        const ui = {
+            question: document.getElementById('question-text'),
+            thought: document.getElementById('genie-thought'),
+            buttons: document.getElementById('button-grid'),
+            round: document.getElementById('round-counter'),
+            progress: document.getElementById('progress-bar')
+        };
+
+        function startGame() {
+            currentPool = [...characters];
+            askedQuestions = [];
+            questionCount = 1;
+            ui.progress.style.width = "0%";
+            nextMove();
+        }
+
+        function nextMove() {
+            // Check if we can make a guess
+            if (currentPool.length === 1 || questionCount > 10) {
+                const finalChoice = currentPool.length > 0 ? currentPool[0] : null;
+                if (finalChoice) {
+                    renderGuess(finalChoice.name, finalChoice.bio);
+                    return;
+                }
+            }
+
+            if (currentPool.length === 0) {
+                renderGuess("A Ghost?", "I couldn't find anyone matching that description in my local archives.");
+                return;
+            }
+
+            // Select the most useful question (one that splits the current pool best)
+            const availableQuestions = allQuestions.filter(q => !askedQuestions.includes(q.text));
+            
+            if (availableQuestions.length === 0) {
+                renderGuess(currentPool[0].name, currentPool[0].bio);
+                return;
+            }
+
+            // Find question with best entropy (closest to 50/50 split of pool)
+            let bestQ = availableQuestions[0];
+            let bestBalance = 1;
+
+            availableQuestions.forEach(q => {
+                const hasTag = currentPool.filter(c => c.tags.includes(q.tag)).length;
+                const balance = Math.abs(0.5 - (hasTag / currentPool.length));
+                if (balance < bestBalance) {
+                    bestBalance = balance;
+                    bestQ = q;
+                }
+            });
+
+            currentQuestion = bestQ;
+            renderQuestion(bestQ.text);
+        }
+
+        function renderQuestion(text) {
+            ui.question.innerText = text;
+            ui.round.innerText = `QUESTION #${questionCount}`;
+            ui.thought.innerText = "Analyzing your pattern...";
+            ui.progress.style.width = `${(questionCount / 10) * 100}%`;
+
+            const options = [
+                { label: "Yes", val: true },
+                { label: "No", val: false },
+                { label: "Don't Know", val: null }
+            ];
+
+            ui.buttons.innerHTML = options.map(opt => `
+                <button onclick="handleAnswer(${opt.val})" class="option-btn py-3 px-4 glass rounded-xl border border-white/10 hover:border-blue-500/50 transition-all font-medium">
+                    ${opt.label}
+                </button>
+            `).join('');
+        }
+
+        function handleAnswer(ans) {
+            askedQuestions.push(currentQuestion.text);
+            
+            if (ans !== null) {
+                const tag = currentQuestion.tag;
+                currentPool = currentPool.filter(c => {
+                    const hasTag = c.tags.includes(tag);
+                    return ans ? hasTag : !hasTag;
+                });
+            }
+
+            questionCount++;
+            nextMove();
+        }
+
+        function renderGuess(name, bio) {
+            ui.thought.innerText = "THE REVEAL";
+            ui.question.innerHTML = `I think you are thinking of...<br><span class="text-blue-400 text-4xl font-bold mt-2 block">${name}</span>`;
+            ui.round.innerText = "FINISHED";
+            ui.progress.style.width = "100%";
+
+            ui.buttons.innerHTML = `
+                <div class="md:col-span-2 bg-blue-500/10 p-6 rounded-2xl border border-blue-500/20 mb-4">
+                    <p class="text-sm text-slate-300 italic">"${bio}"</p>
+                </div>
+                <button onclick="startGame()" class="md:col-span-2 py-4 px-8 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold transition-all">
+                    Play Again
+                </button>
+            `;
+        }
+
+        window.onload = () => {
+            console.log("Local Akinator Engine Active.");
+        };
+    </script>
+</body>
+</html>
