@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlgoVault | DSA Code Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 10px;
+        }
+
+        .difficulty-easy { color: #10b981; }
+        .difficulty-medium { color: #f59e0b; }
+        .difficulty-hard { color: #ef4444; }
+
+        .card-hover {
+            transition: all 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            border-color: #6366f1;
+            background: rgba(30, 41, 59, 0.9);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Top Navigation -->
+    <header class="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-900/50 z-20">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight">AlgoVault</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-700">
+                <span class="text-xs font-semibold text-slate-400 mr-2 uppercase">Total Solved:</span>
+                <span id="totalSolvedCount" class="text-sm font-bold text-indigo-400">0</span>
+            </div>
+            <button id="addProblemBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                New Solution
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        <!-- Sidebar: Filters -->
+        <aside class="w-64 border-r border-slate-800 p-6 flex flex-col gap-8 bg-slate-900/30 overflow-y-auto custom-scrollbar">
+            <div>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Platform</h3>
+                <div class="space-y-1" id="platformFilters">
+                    <button data-filter="all" class="w-full text-left px-3 py-2 rounded-lg text-sm bg-indigo-600/10 text-indigo-400 font-medium border border-indigo-500/20 filter-btn">All Platforms</button>
+                    <button data-filter="LeetCode" class="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 transition-colors filter-btn">LeetCode</button>
+                    <button data-filter="HackerRank" class="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 transition-colors filter-btn">HackerRank</button>
+                    <button data-filter="Codeforces" class="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 transition-colors filter-btn">Codeforces</button>
+                    <button data-filter="GeeksforGeeks" class="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 transition-colors filter-btn">GeeksforGeeks</button>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Category</h3>
+                <div class="flex flex-wrap gap-2">
+                    <span class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-[10px] text-slate-300 font-medium">Arrays</span>
+                    <span class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-[10px] text-slate-300 font-medium">DP</span>
+                    <span class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-[10px] text-slate-300 font-medium">Graphs</span>
+                    <span class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-[10px] text-slate-300 font-medium">Trees</span>
+                    <span class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-[10px] text-slate-300 font-medium">Strings</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content: Problem List -->
+        <section class="flex-1 p-8 overflow-y-auto custom-scrollbar">
+            <div class="max-w-5xl mx-auto">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-2xl font-bold text-white">My Solutions</h2>
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Search problems..." class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 pl-10 text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-64">
+                        <svg class="absolute left-3 top-2.5 text-slate-500" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </div>
+                </div>
+
+                <div id="problemGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Cards will be injected here -->
+                </div>
+
+                <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-center">
+                    <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-6 text-slate-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-slate-300">No solutions found</h3>
+                    <p class="text-slate-500 mt-2">Start adding your DSA journey by clicking "New Solution"</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Entry Modal (Add/Edit) -->
+    <div id="problemModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 w-full max-w-4xl rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-white">Record New Solution</h3>
+                <button onclick="closeModal()" class="text-slate-500 hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            
+            <form id="problemForm" class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Problem Title</label>
+                            <input type="text" id="title" required placeholder="e.g., Two Sum" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Platform</label>
+                                <select id="platform" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none appearance-none">
+                                    <option>LeetCode</option>
+                                    <option>HackerRank</option>
+                                    <option>Codeforces</option>
+                                    <option>GeeksforGeeks</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Difficulty</label>
+                                <select id="difficulty" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none appearance-none">
+                                    <option value="easy">Easy</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="hard">Hard</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Problem URL</label>
+                            <input type="url" id="url" placeholder="https://..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Tags (Comma separated)</label>
+                            <input type="text" id="tags" placeholder="Arrays, Hash Table, Easy" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Solution Code</label>
+                        <textarea id="code" required class="w-full h-[300px] bg-slate-950 border border-slate-800 rounded-lg p-4 code-font text-xs text-indigo-300 focus:ring-2 focus:ring-indigo-500 outline-none resize-none" placeholder="Paste your code here..."></textarea>
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-slate-800 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal()" class="px-6 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800 transition-colors">Cancel</button>
+                    <button type="submit" class="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/20">Save Solution</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Viewer Modal -->
+    <div id="viewModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 w-full max-w-5xl rounded-2xl border border-slate-700 flex flex-col max-h-[90vh]">
+            <div id="viewContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let problems = JSON.parse(localStorage.getItem('algoVault_problems')) || [];
+        let currentFilter = 'all';
+
+        const problemGrid = document.getElementById('problemGrid');
+        const emptyState = document.getElementById('emptyState');
+        const problemModal = document.getElementById('problemModal');
+        const problemForm = document.getElementById('problemForm');
+        const searchInput = document.getElementById('searchInput');
+        const totalSolvedCount = document.getElementById('totalSolvedCount');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+
+        // Initialize
+        function init() {
+            renderProblems();
+            updateStats();
+        }
+
+        function updateStats() {
+            totalSolvedCount.textContent = problems.length;
+        }
+
+        function renderProblems() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filtered = problems.filter(p => {
+                const matchesFilter = currentFilter === 'all' || p.platform === currentFilter;
+                const matchesSearch = p.title.toLowerCase().includes(searchTerm) || 
+                                    p.tags.toLowerCase().includes(searchTerm);
+                return matchesFilter && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                problemGrid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            problemGrid.innerHTML = filtered.map(p => `
+                <div class="glass-panel p-5 rounded-2xl border border-slate-800 card-hover cursor-pointer" onclick="viewProblem('${p.id}')">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">${p.platform}</span>
+                            <span class="text-[10px] font-bold uppercase ${p.difficulty === 'easy' ? 'difficulty-easy' : p.difficulty === 'medium' ? 'difficulty-medium' : 'difficulty-hard'}">${p.difficulty}</span>
+                        </div>
+                        <button onclick="event.stopPropagation(); deleteProblem('${p.id}')" class="text-slate-600 hover:text-red-400 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2 leading-tight">${p.title}</h3>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        ${p.tags.split(',').map(tag => `<span class="text-[10px] text-slate-500">#${tag.trim()}</span>`).join('')}
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-800/50">
+                        <span>Solved on ${new Date(p.date).toLocaleDateString()}</span>
+                        <div class="flex items-center gap-1 text-indigo-400 font-medium">
+                            View Code
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Modal Logic
+        document.getElementById('addProblemBtn').onclick = () => {
+            problemForm.reset();
+            problemModal.classList.remove('hidden');
+        };
+
+        function closeModal() {
+            problemModal.classList.add('hidden');
+            document.getElementById('viewModal').classList.add('hidden');
+        }
+
+        problemForm.onsubmit = (e) => {
+            e.preventDefault();
+            const newProblem = {
+                id: Date.now().toString(),
+                title: document.getElementById('title').value,
+                platform: document.getElementById('platform').value,
+                difficulty: document.getElementById('difficulty').value,
+                url: document.getElementById('url').value,
+                tags: document.getElementById('tags').value,
+                code: document.getElementById('code').value,
+                date: new Date().toISOString()
+            };
+
+            problems.unshift(newProblem);
+            save();
+            closeModal();
+            renderProblems();
+            updateStats();
+        };
+
+        function viewProblem(id) {
+            const p = problems.find(x => x.id === id);
+            const viewModal = document.getElementById('viewModal');
+            const viewContent = document.getElementById('viewContent');
+
+            viewContent.innerHTML = `
+                <div class="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900 sticky top-0">
+                    <div>
+                        <div class="flex items-center gap-3 mb-1">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400">${p.platform}</span>
+                            <span class="text-xs font-bold uppercase ${p.difficulty === 'easy' ? 'difficulty-easy' : p.difficulty === 'medium' ? 'difficulty-medium' : 'difficulty-hard'}">${p.difficulty}</span>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white">${p.title}</h2>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <a href="${p.url}" target="_blank" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            Open Problem
+                        </a>
+                        <button onclick="closeModal()" class="p-2 text-slate-500 hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                    </div>
+                </div>
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                    <div class="mb-4 flex flex-wrap gap-2">
+                        ${p.tags.split(',').map(tag => `<span class="px-3 py-1 bg-slate-800 rounded-full text-xs text-slate-400 font-medium">#${tag.trim()}</span>`).join('')}
+                    </div>
+                    <div class="relative group">
+                        <div class="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="copyCode(this)" data-code="${btoa(p.code)}" class="bg-slate-800 hover:bg-slate-700 p-2 rounded-lg text-xs text-slate-300 flex items-center gap-2 border border-slate-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                Copy
+                            </button>
+                        </div>
+                        <pre class="bg-black/40 border border-slate-800 rounded-xl p-6 overflow-x-auto custom-scrollbar"><code class="code-font text-sm text-indigo-200 leading-relaxed">${escapeHtml(p.code)}</code></pre>
+                    </div>
+                </div>
+            `;
+            viewModal.classList.remove('hidden');
+        }
+
+        function deleteProblem(id) {
+            if (confirm('Are you sure you want to delete this solution?')) {
+                problems = problems.filter(p => p.id !== id);
+                save();
+                renderProblems();
+                updateStats();
+            }
+        }
+
+        function save() {
+            localStorage.setItem('algoVault_problems', JSON.stringify(problems));
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function copyCode(btn) {
+            const code = atob(btn.dataset.code);
+            const textArea = document.createElement("textarea");
+            textArea.value = code;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            const original = btn.innerHTML;
+            btn.innerHTML = 'Copied!';
+            setTimeout(() => btn.innerHTML = original, 2000);
+        }
+
+        // Filtering & Searching
+        searchInput.oninput = renderProblems;
+
+        filterBtns.forEach(btn => {
+            btn.onclick = () => {
+                filterBtns.forEach(b => b.className = "w-full text-left px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 transition-colors filter-btn");
+                btn.className = "w-full text-left px-3 py-2 rounded-lg text-sm bg-indigo-600/10 text-indigo-400 font-medium border border-indigo-500/20 filter-btn";
+                currentFilter = btn.dataset.filter;
+                renderProblems();
+            };
+        });
+
+        init();
+    </script>
+</body>
+</html>
