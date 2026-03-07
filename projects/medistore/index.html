@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediStore Pro - Advanced Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        .modal-active { display: flex !important; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-indigo-900 text-white flex-shrink-0 hidden md:flex flex-col">
+            <div class="p-6 flex items-center gap-3">
+                <div class="bg-white p-2 rounded-lg text-indigo-900">
+                    <i class="fas fa-hand-holding-medical text-2xl"></i>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight">MediStore<span class="text-indigo-300">Pro</span></h1>
+            </div>
+            
+            <nav class="mt-6 flex-1 px-4 space-y-2">
+                <button onclick="switchTab('dashboard')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all bg-indigo-800 text-white" id="btn-dashboard">
+                    <i class="fas fa-th-large w-5"></i> Dashboard
+                </button>
+                <button onclick="switchTab('inventory')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-indigo-800/50 text-indigo-200" id="btn-inventory">
+                    <i class="fas fa-boxes w-5"></i> Inventory
+                </button>
+                <button onclick="switchTab('pos')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-indigo-800/50 text-indigo-200" id="btn-pos">
+                    <i class="fas fa-shopping-cart w-5"></i> Point of Sale
+                </button>
+                <button onclick="switchTab('customers')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-indigo-800/50 text-indigo-200" id="btn-customers">
+                    <i class="fas fa-users w-5"></i> Customers
+                </button>
+                <button onclick="switchTab('reports')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-indigo-800/50 text-indigo-200" id="btn-reports">
+                    <i class="fas fa-chart-line w-5"></i> Analytics
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-indigo-800">
+                <div class="flex items-center gap-3 p-2">
+                    <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-bold">AD</div>
+                    <div>
+                        <p class="text-sm font-medium">Admin User</p>
+                        <p class="text-xs text-indigo-300">Manager</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Header -->
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8">
+                <div class="flex items-center gap-4">
+                    <button class="md:hidden text-slate-600"><i class="fas fa-bars"></i></button>
+                    <h2 id="current-tab-title" class="text-lg font-semibold text-slate-700">Dashboard Overview</h2>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="relative">
+                        <i class="fas fa-bell text-slate-400 text-xl cursor-pointer"></i>
+                        <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full">3</span>
+                    </div>
+                    <div class="h-8 w-px bg-slate-200"></div>
+                    <div class="flex items-center gap-2">
+                        <span id="current-time" class="text-sm font-medium text-slate-500"></span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                
+                <!-- Dashboard Tab -->
+                <section id="tab-dashboard" class="tab-content space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-slate-500 text-sm font-medium">Daily Sales</p>
+                                    <h3 class="text-2xl font-bold mt-1">$4,250.00</h3>
+                                </div>
+                                <div class="bg-emerald-100 p-2 rounded-lg text-emerald-600">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center gap-2 text-sm text-emerald-600 font-medium">
+                                <i class="fas fa-arrow-up"></i> 12% vs yesterday
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-slate-500 text-sm font-medium">Pending Orders</p>
+                                    <h3 class="text-2xl font-bold mt-1">18</h3>
+                                </div>
+                                <div class="bg-amber-100 p-2 rounded-lg text-amber-600">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center gap-2 text-sm text-amber-600 font-medium">
+                                <i class="fas fa-exclamation-circle"></i> 5 urgent items
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-slate-500 text-sm font-medium">Total Products</p>
+                                    <h3 class="text-2xl font-bold mt-1">1,429</h3>
+                                </div>
+                                <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600">
+                                    <i class="fas fa-pills"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center gap-2 text-sm text-indigo-600 font-medium">
+                                <i class="fas fa-plus"></i> 24 new this month
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-slate-500 text-sm font-medium">Expired Soon</p>
+                                    <h3 class="text-2xl font-bold mt-1">42</h3>
+                                </div>
+                                <div class="bg-rose-100 p-2 rounded-lg text-rose-600">
+                                    <i class="fas fa-calendar-times"></i>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex items-center gap-2 text-sm text-rose-600 font-medium">
+                                <i class="fas fa-shield-virus"></i> Action required
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <h4 class="font-bold text-slate-700 mb-6">Sales Performance</h4>
+                            <canvas id="salesChart" height="250"></canvas>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <h4 class="font-bold text-slate-700 mb-6">Recent Transactions</h4>
+                            <div class="space-y-4" id="recent-transactions">
+                                <!-- JS injected -->
+                            </div>
+                            <button class="w-full mt-6 py-2 text-indigo-600 font-medium hover:bg-indigo-50 rounded-lg transition-colors">View All History</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Inventory Tab -->
+                <section id="tab-inventory" class="tab-content hidden space-y-6">
+                    <div class="flex justify-between items-center">
+                        <div class="relative w-96">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="inventory-search" placeholder="Search medicines, SKU, or generic name..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <button onclick="toggleModal('add-product-modal')" class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-indigo-700 flex items-center gap-2">
+                            <i class="fas fa-plus"></i> Add New Product
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 border-b border-slate-100">
+                                <tr>
+                                    <th class="px-6 py-4 font-semibold text-slate-600">Product Name</th>
+                                    <th class="px-6 py-4 font-semibold text-slate-600">Category</th>
+                                    <th class="px-6 py-4 font-semibold text-slate-600">Stock Status</th>
+                                    <th class="px-6 py-4 font-semibold text-slate-600">Expiry</th>
+                                    <th class="px-6 py-4 font-semibold text-slate-600">Price</th>
+                                    <th class="px-6 py-4 font-semibold text-slate-600 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- POS Tab -->
+                <section id="tab-pos" class="tab-content hidden h-full">
+                    <div class="flex gap-6 h-[calc(100vh-180px)]">
+                        <!-- Product Selection -->
+                        <div class="flex-1 flex flex-col gap-4">
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <input type="text" id="pos-search" placeholder="Enter medicine name..." class="border border-slate-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <select class="border border-slate-200 rounded-xl px-4 py-2 outline-none">
+                                        <option>All Categories</option>
+                                        <option>Antibiotics</option>
+                                        <option>Pain Relief</option>
+                                        <option>Supplements</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 overflow-y-auto grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" id="pos-grid">
+                                <!-- Product Cards -->
+                            </div>
+                        </div>
+
+                        <!-- Cart / Checkout -->
+                        <div class="w-96 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                                <h4 class="font-bold text-slate-700">Current Order</h4>
+                                <button onclick="clearCart()" class="text-rose-500 text-sm font-medium hover:underline">Clear</button>
+                            </div>
+                            <div class="flex-1 overflow-y-auto p-4 space-y-3" id="cart-items">
+                                <!-- Cart Items -->
+                                <div class="text-center py-10 text-slate-400">
+                                    <i class="fas fa-shopping-basket text-4xl mb-3 block"></i>
+                                    Your cart is empty
+                                </div>
+                            </div>
+                            <div class="p-6 bg-slate-50 border-t border-slate-100 space-y-3">
+                                <div class="flex justify-between text-slate-500">
+                                    <span>Subtotal</span>
+                                    <span id="cart-subtotal">$0.00</span>
+                                </div>
+                                <div class="flex justify-between text-slate-500">
+                                    <span>Tax (5%)</span>
+                                    <span id="cart-tax">$0.00</span>
+                                </div>
+                                <div class="flex justify-between text-xl font-bold text-slate-800 pt-2 border-t border-slate-200">
+                                    <span>Total</span>
+                                    <span id="cart-total">$0.00</span>
+                                </div>
+                                <button onclick="processCheckout()" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold mt-4 hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200">
+                                    PROCESS PAYMENT
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Customers Tab (Simplified for space) -->
+                <section id="tab-customers" class="tab-content hidden">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 text-center py-20">
+                        <div class="w-20 h-20 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-users-cog text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-700">Customer CRM</h3>
+                        <p class="text-slate-500 mt-2 max-w-md mx-auto">Track patient history, prescriptions, and loyalty points. This module is active in the enterprise version.</p>
+                        <button class="mt-6 px-6 py-2 bg-indigo-600 text-white rounded-xl">Upgrade Access</button>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="add-product-modal" class="fixed inset-0 bg-slate-900/50 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-700">Add New Medicine</h3>
+                <button onclick="toggleModal('add-product-modal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="product-form" class="p-8 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Product Name</label>
+                        <input type="text" name="name" required class="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Category</label>
+                        <select name="category" class="w-full px-4 py-2 border border-slate-200 rounded-xl outline-none">
+                            <option>Antibiotics</option>
+                            <option>Cardiac</option>
+                            <option>Pain Relief</option>
+                            <option>Dermatology</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Stock Quantity</label>
+                        <input type="number" name="stock" required class="w-full px-4 py-2 border border-slate-200 rounded-xl outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Price ($)</label>
+                        <input type="number" step="0.01" name="price" required class="w-full px-4 py-2 border border-slate-200 rounded-xl outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Expiry Date</label>
+                        <input type="date" name="expiry" required class="w-full px-4 py-2 border border-slate-200 rounded-xl outline-none">
+                    </div>
+                </div>
+                <div class="pt-6">
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all">
+                        SAVE PRODUCT
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-8 right-8 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 translate-y-24 transition-transform duration-300 z-[100]">
+        <i class="fas fa-check-circle text-emerald-400" id="toast-icon"></i>
+        <span id="toast-message">Action successful!</span>
+    </div>
+
+    <script>
+        // --- DATA STATE ---
+        let inventory = [
+            { id: 1, name: 'Amoxicillin 500mg', category: 'Antibiotics', stock: 120, price: 12.50, expiry: '2025-08-15', status: 'In Stock' },
+            { id: 2, name: 'Paracetamol 650mg', category: 'Pain Relief', stock: 450, price: 5.99, expiry: '2026-01-10', status: 'In Stock' },
+            { id: 3, name: 'Lipitor (Atorvastatin)', category: 'Cardiac', stock: 15, price: 45.00, expiry: '2024-12-05', status: 'Low Stock' },
+            { id: 4, name: 'Metformin 850mg', category: 'Diabetes', stock: 85, price: 18.25, expiry: '2025-05-20', status: 'In Stock' },
+            { id: 5, name: 'Ventolin Inhaler', category: 'Respiratory', stock: 0, price: 32.00, expiry: '2024-06-12', status: 'Out of Stock' },
+            { id: 6, name: 'Zyrtec 10mg', category: 'Allergy', stock: 200, price: 8.50, expiry: '2025-11-30', status: 'In Stock' }
+        ];
+
+        let cart = [];
+        let salesData = [4000, 3200, 4800, 5200, 3800, 4100, 4250];
+
+        // --- UTILITIES ---
+        function toggleModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('modal-active');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msg = document.getElementById('toast-message');
+            const icon = document.getElementById('toast-icon');
+            
+            msg.innerText = message;
+            icon.className = type === 'success' ? 'fas fa-check-circle text-emerald-400' : 'fas fa-exclamation-circle text-rose-400';
+            
+            toast.classList.remove('translate-y-24');
+            setTimeout(() => toast.classList.add('translate-y-24'), 3000);
+        }
+
+        // --- NAVIGATION ---
+        function switchTab(tabId) {
+            // Hide all
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-800', 'text-white');
+                btn.classList.add('text-indigo-200');
+            });
+
+            // Show target
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`btn-${tabId}`).classList.add('bg-indigo-800', 'text-white');
+            document.getElementById(`btn-${tabId}`).classList.remove('text-indigo-200');
+            
+            // Update Title
+            const titles = {
+                dashboard: 'Dashboard Overview',
+                inventory: 'Inventory Management',
+                pos: 'Terminal Point of Sale',
+                customers: 'Customer Relationship Manager',
+                reports: 'Sales & Analytics'
+            };
+            document.getElementById('current-tab-title').innerText = titles[tabId];
+
+            if(tabId === 'inventory') renderInventory();
+            if(tabId === 'pos') renderPOS();
+        }
+
+        // --- DASHBOARD ---
+        function initCharts() {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Weekly Sales ($)',
+                        data: salesData,
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { borderDash: [5, 5] } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function renderRecentTransactions() {
+            const list = [
+                { id: '#TR-1024', user: 'Walking Customer', total: '$45.20', time: '2 mins ago' },
+                { id: '#TR-1023', user: 'James Wilson', total: '$120.00', time: '15 mins ago' },
+                { id: '#TR-1022', user: 'Walking Customer', total: '$12.50', time: '1 hour ago' }
+            ];
+            
+            const container = document.getElementById('recent-transactions');
+            container.innerHTML = list.map(tr => `
+                <div class="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-700">${tr.id}</p>
+                            <p class="text-xs text-slate-500">${tr.user}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-bold text-slate-700">${tr.total}</p>
+                        <p class="text-[10px] text-slate-400 uppercase">${tr.time}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- INVENTORY ---
+        function renderInventory() {
+            const body = document.getElementById('inventory-table-body');
+            body.innerHTML = inventory.map(item => `
+                <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <p class="font-bold text-slate-700">${item.name}</p>
+                        <p class="text-xs text-slate-400">ID: PRD-${item.id.toString().padStart(4, '0')}</p>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">${item.category}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full ${getStockColor(item.stock)}"></span>
+                            <span class="text-sm font-medium ${item.stock <= 20 ? 'text-rose-600' : 'text-slate-600'}">
+                                ${item.stock} Units
+                            </span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">${item.expiry}</td>
+                    <td class="px-6 py-4 font-bold text-slate-700">$${item.price.toFixed(2)}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex justify-center gap-2">
+                            <button class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            <button class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all">
+                                <i class="fas fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getStockColor(qty) {
+            if (qty === 0) return 'bg-rose-500';
+            if (qty <= 20) return 'bg-amber-500';
+            return 'bg-emerald-500';
+        }
+
+        // --- POS SYSTEM ---
+        function renderPOS() {
+            const grid = document.getElementById('pos-grid');
+            grid.innerHTML = inventory.map(item => `
+                <div onclick="addToCart(${item.id})" class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 rounded-md text-slate-500 uppercase">${item.category}</span>
+                        ${item.stock <= 20 ? '<span class="text-[10px] bg-rose-100 text-rose-600 px-2 py-1 rounded-md">Low</span>' : ''}
+                    </div>
+                    <h5 class="font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">${item.name}</h5>
+                    <p class="text-indigo-600 font-bold mt-2">$${item.price.toFixed(2)}</p>
+                    <div class="mt-4 flex justify-between items-center text-[10px] text-slate-400 font-medium">
+                        <span>STOCK: ${item.stock}</span>
+                        <span>EXP: ${item.expiry.split('-')[0]}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(id) {
+            const product = inventory.find(p => p.id === id);
+            if (product.stock <= 0) {
+                showToast("Out of stock!", "error");
+                return;
+            }
+
+            const existing = cart.find(c => c.id === id);
+            if (existing) {
+                existing.qty++;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const container = document.getElementById('cart-items');
+            if (cart.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-slate-400"><i class="fas fa-shopping-basket text-4xl mb-3 block"></i>Your cart is empty</div>`;
+                updateTotals(0);
+                return;
+            }
+
+            container.innerHTML = cart.map(item => `
+                <div class="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl">
+                    <div class="flex-1">
+                        <p class="text-sm font-bold text-slate-700">${item.name}</p>
+                        <p class="text-xs text-indigo-600 font-medium">$${item.price.toFixed(2)} x ${item.qty}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="changeQty(${item.id}, -1)" class="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200"><i class="fas fa-minus text-[10px]"></i></button>
+                        <span class="text-xs font-bold w-4 text-center">${item.qty}</span>
+                        <button onclick="changeQty(${item.id}, 1)" class="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200"><i class="fas fa-plus text-[10px]"></i></button>
+                    </div>
+                    <p class="text-sm font-bold text-slate-700 ml-2">$${(item.price * item.qty).toFixed(2)}</p>
+                </div>
+            `).join('');
+
+            const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+            updateTotals(subtotal);
+        }
+
+        function changeQty(id, delta) {
+            const item = cart.find(c => c.id === id);
+            const product = inventory.find(p => p.id === id);
+            
+            if (delta > 0 && item.qty >= product.stock) {
+                showToast("Max stock reached", "error");
+                return;
+            }
+
+            item.qty += delta;
+            if (item.qty <= 0) {
+                cart = cart.filter(c => c.id !== id);
+            }
+            updateCartUI();
+        }
+
+        function updateTotals(subtotal) {
+            const tax = subtotal * 0.05;
+            const total = subtotal + tax;
+            document.getElementById('cart-subtotal').innerText = `$${subtotal.toFixed(2)}`;
+            document.getElementById('cart-tax').innerText = `$${tax.toFixed(2)}`;
+            document.getElementById('cart-total').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function clearCart() {
+            cart = [];
+            updateCartUI();
+        }
+
+        function processCheckout() {
+            if (cart.length === 0) return;
+            
+            // Logic to deduct stock
+            cart.forEach(cartItem => {
+                const invItem = inventory.find(i => i.id === cartItem.id);
+                invItem.stock -= cartItem.qty;
+            });
+
+            showToast("Payment Processed Successfully!");
+            clearCart();
+            renderPOS();
+        }
+
+        // --- EVENTS & INIT ---
+        document.getElementById('product-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const newProduct = {
+                id: inventory.length + 1,
+                name: formData.get('name'),
+                category: formData.get('category'),
+                stock: parseInt(formData.get('stock')),
+                price: parseFloat(formData.get('price')),
+                expiry: formData.get('expiry'),
+                status: 'In Stock'
+            };
+            inventory.unshift(newProduct);
+            renderInventory();
+            toggleModal('add-product-modal');
+            showToast("Medicine added to inventory");
+            this.reset();
+        });
+
+        // Search Inventory
+        document.getElementById('inventory-search').addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            const filtered = inventory.filter(item => 
+                item.name.toLowerCase().includes(term) || 
+                item.category.toLowerCase().includes(term)
+            );
+            // Re-render specifically for search
+            const body = document.getElementById('inventory-table-body');
+            body.innerHTML = filtered.map(item => `
+                <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4">
+                        <p class="font-bold text-slate-700">${item.name}</p>
+                        <p class="text-xs text-slate-400">ID: PRD-${item.id.toString().padStart(4, '0')}</p>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">${item.category}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full ${getStockColor(item.stock)}"></span>
+                            <span class="text-sm font-medium ${item.stock <= 20 ? 'text-rose-600' : 'text-slate-600'}">${item.stock} Units</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">${item.expiry}</td>
+                    <td class="px-6 py-4 font-bold text-slate-700">$${item.price.toFixed(2)}</td>
+                    <td class="px-6 py-4"><div class="flex justify-center gap-2"><button class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600"><i class="fas fa-edit text-xs"></i></button></div></td>
+                </tr>
+            `).join('');
+        });
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toLocaleString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+
+        window.onload = () => {
+            initCharts();
+            renderRecentTransactions();
+            updateClock();
+            setInterval(updateClock, 60000);
+        };
+    </script>
+</body>
+</html>
