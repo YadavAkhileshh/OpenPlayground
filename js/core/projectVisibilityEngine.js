@@ -18,6 +18,8 @@ export class ProjectVisibilityEngine {
     this.state = {
       searchQuery: '',
       categories: new Set(['all']), // SINGLE active category
+      difficulties: new Set(), // Empty = show all difficulties
+      techs: new Set(), // Empty = show all techs
       collection: null,
       page: 1,
       itemsPerPage: 10,
@@ -65,6 +67,46 @@ export class ProjectVisibilityEngine {
     this.state.page = 1;
   }
 
+  /**
+   * Difficulty filter - Multi-select
+   * Pass difficultyLevel (e.g., "Beginner", "Intermediate", "Advanced")
+   */
+  toggleDifficulty(difficulty) {
+    if (!difficulty) return;
+    const normalized = difficulty.trim().toLowerCase();
+    if (this.state.difficulties.has(normalized)) {
+      this.state.difficulties.delete(normalized);
+    } else {
+      this.state.difficulties.add(normalized);
+    }
+    this.state.page = 1;
+  }
+
+  clearDifficulties() {
+    this.state.difficulties.clear();
+    this.state.page = 1;
+  }
+
+  /**
+   * Technology filter - Multi-select
+   * Pass tech (e.g., "HTML", "CSS", "JavaScript", "React")
+   */
+  toggleTech(tech) {
+    if (!tech) return;
+    const normalized = tech.trim().toLowerCase();
+    if (this.state.techs.has(normalized)) {
+      this.state.techs.delete(normalized);
+    } else {
+      this.state.techs.add(normalized);
+    }
+    this.state.page = 1;
+  }
+
+  clearTechs() {
+    this.state.techs.clear();
+    this.state.page = 1;
+  }
+
   normalizeCategory(cat) {
     if (!cat) return 'other';
     const normalized = cat.trim().toLowerCase().replace(/\s+/g, '_');
@@ -95,6 +137,8 @@ export class ProjectVisibilityEngine {
   reset() {
     this.state.searchQuery = '';
     this.state.categories = new Set(['all']);
+    this.state.difficulties.clear();
+    this.state.techs.clear();
     this.state.collection = null;
     this.state.page = 1;
     this.state.sortMode = 'default';
@@ -115,7 +159,23 @@ export class ProjectVisibilityEngine {
         this.state.categories.has('all') ||
         this.state.categories.has(projectCat);
 
-      return matchesSearch && matchesCategory;
+      // Difficulty filter: empty set means show all
+      const matchesDifficulty =
+        this.state.difficulties.size === 0 ||
+        this.state.difficulties.has(project.difficulty?.toLowerCase());
+
+      // Tech filter: empty set means show all, project must have at least one selected tech
+      const matchesTech =
+        this.state.techs.size === 0 ||
+        (project.tech &&
+          project.tech.some((t) => this.state.techs.has(t.toLowerCase())));
+
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesDifficulty &&
+        matchesTech
+      );
     });
 
     return this.applySorting(filtered);
@@ -240,6 +300,12 @@ export class ProjectVisibilityEngine {
     if (!this.state.categories.has('all')) {
       params.set('cats', [...this.state.categories].join(','));
     }
+    if (this.state.difficulties.size > 0) {
+      params.set('diff', [...this.state.difficulties].join(','));
+    }
+    if (this.state.techs.size > 0) {
+      params.set('tech', [...this.state.techs].join(','));
+    }
     if (this.state.searchQuery) {
       params.set('search', this.state.searchQuery);
     }
@@ -266,6 +332,8 @@ export class ProjectVisibilityEngine {
     const result = {
       search: params.get('search') || '',
       categories: [],
+      difficulties: [],
+      techs: [],
       page: parseInt(params.get('page'), 10) || 1,
       sort: params.get('sort') || 'default',
       view: params.get('view') || 'card',
@@ -274,6 +342,16 @@ export class ProjectVisibilityEngine {
     const cats = params.get('cats');
     if (cats) {
       result.categories = cats.split(',').map((c) => c.trim().toLowerCase());
+    }
+
+    const diff = params.get('diff');
+    if (diff) {
+      result.difficulties = diff.split(',').map((d) => d.trim().toLowerCase());
+    }
+
+    const tech = params.get('tech');
+    if (tech) {
+      result.techs = tech.split(',').map((t) => t.trim().toLowerCase());
     }
 
     return result;

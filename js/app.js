@@ -147,6 +147,10 @@ class ProjectManager {
       searchInput: document.getElementById('project-search'),
       sortSelect: document.getElementById('project-sort'),
       filterBtns: document.querySelectorAll('.filter-btn'),
+      difficultyBtns: document.querySelectorAll('[data-difficulty]'),
+      techSearch: document.getElementById('tech-search'),
+      techFilterResults: document.getElementById('tech-filter-results'),
+      techSearchWrapper: document.querySelector('.tech-search-wrapper'),
       cardViewBtn: document.getElementById('card-view-btn'),
       listViewBtn: document.getElementById('list-view-btn'),
       randomProjectBtn: document.getElementById('random-project-btn'),
@@ -195,6 +199,9 @@ class ProjectManager {
 
       console.log(`📦 Loaded ${this.state.allProjects.length} projects.`);
       this.render();
+
+      // Setup tech search after projects are loaded
+      this.setupTechSearch();
     } catch (error) {
       console.error('❌ ProjectManager Error:', error);
       if (this.elements.projectsGrid) {
@@ -304,6 +311,19 @@ class ProjectManager {
           this.state.currentPage = 1;
           this.state.visibilityEngine?.updateURL(this.state.viewMode);
           this.updateFilterUI();
+          this.render();
+        });
+      });
+    }
+
+    if (el.difficultyBtns) {
+      el.difficultyBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const difficulty = btn.dataset.difficulty;
+          this.state.visibilityEngine?.toggleDifficulty(difficulty);
+          this.state.currentPage = 1;
+          this.state.visibilityEngine?.updateURL(this.state.viewMode);
+          this.updateDifficultyUI();
           this.render();
         });
       });
@@ -571,7 +591,7 @@ class ProjectManager {
                 <div class="card" 
                      data-category="${this.escapeHtml(project.category)}" 
                      data-link="${this.escapeHtml(project.link)}"
-                     onclick="window.location.href='${this.escapeHtml(project.link)}'; event.stopPropagation();">
+                     onclick="window.viewCounter && window.viewCounter.incrementView('${this.escapeHtml(project.title)}'); window.location.href='${this.escapeHtml(project.link)}'; event.stopPropagation();">
                     <div class="card-actions">
                         <button class="preview-btn" 
                                 onclick="event.preventDefault(); event.stopPropagation(); window.openSandboxPreview(this);"
@@ -613,6 +633,11 @@ class ProjectManager {
                             </div>
                             <p class="card-description">${this.escapeHtml(project.description || '')}</p>
                             <div class="card-tech">${techHtml}</div>
+                            <div class="card-footer">
+                                <span class="view-counter" onclick="event.stopPropagation(); window.viewCounter && window.viewCounter.incrementView('${this.escapeHtml(project.title)}');">
+                                    👁️ ${(window.viewCounter?.getViewCount(project.title) || 0)} views
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -673,6 +698,9 @@ class ProjectManager {
                             <span class="category-tag">${this.capitalize(project.category)}</span>
                         </div>
                         <p class="list-card-description">${this.escapeHtml(project.description || '')}</p>
+                        <div class="list-card-meta">
+                            <span class="view-counter">👁️ ${(window.viewCounter?.getViewCount(project.title) || 0)}</span>
+                        </div>
                     </div>
                     <div class="list-card-actions">
                         <button class="preview-btn" 
@@ -697,7 +725,7 @@ class ProjectManager {
                             <i class="ri-calendar-line"></i>
                         </button>
                         <a href="${project.link}" class="view-btn" title="View Project"
-                           onclick="window.projectManagerInstance.trackProjectClick(${JSON.stringify(project).replace(/"/g, '&quot;')})">
+                           onclick="window.viewCounter && window.viewCounter.incrementView('${this.escapeHtml(project.title)}'); window.projectManagerInstance.trackProjectClick(${JSON.stringify(project).replace(/"/g, '&quot;')})">
                             <i class="ri-arrow-right-line"></i>
                         </a>
                     </div>
@@ -798,6 +826,101 @@ class ProjectManager {
     });
   }
 
+  updateDifficultyUI() {
+    const activeDifficulties = this.state.visibilityEngine.state.difficulties;
+    const el = this.elements;
+
+    if (!el.difficultyBtns) return;
+
+    el.difficultyBtns.forEach((btn) => {
+      const difficulty = btn.dataset.difficulty.toLowerCase();
+      const isActive = activeDifficulties.has(difficulty);
+      btn.classList.toggle('active', isActive);
+    });
+  }
+
+  setupTechSearch() {
+    const el = this.elements;
+    if (!el.techSearch || !el.techFilterResults) return;
+
+    // Get all unique techs
+    const allTechs = new Set();
+    this.state.allProjects.forEach((project) => {
+      if (project.tech && Array.isArray(project.tech)) {
+        project.tech.forEach((t) => allTechs.add(t));
+      }
+    });
+    const sortedTechs = Array.from(allTechs).sort();
+
+    el.techSearch.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+
+      if (!query) {
+        el.techFilterResults.classList.remove('show');
+        el.techFilterResults.innerHTML = '';
+        return;
+      }
+
+      // Filter techs based on input
+      const filtered = sortedTechs.filter((tech) =>
+        tech.toLowerCase().includes(query),
+      );
+
+      if (filtered.length === 0) {
+        el.techFilterResults.classList.remove('show');
+        el.techFilterResults.innerHTML = '';
+        return;
+      }
+
+      // Create buttons for matching techs
+      el.techFilterResults.innerHTML = '';
+      filtered.forEach((tech) => {
+        const btn = document.createElement('button');
+        btn.className = 'filter-pill tech-pill';
+        btn.dataset.tech = tech.toLowerCase();
+        btn.textContent = tech;
+
+        // Check if already selected
+        const isActive = this.state.visibilityEngine.state.techs.has(
+          tech.toLowerCase(),
+        );
+        if (isActive) btn.classList.add('active');
+
+        btn.addEventListener('click', () => {
+          this.state.visibilityEngine?.toggleTech(tech);
+          this.state.currentPage = 1;
+          this.state.visibilityEngine?.updateURL(this.state.viewMode);
+          this.updateTechUI();
+          this.render();
+          // Re-trigger search to update results
+          el.techSearch.dispatchEvent(new Event('input'));
+        });
+
+        el.techFilterResults.appendChild(btn);
+      });
+
+      el.techFilterResults.classList.add('show');
+    });
+
+    // Close results when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!el.techSearchWrapper?.contains(e.target)) {
+        el.techFilterResults.classList.remove('show');
+      }
+    });
+  }
+
+  updateTechUI() {
+    const activeTechs = this.state.visibilityEngine.state.techs;
+    const techBtns = document.querySelectorAll('.tech-pill');
+
+    techBtns.forEach((btn) => {
+      const tech = btn.dataset.tech;
+      const isActive = activeTechs.has(tech);
+      btn.classList.toggle('active', isActive);
+    });
+  }
+
   resetFilters() {
     if (!this.state.visibilityEngine) return;
     this.state.visibilityEngine.reset();
@@ -805,6 +928,8 @@ class ProjectManager {
     if (this.elements.searchInput) this.elements.searchInput.value = '';
     this.state.visibilityEngine.updateURL(this.state.viewMode);
     this.updateFilterUI();
+    this.updateDifficultyUI();
+    this.updateTechUI();
     this.render();
   }
 
@@ -828,6 +953,22 @@ class ProjectManager {
         engine.state.categories.add(c.toLowerCase()),
       );
       this.updateFilterUI();
+    }
+
+    // Difficulties
+    if (urlState.difficulties && urlState.difficulties.length > 0) {
+      urlState.difficulties.forEach((d) =>
+        engine.state.difficulties.add(d.toLowerCase()),
+      );
+      this.updateDifficultyUI();
+    }
+
+    // Techs
+    if (urlState.techs && urlState.techs.length > 0) {
+      urlState.techs.forEach((t) =>
+        engine.state.techs.add(t.toLowerCase()),
+      );
+      this.updateTechUI();
     }
 
     // Page

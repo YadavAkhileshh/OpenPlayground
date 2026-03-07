@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>LocalLoop Debug</title>
+</head>
+
+<body>
+    <h1>LocalLoop Debug Console</h1>
+    <div id="output" style="font-family: monospace; white-space: pre-wrap;"></div>
+
+    <script src="scripts/core/mini-dom.js"></script>
+    <script src="scripts/core/crypto.js"></script>
+    <script src="scripts/core/storage-bus.js"></script>
+    <script src="scripts/utils/garbage-collector.js"></script>
+    <script src="scripts/app/model.js"></script>
+    <script src="scripts/app/view.js"></script>
+    <script src="scripts/app/controller.js"></script>
+    <script src="scripts/ui/editor.js"></script>
+    <script src="scripts/ui/emoji-picker.js"></script>
+
+    <script>
+        const output = document.getElementById('output');
+        function log(msg) {
+            output.textContent += msg + '\n';
+            console.log(msg);
+        }
+
+        // Capture errors
+        window.addEventListener('error', (e) => {
+            log('ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+        });
+
+        setTimeout(() => {
+            log('=== DIAGNOSTIC REPORT ===\n');
+            log('1. MiniDOM ($): ' + (typeof window.$ !== 'undefined' ? 'OK' : 'MISSING'));
+            log('2. Crypto: ' + (typeof window.Crypto !== 'undefined' ? 'OK' : 'MISSING'));
+            log('3. StorageBus: ' + (typeof window.StorageBus !== 'undefined' ? 'OK' : 'MISSING'));
+            log('4. Model: ' + (typeof window.Model !== 'undefined' ? 'OK' : 'MISSING'));
+            log('5. View: ' + (typeof window.View !== 'undefined' ? 'OK' : 'MISSING'));
+            log('6. Controller: ' + (typeof window.Controller !== 'undefined' ? 'OK' : 'MISSING'));
+            log('7. Editor: ' + (typeof window.Editor !== 'undefined' ? 'OK' : 'MISSING'));
+
+            if (window.StorageBus) {
+                log('\n8. StorageBus Tab ID: ' + window.StorageBus.tabId);
+                log('9. Active Users: ' + window.StorageBus.getActiveUsers());
+
+                // Check localStorage
+                log('\n10. LocalStorage Keys:');
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.startsWith('localloop_')) {
+                        log('   - ' + key);
+                    }
+                }
+            }
+
+            if (window.Model) {
+                log('\n11. Messages Count: ' + window.Model.getMessages().length);
+                log('12. Current User: ' + window.Model.getCurrentUser());
+            }
+        }, 500);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,330 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Rajdhani:wght@300;400;600&display=swap');
+
+:root {
+    --sky-top: #0a0a1a;
+    --sky-mid: #0d1b3e;
+    --sky-low: #1a3a6e;
+    --ground: #1a2e0d;
+    --ground-light: #2a4a15;
+    --lightning-col: #fffde0;
+    --storm-blue: #4a90d9;
+    --rain-col: #89c4e1;
+    --gold: #f5c842;
+    --human-col: #e87050;
+    --cloud-white: rgba(220, 235, 255, 0.95);
+    --ui-bg: rgba(5, 10, 30, 0.85);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #000;
+    overflow: hidden;
+    font-family: 'Rajdhani', sans-serif;
+    cursor: none;
+    user-select: none;
+}
+
+#gameWrapper {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#bgCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+#gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+#fxCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* HUD */
+#hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(to bottom, rgba(0, 0, 15, 0.9) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+#titleTag {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    text-shadow: 0 0 20px rgba(245, 200, 66, 0.7), 0 0 40px rgba(245, 200, 66, 0.3);
+}
+
+.hudGroup {
+    display: flex;
+    gap: 28px;
+    align-items: center;
+}
+
+.hudItem {
+    text-align: center;
+}
+
+.hudLabel {
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(160, 190, 230, 0.6);
+    margin-bottom: 2px;
+}
+
+.hudValue {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 0 12px rgba(100, 160, 255, 0.8);
+    line-height: 1;
+}
+
+#timerVal.urgent {
+    color: #ff6060;
+    text-shadow: 0 0 12px rgba(255, 80, 80, 0.9);
+    animation: pulse 0.5s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Power bar */
+#powerBar {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+    pointer-events: none;
+}
+
+.powerSlot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.powerKey {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: rgba(160, 200, 255, 0.7);
+}
+
+.powerIcon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    border: 2px solid rgba(100, 150, 255, 0.3);
+    background: rgba(5, 15, 40, 0.8);
+    backdrop-filter: blur(8px);
+    position: relative;
+    transition: all 0.15s;
+}
+
+.powerIcon.ready {
+    border-color: rgba(100, 200, 255, 0.8);
+    box-shadow: 0 0 14px rgba(80, 160, 255, 0.5);
+}
+
+.powerIcon.active {
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(245, 200, 66, 0.8);
+    transform: scale(1.1);
+}
+
+.powerIcon.cooling {
+    border-color: rgba(100, 100, 150, 0.3);
+    opacity: 0.5;
+}
+
+.cooldownOverlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 0 0 10px 10px;
+    transition: height 0.1s linear;
+}
+
+/* Screen flash */
+#flash {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 20;
+    pointer-events: none;
+    background: #fff;
+    opacity: 0;
+    transition: opacity 0.05s;
+}
+
+/* Overlay screens */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(5, 15, 50, 0.97) 0%, rgba(0, 0, 10, 0.99) 100%);
+    gap: 24px;
+}
+
+.screen h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 900;
+    color: var(--gold);
+    text-shadow: 0 0 40px rgba(245, 200, 66, 0.6), 0 0 80px rgba(245, 200, 66, 0.3);
+    text-align: center;
+    letter-spacing: 0.06em;
+    line-height: 1.1;
+}
+
+.screen .subtitle {
+    font-size: 1.1rem;
+    color: rgba(160, 200, 255, 0.8);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+.screen .instructions {
+    max-width: 480px;
+    text-align: center;
+    color: rgba(180, 210, 255, 0.75);
+    font-size: 0.95rem;
+    line-height: 1.8;
+    border: 1px solid rgba(100, 150, 255, 0.2);
+    padding: 20px 28px;
+    border-radius: 12px;
+    background: rgba(10, 20, 60, 0.5);
+}
+
+.screen .instructions strong {
+    color: var(--gold);
+}
+
+.bigBtn {
+    padding: 16px 52px;
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #0a0a1a;
+    background: linear-gradient(135deg, #f5c842, #e8a020);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 0 30px rgba(245, 200, 66, 0.5);
+    transition: all 0.2s;
+    text-transform: uppercase;
+    pointer-events: all;
+}
+
+.bigBtn:hover {
+    transform: scale(1.06);
+    box-shadow: 0 0 50px rgba(245, 200, 66, 0.8);
+}
+
+#scoreDisplay {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 3rem;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(100, 180, 255, 0.8);
+}
+
+.scoreLabel {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: rgba(160, 190, 255, 0.6);
+    text-transform: uppercase;
+}
+
+/* Kill notification */
+#killNotif {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 15;
+    pointer-events: none;
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.3rem;
+    color: var(--gold);
+    text-shadow: 0 0 20px rgba(245, 200, 66, 0.9);
+    opacity: 0;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+}
+
+/* Storm vignette */
+#vignette {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 8;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 5, 30, 0.7) 100%);
+}

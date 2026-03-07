@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GeoPulse Pro - Smart Navigation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Leaflet CSS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100%;
+            z-index: 1;
+            background: #020617;
+        }
+
+        .glass-ui {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { transform: scale(1.1); opacity: 0.8; box-shadow: 0 0 0 20px rgba(59, 130, 246, 0); }
+            100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+
+        .speed-glow-low { text-shadow: 0 0 10px rgba(56, 189, 248, 0.5); color: #38bdf8; }
+        .speed-glow-mid { text-shadow: 0 0 10px rgba(250, 204, 21, 0.5); color: #facc15; }
+        .speed-glow-high { text-shadow: 0 0 15px rgba(239, 68, 68, 0.6); color: #ef4444; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        #search-results {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Top Navigation & Search -->
+    <div class="fixed top-4 left-4 right-4 z-[1000] flex flex-col items-center pointer-events-none">
+        <div class="w-full max-w-2xl flex gap-3 pointer-events-auto">
+            <div class="flex-1 relative">
+                <div class="glass-ui flex items-center px-5 py-3.5 rounded-2xl">
+                    <i class="fas fa-location-dot text-blue-500 mr-4"></i>
+                    <input type="text" id="search-input" placeholder="Search address or place..." 
+                           class="bg-transparent border-none outline-none w-full text-sm font-medium placeholder-gray-500">
+                    <button id="search-clear" class="hidden text-gray-500 hover:text-white mx-2">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div class="h-6 w-[1px] bg-gray-700 mx-3"></div>
+                    <button class="text-gray-400 hover:text-white" onclick="triggerSearch()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <!-- Results Dropdown -->
+                <div id="search-results" class="hidden absolute top-full left-0 right-0 mt-2 glass-ui rounded-2xl overflow-hidden p-2">
+                    <!-- Dynamic results here -->
+                </div>
+            </div>
+            
+            <button class="glass-ui w-14 h-14 flex items-center justify-center rounded-2xl text-blue-400 hover:text-blue-300 shadow-xl pointer-events-auto" onclick="centerToUser()">
+                <i class="fas fa-crosshairs text-xl"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Status Overlays -->
+    <div class="fixed right-4 top-24 z-[1000] flex flex-col gap-4 pointer-events-none">
+        <!-- Speed Gauge -->
+        <div class="glass-ui p-5 rounded-3xl min-w-[160px] pointer-events-auto text-center">
+            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Velocity</p>
+            <div class="flex items-baseline justify-center gap-1">
+                <span id="speed-val" class="text-4xl font-bold speed-glow-low">0</span>
+                <span class="text-xs text-gray-400 font-bold">KM/H</span>
+            </div>
+        </div>
+
+        <!-- Compass & Satellites -->
+        <div class="glass-ui p-4 rounded-3xl pointer-events-auto flex flex-col gap-4 items-center">
+            <div class="text-center">
+                <i class="fas fa-satellite text-emerald-400 mb-1"></i>
+                <p id="accuracy-text" class="text-[9px] font-bold text-gray-400">HIGH ACC</p>
+            </div>
+            <div class="w-[1px] h-4 bg-gray-800"></div>
+            <div class="text-center">
+                <i class="fas fa-mountain-sun text-amber-400 mb-1"></i>
+                <p class="text-[9px] font-bold text-gray-400"><span id="alt-val">--</span>M</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Dashboard -->
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-lg px-4">
+        <div class="glass-ui p-7 rounded-[2.5rem]">
+            <div class="flex justify-between items-start mb-6">
+                <div class="flex-1">
+                    <h2 class="text-lg font-bold flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Current Position
+                    </h2>
+                    <p id="address-display" class="text-sm text-gray-400 mt-1 truncate pr-4">Locating address...</p>
+                </div>
+                <div class="text-right">
+                    <p id="coord-display" class="text-[10px] text-gray-500 font-mono tracking-tighter">0.00000, 0.00000</p>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-2 gap-4">
+                <button id="trip-btn" onclick="toggleTrip()" class="group bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-900/40">
+                    <div id="record-dot" class="hidden w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
+                    <i id="trip-icon" class="fas fa-play text-xs group-hover:scale-110 transition"></i>
+                    <span id="trip-text">Start Recording</span>
+                </button>
+                <button class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-3 border border-white/5">
+                    <i class="fas fa-layer-group text-xs"></i>
+                    <span>Layers</span>
+                </button>
+            </div>
+
+            <!-- Live Trip Analytics -->
+            <div id="trip-stats" class="hidden mt-6 pt-6 border-t border-white/5 grid grid-cols-3 gap-2">
+                <div class="text-center">
+                    <p class="text-[9px] text-gray-500 font-bold uppercase mb-1">Distance</p>
+                    <p class="text-lg font-bold"><span id="dist-val">0.00</span><span class="text-xs ml-1 text-gray-500">km</span></p>
+                </div>
+                <div class="text-center">
+                    <p class="text-[9px] text-gray-500 font-bold uppercase mb-1">Duration</p>
+                    <p class="text-lg font-bold" id="timer-val">00:00</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-[9px] text-gray-500 font-bold uppercase mb-1">Avg Speed</p>
+                    <p class="text-lg font-bold" id="avg-speed">0.0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <script>
+        let map, userMarker, accuracyCircle, tripPath;
+        let isTripActive = false;
+        let tripStartTime, tripInterval;
+        let totalDistance = 0, lastPos = null;
+        let pathCoords = [];
+
+        // UI Elements
+        const searchInput = document.getElementById('search-input');
+        const searchResults = document.getElementById('search-results');
+        const speedVal = document.getElementById('speed-val');
+
+        function initMap() {
+            try {
+                if (!window.L) {
+                    console.error("Leaflet not loaded");
+                    return;
+                }
+                
+                map = L.map('map', {
+                    zoomControl: false,
+                    attributionControl: false
+                }).setView([0, 0], 2);
+
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    maxZoom: 20
+                }).addTo(map);
+
+                // Path for trip recording
+                tripPath = L.polyline([], {
+                    color: '#3b82f6',
+                    weight: 6,
+                    opacity: 0.6,
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                }).addTo(map);
+
+                startTracking();
+                setupSearchListeners();
+            } catch (err) {
+                console.error("Map initialization failed:", err);
+            }
+        }
+
+        function startTracking() {
+            if (!navigator.geolocation) {
+                document.getElementById('coord-display').innerText = "GPS Not Supported";
+                return;
+            }
+
+            navigator.geolocation.watchPosition(updatePosition, (err) => {
+                console.warn(`GPS Error (${err.code}): ${err.message}`);
+                document.getElementById('coord-display').innerText = "GPS Error/Blocked";
+                // Show a friendly message if user denied permission
+                if (err.code === 1) {
+                    document.getElementById('address-display').innerText = "Please enable GPS permissions.";
+                }
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            });
+        }
+
+        function updatePosition(position) {
+            if (!position || !position.coords) return;
+            
+            const { latitude, longitude, speed, altitude, accuracy } = position.coords;
+            const currentPos = [latitude, longitude];
+            
+            // 1. Update Map UI
+            if (!userMarker) {
+                map.setView(currentPos, 16);
+                userMarker = L.circleMarker(currentPos, {
+                    radius: 8, fillColor: "#3b82f6", color: "white", weight: 3, opacity: 1, fillOpacity: 1, className: 'pulse-animation'
+                }).addTo(map);
+                accuracyCircle = L.circle(currentPos, { radius: accuracy, fillColor: "#3b82f6", fillOpacity: 0.1, stroke: false }).addTo(map);
+                reverseGeocode(latitude, longitude);
+            } else {
+                userMarker.setLatLng(currentPos);
+                accuracyCircle.setLatLng(currentPos).setRadius(accuracy);
+            }
+
+            // 2. Metrics UI
+            const speedKmh = speed ? Math.round(speed * 3.6) : 0;
+            if (speedVal) {
+                speedVal.innerText = speedKmh;
+                updateSpeedColor(speedKmh);
+            }
+            
+            const altEl = document.getElementById('alt-val');
+            if (altEl) altEl.innerText = altitude ? Math.round(altitude) : '--';
+            
+            const coordEl = document.getElementById('coord-display');
+            if (coordEl) coordEl.innerText = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+            
+            const accEl = document.getElementById('accuracy-text');
+            if (accEl) accEl.innerText = accuracy < 20 ? "HIGH ACC" : "LOW ACC";
+
+            // 3. Trip Logic
+            if (isTripActive) {
+                pathCoords.push(currentPos);
+                tripPath.setLatLngs(pathCoords);
+                
+                if (lastPos) {
+                    const stepDist = map.distance(lastPos, currentPos);
+                    totalDistance += (stepDist / 1000);
+                    const distEl = document.getElementById('dist-val');
+                    if (distEl) distEl.innerText = totalDistance.toFixed(2);
+                    
+                    const durationHrs = (Date.now() - tripStartTime) / 3600000;
+                    const avgEl = document.getElementById('avg-speed');
+                    if (avgEl) avgEl.innerText = durationHrs > 0 ? (totalDistance / durationHrs).toFixed(1) : "0.0";
+                }
+            }
+            lastPos = currentPos;
+        }
+
+        function updateSpeedColor(speed) {
+            if (!speedVal) return;
+            speedVal.className = "text-4xl font-bold " + (speed > 80 ? "speed-glow-high" : speed > 40 ? "speed-glow-mid" : "speed-glow-low");
+        }
+
+        async function reverseGeocode(lat, lon) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
+                const data = await res.json();
+                const addrEl = document.getElementById('address-display');
+                if (addrEl) addrEl.innerText = data.display_name || "Current Location";
+            } catch (e) {
+                const addrEl = document.getElementById('address-display');
+                if (addrEl) addrEl.innerText = "Location active";
+            }
+        }
+
+        // --- Search Logic ---
+        function setupSearchListeners() {
+            if (!searchInput) return;
+            searchInput.addEventListener('input', e => {
+                const val = e.target.value;
+                const clearBtn = document.getElementById('search-clear');
+                if (clearBtn) clearBtn.classList.toggle('hidden', !val);
+                if (val.length < 3) return searchResults.classList.add('hidden');
+                debounceSearch(val);
+            });
+
+            const clearBtn = document.getElementById('search-clear');
+            if (clearBtn) {
+                clearBtn.onclick = () => {
+                    searchInput.value = '';
+                    searchResults.classList.add('hidden');
+                    clearBtn.classList.add('hidden');
+                };
+            }
+        }
+
+        let searchTimeout;
+        function debounceSearch(query) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => triggerSearch(query), 500);
+        }
+
+        async function triggerSearch(q) {
+            const query = q || (searchInput ? searchInput.value : "");
+            if (!query) return;
+            
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+                const data = await res.json();
+                displaySearchResults(data);
+            } catch (e) { console.error("Search failed:", e); }
+        }
+
+        function displaySearchResults(results) {
+            if (!searchResults) return;
+            searchResults.innerHTML = '';
+            if (!results || results.length === 0) return searchResults.classList.add('hidden');
+            
+            results.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "p-3 hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0 flex items-center gap-3";
+                div.innerHTML = `<i class="fas fa-location-dot text-gray-500 text-xs"></i>
+                                 <div class="truncate"><p class="text-sm font-semibold truncate">${item.display_name}</p></div>`;
+                div.onclick = () => {
+                    const latlng = [parseFloat(item.lat), parseFloat(item.lon)];
+                    map.flyTo(latlng, 15);
+                    L.marker(latlng).addTo(map).bindPopup(item.display_name).openPopup();
+                    searchResults.classList.add('hidden');
+                };
+                searchResults.appendChild(div);
+            });
+            searchResults.classList.remove('hidden');
+        }
+
+        function toggleTrip() {
+            isTripActive = !isTripActive;
+            const btn = document.getElementById('trip-btn');
+            const stats = document.getElementById('trip-stats');
+            const dot = document.getElementById('record-dot');
+
+            if (isTripActive) {
+                if (btn) {
+                    btn.classList.replace('bg-blue-600', 'bg-red-600');
+                    btn.classList.replace('hover:bg-blue-500', 'hover:bg-red-500');
+                }
+                const textEl = document.getElementById('trip-text');
+                if (textEl) textEl.innerText = "Stop Session";
+                const iconEl = document.getElementById('trip-icon');
+                if (iconEl) iconEl.className = "fas fa-stop text-xs";
+                
+                if (dot) dot.classList.remove('hidden');
+                if (stats) stats.classList.remove('hidden');
+                
+                pathCoords = lastPos ? [lastPos] : [];
+                totalDistance = 0;
+                tripStartTime = Date.now();
+                tripInterval = setInterval(updateTimer, 1000);
+            } else {
+                if (btn) {
+                    btn.classList.replace('bg-red-600', 'bg-blue-600');
+                    btn.classList.replace('hover:bg-red-500', 'hover:bg-blue-500');
+                }
+                const textEl = document.getElementById('trip-text');
+                if (textEl) textEl.innerText = "Start Recording";
+                const iconEl = document.getElementById('trip-icon');
+                if (iconEl) iconEl.className = "fas fa-play text-xs";
+                
+                if (dot) dot.classList.add('hidden');
+                clearInterval(tripInterval);
+            }
+        }
+
+        function updateTimer() {
+            const diff = Date.now() - tripStartTime;
+            const mins = Math.floor(diff / 60000).toString().padStart(2, '0');
+            const secs = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+            const timerEl = document.getElementById('timer-val');
+            if (timerEl) timerEl.innerText = `${mins}:${secs}`;
+        }
+
+        function centerToUser() {
+            if (lastPos && map) map.flyTo(lastPos, 17);
+        }
+
+        // Use window.onload to ensure DOM and Leaflet are ready
+        window.addEventListener('load', initMap);
+    </script>
+</body>
+</html>

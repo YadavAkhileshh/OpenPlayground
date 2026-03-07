@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroSmart - Advanced Climate Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #080a0f;
+            color: #f1f5f9;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .temp-gradient {
+            background: conic-gradient(from 180deg, #3b82f6, #06b6d4, #10b981, #f59e0b, #ef4444);
+        }
+
+        .thermostat-knob {
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .active-glow {
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+            margin-top: -10px;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 3s infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- Navbar -->
+    <nav class="p-6 flex justify-between items-center sticky top-0 z-50 glass-panel mb-8">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-900/40">
+                <i class="fas fa-wind text-white text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">Aero<span class="text-blue-400">Smart</span></h1>
+                <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Living Room • Zone 1</p>
+            </div>
+        </div>
+        <div class="flex gap-4">
+            <button class="w-10 h-10 rounded-full border border-gray-800 flex items-center justify-center hover:bg-gray-800 transition">
+                <i class="far fa-bell text-gray-400"></i>
+            </button>
+            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-emerald-500 p-[2px]">
+                <div class="w-full h-full rounded-full bg-gray-900 flex items-center justify-center overflow-hidden">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User">
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 max-w-5xl">
+        <div class="grid lg:grid-cols-12 gap-8">
+            
+            <!-- Left Column: Main Controls -->
+            <div class="lg:col-span-7 space-y-8">
+                
+                <!-- Thermostat Card -->
+                <div class="glass-panel rounded-[2.5rem] p-10 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-8">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+                            System Optimized
+                        </span>
+                    </div>
+
+                    <div class="flex flex-col items-center py-4">
+                        <div class="relative w-64 h-64 flex items-center justify-center">
+                            <!-- SVG Gauge Background -->
+                            <svg class="absolute inset-0 w-full h-full transform -rotate-90">
+                                <circle cx="128" cy="128" r="110" stroke="currentColor" stroke-width="8" fill="transparent" class="text-gray-800/50" />
+                                <circle id="temp-gauge" cx="128" cy="128" r="110" stroke="currentColor" stroke-width="12" fill="transparent" 
+                                    stroke-dasharray="690" stroke-dashoffset="345"
+                                    class="text-blue-500 transition-all duration-700 ease-out" stroke-linecap="round" />
+                            </svg>
+                            
+                            <!-- Display -->
+                            <div class="text-center z-10">
+                                <p class="text-gray-500 text-sm font-semibold mb-1">Target Temp</p>
+                                <div class="flex items-start justify-center">
+                                    <span id="target-temp-display" class="text-7xl font-bold tracking-tighter">22</span>
+                                    <span class="text-3xl font-light text-blue-400 mt-2">°C</span>
+                                </div>
+                                <p id="current-temp-info" class="text-xs text-gray-400 mt-2">Indoor: 24.5°C</p>
+                            </div>
+                        </div>
+
+                        <!-- Slider Control -->
+                        <div class="w-full mt-10 px-4">
+                            <div class="flex justify-between text-xs text-gray-500 font-bold mb-4 uppercase tracking-widest">
+                                <span>16°C</span>
+                                <span>Comfort Zone</span>
+                                <span>30°C</span>
+                            </div>
+                            <input type="range" id="temp-slider" min="16" max="30" value="22" class="w-full">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Environment Stats -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="glass-panel p-6 rounded-3xl flex flex-col items-center">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 mb-3">
+                            <i class="fas fa-droplet text-xl"></i>
+                        </div>
+                        <p class="text-2xl font-bold">42<span class="text-sm font-normal text-gray-500 ml-1">%</span></p>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Humidity</p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-3xl flex flex-col items-center">
+                        <div class="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 mb-3">
+                            <i class="fas fa-wind text-xl"></i>
+                        </div>
+                        <p class="text-2xl font-bold">94<span class="text-sm font-normal text-gray-500 ml-1">AQI</span></p>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Air Quality</p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-3xl flex flex-col items-center">
+                        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-400 mb-3">
+                            <i class="fas fa-bolt text-xl"></i>
+                        </div>
+                        <p class="text-2xl font-bold">1.2<span class="text-sm font-normal text-gray-500 ml-1">kW</span></p>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Power</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Devices & Modes -->
+            <div class="lg:col-span-5 space-y-8">
+                
+                <!-- Device Toggles -->
+                <div class="glass-panel rounded-[2.5rem] p-8">
+                    <h3 class="text-lg font-bold mb-6 flex items-center justify-between">
+                        Connected Devices
+                        <button class="text-blue-400 text-sm hover:underline">Add New</button>
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <!-- Device 1 -->
+                        <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                                    <i class="fas fa-snowflake"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold">Air Conditioner</p>
+                                    <p class="text-xs text-gray-500">Cooling • Auto</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" checked class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- Device 2 -->
+                        <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-gray-800 flex items-center justify-center text-gray-400">
+                                    <i class="fas fa-fan animate-spin-slow"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold">Smart Fan</p>
+                                    <p class="text-xs text-gray-500">Speed 2 • Fixed</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- Device 3 -->
+                        <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                    <i class="fas fa-tint"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold">Humidifier</p>
+                                    <p class="text-xs text-gray-500">Standby</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" checked class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Smart Scenes -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="setScene('eco')" class="glass-panel p-6 rounded-3xl hover:bg-emerald-500/10 border-emerald-500/10 transition-all text-left group">
+                        <i class="fas fa-leaf text-emerald-500 mb-4 group-hover:scale-125 transition"></i>
+                        <p class="font-bold">Eco Mode</p>
+                        <p class="text-xs text-gray-500">Optimal energy</p>
+                    </button>
+                    <button onclick="setScene('turbo')" class="glass-panel p-6 rounded-3xl hover:bg-orange-500/10 border-orange-500/10 transition-all text-left group">
+                        <i class="fas fa-fire text-orange-500 mb-4 group-hover:scale-125 transition"></i>
+                        <p class="font-bold">Turbo</p>
+                        <p class="text-xs text-gray-500">Fast cooling</p>
+                    </button>
+                </div>
+
+                <!-- Energy Chart Placeholder -->
+                <div class="glass-panel rounded-[2.5rem] p-8">
+                    <h3 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6">Energy Consumption (24h)</h3>
+                    <div class="h-32 flex items-end gap-2 px-2">
+                        <div class="flex-1 bg-blue-500/20 rounded-t-lg h-1/2"></div>
+                        <div class="flex-1 bg-blue-500/30 rounded-t-lg h-3/4"></div>
+                        <div class="flex-1 bg-blue-500/20 rounded-t-lg h-2/3"></div>
+                        <div class="flex-1 bg-blue-600 rounded-t-lg h-full active-glow"></div>
+                        <div class="flex-1 bg-blue-500/40 rounded-t-lg h-4/5"></div>
+                        <div class="flex-1 bg-blue-500/20 rounded-t-lg h-1/2"></div>
+                        <div class="flex-1 bg-blue-500/10 rounded-t-lg h-1/4"></div>
+                    </div>
+                    <div class="flex justify-between mt-4 text-[10px] text-gray-600 font-bold">
+                        <span>08:00</span>
+                        <span>12:00</span>
+                        <span>16:00</span>
+                        <span>20:00</span>
+                        <span>Now</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const slider = document.getElementById('temp-slider');
+        const display = document.getElementById('target-temp-display');
+        const gauge = document.getElementById('temp-gauge');
+
+        // Initial update
+        updateThermostat(slider.value);
+
+        slider.oninput = function() {
+            updateThermostat(this.value);
+        }
+
+        function updateThermostat(val) {
+            display.innerText = val;
+            
+            // Calculate gauge offset
+            // Range 16-30 (14 degrees)
+            // Full circle dasharray is approx 690
+            // Offset logic: 345 is half circle
+            const percentage = (val - 16) / 14;
+            const offset = 690 - (percentage * 690);
+            
+            gauge.style.strokeDashoffset = offset;
+
+            // Change color based on temperature
+            if (val < 20) {
+                gauge.classList.add('text-blue-500');
+                gauge.classList.remove('text-orange-500', 'text-emerald-500');
+            } else if (val > 25) {
+                gauge.classList.add('text-orange-500');
+                gauge.classList.remove('text-blue-500', 'text-emerald-500');
+            } else {
+                gauge.classList.add('text-emerald-500');
+                gauge.classList.remove('text-blue-500', 'text-orange-500');
+            }
+        }
+
+        function setScene(type) {
+            if (type === 'eco') {
+                slider.value = 24;
+                updateThermostat(24);
+            } else if (type === 'turbo') {
+                slider.value = 18;
+                updateThermostat(18);
+            }
+            
+            // Visual feedback
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-8 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-2xl z-[100] transition-all opacity-0 translate-y-4";
+            toast.innerText = `Scene "${type.toUpperCase()}" Activated`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-4');
+            }, 100);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

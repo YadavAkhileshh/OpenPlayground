@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spin the Wheel Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at center, #1e293b, #0f172a);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 90vw;
+            max-width: 500px;
+            aspect-ratio: 1 / 1;
+            margin: 20px auto;
+        }
+
+        #wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 8px solid #334155;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+            transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+            background: #1e293b;
+        }
+
+        .pointer {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 50px;
+            background: #ef4444;
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            z-index: 20;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5));
+        }
+
+        .center-hub {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 4px solid #334155;
+        }
+
+        .reward-item {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        
+        <!-- Left Side: The Wheel -->
+        <div class="flex flex-col items-center">
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+                Lucky Spin
+            </h1>
+            <p class="text-slate-400 mb-8">Test your luck and win rewards!</p>
+
+            <div class="wheel-container">
+                <div class="pointer"></div>
+                <div class="center-hub">
+                    <div class="w-3 h-3 bg-slate-800 rounded-full"></div>
+                </div>
+                <canvas id="wheel"></canvas>
+            </div>
+
+            <button id="spinBtn" class="mt-8 px-12 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold rounded-full text-xl shadow-lg transform transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                SPIN NOW
+            </button>
+        </div>
+
+        <!-- Right Side: Rewards & History -->
+        <div class="bg-slate-800/50 backdrop-blur-md rounded-3xl p-6 border border-slate-700 shadow-xl h-fit">
+            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <span>🏆</span> Your Rewards
+            </h2>
+            
+            <div id="emptyState" class="text-slate-500 italic py-8 text-center">
+                Nothing won yet. Spin the wheel!
+            </div>
+
+            <div id="rewardList" class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                <!-- Rewards will appear here -->
+            </div>
+
+            <div class="mt-6 pt-6 border-t border-slate-700">
+                <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Available Prizes</h3>
+                <div id="prizesGrid" class="grid grid-cols-2 gap-2 text-xs">
+                    <!-- Prize legend will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Result -->
+    <div id="resultModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border-2 border-blue-500 p-8 rounded-3xl max-w-sm w-full text-center shadow-[0_0_50px_rgba(59,130,246,0.5)] transform scale-90 transition-transform duration-300" id="modalContent">
+            <div class="text-6xl mb-4" id="modalEmoji">🎁</div>
+            <h3 class="text-3xl font-black mb-2" id="modalTitle">JACKPOT!</h3>
+            <p class="text-slate-300 mb-6" id="modalDesc">You won a Rare Item</p>
+            <button onclick="closeModal()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition">
+                AWESOME!
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spinBtn');
+        const rewardList = document.getElementById('rewardList');
+        const emptyState = document.getElementById('emptyState');
+        const resultModal = document.getElementById('resultModal');
+        const modalContent = document.getElementById('modalContent');
+        
+        const rewards = [
+            { label: '100 Gems', color: '#3b82f6', emoji: '💎', chance: 1, desc: 'Premium currency added!' },
+            { label: 'Double XP', color: '#8b5cf6', emoji: '⚡', chance: 1, desc: 'Level up twice as fast!' },
+            { label: 'Better Luck', color: '#ec4899', emoji: '🍀', chance: 1, desc: 'Next spin has better odds!' },
+            { label: 'Free Key', color: '#f59e0b', emoji: '🔑', chance: 1, desc: 'Unlock a mystery chest!' },
+            { label: 'Mystery Box', color: '#10b981', emoji: '📦', chance: 1, desc: 'What could be inside?' },
+            { label: 'Try Again', color: '#64748b', emoji: '🔄', chance: 1, desc: 'Spin one more time!' },
+            { label: 'Super Rare', color: '#f43f5e', emoji: '⭐', chance: 1, desc: 'Unbelievable luck!' },
+            { label: 'Small Gold', color: '#fbbf24', emoji: '💰', chance: 1, desc: 'A handful of coins.' }
+        ];
+
+        let currentRotation = 0;
+        let isSpinning = false;
+
+        // Initialize Canvas
+        function initWheel() {
+            const size = 1000; // High res internal size
+            canvas.width = size;
+            canvas.height = size;
+            drawWheel();
+            
+            // Populate legend
+            const grid = document.getElementById('prizesGrid');
+            rewards.forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2 text-slate-300';
+                div.innerHTML = `<span style="color:${r.color}">●</span> ${r.label}`;
+                grid.appendChild(div);
+            });
+        }
+
+        function drawWheel() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = canvas.width / 2 - 20;
+            const sliceAngle = (2 * Math.PI) / rewards.length;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            rewards.forEach((reward, i) => {
+                const angle = i * sliceAngle;
+                
+                // Draw slice
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, angle, angle + sliceAngle);
+                ctx.closePath();
+                ctx.fillStyle = reward.color;
+                ctx.fill();
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Draw Text
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(angle + sliceAngle / 2);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 36px Poppins';
+                ctx.fillText(reward.emoji + " " + reward.label, radius - 40, 10);
+                ctx.restore();
+            });
+        }
+
+        // Sound Engine (Synthesized)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTick() {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playWin() {
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + (i * 0.1));
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime + (i * 0.1));
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (i * 0.1) + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(audioCtx.currentTime + (i * 0.1));
+                osc.stop(audioCtx.currentTime + (i * 0.1) + 0.3);
+            });
+        }
+
+        function createConfetti() {
+            for (let i = 0; i < 50; i++) {
+                const conf = document.createElement('div');
+                conf.className = 'confetti';
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.backgroundColor = rewards[Math.floor(Math.random() * rewards.length)].color;
+                conf.style.transform = `rotate(${Math.random() * 360}deg)`;
+                document.body.appendChild(conf);
+
+                const animation = conf.animate([
+                    { top: '-10px', opacity: 1 },
+                    { top: '100vh', opacity: 0 }
+                ], {
+                    duration: Math.random() * 2000 + 1000,
+                    easing: 'cubic-bezier(0, .9, .6, 1)'
+                });
+
+                animation.onfinish = () => conf.remove();
+            }
+        }
+
+        function spin() {
+            if (isSpinning) return;
+            
+            isSpinning = true;
+            spinBtn.disabled = true;
+            emptyState.classList.add('hidden');
+
+            // Sound activation for mobile browser policies
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            // Random rotation (at least 5 full turns + random offset)
+            const extraDegrees = Math.floor(Math.random() * 360);
+            const totalDegrees = currentRotation + (360 * 5) + extraDegrees;
+            currentRotation = totalDegrees;
+
+            canvas.style.transform = `rotate(${totalDegrees}deg)`;
+
+            // Simulated tick sound during spin
+            const duration = 4000;
+            const start = performance.now();
+            
+            function checkTick(now) {
+                const elapsed = now - start;
+                if (elapsed < duration) {
+                    // Logic to play sound based on rotation progress (faster at start, slower at end)
+                    // This is a simplification
+                    if (Math.random() > 0.9) playTick(); 
+                    requestAnimationFrame(checkTick);
+                }
+            }
+            requestAnimationFrame(checkTick);
+
+            setTimeout(() => {
+                isSpinning = false;
+                spinBtn.disabled = false;
+                
+                // Calculate which slice it landed on
+                // Note: rotation is clockwise, slices are indexed clockwise
+                // The pointer is at the top (270 degrees in math terms)
+                const normalizedRotation = (totalDegrees % 360);
+                const sliceSize = 360 / rewards.length;
+                
+                // Formula to find index: (360 - degrees) / sliceSize
+                // We add an offset if the canvas draw rotation differs from 0
+                const landingIndex = Math.floor(((360 - (normalizedRotation % 360)) % 360) / sliceSize);
+                const won = rewards[landingIndex];
+                
+                showResult(won);
+            }, duration);
+        }
+
+        function showResult(reward) {
+            playWin();
+            createConfetti();
+
+            // Modal Update
+            document.getElementById('modalEmoji').innerText = reward.emoji;
+            document.getElementById('modalTitle').innerText = reward.label;
+            document.getElementById('modalDesc').innerText = reward.desc;
+            
+            resultModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-90');
+                modalContent.classList.add('scale-100');
+            }, 10);
+
+            // Add to History
+            const item = document.createElement('div');
+            item.className = 'reward-item flex items-center justify-between bg-slate-700/50 p-3 rounded-xl border border-slate-600';
+            item.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">${reward.emoji}</span>
+                    <div>
+                        <div class="font-bold text-sm">${reward.label}</div>
+                        <div class="text-[10px] text-slate-400">${new Date().toLocaleTimeString()}</div>
+                    </div>
+                </div>
+                <div class="text-xs font-mono text-blue-400">#${Math.floor(Math.random()*9000)+1000}</div>
+            `;
+            rewardList.prepend(item);
+        }
+
+        function closeModal() {
+            modalContent.classList.add('scale-90');
+            modalContent.classList.remove('scale-100');
+            setTimeout(() => {
+                resultModal.classList.add('hidden');
+            }, 200);
+        }
+
+        spinBtn.addEventListener('click', spin);
+        window.onload = initWheel;
+
+        // Resize handler
+        window.onresize = () => {
+            // Recalculate if needed, but CSS handles scaling well
+        };
+    </script>
+</body>
+</html>

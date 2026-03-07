@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Capture - Advanced Screen Recorder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .record-pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .timer-glow {
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        video::-webkit-media-controls-panel {
+            background-image: linear-gradient(transparent, rgba(0,0,0,0.5));
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="max-w-4xl w-full space-y-6">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2">
+            <div>
+                <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-500">
+                    Pro Capture
+                </h1>
+                <p class="text-slate-400 text-sm">High-performance screen recording in your browser</p>
+            </div>
+            <div id="statusBadge" class="hidden flex items-center gap-2 bg-red-500/10 text-red-500 px-4 py-1.5 rounded-full border border-red-500/20 text-sm font-semibold">
+                <span class="w-2 h-2 bg-red-500 rounded-full record-pulse"></span>
+                RECORDING
+            </div>
+        </div>
+
+        <!-- Main Display -->
+        <div class="relative glass-panel rounded-3xl overflow-hidden aspect-video shadow-2xl group">
+            <video id="preview" autoplay muted class="w-full h-full object-cover bg-slate-900"></video>
+            
+            <!-- Placeholder Overlay -->
+            <div id="placeholder" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-10">
+                <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-desktop text-3xl text-slate-500"></i>
+                </div>
+                <p class="text-slate-400">Select a source to begin preview</p>
+            </div>
+
+            <!-- Controls Overlay (Floating) -->
+            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 glass-panel px-6 py-3 rounded-2xl flex items-center gap-6 z-20 shadow-lg">
+                <div class="flex items-center gap-4 border-r border-slate-700 pr-6">
+                    <button id="startBtn" class="p-3 bg-blue-600 hover:bg-blue-500 rounded-full transition-all group/btn" title="Start Recording">
+                        <i class="fa-solid fa-play text-white"></i>
+                    </button>
+                    <button id="stopBtn" class="p-3 bg-slate-700 cursor-not-allowed opacity-50 rounded-full transition-all" disabled title="Stop">
+                        <i class="fa-solid fa-stop text-white"></i>
+                    </button>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <button id="toggleMic" class="p-2 text-slate-400 hover:text-white transition-colors" title="Toggle Microphone">
+                        <i class="fa-solid fa-microphone-slash" id="micIcon"></i>
+                    </button>
+                    <div class="text-2xl font-mono font-bold timer-glow min-w-[80px]" id="timer">00:00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings & Info -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="glass-panel p-5 rounded-2xl">
+                <h3 class="text-sm font-semibold text-slate-400 uppercase mb-3">Resolution</h3>
+                <p class="text-lg font-medium" id="resDisplay">Auto (Source Matched)</p>
+            </div>
+            <div class="glass-panel p-5 rounded-2xl">
+                <h3 class="text-sm font-semibold text-slate-400 uppercase mb-3">Frame Rate</h3>
+                <p class="text-lg font-medium">60 FPS Max</p>
+            </div>
+            <div class="glass-panel p-5 rounded-2xl">
+                <h3 class="text-sm font-semibold text-slate-400 uppercase mb-3">Format</h3>
+                <p class="text-lg font-medium">WebM / VP9</p>
+            </div>
+        </div>
+
+        <!-- Recording List (Hidden until recording made) -->
+        <div id="downloadsArea" class="hidden space-y-4">
+            <h2 class="text-xl font-bold px-2">Recent Recordings</h2>
+            <div id="recordingList" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Recorded items will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Toast -->
+    <div id="toast" class="fixed bottom-10 right-10 transform translate-y-20 opacity-0 transition-all duration-300 glass-panel border-blue-500/50 px-6 py-4 rounded-xl z-50 flex items-center gap-3">
+        <i class="fa-solid fa-circle-check text-blue-400"></i>
+        <span id="toastMsg">Recording saved!</span>
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+        let startTime;
+        let timerInterval;
+        let stream;
+        let audioStream;
+        let micEnabled = false;
+
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const preview = document.getElementById('preview');
+        const timerDisplay = document.getElementById('timer');
+        const statusBadge = document.getElementById('statusBadge');
+        const placeholder = document.getElementById('placeholder');
+        const toggleMicBtn = document.getElementById('toggleMic');
+        const micIcon = document.getElementById('micIcon');
+        const recordingList = document.getElementById('recordingList');
+        const downloadsArea = document.getElementById('downloadsArea');
+
+        // Toggle Microphone
+        toggleMicBtn.onclick = async () => {
+            if (!micEnabled) {
+                try {
+                    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    micEnabled = true;
+                    micIcon.classList.replace('fa-microphone-slash', 'fa-microphone');
+                    micIcon.classList.add('text-blue-400');
+                    showToast("Microphone enabled");
+                } catch (err) {
+                    showToast("Microphone access denied", true);
+                }
+            } else {
+                if (audioStream) audioStream.getTracks().forEach(t => t.stop());
+                micEnabled = false;
+                micIcon.classList.replace('fa-microphone', 'fa-microphone-slash');
+                micIcon.classList.remove('text-blue-400');
+                showToast("Microphone disabled");
+            }
+        };
+
+        async function startRecording() {
+            try {
+                // Get Screen Stream
+                stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { 
+                        cursor: "always",
+                        displaySurface: "monitor"
+                    },
+                    audio: true // System audio
+                });
+
+                // Combine with Mic if enabled
+                let tracks = [...stream.getTracks()];
+                if (micEnabled && audioStream) {
+                    tracks = [...tracks, ...audioStream.getAudioTracks()];
+                }
+
+                const combinedStream = new MediaStream(tracks);
+                preview.srcObject = combinedStream;
+                placeholder.classList.add('hidden');
+
+                mediaRecorder = new MediaRecorder(combinedStream, {
+                    mimeType: 'video/webm;codecs=vp9,opus'
+                });
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = saveRecording;
+
+                // Start
+                recordedChunks = [];
+                mediaRecorder.start();
+                
+                // UI Update
+                startBtn.disabled = true;
+                startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                stopBtn.disabled = false;
+                stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                stopBtn.classList.add('bg-red-600', 'hover:bg-red-500');
+                statusBadge.classList.remove('hidden');
+                
+                startTimer();
+
+                // Auto stop if stream ends (e.g. user clicks "Stop Sharing" browser button)
+                stream.getVideoTracks()[0].onended = stopRecording;
+
+            } catch (err) {
+                console.error("Error starting recording:", err);
+                showToast("Recording cancelled", true);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            
+            // Stop all tracks
+            if (stream) stream.getTracks().forEach(track => track.stop());
+            
+            // UI Reset
+            stopTimer();
+            startBtn.disabled = false;
+            startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            stopBtn.disabled = true;
+            stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            stopBtn.classList.remove('bg-red-600', 'hover:bg-red-500');
+            statusBadge.classList.add('hidden');
+            preview.srcObject = null;
+            placeholder.classList.remove('hidden');
+        }
+
+        function saveRecording() {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const timestamp = new Date().toLocaleString();
+            const fileName = `capture-${Date.now()}.webm`;
+
+            // Add to list
+            downloadsArea.classList.remove('hidden');
+            const card = document.createElement('div');
+            card.className = 'glass-panel p-4 rounded-2xl flex items-center justify-between border-l-4 border-blue-500';
+            card.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400">
+                        <i class="fa-solid fa-video"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-sm truncate max-w-[150px]">${fileName}</p>
+                        <p class="text-xs text-slate-500">${timestamp}</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <a href="${url}" download="${fileName}" class="p-2 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors" title="Download">
+                        <i class="fa-solid fa-download"></i>
+                    </a>
+                </div>
+            `;
+            recordingList.prepend(card);
+            showToast("Recording ready for download!");
+        }
+
+        // Timer Logic
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const delta = Date.now() - startTime;
+                const seconds = Math.floor((delta / 1000) % 60);
+                const minutes = Math.floor((delta / (1000 * 60)) % 60);
+                timerDisplay.innerText = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerDisplay.innerText = "00:00";
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.innerText = msg;
+            
+            if (isError) {
+                toast.classList.add('border-red-500/50');
+                toast.querySelector('i').className = 'fa-solid fa-circle-exclamation text-red-400';
+            } else {
+                toast.classList.remove('border-red-500/50');
+                toast.querySelector('i').className = 'fa-solid fa-circle-check text-blue-400';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        startBtn.onclick = startRecording;
+        stopBtn.onclick = stopRecording;
+
+    </script>
+</body>
+</html>
