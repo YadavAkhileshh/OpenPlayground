@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hydraulic Lift Simulator - Physics Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .cylinder {
+            background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%);
+            border: 2px solid #64748b;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fluid {
+            background: rgba(56, 189, 248, 0.6);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            transition: height 0.1s ease-out;
+        }
+
+        .piston {
+            background: linear-gradient(90deg, #94a3b8 0%, #cbd5e1 50%, #94a3b8 100%);
+            border: 2px solid #475569;
+            position: absolute;
+            width: calc(100% + 4px);
+            left: -2px;
+            z-index: 10;
+            transition: bottom 0.1s ease-out;
+        }
+
+        .pipe {
+            background: linear-gradient(180deg, #334155 0%, #475569 50%, #334155 100%);
+            height: 20px;
+        }
+
+        .gauge-needle {
+            transform-origin: bottom center;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: #1e293b;
+            height: 8px;
+            border-radius: 4px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #38bdf8;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+
+        .load-item {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: all 0.1s ease-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-6xl w-full bg-slate-900 rounded-3xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col lg:flex-row">
+        
+        <!-- Left: Simulation Display -->
+        <div class="flex-1 p-8 bg-slate-950 relative min-h-[500px] flex flex-col justify-end">
+            <div class="absolute top-8 left-8">
+                <h2 class="text-2xl font-bold text-sky-400">Pascal's Principle</h2>
+                <p class="text-slate-500 text-sm">Force multiplier simulation</p>
+            </div>
+
+            <!-- Visualization Area -->
+            <div class="relative flex items-end justify-center gap-0 mb-20">
+                
+                <!-- Input Piston (Small) -->
+                <div class="flex flex-col items-center">
+                    <div id="piston1_label" class="mb-4 text-xs font-bold text-slate-400">Area: 10 cm²</div>
+                    <div class="cylinder w-12 h-64 rounded-t-lg">
+                        <div id="piston1" class="piston h-6" style="bottom: 50%;"></div>
+                        <div id="fluid1" class="fluid" style="height: 50%;"></div>
+                    </div>
+                </div>
+
+                <!-- Connecting Pipe -->
+                <div class="w-32 pipe flex items-center justify-center relative">
+                    <div class="absolute inset-0 bg-sky-500/20" id="pipeFluid"></div>
+                    <div class="text-[10px] text-sky-300 font-bold uppercase tracking-tighter z-10">Pressure Transfer</div>
+                </div>
+
+                <!-- Output Piston (Large) -->
+                <div class="flex flex-col items-center">
+                    <div id="piston2_label" class="mb-4 text-xs font-bold text-slate-400">Area: 50 cm²</div>
+                    <div class="cylinder w-40 h-64 rounded-t-lg">
+                        <!-- Load Object -->
+                        <div id="loadObj" class="load-item mb-1">
+                            <svg width="80" height="60" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="5" y="10" width="70" height="45" rx="4" fill="#475569" stroke="#64748b" stroke-width="2"/>
+                                <path d="M20 32.5L30 32.5M30 32.5L40 32.5M30 32.5V22.5M30 32.5V42.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+                                <rect x="50" y="25" width="15" height="15" rx="2" fill="#1e293b"/>
+                            </svg>
+                        </div>
+                        <div id="piston2" class="piston h-10" style="bottom: 50%;"></div>
+                        <div id="fluid2" class="fluid" style="height: 50%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Data Overlay -->
+            <div class="grid grid-cols-3 gap-4 border-t border-slate-800 pt-6">
+                <div class="text-center">
+                    <span class="block text-xs text-slate-500 uppercase">Input Force</span>
+                    <span id="display_f1" class="text-xl font-bold text-white mono">50N</span>
+                </div>
+                <div class="text-center border-x border-slate-800">
+                    <span class="block text-xs text-slate-500 uppercase">System Pressure</span>
+                    <span id="display_p" class="text-xl font-bold text-sky-400 mono">5.0 kPa</span>
+                </div>
+                <div class="text-center">
+                    <span class="block text-xs text-slate-500 uppercase">Output Force</span>
+                    <span id="display_f2" class="text-xl font-bold text-white mono">250N</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Control Panel -->
+        <div class="w-full lg:w-96 p-8 border-l border-slate-800 flex flex-col gap-8">
+            <h3 class="text-lg font-bold border-b border-slate-800 pb-4">Control Terminal</h3>
+            
+            <!-- Pressure Gauge -->
+            <div class="flex justify-center py-4">
+                <div class="relative w-32 h-32 rounded-full border-4 border-slate-800 flex items-center justify-center bg-slate-950">
+                    <div class="absolute inset-2 rounded-full border border-slate-700"></div>
+                    <div id="gaugeNeedle" class="gauge-needle w-1 h-14 bg-red-500 rounded-full" style="transform: rotate(-90deg);"></div>
+                    <div class="absolute bottom-4 text-[10px] text-slate-500 font-bold">BAR x 100</div>
+                    <div class="w-3 h-3 bg-slate-400 rounded-full z-20"></div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Input Force Slider -->
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label class="text-sm font-medium text-slate-400">Applied Force (F1)</label>
+                        <span id="val_f1" class="text-sky-400 mono font-bold">50N</span>
+                    </div>
+                    <input type="range" id="input_f1" min="0" max="200" value="50" class="w-full">
+                </div>
+
+                <!-- Area Ratio -->
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label class="text-sm font-medium text-slate-400">Piston 2 Area Ratio</label>
+                        <span id="val_ratio" class="text-sky-400 mono font-bold">5:1</span>
+                    </div>
+                    <input type="range" id="input_ratio" min="2" max="10" value="5" class="w-full">
+                </div>
+
+                <div class="p-4 bg-slate-950 rounded-xl border border-slate-800">
+                    <p class="text-xs text-slate-500 italic">
+                        "Pressure applied to an enclosed fluid is transmitted undiminished to every portion of the fluid and to the walls of the containing vessel."
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button id="resetBtn" class="py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-all active:scale-95">
+                        Reset System
+                    </button>
+                    <button id="autoToggle" class="py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-bold transition-all active:scale-95">
+                        Oscillate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const piston1 = document.getElementById('piston1');
+        const piston2 = document.getElementById('piston2');
+        const fluid1 = document.getElementById('fluid1');
+        const fluid2 = document.getElementById('fluid2');
+        const loadObj = document.getElementById('loadObj');
+        
+        const inputF1 = document.getElementById('input_f1');
+        const inputRatio = document.getElementById('input_ratio');
+        
+        const displayF1 = document.getElementById('display_f1');
+        const displayF2 = document.getElementById('display_f2');
+        const displayP = document.getElementById('display_p');
+        const valF1 = document.getElementById('val_f1');
+        const valRatio = document.getElementById('val_ratio');
+        
+        const gaugeNeedle = document.getElementById('gaugeNeedle');
+        const resetBtn = document.getElementById('resetBtn');
+        const autoToggle = document.getElementById('autoToggle');
+
+        const AREA1 = 10; // Base area for piston 1
+        let isOscillating = false;
+        let oscStep = 0;
+
+        function updateSystem() {
+            const f1 = parseFloat(inputF1.value);
+            const ratio = parseFloat(inputRatio.value);
+            const area2 = AREA1 * ratio;
+            
+            // Pascal's Law Calculations
+            // Pressure = F1 / A1
+            const pressure = f1 / AREA1;
+            // F2 = Pressure * A2
+            const f2 = pressure * area2;
+
+            // Visual Updates
+            // In a real hydraulic system, Volume is constant. V1 = V2
+            // d1 * A1 = d2 * A2 => d2 = d1 * (A1 / A2)
+            // Let's assume the displacement is driven by the force input for simulation purposes
+            const displacement1 = (f1 / 200) * 80; // 0 to 80%
+            const displacement2 = (displacement1 / ratio); 
+            
+            // Update labels
+            valF1.textContent = f1 + 'N';
+            valRatio.textContent = ratio + ':1';
+            document.getElementById('piston2_label').textContent = `Area: ${area2} cm²`;
+            
+            // Update displays
+            displayF1.textContent = f1.toFixed(0) + 'N';
+            displayF2.textContent = f2.toFixed(0) + 'N';
+            displayP.textContent = pressure.toFixed(1) + ' kPa';
+
+            // Gauge Rotation (from -90deg to 90deg)
+            const gaugeRot = -90 + (pressure / 20) * 180;
+            gaugeNeedle.style.transform = `rotate(${gaugeRot}deg)`;
+
+            // Position Pistons
+            const p1Pos = 10 + displacement1;
+            const p2Pos = 90 - (displacement1 / ratio); // Simple inverse representation for balance
+
+            piston1.style.bottom = p1Pos + '%';
+            fluid1.style.height = p1Pos + '%';
+            
+            piston2.style.bottom = p2Pos + '%';
+            fluid2.style.height = p2Pos + '%';
+            loadObj.style.bottom = 'calc(' + p2Pos + '% + 2px)';
+        }
+
+        inputF1.addEventListener('input', updateSystem);
+        inputRatio.addEventListener('input', updateSystem);
+
+        resetBtn.addEventListener('click', () => {
+            inputF1.value = 50;
+            inputRatio.value = 5;
+            isOscillating = false;
+            autoToggle.textContent = 'Oscillate';
+            autoToggle.classList.replace('bg-red-600', 'bg-sky-600');
+            updateSystem();
+        });
+
+        autoToggle.addEventListener('click', () => {
+            isOscillating = !isOscillating;
+            if(isOscillating) {
+                autoToggle.textContent = 'Stop';
+                autoToggle.classList.replace('bg-sky-600', 'bg-red-600');
+                animate();
+            } else {
+                autoToggle.textContent = 'Oscillate';
+                autoToggle.classList.replace('bg-red-600', 'bg-sky-600');
+            }
+        });
+
+        function animate() {
+            if(!isOscillating) return;
+            
+            oscStep += 0.05;
+            const oscVal = 100 + Math.sin(oscStep) * 100;
+            inputF1.value = oscVal;
+            updateSystem();
+            
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize
+        updateSystem();
+    </script>
+</body>
+</html>
