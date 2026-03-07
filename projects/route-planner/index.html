@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftPath | Advanced Route Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; }
+        
+        #map { height: 100vh; width: 100%; z-index: 1; }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Hide default routing instructions for cleaner UI */
+        .leaflet-routing-container { display: none !important; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        .suggestion-box {
+            position: absolute;
+            z-index: 2000;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+    </style>
+</head>
+<body class="overflow-hidden">
+
+    <!-- Sidebar Container -->
+    <div class="fixed top-0 left-0 h-full w-full md:w-96 z-[1000] p-4 pointer-events-none">
+        <div class="glass-panel h-full w-full rounded-2xl shadow-2xl flex flex-col pointer-events-auto overflow-hidden">
+            
+            <!-- Header -->
+            <div class="p-6 border-b border-white/10">
+                <div class="flex items-center gap-3 mb-1">
+                    <div class="bg-indigo-600 p-2 rounded-lg">
+                        <i class="fas fa-route text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-xl font-bold text-white tracking-tight">SwiftPath <span class="text-indigo-400">Pro</span></h1>
+                </div>
+                <p class="text-slate-400 text-xs">Precision routing with real-time optimization</p>
+            </div>
+
+            <!-- Route Inputs -->
+            <div class="flex-1 overflow-y-auto p-6 custom-scrollbar" id="waypoint-container">
+                <div class="space-y-4">
+                    <div class="relative" id="wp-group-0">
+                        <label class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Start Point</label>
+                        <div class="relative">
+                            <i class="fas fa-circle-dot absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 text-xs"></i>
+                            <input type="text" placeholder="Enter starting address..." 
+                                class="w-full bg-slate-900/50 border border-slate-700 text-slate-200 pl-9 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm"
+                                oninput="handleSearch(this, 0)">
+                        </div>
+                        <div id="suggestions-0" class="suggestion-box hidden"></div>
+                    </div>
+
+                    <div id="dynamic-waypoints" class="space-y-4">
+                        <!-- Extra waypoints injected here -->
+                    </div>
+
+                    <div class="relative" id="wp-group-end">
+                        <label class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Destination</label>
+                        <div class="relative">
+                            <i class="fas fa-location-dot absolute left-3 top-1/2 -translate-y-1/2 text-rose-500 text-xs"></i>
+                            <input type="text" placeholder="Enter destination..." 
+                                class="w-full bg-slate-900/50 border border-slate-700 text-slate-200 pl-9 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm"
+                                oninput="handleSearch(this, 'end')">
+                        </div>
+                        <div id="suggestions-end" class="suggestion-box hidden"></div>
+                    </div>
+                </div>
+
+                <button onclick="addWaypoint()" class="mt-4 flex items-center gap-2 text-indigo-400 hover:text-indigo-300 text-xs font-semibold transition-colors">
+                    <i class="fas fa-plus-circle"></i> Add Intermediate Stop
+                </button>
+            </div>
+
+            <!-- Footer Stats -->
+            <div class="p-6 bg-slate-900/50 border-t border-white/10">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-slate-800/50 p-3 rounded-xl border border-white/5">
+                        <p class="text-[10px] uppercase text-slate-500 font-bold mb-1">Total Distance</p>
+                        <p id="stat-dist" class="text-lg font-bold text-white">0.0 <span class="text-xs font-normal text-slate-400">km</span></p>
+                    </div>
+                    <div class="bg-slate-800/50 p-3 rounded-xl border border-white/5">
+                        <p class="text-[10px] uppercase text-slate-500 font-bold mb-1">Estimated Time</p>
+                        <p id="stat-time" class="text-lg font-bold text-white">0 <span class="text-xs font-normal text-slate-400">min</span></p>
+                    </div>
+                </div>
+                <button onclick="calculateRoute()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 active:scale-95">
+                    <i class="fas fa-bolt"></i> Calculate Route
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Element -->
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+    <script>
+        let map, routingControl;
+        let waypoints = [null, null]; // [start, end]
+        let intermediateWaypoints = []; 
+        let searchTimeout;
+
+        // Initialize Map
+        window.onload = () => {
+            map = L.map('map', { zoomControl: false }).setView([40.7128, -74.0060], 13);
+            
+            // Premium Dark Matter Tiles
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO'
+            }).addTo(map);
+
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+        };
+
+        async function handleSearch(input, id) {
+            const query = input.value;
+            const suggestionDiv = document.getElementById(`suggestions-${id}`);
+            
+            if (query.length < 3) {
+                suggestionDiv.classList.add('hidden');
+                return;
+            }
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`);
+                    const data = await response.json();
+                    
+                    suggestionDiv.innerHTML = '';
+                    if (data.features.length > 0) {
+                        suggestionDiv.classList.remove('hidden');
+                        data.features.forEach(feature => {
+                            const name = feature.properties.name || '';
+                            const city = feature.properties.city || '';
+                            const country = feature.properties.country || '';
+                            const address = `${name} ${city ? ', ' + city : ''} ${country ? ', ' + country : ''}`;
+                            
+                            const item = document.createElement('div');
+                            item.className = 'px-4 py-2 hover:bg-indigo-600/20 cursor-pointer text-sm text-slate-300 border-b border-white/5 last:border-none';
+                            item.innerHTML = `<i class="fas fa-map-pin mr-2 text-slate-500 text-xs"></i> ${address}`;
+                            item.onclick = () => selectLocation(id, feature.geometry.coordinates, address, input);
+                            suggestionDiv.appendChild(item);
+                        });
+                    }
+                } catch (e) { console.error(e); }
+            }, 300);
+        }
+
+        function selectLocation(id, coords, address, input) {
+            input.value = address;
+            document.getElementById(`suggestions-${id}`).classList.add('hidden');
+            const latLng = L.latLng(coords[1], coords[0]);
+            
+            if (id === 0) waypoints[0] = latLng;
+            else if (id === 'end') waypoints[waypoints.length - 1] = latLng;
+            else waypoints[id] = latLng;
+
+            map.flyTo(latLng, 14);
+        }
+
+        function addWaypoint() {
+            const container = document.getElementById('dynamic-waypoints');
+            const id = intermediateWaypoints.length + 1;
+            intermediateWaypoints.push(null);
+            
+            // Update the end of waypoints array
+            waypoints.splice(waypoints.length - 1, 0, null);
+
+            const div = document.createElement('div');
+            div.className = 'relative animate-in fade-in slide-in-from-left-4 duration-300';
+            div.id = `wp-group-${id}`;
+            div.innerHTML = `
+                <div class="flex items-center gap-2 mb-1">
+                    <label class="text-[10px] uppercase font-bold text-slate-500">Stop ${id}</label>
+                    <button onclick="removeWaypoint(${id})" class="text-rose-500 text-[10px] font-bold hover:underline ml-auto">Remove</button>
+                </div>
+                <div class="relative">
+                    <i class="fas fa-diamond absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px]"></i>
+                    <input type="text" placeholder="Search address..." 
+                        class="w-full bg-slate-900/50 border border-slate-700 text-slate-200 pl-9 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm"
+                        oninput="handleSearch(this, ${id})">
+                </div>
+                <div id="suggestions-${id}" class="suggestion-box hidden"></div>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeWaypoint(id) {
+            document.getElementById(`wp-group-${id}`).remove();
+            waypoints.splice(id, 1);
+        }
+
+        function calculateRoute() {
+            // Filter out nulls
+            const activeWaypoints = waypoints.filter(wp => wp !== null);
+            
+            if (activeWaypoints.length < 2) {
+                alert("Please select at least a start and end point.");
+                return;
+            }
+
+            if (routingControl) map.removeControl(routingControl);
+
+            routingControl = L.Routing.control({
+                waypoints: activeWaypoints,
+                lineOptions: {
+                    styles: [
+                        { color: '#4f46e5', opacity: 0.8, weight: 8 },
+                        { color: '#818cf8', opacity: 1, weight: 3 }
+                    ]
+                },
+                createMarker: function(i, wp) {
+                    return L.marker(wp.latLng, {
+                        draggable: true,
+                        icon: L.divIcon({
+                            className: 'custom-div-icon',
+                            html: `<div class="w-4 h-4 rounded-full border-2 border-white ${i === 0 ? 'bg-indigo-500' : (i === activeWaypoints.length-1 ? 'bg-rose-500' : 'bg-slate-400')}"></div>`,
+                            iconSize: [16, 16],
+                            iconAnchor: [8, 8]
+                        })
+                    });
+                }
+            }).addTo(map);
+
+            routingControl.on('routesfound', function(e) {
+                const routes = e.routes;
+                const summary = routes[0].summary;
+                
+                // Update UI Stats
+                document.getElementById('stat-dist').innerHTML = `${(summary.totalDistance / 1000).toFixed(1)} <span class="text-xs font-normal text-slate-400">km</span>`;
+                const mins = Math.round(summary.totalTime / 60);
+                const hours = Math.floor(mins / 60);
+                const displayMins = mins % 60;
+                document.getElementById('stat-time').innerHTML = `${hours > 0 ? hours + 'h ' : ''}${displayMins} <span class="text-xs font-normal text-slate-400">min</span>`;
+            });
+
+            // Adjust view to fit route
+            routingControl.on('routesfound', function() {
+                map.fitBounds(L.latLngBounds(activeWaypoints), { padding: [100, 100] });
+            });
+        }
+    </script>
+</body>
+</html>
