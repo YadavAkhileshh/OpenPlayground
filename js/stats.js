@@ -1,8 +1,8 @@
     // Feature #1291: Advanced Project Analytics & Local Trending Engine
     // Added user activity section to stats page
     
-    // Fetch data from projects.json
-    fetch('./projects.json')
+    // Fetch data from project-manifest.json
+    fetch('../project-manifest.json')
       .then(response => {
         if (!response.ok) {
           throw new Error(`Failed to fetch projects.json: ${response.status} ${response.statusText}`);
@@ -49,13 +49,12 @@
           if (seenTitles.has(titleKey)) return;
           seenTitles.add(titleKey);
 
-          // Normalize category (handle plurals, lowercase, and spaces)
+          // Normalize category
           let category = (project.category || 'other')
             .trim()
             .toLowerCase()
             .replace(/\s+/g, '_');
           
-          // Normalize plural categories to singular
           const pluralMap = {
             'games': 'game',
             'puzzles': 'puzzle',
@@ -68,6 +67,24 @@
 
         renderStats(categoryCount, seenTitles.size);
         renderChart(categoryCount);
+        
+        // Extract and render technology data
+        extractTechStack(projects).then(techData => {
+          if (Object.keys(techData).length > 0) {
+            document.getElementById('techChartSection').style.display = 'block';
+            renderTechChart(techData);
+          }
+        });
+        
+        // Get and render trending projects
+        const trendingProjects = getTrendingProjects(projects);
+        if (trendingProjects.length > 0) {
+          document.getElementById('trendingSection').style.display = 'block';
+          renderTrendingProjects(trendingProjects);
+        }
+        
+        // Show category chart
+        document.getElementById('categoryChartSection').style.display = 'block';
         
         // Render user activity section if analytics engine is available
         renderUserActivity(projects);
@@ -570,4 +587,101 @@ const renderChart = (categoryCount) => {
 
     const capitalize = (str) => {
       return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // Extract technology stack data from projects
+    const extractTechStack = async (projects) => {
+      const techCount = {};
+      
+      for (const project of projects) {
+        if (project.tech && Array.isArray(project.tech)) {
+          project.tech.forEach(tech => {
+            techCount[tech] = (techCount[tech] || 0) + 1;
+          });
+        }
+      }
+      
+      return Object.entries(techCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .reduce((acc, [tech, count]) => ({ ...acc, [tech]: count }), {});
+    }
+
+    // Get trending projects by view count
+    const getTrendingProjects = (projects) => {
+      try {
+        const viewData = localStorage.getItem('openplayground_view_counts');
+        const viewCounts = viewData ? JSON.parse(viewData) : {};
+        
+        return projects
+          .filter(p => p.title && p.link)
+          .map((p, idx) => ({
+            ...p,
+            views: viewCounts[String(idx)] || 0
+          }))
+          .sort((a, b) => b.views - a.views)
+          .slice(0, 10);
+      } catch (e) {
+        console.warn('Error getting trending projects:', e);
+        return projects.filter(p => p.title && p.link).slice(0, 10);
+      }
+    }
+
+    // Render technology bar chart
+    const renderTechChart = (techData) => {
+      const ctx = document.getElementById('techChart');
+      if (!ctx) return;
+
+      const colors = ['rgba(251, 146, 60, 0.9)', 'rgba(249, 115, 22, 0.9)', 'rgba(234, 88, 12, 0.9)', 'rgba(194, 65, 12, 0.9)', 'rgba(253, 186, 116, 0.9)'];
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(techData),
+          datasets: [{
+            data: Object.values(techData),
+            backgroundColor: colors,
+            borderRadius: 8,
+            borderWidth: 0
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.95)',
+              callbacks: { label: (ctx) => `${ctx.raw} projects` }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(251, 146, 60, 0.1)' },
+              ticks: { color: 'var(--gray-600)' }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { color: 'var(--gray-700)' }
+            }
+          }
+        }
+      });
+    }
+
+    // Render trending projects list
+    const renderTrendingProjects = (projects) => {
+      const container = document.getElementById('trendingList');
+      if (!container) return;
+
+      container.innerHTML = projects.map((p, idx) => `
+        <a href="${p.link}" class="trending-item">
+          <span class="trending-rank">#${idx + 1}</span>
+          <div class="trending-info">
+            <div class="trending-title">${p.title}</div>
+            <div class="trending-meta">${p.category || 'other'}</div>
+          </div>
+          <div class="trending-views">${p.views || 0} views</div>
+        </a>
+      `).join('');
     }
