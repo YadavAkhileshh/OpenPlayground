@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Cloner Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .phone-mockup {
+            width: 320px;
+            height: 640px;
+            border: 8px solid #334155;
+            border-radius: 40px;
+            position: relative;
+            overflow: hidden;
+            background: #020617;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .status-bar {
+            height: 30px;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            z-index: 10;
+        }
+
+        .progress-ring {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .pulse {
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 0.5; }
+        }
+
+        .slide-up {
+            animation: slideUp 0.5s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .step-inactive { display: none; }
+        
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <div class="phone-mockup flex flex-col">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span>9:41</span>
+            <div class="flex gap-2">
+                <i class="fas fa-signal"></i>
+                <i class="fas fa-wifi"></i>
+                <i class="fas fa-battery-full"></i>
+            </div>
+        </div>
+
+        <!-- Main Container -->
+        <div id="app-content" class="flex-1 overflow-y-auto px-6 py-4 flex flex-col">
+            
+            <!-- STEP 1: WELCOME & ROLE SELECTION -->
+            <div id="step-1" class="flex flex-col h-full animate-fade">
+                <div class="mt-8 mb-10 text-center">
+                    <div class="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/20">
+                        <i class="fas fa-clone text-3xl text-white"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold">Phone Cloner</h1>
+                    <p class="text-slate-400 text-sm mt-2">Transfer your digital life seamlessly</p>
+                </div>
+
+                <div class="space-y-4 flex-1">
+                    <button onclick="setRole('old')" class="w-full glass p-5 rounded-2xl flex items-center gap-4 hover:bg-slate-700 transition group">
+                        <div class="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center group-hover:bg-blue-600 transition">
+                            <i class="fas fa-mobile-alt text-xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <h3 class="font-semibold text-white">This is the OLD phone</h3>
+                            <p class="text-xs text-slate-400">Send data to a new device</p>
+                        </div>
+                    </button>
+
+                    <button onclick="setRole('new')" class="w-full glass p-5 rounded-2xl flex items-center gap-4 hover:bg-slate-700 transition group">
+                        <div class="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center group-hover:bg-green-600 transition">
+                            <i class="fas fa-mobile-screen-button text-xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <h3 class="font-semibold text-white">This is the NEW phone</h3>
+                            <p class="text-xs text-slate-400">Receive data from old device</p>
+                        </div>
+                    </button>
+                </div>
+
+                <p class="text-[10px] text-center text-slate-500 mt-4">
+                    Ensure both devices are on the same Wi-Fi network and have at least 50% battery.
+                </p>
+            </div>
+
+            <!-- STEP 2: CONNECTING -->
+            <div id="step-2" class="step-inactive flex flex-col items-center justify-center h-full text-center">
+                <div class="relative w-48 h-48 mb-8">
+                    <div class="absolute inset-0 border-4 border-blue-500/20 rounded-full"></div>
+                    <div class="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div class="absolute inset-4 bg-slate-800 rounded-full flex items-center justify-center pulse">
+                        <i class="fas fa-satellite-dish text-4xl text-blue-400"></i>
+                    </div>
+                </div>
+                <h2 class="text-xl font-bold mb-2" id="connection-status">Searching for devices...</h2>
+                <p class="text-slate-400 text-sm">Please keep this screen open</p>
+                
+                <div id="device-list" class="mt-8 w-full space-y-2 opacity-0 transition-opacity duration-500">
+                    <div onclick="nextStep(3)" class="glass p-3 rounded-xl flex items-center justify-between cursor-pointer hover:bg-blue-600/20 transition">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                                <i class="fas fa-mobile-alt text-xs"></i>
+                            </div>
+                            <span class="text-sm font-medium">iPhone 15 Pro Max</span>
+                        </div>
+                        <span class="text-[10px] bg-green-500/20 text-green-400 px-2 py-1 rounded-full uppercase font-bold">Signal Strong</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3: DATA SELECTION -->
+            <div id="step-3" class="step-inactive flex flex-col h-full">
+                <h2 class="text-xl font-bold mb-1">Select Data</h2>
+                <p class="text-slate-400 text-xs mb-6">Choose what to clone to the new device</p>
+
+                <div class="flex-1 space-y-3 overflow-y-auto pr-1">
+                    <label class="glass p-4 rounded-xl flex items-center justify-between cursor-pointer border-transparent border-2 hover:border-blue-500/50">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-address-book text-orange-400 w-5"></i>
+                            <div>
+                                <h4 class="text-sm font-semibold">Contacts</h4>
+                                <p class="text-[10px] text-slate-500">1,248 items • 12 MB</p>
+                            </div>
+                        </div>
+                        <input type="checkbox" checked class="w-5 h-5 rounded accent-blue-500">
+                    </label>
+
+                    <label class="glass p-4 rounded-xl flex items-center justify-between cursor-pointer border-transparent border-2 hover:border-blue-500/50">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-images text-purple-400 w-5"></i>
+                            <div>
+                                <h4 class="text-sm font-semibold">Photos & Videos</h4>
+                                <p class="text-[10px] text-slate-500">4,520 items • 14.2 GB</p>
+                            </div>
+                        </div>
+                        <input type="checkbox" checked class="w-5 h-5 rounded accent-blue-500">
+                    </label>
+
+                    <label class="glass p-4 rounded-xl flex items-center justify-between cursor-pointer border-transparent border-2 hover:border-blue-500/50">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-comment-dots text-green-400 w-5"></i>
+                            <div>
+                                <h4 class="text-sm font-semibold">Messages</h4>
+                                <p class="text-[10px] text-slate-500">32,100 items • 850 MB</p>
+                            </div>
+                        </div>
+                        <input type="checkbox" checked class="w-5 h-5 rounded accent-blue-500">
+                    </label>
+
+                    <label class="glass p-4 rounded-xl flex items-center justify-between cursor-pointer border-transparent border-2 hover:border-blue-500/50">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-music text-pink-400 w-5"></i>
+                            <div>
+                                <h4 class="text-sm font-semibold">Audio & Music</h4>
+                                <p class="text-[10px] text-slate-500">412 items • 2.1 GB</p>
+                            </div>
+                        </div>
+                        <input type="checkbox" class="w-5 h-5 rounded accent-blue-500">
+                    </label>
+
+                    <label class="glass p-4 rounded-xl flex items-center justify-between cursor-pointer border-transparent border-2 hover:border-blue-500/50">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-th-large text-blue-400 w-5"></i>
+                            <div>
+                                <h4 class="text-sm font-semibold">Applications</h4>
+                                <p class="text-[10px] text-slate-500">84 apps • 8.4 GB</p>
+                            </div>
+                        </div>
+                        <input type="checkbox" class="w-5 h-5 rounded accent-blue-500">
+                    </label>
+                </div>
+
+                <div class="mt-6">
+                    <div class="flex justify-between text-[10px] text-slate-400 mb-2 px-1">
+                        <span>Total Selected: 15.1 GB</span>
+                        <span>Est. time: 14 mins</span>
+                    </div>
+                    <button onclick="startCloning()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/30 transition">
+                        Start Cloning
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 4: CLONING PROGRESS -->
+            <div id="step-4" class="step-inactive flex flex-col h-full items-center">
+                <div class="w-full flex justify-between items-center mb-8">
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700">
+                            <i class="fas fa-mobile-alt text-xs text-blue-400"></i>
+                        </div>
+                        <span class="text-[8px] mt-1 text-slate-500">Source</span>
+                    </div>
+                    <div class="flex-1 h-[1px] bg-gradient-to-r from-blue-500 to-green-500 mx-2 relative">
+                        <div id="particle-trail" class="absolute top-1/2 left-0 -translate-y-1/2 text-blue-400">
+                            <i class="fas fa-chevron-right text-[8px] animate-ping"></i>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700">
+                            <i class="fas fa-mobile-screen-button text-xs text-green-400"></i>
+                        </div>
+                        <span class="text-[8px] mt-1 text-slate-500">Target</span>
+                    </div>
+                </div>
+
+                <div class="relative w-48 h-48 mb-10">
+                    <svg class="w-full h-full">
+                        <circle class="text-slate-800" stroke-width="8" stroke="currentColor" fill="transparent" r="80" cx="96" cy="96"/>
+                        <circle id="progress-circle" class="text-blue-500 progress-ring" stroke-width="8" stroke-dasharray="502.6" stroke-dashoffset="502.6" stroke-linecap="round" stroke="currentColor" fill="transparent" r="80" cx="96" cy="96"/>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span id="progress-text" class="text-4xl font-bold">0%</span>
+                        <span class="text-[10px] text-slate-400 uppercase tracking-widest">Cloning...</span>
+                    </div>
+                </div>
+
+                <div class="w-full space-y-4">
+                    <div class="flex items-center justify-between text-sm">
+                        <span id="current-task" class="text-slate-300 font-medium italic">Preparing storage...</span>
+                        <span id="transfer-speed" class="text-blue-400 text-xs">24 MB/s</span>
+                    </div>
+                    <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div id="mini-progress" class="h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    
+                    <div id="file-stream" class="h-24 glass rounded-xl p-3 overflow-hidden text-[9px] font-mono text-slate-500">
+                        <div id="file-log" class="flex flex-col gap-1">
+                            <!-- Logs will inject here -->
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="cancelCloning()" class="mt-auto text-slate-500 text-xs font-semibold hover:text-red-400 transition">
+                    Cancel Transfer
+                </button>
+            </div>
+
+            <!-- STEP 5: FINISHED -->
+            <div id="step-5" class="step-inactive flex flex-col h-full items-center justify-center text-center">
+                <div class="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-green-500/20">
+                    <i class="fas fa-check text-4xl text-white"></i>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Clone Complete!</h2>
+                <p class="text-slate-400 text-sm mb-8 px-4">All your data has been successfully migrated to the new device.</p>
+                
+                <div class="w-full glass p-4 rounded-2xl mb-8 space-y-3">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">Total Transferred</span>
+                        <span class="text-white font-medium">15.12 GB</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">Items Migrated</span>
+                        <span class="text-white font-medium">37,880 files</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">Time Taken</span>
+                        <span class="text-white font-medium">14m 22s</span>
+                    </div>
+                </div>
+
+                <button onclick="resetApp()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 rounded-2xl transition">
+                    Finish
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Navigation Bar Mockup -->
+        <div class="h-16 border-t border-slate-800 flex items-center justify-around text-slate-500">
+            <i class="fas fa-home"></i>
+            <i class="fas fa-history"></i>
+            <i class="fas fa-cog"></i>
+        </div>
+        
+        <!-- Bottom Indicator -->
+        <div class="h-1 bg-white/20 w-32 rounded-full mx-auto mb-2"></div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let role = '';
+        let progress = 0;
+        let interval;
+
+        function nextStep(step) {
+            document.getElementById(`step-${currentStep}`).classList.add('step-inactive');
+            document.getElementById(`step-${step}`).classList.remove('step-inactive');
+            currentStep = step;
+
+            if (step === 2) {
+                simulateSearching();
+            }
+        }
+
+        function setRole(selectedRole) {
+            role = selectedRole;
+            nextStep(2);
+        }
+
+        function simulateSearching() {
+            const status = document.getElementById('connection-status');
+            const list = document.getElementById('device-list');
+            
+            setTimeout(() => {
+                status.innerText = "Available devices";
+                list.classList.remove('opacity-0');
+            }, 2500);
+        }
+
+        function startCloning() {
+            nextStep(4);
+            progress = 0;
+            
+            const circle = document.getElementById('progress-circle');
+            const text = document.getElementById('progress-text');
+            const mini = document.getElementById('mini-progress');
+            const taskText = document.getElementById('current-task');
+            const log = document.getElementById('file-log');
+            const speed = document.getElementById('transfer-speed');
+
+            const radius = 80;
+            const circumference = 2 * Math.PI * radius;
+
+            const tasks = [
+                "Initializing secure handshake...",
+                "Optimizing storage mapping...",
+                "Transferring Contacts...",
+                "Transferring SMS History...",
+                "Compressing Image Library...",
+                "Streaming Photo Assets...",
+                "Cloning App Metadata...",
+                "Syncing System Preferences...",
+                "Finalizing file integrity..."
+            ];
+
+            const fileEx = ["IMG_2023.jpg", "Contact_Card.vcf", "Message_Thread_01.db", "Video_Rec.mp4", "App_Payload.pkg"];
+
+            interval = setInterval(() => {
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => nextStep(5), 1000);
+                    return;
+                }
+
+                progress += 0.5;
+                const offset = circumference - (progress / 100) * circumference;
+                circle.style.strokeDashoffset = offset;
+                text.innerText = Math.round(progress) + "%";
+                mini.style.width = progress + "%";
+
+                // Update tasks
+                const taskIndex = Math.min(Math.floor(progress / (100 / tasks.length)), tasks.length - 1);
+                taskText.innerText = tasks[taskIndex];
+
+                // Fluctuate speed
+                const randomSpeed = (Math.random() * (45 - 20) + 20).toFixed(1);
+                speed.innerText = `${randomSpeed} MB/s`;
+
+                // Add logs
+                if (Math.random() > 0.7) {
+                    const entry = document.createElement('div');
+                    entry.className = 'animate-pulse';
+                    const file = fileEx[Math.floor(Math.random() * fileEx.length)];
+                    entry.innerHTML = `<span class="text-blue-400">[TX]</span> Syncing: ${file} ... DONE`;
+                    log.prepend(entry);
+                    if (log.children.length > 8) log.lastElementChild.remove();
+                }
+
+            }, 80);
+        }
+
+        function cancelCloning() {
+            if (confirm('Are you sure you want to stop the transfer?')) {
+                clearInterval(interval);
+                resetApp();
+            }
+        }
+
+        function resetApp() {
+            document.querySelectorAll('[id^="step-"]').forEach(s => s.classList.add('step-inactive'));
+            document.getElementById('step-1').classList.remove('step-inactive');
+            document.getElementById('device-list').classList.add('opacity-0');
+            document.getElementById('connection-status').innerText = "Searching for devices...";
+            document.getElementById('file-log').innerHTML = "";
+            currentStep = 1;
+        }
+    </script>
+</body>
+</html>
