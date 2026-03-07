@@ -571,7 +571,7 @@ class ProjectManager {
                 <div class="card" 
                      data-category="${this.escapeHtml(project.category)}" 
                      data-link="${this.escapeHtml(project.link)}"
-                     onclick="window.location.href='${this.escapeHtml(project.link)}'; event.stopPropagation();">
+                     onclick="window.viewCounter && window.viewCounter.incrementView('${this.escapeHtml(project.title)}'); window.location.href='${this.escapeHtml(project.link)}'; event.stopPropagation();">
                     <div class="card-actions">
                         <button class="preview-btn" 
                                 onclick="event.preventDefault(); event.stopPropagation(); window.openSandboxPreview(this);"
@@ -613,6 +613,11 @@ class ProjectManager {
                             </div>
                             <p class="card-description">${this.escapeHtml(project.description || '')}</p>
                             <div class="card-tech">${techHtml}</div>
+                            <div class="card-footer">
+                                <span class="view-counter" onclick="event.stopPropagation(); window.viewCounter && window.viewCounter.incrementView('${this.escapeHtml(project.title)}');">
+                                    👁️ ${(window.viewCounter?.getViewCount(project.title) || 0)} views
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -673,6 +678,9 @@ class ProjectManager {
                             <span class="category-tag">${this.capitalize(project.category)}</span>
                         </div>
                         <p class="list-card-description">${this.escapeHtml(project.description || '')}</p>
+                        <div class="list-card-meta">
+                            <span class="view-counter">👁️ ${(window.viewCounter?.getViewCount(project.title) || 0)}</span>
+                        </div>
                     </div>
                     <div class="list-card-actions">
                         <button class="preview-btn" 
@@ -697,7 +705,7 @@ class ProjectManager {
                             <i class="ri-calendar-line"></i>
                         </button>
                         <a href="${project.link}" class="view-btn" title="View Project"
-                           onclick="window.projectManagerInstance.trackProjectClick(${JSON.stringify(project).replace(/"/g, '&quot;')})">
+                           onclick="window.viewCounter && window.viewCounter.incrementView('${this.escapeHtml(project.title)}'); window.projectManagerInstance.trackProjectClick(${JSON.stringify(project).replace(/"/g, '&quot;')})">
                             <i class="ri-arrow-right-line"></i>
                         </a>
                     </div>
