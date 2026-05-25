@@ -928,6 +928,33 @@ document.addEventListener('DOMContentLoaded', () => {
     loader.loadAllComponents();
 });
 
+// Hamburger toggle for navbar
+document.addEventListener("DOMContentLoaded", () => {
+  const navToggle = document.getElementById("navToggle");
+  const navLinks = document.getElementById("navLinks");
+
+  if (navToggle && navLinks) {
+    navToggle.addEventListener("click", () => {
+      navLinks.classList.toggle("active");
+    });
+  }
+});
+
+// Theme toggle
+document.addEventListener("DOMContentLoaded", () => {
+  const themeToggle = document.getElementById("themeToggle");
+
+  if (themeToggle) {
+    themeToggle.addEventListener("click", () => {
+      const currentTheme = document.documentElement.getAttribute("data-theme");
+      const newTheme = currentTheme === "light" ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", newTheme);
+      localStorage.setItem("theme", newTheme);
+    });
+  }
+});
+
+
 // Export for use in other scripts
 window.ComponentLoader = ComponentLoader;
 window.ProjectDependencyManager = ProjectDependencyManager;
