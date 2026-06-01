@@ -8,7 +8,7 @@
 [![Contributors](https://img.shields.io/github/contributors/YadavAkhileshh/OpenPlayground)](https://github.com/YadavAkhileshh/OpenPlayground/graphs/contributors)
 [![Stars](https://img.shields.io/github/stars/YadavAkhileshh/OpenPlayground?style=social)](https://github.com/YadavAkhileshh/OpenPlayground/stargazers)
 
-**🌐 [View Live Website](https://open-playground-seven.vercel.app/) | 📖 [Contributing Guide](CONTRIBUTING.md) | 🐛 [Debugging Guide](DEBUGGING_GUIDE.md) | 💬 [Discussions](https://github.com/YadavAkhileshh/OpenPlayground/discussions)**
+**🌐 [View Live Website](https://open-playground-sage.vercel.app/) | 📖 [Contributing Guide](CONTRIBUTING.md) | 🐛 [Debugging Guide](DEBUGGING_GUIDE.md) | 💬 [Discussions](https://github.com/YadavAkhileshh/OpenPlayground/discussions)**
 
 • Project spotlight: Recipe – [Landing Page Preview](./projects/Recipe/landing.html)
 
@@ -56,7 +56,7 @@ otherwise some components may fail to load.
 
 ### 👀 For Visitors
 
-Simply visit our [live website](https://open-playground-seven.vercel.app/) and start exploring!
+Simply visit our [live website](https://open-playground-sage.vercel.app/) and start exploring!
 
 ### 👨‍💻 For Contributors
 
@@ -84,9 +84,9 @@ Create these files in your project folder:
 - `style.css` - Your styles
 - `script.js` - Your JavaScript logic
 
-#### 4️⃣ **Add to projects.json** ⚠️ **IMPORTANT!**
+#### 4️⃣ **Add to project-manifest.json** ⚠️ **IMPORTANT!**
 
-Open `projects.json` in the root folder and add your project entry:
+Open `project-manifest.json` in the root folder and add your project entry:
 
 ```json
 {
@@ -109,7 +109,7 @@ Open `projects.json` in the root folder and add your project entry:
 ```bash
 git add .
 git commit -m "Add: Your Project Name - Brief description"
-git push origin main
+git push origin your-branch-name
 ```
 
 Then create a Pull Request on GitHub!
@@ -128,7 +128,7 @@ OpenPlayground/
 ├── 📂 css/                   # Global website styles
 ├── 📂 js/                    # Global website scripts
 ├── 📄 index.html             # Main website entry
-├── 📄 projects.json          # ⭐ Project registry (add your project here!)
+├── 📄 project-manifest.json  # ⭐ Project registry (add your project here!)
 ├── 📄 README.md              # This file
 └── 📄 CONTRIBUTING.md        # Detailed contribution guidelines
 ```
@@ -156,7 +156,7 @@ OpenPlayground/
 - Use vanilla HTML, CSS, and JavaScript
 - Include `index.html` as the entry point
 - Make it responsive and accessible
-- Add your project to `projects.json`
+- Add your project to `project-manifest.json`
 - Test across different browsers
 - Keep content family-friendly
 
@@ -214,7 +214,7 @@ A huge thank you to all the talented developers who have contributed!
 
 ---
 
-## � License
+## 🗎 LICENSE
 
 This project is licensed under the **MIT License** - see [LICENSE](LICENSE) for details.
 
