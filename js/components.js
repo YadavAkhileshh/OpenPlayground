@@ -5,15 +5,18 @@
 
 class ComponentLoader {
     constructor() {
+        const isPagesDir = window.location.pathname.includes('/pages/');
+        const basePath = isPagesDir ? '../components/' : './components/';
+
         this.components = {
-            'header': './components/header.html',
-            'hero': './components/hero.html',
-            'projects': './components/projects.html',
-            'templates': './components/templates.html',
-            'contribute': './components/contribute.html',
-            'contributors': './components/contributors.html',
-            'footer': './components/footer.html',
-            'chatbot': './components/chatbot.html'
+            'header': `${basePath}header.html`,
+            'hero': `${basePath}hero.html`,
+            'projects': `${basePath}projects.html`,
+            'templates': `${basePath}templates.html`,
+            'contribute': `${basePath}contribute.html`,
+            'contributors': `${basePath}contributors.html`,
+            'footer': `${basePath}footer.html`,
+            'chatbot': `${basePath}chatbot.html`
         };
         this.loadedComponents = new Set();
 
@@ -97,31 +100,23 @@ class ComponentLoader {
     }
 
     async loadAllComponents() {
-        // Load different components depending on the current page.
-        // Avoid loading index-only sections (hero/projects/contribute) on other pages like about.html.
-        const currentPath = window.location.pathname || '';
-        const isIndex = currentPath.endsWith('/') || currentPath.endsWith('index.html');
-
         const componentMap = [
             { name: 'header', selector: '#header-placeholder' },
             { name: 'hero', selector: '#hero-placeholder' },
             { name: 'projects', selector: '#projects-placeholder' },
             { name: 'templates', selector: '#templates-placeholder' },
             { name: 'contribute', selector: '#contribute-placeholder' },
-            // Only inject the hero/projects/contribute sections on the homepage
-            ...(isIndex ? [
-                { name: 'hero', selector: '#hero-placeholder' },
-                { name: 'projects', selector: '#projects-placeholder' },
-                { name: 'contribute', selector: '#contribute-placeholder' }
-            ] : []),
             { name: 'footer', selector: '#footer-placeholder' },
             { name: 'chatbot', selector: '#chatbot-placeholder' }
         ];
 
+        // Filter components to only those whose placeholders actually exist on the current page
+        const componentsToLoad = componentMap.filter(comp => document.querySelector(comp.selector));
+
         this.showLoadingIndicator();
 
         try {
-            const loadPromises = componentMap.map(({ name, selector }) =>
+            const loadPromises = componentsToLoad.map(({ name, selector }) =>
                 this.loadComponent(name, selector)
             );
 
@@ -361,11 +356,11 @@ class ComponentLoader {
             }
 
             navLinks.forEach(link => {
-                const linkHref = link.getAttribute('href');
+                const linkHref = link.getAttribute('href') || '';
                 const isCurrentPage = linkHref === currentPath ||
-                    (currentPath.endsWith('/') && linkHref === 'index.html') ||
-                    (currentPath.includes('about') && linkHref === 'pages/about.html') ||
-                    (currentPath.includes('bookmarks') && linkHref === 'pages/bookmarks.html');
+                    (currentPath.endsWith('/') && linkHref.includes('index.html')) ||
+                    (currentPath.includes('about') && linkHref.includes('about.html')) ||
+                    (currentPath.includes('bookmarks') && linkHref.includes('bookmarks.html'));
 
                 if (isCurrentPage) {
                     link.classList.add('active');
@@ -401,7 +396,7 @@ class ProjectDependencyManager {
             project = {
                 id: projectId,
                 components: [],
-                dependencies: new Set(),
+                dependencies: [],
                 metrics: {
                     totalSize: 0,
                     fileCount: 0,
@@ -418,10 +413,14 @@ class ProjectDependencyManager {
         });
 
         if (componentData.scripts) {
-            componentData.scripts.forEach(dep => project.dependencies.add(dep));
+            componentData.scripts.forEach(dep => {
+                if (!project.dependencies.includes(dep)) project.dependencies.push(dep);
+            });
         }
         if (componentData.stylesheets) {
-            componentData.stylesheets.forEach(dep => project.dependencies.add(dep));
+            componentData.stylesheets.forEach(dep => {
+                if (!project.dependencies.includes(dep)) project.dependencies.push(dep);
+            });
         }
 
         project.metrics.totalSize += componentData.size || 0;
@@ -609,6 +608,12 @@ class ProjectDependencyManager {
             const saved = localStorage.getItem(this.storageKey);
             if (saved) {
                 this.projects = JSON.parse(saved);
+                // Fix corrupted data if dependencies was saved as an object instead of array
+                this.projects.forEach(p => {
+                    if (!Array.isArray(p.dependencies)) {
+                        p.dependencies = [];
+                    }
+                });
             }
         } catch (error) {
             console.error('Failed to load dependencies:', error);

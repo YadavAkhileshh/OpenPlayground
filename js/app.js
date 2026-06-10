@@ -7,6 +7,7 @@ import { keyevents } from './core/Shortcut.js';
 import { deadlineManager } from './projectDeadlineManager.js';
 import { deadlineUI } from './deadlineUI.js';
 import notificationManager from './core/notificationManager.js';
+import { CommandPalette } from './core/commandPalette.js';
 
 class ProjectManager {
   constructor() {
