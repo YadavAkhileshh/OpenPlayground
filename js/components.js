@@ -5,15 +5,19 @@
 
 class ComponentLoader {
     constructor() {
+        const currentPath = window.location.pathname || '';
+        const isPagesRoute = currentPath.includes('/pages/');
+        const componentBasePath = isPagesRoute ? '../components/' : './components/';
+
         this.components = {
-            'header': './components/header.html',
-            'hero': './components/hero.html',
-            'projects': './components/projects.html',
-            'templates': './components/templates.html',
-            'contribute': './components/contribute.html',
-            'contributors': './components/contributors.html',
-            'footer': './components/footer.html',
-            'chatbot': './components/chatbot.html'
+            'header': `${componentBasePath}header.html`,
+            'hero': `${componentBasePath}hero.html`,
+            'projects': `${componentBasePath}projects.html`,
+            'templates': `${componentBasePath}templates.html`,
+            'contribute': `${componentBasePath}contribute.html`,
+            'contributors': `${componentBasePath}contributors.html`,
+            'footer': `${componentBasePath}footer.html`,
+            'chatbot': `${componentBasePath}chatbot.html`
         };
         this.loadedComponents = new Set();
 
@@ -42,6 +46,14 @@ class ComponentLoader {
 
             target.innerHTML = html;
             this.loadedComponents.add(name);
+
+            if (name === 'header') {
+                this.normalizeNavbarLinks(target);
+            }
+
+            if (name === 'footer') {
+                this.normalizeFooterLinks(target);
+            }
 
             console.log(`✅ Component ${name} loaded successfully`);
 
@@ -93,6 +105,61 @@ class ComponentLoader {
             images,
             size: new Blob([html]).size,
             timestamp: Date.now()
+        });
+    }
+
+    normalizeNavbarLinks(target) {
+        const currentPath = window.location.pathname || '';
+        const isPagesRoute = currentPath.includes('/pages/');
+
+        const internalLinkMap = {
+            'index.html': isPagesRoute ? '../index.html' : 'index.html',
+            'pages/about.html': isPagesRoute ? './about.html' : 'pages/about.html',
+            'pages/bookmarks.html': isPagesRoute ? './bookmarks.html' : 'pages/bookmarks.html',
+            './pages/contact.html': isPagesRoute ? './contact.html' : 'pages/contact.html',
+            './pages/feedback.html': isPagesRoute ? './feedback.html' : 'pages/feedback.html',
+            '#': isPagesRoute ? '../index.html' : 'index.html'
+        };
+
+        const navLinks = target.querySelectorAll('.nav-link, .nav-logo');
+        navLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            if (!href) return;
+            if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+            if (internalLinkMap[href]) {
+                link.setAttribute('href', internalLinkMap[href]);
+            }
+        });
+    }
+
+    normalizeFooterLinks(target) {
+        const currentPath = window.location.pathname || '';
+        const isPagesRoute = currentPath.includes('/pages/');
+
+        const footerLinkMap = {
+            'index.html': isPagesRoute ? '../index.html' : 'index.html',
+            'index.html#projects': isPagesRoute ? '../index.html#projects' : 'index.html#projects',
+            'index.html#contribute': isPagesRoute ? '../index.html#contribute' : 'index.html#contribute',
+            'pages/about.html': isPagesRoute ? './about.html' : 'pages/about.html',
+            'pages/contact.html': isPagesRoute ? './contact.html' : 'pages/contact.html',
+            'pages/bookmarks.html': isPagesRoute ? './bookmarks.html' : 'pages/bookmarks.html',
+            'pages/feedback.html': isPagesRoute ? './feedback.html' : 'pages/feedback.html',
+            '../pages/contribution.html': isPagesRoute ? './contribution.html' : 'pages/contribution.html',
+            'stats.html': isPagesRoute ? './stats.html' : 'pages/stats.html',
+            'terms.html': isPagesRoute ? './terms.html' : 'pages/terms.html',
+            'privacy.html': isPagesRoute ? './privacy.html' : 'pages/privacy.html',
+            'CODE_OF_CONDUCT.md': isPagesRoute ? '../CODE_OF_CONDUCT.md' : 'CODE_OF_CONDUCT.md'
+        };
+
+        const links = target.querySelectorAll('a[href]');
+        links.forEach(link => {
+            const href = link.getAttribute('href');
+            if (!href) return;
+            if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('#')) return;
+
+            if (footerLinkMap[href]) {
+                link.setAttribute('href', footerLinkMap[href]);
+            }
         });
     }
 
