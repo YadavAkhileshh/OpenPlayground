@@ -675,3 +675,6 @@ if (scrollBtn) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 }
+
+
+document.getElementById('sidebar-shimmer')?.remove();
